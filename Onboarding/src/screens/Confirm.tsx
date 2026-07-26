@@ -268,19 +268,14 @@ export function Confirm() {
                 <Card className="card--sunken">
                   <div className="stack stack--sm">
                     {/* The whole label is the hit area, well over the 44px
-                        floor; the box itself is sized to clear WCAG 2.5.8. */}
-                    <label
-                      className="row"
-                      style={{
-                        alignItems: 'flex-start', gap: 'var(--space-3)',
-                        cursor: 'pointer', minBlockSize: 44, paddingBlock: 'var(--space-2)',
-                      }}
-                    >
+                        floor; the box itself is sized to clear WCAG 2.5.8.
+                        .consent rather than .row: the generic helper wraps,
+                        which dropped this sentence below the box on a phone. */}
+                    <label className="consent">
                       <input
                         type="checkbox"
                         checked={consent}
                         onChange={(e) => setConsent(e.target.checked)}
-                        style={{ inlineSize: 24, blockSize: 24, marginBlockStart: 1, flexShrink: 0, accentColor: 'var(--color-accent)' }}
                       />
                       <span>{t('confirm.consent')}</span>
                     </label>

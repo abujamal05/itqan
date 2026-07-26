@@ -167,5 +167,6 @@
   "courses.price": "السعر",
   "courses.filterFree": "المجانية فقط",
   "courses.filterShort": "أقل من 10 ساعات",
-  "courses.filterRecommended": "المقترحة"
+  "courses.filterRecommended": "المقترحة",
+  "upload.kindLabel": "ما نوع هذا المستند؟"
 }

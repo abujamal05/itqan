@@ -206,75 +206,80 @@ export function DocumentUpload({
         </div>
       )}
 
+      {/* Each row is stacked rather than three columns side by side. The kind
+          select needs about 12rem to show its longest option, which does not
+          fit beside a thumbnail and two buttons on a narrow phone: it used to
+          overflow its column and collide with the remove button. Identity on
+          top, controls beneath, one layout at every width. */}
       {items.length > 0 && (
         <ul className="docs">
           {items.map((i) => (
             <li key={i.localId} className="doc" data-status={i.status}>
-              <span className="doc__thumb">
-                {i.preview
-                  ? <img src={i.preview} alt={t('upload.previewOf', { name: i.name })} />
-                  : <FileText size={20} aria-hidden="true" />}
-              </span>
+              <div className="doc__head">
+                <span className="doc__thumb">
+                  {i.preview
+                    ? <img src={i.preview} alt={t('upload.previewOf', { name: i.name })} />
+                    : <FileText size={20} aria-hidden="true" />}
+                </span>
 
-              <div className="doc__body">
                 <p className="doc__name"><bdi>{i.name}</bdi></p>
 
-                <div className="doc__meta">
-                  <label className="sr-only" htmlFor={`kind-${i.localId}`}>
-                    {t('confirm.skills')}
-                  </label>
-                  <select
-                    id={`kind-${i.localId}`}
-                    className="select"
-                    value={i.kind}
-                    onChange={(e) => changeKind(i.localId, e.target.value as DocumentKind)}
-                  >
-                    {DOCUMENT_KINDS.map((k) => (
-                      <option key={k} value={k}>{t(`doc.${k}`)}</option>
-                    ))}
-                  </select>
-                  <span className="doc__size num">
-                    {formatNumber(Math.max(1, Math.round(i.sizeBytes / 1024)))} KB
-                  </span>
-                </div>
-
-                {i.status === 'uploading' && (
-                  <div className="doc__progress">
-                    <div className="meter"><i style={{ inlineSize: `${Math.round(i.progress * 100)}%` }} /></div>
-                    <span className="doc__status num">
-                      {t('upload.uploading')} {formatNumber(Math.round(i.progress * 100))}%
-                    </span>
-                  </div>
-                )}
-                {i.status === 'done' && (
-                  <span className="doc__status doc__status--ok">
-                    <Check size={14} aria-hidden="true" /> {t('upload.done')}
-                  </span>
-                )}
-                {i.status === 'error' && (
-                  <span className="doc__status doc__status--bad">
-                    <AlertCircle size={14} aria-hidden="true" /> {t('state.errorTitle')}
-                  </span>
-                )}
-              </div>
-
-              <div className="doc__actions">
-                {i.status === 'error' && i.file && (
+                <div className="doc__actions">
+                  {i.status === 'error' && i.file && (
+                    <button
+                      type="button" className="btn btn--secondary btn--icon"
+                      onClick={() => retry(i.localId)} aria-label={t('upload.retry')}
+                    >
+                      <RotateCw size={16} aria-hidden="true" />
+                    </button>
+                  )}
                   <button
                     type="button" className="btn btn--secondary btn--icon"
-                    onClick={() => retry(i.localId)} aria-label={t('upload.retry')}
+                    onClick={() => remove(i.localId)}
+                    aria-label={`${t('action.remove')}: ${i.name}`}
                   >
-                    <RotateCw size={16} aria-hidden="true" />
+                    <X size={16} aria-hidden="true" />
                   </button>
-                )}
-                <button
-                  type="button" className="btn btn--secondary btn--icon"
-                  onClick={() => remove(i.localId)}
-                  aria-label={`${t('action.remove')}: ${i.name}`}
-                >
-                  <X size={16} aria-hidden="true" />
-                </button>
+                </div>
               </div>
+
+              <div className="doc__meta">
+                <label className="sr-only" htmlFor={`kind-${i.localId}`}>
+                  {t('upload.kindLabel')}
+                </label>
+                <select
+                  id={`kind-${i.localId}`}
+                  className="select"
+                  value={i.kind}
+                  onChange={(e) => changeKind(i.localId, e.target.value as DocumentKind)}
+                >
+                  {DOCUMENT_KINDS.map((k) => (
+                    <option key={k} value={k}>{t(`doc.${k}`)}</option>
+                  ))}
+                </select>
+                <span className="doc__size num">
+                  {formatNumber(Math.max(1, Math.round(i.sizeBytes / 1024)))} KB
+                </span>
+              </div>
+
+              {i.status === 'uploading' && (
+                <div className="doc__progress">
+                  <div className="meter"><i style={{ inlineSize: `${Math.round(i.progress * 100)}%` }} /></div>
+                  <span className="doc__status num">
+                    {t('upload.uploading')} {formatNumber(Math.round(i.progress * 100))}%
+                  </span>
+                </div>
+              )}
+              {i.status === 'done' && (
+                <span className="doc__status doc__status--ok">
+                  <Check size={14} aria-hidden="true" /> {t('upload.done')}
+                </span>
+              )}
+              {i.status === 'error' && (
+                <span className="doc__status doc__status--bad">
+                  <AlertCircle size={14} aria-hidden="true" /> {t('state.errorTitle')}
+                </span>
+              )}
             </li>
           ))}
         </ul>

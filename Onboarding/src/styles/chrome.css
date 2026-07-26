@@ -104,31 +104,43 @@
 }
 
 /* ------------------------------------------------------------- DOCUMENTS -- */
+/* Stacked, not three columns. The kind select needs roughly 12rem to show its
+   longest option; beside a thumbnail and two buttons that does not fit on a
+   narrow phone, and it used to overflow its column and collide with the
+   remove button. Identity first, controls under it, one layout at every width. */
 .docs { display: flex; flex-direction: column; gap: var(--space-3); }
 .doc {
-  display: flex; align-items: flex-start; gap: var(--space-4);
+  display: flex; flex-direction: column; gap: var(--space-3);
   background: var(--color-surface); border: 1px solid var(--color-border);
   border-radius: var(--radius-md); padding: var(--space-4);
   animation: enter var(--duration-slow) var(--ease-out) both;
 }
 .doc[data-status='error'] { border-color: var(--color-danger); }
+
+.doc__head { display: flex; align-items: center; gap: var(--space-3); }
 .doc__thumb {
-  flex: 0 0 auto; inline-size: 48px; block-size: 48px; border-radius: var(--radius-sm);
+  flex: 0 0 auto; inline-size: 40px; block-size: 40px; border-radius: var(--radius-sm);
   background: var(--color-surface-sunken); display: grid; place-items: center;
   overflow: hidden; color: var(--color-text);
 }
 .doc__thumb img { inline-size: 100%; block-size: 100%; object-fit: cover; }
-.doc__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-2); }
 .doc__name {
+  flex: 1; min-inline-size: 0;                /* lets the ellipsis engage */
   font-weight: var(--weight-medium);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.doc__actions { display: flex; gap: var(--space-2); flex-shrink: 0; }
+
 .doc__meta { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+/* Takes the row when there is room and shrinks rather than overflowing when
+   there is not. min-inline-size:0 is the part that actually stops the spill:
+   a select will not shrink below its content width without it. */
+.doc__meta .select { flex: 1 1 12rem; min-inline-size: 0; max-inline-size: 100%; }
+
 .doc__size, .doc__status { font-size: var(--text-sm); }
 .doc__progress { display: flex; flex-direction: column; gap: var(--space-1); }
 .doc__status { display: inline-flex; align-items: center; gap: var(--space-2); }
 .doc__status--bad { color: var(--color-danger); }
-.doc__actions { display: flex; gap: var(--space-2); flex-shrink: 0; }
 
 .select {
   min-block-size: 44px; padding-block: var(--space-2); padding-inline: var(--space-3);
@@ -138,6 +150,21 @@
   transition: border-color var(--duration-fast) var(--ease-hover);
 }
 .select:hover { border-color: var(--color-border-strong); }
+
+/* ---------------------------------------------------------------- CONSENT -- */
+/* Never wraps. The generic .row helper wraps by design, which pushed this
+   label's sentence onto its own line and left the box floating above it.
+   The box holds its size; the sentence is the only thing that reflows. */
+.consent {
+  display: flex; align-items: flex-start; gap: var(--space-3);
+  flex-wrap: nowrap;
+  cursor: pointer; min-block-size: 44px; padding-block: var(--space-2);
+}
+.consent input {
+  flex: 0 0 auto; inline-size: 24px; block-size: 24px;
+  margin-block-start: 2px; accent-color: var(--color-accent);
+}
+.consent span { flex: 1; min-inline-size: 0; }
 
 /* ------------------------------------------------------------------ MENU -- */
 .menu { position: relative; }

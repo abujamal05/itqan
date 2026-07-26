@@ -167,5 +167,6 @@
   "courses.price": "Price",
   "courses.filterFree": "Free only",
   "courses.filterShort": "Under 10 hours",
-  "courses.filterRecommended": "Recommended"
+  "courses.filterRecommended": "Recommended",
+  "upload.kindLabel": "What kind of document is this?"
 }
