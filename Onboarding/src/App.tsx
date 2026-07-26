@@ -22,6 +22,7 @@ import { ThemeProvider } from './lib/theme';
 import { ApiProvider, useApi } from './state/api';
 import { AuthProvider, useAuth } from './state/auth';
 import { OnboardingProvider, useOnboarding } from './state/onboarding';
+import { siteLogin } from './lib/site';
 
 import { Upload } from './screens/Upload';
 import { Questions } from './screens/Questions';
@@ -49,7 +50,7 @@ function Booting() {
 function ToSiteLogin() {
   const { locale } = useI18n();
   useEffect(() => {
-    window.location.assign(`/${locale}/login/`);
+    window.location.assign(siteLogin(locale));
   }, [locale]);
   return <Booting />;
 }
@@ -116,8 +117,9 @@ export default function App() {
   return (
     <ThemeProvider>
       <I18nProvider>
-        {/* basename keeps the site at the root and this app under /app. */}
-        <BrowserRouter basename="/app">
+        {/* Follows Vite's base: /app in dev where the site owns the root, and
+            / in production where this app is its own deployment. */}
+        <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
           <ApiProvider>
             <AuthProvider>
               <FollowSessionLocale />

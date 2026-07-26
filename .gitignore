@@ -1,0 +1,15 @@
+# Dependencies are installed by Vercel on every build. Committing them is what
+# broke the deployments before, so they stay out of the repo permanently.
+node_modules/
+**/node_modules/
+
+# Local env files. Vercel holds the real values as project environment
+# variables; nothing secret belongs in the repo.
+.env
+.env.local
+.env.*.local
+
+# Build caches
+.vercel/
+**/.astro/
+**/*.tsbuildinfo

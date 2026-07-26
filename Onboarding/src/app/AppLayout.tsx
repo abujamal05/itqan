@@ -24,6 +24,7 @@ import { useAuth } from '../state/auth';
 import { Logo } from '../components/Logo';
 import { LangToggle, ThemeToggle } from '../components/Controls';
 import { Menu, MenuItem } from '../components/Menu';
+import { siteHome, siteLogin } from '../lib/site';
 
 /**
  * Order is the user's journey, not the data model: see where you stand, then
@@ -64,7 +65,7 @@ function AccountMenu() {
             <p className="menu__headMail"><bdi>{user.email}</bdi></p>
           </div>
           {/* A real navigation, not a route: the site is the other half. */}
-          <a className="menu__item" role="menuitem" href={`/${locale}/`} onClick={close}>
+          <a className="menu__item" role="menuitem" href={siteHome(locale)} onClick={close}>
             <ExternalLink size={16} aria-hidden="true" />
             {t('nav.site')}
           </a>
@@ -73,7 +74,7 @@ function AccountMenu() {
             onSelect={async () => {
               close();
               await logout();
-              window.location.assign(`/${locale}/login/`);
+              window.location.assign(siteLogin(locale));
             }}
           >
             <LogOut size={16} aria-hidden="true" />

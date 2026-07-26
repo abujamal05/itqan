@@ -15,6 +15,7 @@ import type {
   AnalysisJob, ConfirmedProfile, Course, DashboardData, ItqanApi, JobMatch,
   OnboardingProgress, Session, UploadedDocument,
 } from './types';
+import { takeHandoffToken } from '../lib/site';
 
 const BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '/api';
 
@@ -41,10 +42,18 @@ async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 export function createHttpApi(): ItqanApi {
   return {
-    /** Reads the session the site established. Null means "not signed in". */
+    /**
+     * Reads the session the site established. Null means "not signed in".
+     *
+     * On the first load after signing in on the site, the URL carries a
+     * short-lived handoff token; it is passed here so the exchange and the
+     * "who am I" both happen in one request, leaving no window where the app
+     * is loaded but not yet authenticated.
+     */
     async session() {
+      const handoff = takeHandoffToken();
       try {
-        return await req<Session>('/session');
+        return await req<Session>(handoff ? `/session?t=${encodeURIComponent(handoff)}` : '/session');
       } catch {
         return null;
       }

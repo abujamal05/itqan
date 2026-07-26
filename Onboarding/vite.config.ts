@@ -17,7 +17,13 @@ import { itqanSite } from './dev/site-plugin.js';
  * `base` is /app/ so the site keeps the root, which is where its links,
  * canonical URLs and hreflang tags already point.
  */
-export default defineConfig({
-  base: '/app/',
+export default defineConfig(({ command }) => ({
+  /**
+   * Dev serves the site at / and this app under /app/ on one origin, so the
+   * app needs that prefix. In production the app is its own Vercel project on
+   * its own domain and owns the root — keeping /app/ there is what made every
+   * asset 404 and the page render blank.
+   */
+  base: command === 'serve' ? '/app/' : '/',
   plugins: [react(), itqanSite()],
-});
+}));

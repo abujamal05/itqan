@@ -14,6 +14,7 @@ import { LangToggle, ThemeToggle } from './Controls';
 import { Steps } from './Steps';
 import type { StepIndex } from './Steps';
 import { useI18n } from '../i18n';
+import { siteHome } from '../lib/site';
 
 export function SiteHeader({ step }: { step?: StepIndex }) {
   const { t, locale } = useI18n();
@@ -21,7 +22,7 @@ export function SiteHeader({ step }: { step?: StepIndex }) {
     <header className="topbar">
       {/* A plain anchor, not a router Link: the mark leads to the marketing
           site, which is a different app on the same origin. */}
-      <a className="brand" href={`/${locale}/`} aria-label={t('brand.name')}>
+      <a className="brand" href={siteHome(locale)} aria-label={t('brand.name')}>
         <span className="brand__lockup"><Logo variant="lockup" /></span>
         <span className="brand__icon"><Logo variant="icon" /></span>
       </a>

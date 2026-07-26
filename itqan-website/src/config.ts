@@ -11,8 +11,11 @@ export const formEndpoints = {
 export const siteUrl = 'https://itqan.example';
 
 /**
- * Where a successful sign up or log in lands. The product app is served from
- * /app on this same origin, so the session cookie set by the endpoints above
- * is readable there and the user never leaves the product.
+ * Where a successful sign up or log in lands.
+ *
+ * This points at an endpoint on THIS origin, not at the app, because the app
+ * is a separate deployment on a different domain and cannot read a cookie set
+ * here. /api/handoff reads the session, signs a short-lived token, and
+ * redirects to the app with it. The user sees one hop and stays signed in.
  */
-export const appUrl = '/app/';
+export const appUrl = '/api/handoff';
