@@ -1,0 +1,112 @@
+---
+import { t, isLocale, defaultLocale, alternatePath, type Locale } from '../i18n';
+
+const locale: Locale = isLocale(Astro.currentLocale) ? Astro.currentLocale : defaultLocale;
+const strings = t(locale);
+const arHref = alternatePath(Astro.url.pathname, 'ar');
+const enHref = alternatePath(Astro.url.pathname, 'en');
+---
+
+<!-- Segmented control: both languages shown, active one highlighted. The thumb
+     carries a view-transition-name so it glides between the two on navigation
+     (in browsers with cross-document view transitions), which is what makes the
+     switch feel smooth instead of a hard reload. -->
+<div class="lang-switch" role="group" aria-label={strings.a11y.langSwitch} data-active={locale}>
+  <span class="lang-switch__thumb" aria-hidden="true"></span>
+  <a
+    class="lang-switch__opt"
+    href={arHref}
+    hreflang="ar"
+    lang="ar"
+    data-lang="ar"
+    aria-current={locale === 'ar' ? 'true' : undefined}
+  >
+    {strings.a11y.langNameAr}
+  </a>
+  <a
+    class="lang-switch__opt"
+    href={enHref}
+    hreflang="en"
+    lang="en"
+    data-lang="en"
+    aria-current={locale === 'en' ? 'true' : undefined}
+  >
+    {strings.a11y.langNameEn}
+  </a>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLAnchorElement>('.lang-switch__opt').forEach((opt) => {
+    opt.addEventListener('click', () => {
+      try {
+        localStorage.setItem('itqan-lang', opt.dataset.lang ?? '');
+      } catch (e) {
+        /* private mode: navigation still works */
+      }
+    });
+  });
+</script>
+
+<style>
+  .lang-switch {
+    position: relative;
+    display: inline-grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: stretch;
+    gap: var(--space-1);
+    padding: 3px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-surface-sunken);
+    border: 1px solid var(--color-border);
+  }
+
+  .lang-switch__thumb {
+    position: absolute;
+    z-index: 0;
+    inset-block: 3px;
+    inline-size: calc(50% - 3px);
+    inset-inline-start: 3px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-surface);
+    box-shadow: var(--shadow-sm);
+    transition: inset-inline-start var(--duration-base) var(--ease-in-out);
+    view-transition-name: lang-thumb;
+  }
+
+  .lang-switch[data-active='en'] .lang-switch__thumb {
+    inset-inline-start: 50%;
+  }
+
+  .lang-switch__opt {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding-inline: var(--space-3);
+    border-radius: var(--radius-full);
+    text-decoration: none;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    transition: color var(--duration-fast) var(--ease-hover);
+  }
+
+  .lang-switch__opt[aria-current='true'] {
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+  }
+
+  .lang-switch__opt:not([aria-current='true']):hover {
+    color: var(--color-text);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lang-switch__thumb {
+      transition: none;
+      view-transition-name: none;
+    }
+  }
+</style>

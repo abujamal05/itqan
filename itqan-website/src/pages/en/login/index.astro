@@ -1,0 +1,11 @@
+---
+import Base from '../../../layouts/Base.astro';
+import LoginPage from '../../../components/pages/LoginPage.astro';
+import { t } from '../../../i18n';
+
+const s = t('en');
+---
+
+<Base title={`${s.login.title} | ${s.site.name}`} description={s.login.metaDescription}>
+  <LoginPage locale="en" />
+</Base>

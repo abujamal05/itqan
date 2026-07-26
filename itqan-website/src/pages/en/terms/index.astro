@@ -1,0 +1,11 @@
+---
+import Base from '../../../layouts/Base.astro';
+import TermsPage from '../../../components/pages/TermsPage.astro';
+import { t } from '../../../i18n';
+
+const s = t('en');
+---
+
+<Base title={`${s.terms.title} | ${s.site.name}`} description={s.terms.metaDescription}>
+  <TermsPage locale="en" />
+</Base>

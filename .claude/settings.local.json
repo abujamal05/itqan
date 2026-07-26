@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(py --version)",
+      "Bash(python -c ' *)",
+      "Bash(pip install *)",
+      "Bash(npm install*)",
+      "Bash(npm run build*)",
+      "Bash(npm run dev*)",
+      "Bash(npm run preview*)",
+      "Bash(npx astro build*)",
+      "Bash(npx astro check*)",
+      "Bash(python scripts/audit.py*)",
+      "Bash(python -m*)",
+      "Bash(node -e *)",
+      "Bash(node scripts/*)"
+    ]
+  }
+}

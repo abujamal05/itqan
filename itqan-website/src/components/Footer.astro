@@ -1,0 +1,134 @@
+---
+import { t, isLocale, defaultLocale, type Locale } from '../i18n';
+
+const locale: Locale = isLocale(Astro.currentLocale) ? Astro.currentLocale : defaultLocale;
+const strings = t(locale);
+const base = `/${locale}`;
+
+const links = [
+  { href: `${base}/how-it-works/`, label: strings.nav.howItWorks },
+  { href: `${base}/proof/`, label: strings.nav.proof },
+  { href: `${base}/signup/`, label: strings.actions.signup },
+  { href: `${base}/login/`, label: strings.actions.login },
+  { href: `${base}/privacy/`, label: strings.footer.privacy },
+  { href: `${base}/terms/`, label: strings.footer.terms },
+];
+---
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <img
+        class="footer-mark footer-mark--light"
+        src="/logos/lockup-horizontal.webp"
+        alt={strings.site.name}
+        width="480"
+        height="311"
+      />
+      <img
+        class="footer-mark footer-mark--dark"
+        src="/logos/lockup-horizontal-reversed.webp"
+        alt={strings.site.name}
+        width="480"
+        height="311"
+      />
+      <p class="footer-tagline">{strings.footer.tagline}</p>
+    </div>
+
+    <nav aria-label={strings.a11y.footerNav}>
+      <ul class="footer-links">
+        {
+          links.map((link) => (
+            <li>
+              <a href={link.href}>{link.label}</a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+  </div>
+
+  <div class="container footer-legal">
+    <p>{strings.footer.rights}</p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    margin-block-start: var(--space-20);
+    border-block-start: 1px solid var(--color-border);
+    background-color: var(--color-surface-sunken);
+    padding-block: var(--space-12) var(--space-8);
+  }
+
+  .footer-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--space-8);
+  }
+
+  /* Lockup at 168px wide respects the 140px minimum and its clear space. */
+  .footer-mark {
+    width: 168px;
+    height: auto;
+  }
+
+  .footer-mark--dark {
+    display: none;
+  }
+
+  :global([data-theme='dark']) .footer-mark--light {
+    display: none;
+  }
+
+  :global([data-theme='dark']) .footer-mark--dark {
+    display: block;
+  }
+
+  .footer-tagline {
+    margin-block-start: var(--space-4);
+    max-width: 32ch;
+    color: var(--color-text-muted);
+  }
+
+  .footer-links {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2) var(--space-8);
+  }
+
+  .footer-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    text-decoration: none;
+  }
+
+  .footer-links a:hover {
+    text-decoration: underline;
+    text-decoration-color: var(--color-accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.3em;
+  }
+
+  .footer-legal {
+    margin-block-start: var(--space-8);
+    padding-block-start: var(--space-6);
+    border-block-start: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+
+  /* Narrow phones: stack the brand and the links as clearly separated groups. */
+  @media (max-width: 39.99rem) {
+    .footer-grid {
+      flex-direction: column;
+      gap: var(--space-10);
+    }
+  }
+</style>

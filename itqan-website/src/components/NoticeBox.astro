@@ -1,0 +1,47 @@
+---
+/** Visible notice for content that is deliberately not final:
+    lawyer placeholders, stubs, drafts. */
+---
+
+<div class="notice-box" role="note">
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="9"></circle>
+    <path d="M12 8v5"></path>
+    <circle cx="12" cy="16.5" r="0.5" fill="currentColor"></circle>
+  </svg>
+  <div class="notice-box__body">
+    <slot />
+  </div>
+</div>
+
+<style>
+  .notice-box {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    background-color: var(--color-surface-sunken);
+    border: 1px dashed var(--color-border-strong);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+  }
+
+  .notice-box svg {
+    flex: 0 0 auto;
+    margin-block-start: 2px;
+    color: var(--color-text-muted);
+  }
+
+  .notice-box__body {
+    font-weight: var(--weight-medium);
+  }
+</style>

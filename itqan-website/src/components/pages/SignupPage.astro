@@ -1,0 +1,172 @@
+---
+import Hud from '../Hud.astro';
+import { t, type Locale } from '../../i18n';
+import { formEndpoints, appUrl } from '../../config';
+import '../../styles/forms.css';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const s = t(locale);
+const base = `/${locale}`;
+---
+
+<div class="container auth">
+  <div class="auth__main">
+    <p class="eyebrow">{s.signup.eyebrow}</p>
+    <h1>{s.signup.heading}</h1>
+    <p class="auth__sub">{s.signup.sub}</p>
+
+    <form
+      class="form-card"
+      method="post"
+      action={formEndpoints.signup}
+      novalidate
+      data-server-error={s.signup.serverError}
+      data-success-url={appUrl}
+    >
+      <div class="form-summary" role="alert" tabindex="-1" hidden>
+        <Hud pose="error" size="sm" />
+        <div>
+          <p class="form-summary__heading">{s.signup.summaryHeading}</p>
+          <ul class="form-summary__list"></ul>
+        </div>
+      </div>
+
+      <div class="field" data-msg-required={s.signup.name.error}>
+        <label for="su-name">{s.signup.name.label}</label>
+        <div class="field__control">
+          <input id="su-name" name="name" type="text" autocomplete="name" dir="auto" required aria-describedby="su-name-error" />
+          <span class="field__check" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"></path></svg>
+          </span>
+        </div>
+        <p class="field__error" id="su-name-error" hidden>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.5" r="0.5" fill="currentColor"></circle></svg>
+          <span class="field__error-text"></span>
+        </p>
+      </div>
+
+      <div class="field" data-msg-required={s.signup.email.errorRequired} data-msg-format={s.signup.email.errorFormat}>
+        <label for="su-email">{s.signup.email.label}</label>
+        <div class="field__control">
+          <input id="su-email" name="email" type="email" autocomplete="email" dir="ltr" required aria-describedby="su-email-error" />
+          <span class="field__check" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"></path></svg>
+          </span>
+        </div>
+        <p class="field__error" id="su-email-error" hidden>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.5" r="0.5" fill="currentColor"></circle></svg>
+          <span class="field__error-text"></span>
+        </p>
+      </div>
+
+      <div class="field" data-msg-required={s.signup.password.error} data-msg-minlength={s.signup.password.error}>
+        <label for="su-password">{s.signup.password.label}</label>
+        <span class="field__hint" id="su-password-hint">{s.signup.password.hint}</span>
+        <div class="field__control">
+          <input id="su-password" name="password" type="password" autocomplete="new-password" dir="ltr" required minlength="8" aria-describedby="su-password-hint su-password-error" />
+          <span class="field__check" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"></path></svg>
+          </span>
+        </div>
+        <p class="field__error" id="su-password-error" hidden>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.5" r="0.5" fill="currentColor"></circle></svg>
+          <span class="field__error-text"></span>
+        </p>
+      </div>
+
+      <!-- Consent: required, unticked by default. Explicit consent is the only
+           lawful basis available here; a pre ticked box is not consent. -->
+      <div class="field field--checkbox" data-msg-required={s.signup.consent.error}>
+        <div class="field__checkbox-row">
+          <input id="su-consent" name="consent" type="checkbox" required aria-describedby="su-consent-error" />
+          <label for="su-consent">
+            {s.signup.consent.labelBefore}<a href={`${base}/privacy/`}>{s.signup.consent.linkText}</a>{s.signup.consent.labelAfter}
+          </label>
+        </div>
+        <p class="field__error" id="su-consent-error" hidden>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.5" r="0.5" fill="currentColor"></circle></svg>
+          <span class="field__error-text"></span>
+        </p>
+      </div>
+
+      <button class="button button--primary form-submit" type="submit" data-submitting={s.signup.submitting}>
+        <span class="spinner" aria-hidden="true"></span>
+        <span class="form-submit__label">{s.signup.submit}</span>
+      </button>
+    </form>
+
+    <p class="auth__alt">
+      {s.signup.haveAccount}
+      <a href={`${base}/login/`}>{s.signup.loginLink}</a>
+    </p>
+  </div>
+
+  <!-- Hud waves, positioned away from the form itself. -->
+  <div class="auth__aside">
+    <Hud pose="waving" size="md" />
+  </div>
+</div>
+
+<script>
+  import { initForm } from '../../scripts/form';
+  document
+    .querySelectorAll<HTMLFormElement>('form.form-card')
+    .forEach((form) => initForm(form));
+</script>
+
+<style>
+  .auth {
+    display: flex;
+    gap: var(--space-16);
+    align-items: flex-start;
+    padding-block: var(--space-16);
+  }
+
+  .auth__main {
+    flex: 0 1 30rem;
+  }
+
+  .auth__main h1 {
+    margin-block-start: var(--space-3);
+    font-size: var(--text-4xl);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-tight);
+  }
+
+  .auth__sub {
+    margin-block: var(--space-3) var(--space-8);
+    color: var(--color-text-muted);
+  }
+
+  .auth__alt {
+    margin-block-start: var(--space-6);
+    color: var(--color-text-muted);
+  }
+
+  .auth__aside {
+    flex: 0 0 auto;
+    margin-block-start: var(--space-16);
+  }
+
+  @media (max-width: 51.99rem) {
+    .auth {
+      flex-direction: column;
+      padding-block: var(--space-10);
+      gap: var(--space-8);
+    }
+
+    .auth__main {
+      flex-basis: auto;
+      inline-size: 100%;
+    }
+
+    .auth__aside {
+      margin-block-start: 0;
+      align-self: center;
+    }
+  }
+</style>

@@ -1,0 +1,147 @@
+---
+/**
+ * One static 404 serves every missing path. It stays in whichever language
+ * the visitor was reading: the failed URL's locale prefix decides, falling
+ * back to the stored language choice, then Arabic.
+ */
+import '../styles/tokens.css';
+import '../styles/global.css';
+import Hud from '../components/Hud.astro';
+import { t } from '../i18n';
+
+const ar = t('ar');
+const en = t('en');
+---
+
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{ar.notfound.title}</title>
+    <meta name="robots" content="noindex" />
+    <meta name="itqan-titles" data-ar={ar.notfound.title} data-en={en.notfound.title} />
+    <script is:inline>
+      (function () {
+        var stored = null;
+        try {
+          stored = localStorage.getItem('itqan-theme');
+        } catch (e) {}
+        var media = window.matchMedia('(prefers-color-scheme: dark)');
+        document.documentElement.dataset.theme =
+          stored || (media.matches ? 'dark' : 'light');
+
+        var lang = 'ar';
+        if (location.pathname === '/en' || location.pathname.indexOf('/en/') === 0) {
+          lang = 'en';
+        } else if (location.pathname !== '/ar' && location.pathname.indexOf('/ar/') !== 0) {
+          try {
+            if (localStorage.getItem('itqan-lang') === 'en') lang = 'en';
+          } catch (e) {}
+        }
+        document.documentElement.lang = lang;
+        document.documentElement.dir = lang === 'en' ? 'ltr' : 'rtl';
+        document.documentElement.dataset.notfoundLang = lang;
+        var titles = document.querySelector('meta[name="itqan-titles"]');
+        if (titles && titles.dataset[lang]) document.title = titles.dataset[lang];
+      })();
+    </script>
+  </head>
+  <body>
+    <main class="notfound">
+      <div class="notfound__inner" data-lang="ar" lang="ar" dir="rtl">
+        <a class="notfound__brand" href="/ar/" aria-label={ar.a11y.homeLink}>
+          <img class="notfound__mark notfound__mark--light" src="/logos/lockup-horizontal.webp" alt="" width="480" height="311" />
+          <img class="notfound__mark notfound__mark--dark" src="/logos/lockup-horizontal-reversed.webp" alt="" width="480" height="311" />
+        </a>
+        <Hud pose="error" size="md" />
+        <h1>{ar.notfound.heading}</h1>
+        <p>{ar.notfound.body}</p>
+        <nav class="notfound__links">
+          <a class="button button--primary" href="/ar/">{ar.notfound.homeLink}</a>
+          <a class="button button--secondary" href="/ar/how-it-works/">{ar.notfound.hiwLink}</a>
+        </nav>
+      </div>
+
+      <div class="notfound__inner" data-lang="en" lang="en" dir="ltr">
+        <a class="notfound__brand" href="/en/" aria-label={en.a11y.homeLink}>
+          <img class="notfound__mark notfound__mark--light" src="/logos/lockup-horizontal.webp" alt="" width="480" height="311" />
+          <img class="notfound__mark notfound__mark--dark" src="/logos/lockup-horizontal-reversed.webp" alt="" width="480" height="311" />
+        </a>
+        <Hud pose="error" size="md" />
+        <h1>{en.notfound.heading}</h1>
+        <p>{en.notfound.body}</p>
+        <nav class="notfound__links">
+          <a class="button button--primary" href="/en/">{en.notfound.homeLink}</a>
+          <a class="button button--secondary" href="/en/how-it-works/">{en.notfound.hiwLink}</a>
+        </nav>
+      </div>
+    </main>
+  </body>
+</html>
+
+<style>
+  .notfound {
+    min-block-size: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-8);
+  }
+
+  .notfound__inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--space-6);
+    max-inline-size: 32rem;
+  }
+
+  /* Arabic shows by default (also the no JS fallback). The inline script
+     flips the flag before first paint, so there is no flash. */
+  .notfound__inner[data-lang='en'] {
+    display: none;
+  }
+
+  :global(html[data-notfound-lang='en']) .notfound__inner[data-lang='ar'] {
+    display: none;
+  }
+
+  :global(html[data-notfound-lang='en']) .notfound__inner[data-lang='en'] {
+    display: flex;
+  }
+
+  .notfound__mark {
+    inline-size: 140px;
+    block-size: auto;
+  }
+
+  .notfound__mark--dark {
+    display: none;
+  }
+
+  :global([data-theme='dark']) .notfound__mark--light {
+    display: none;
+  }
+
+  :global([data-theme='dark']) .notfound__mark--dark {
+    display: block;
+  }
+
+  .notfound h1 {
+    font-size: var(--text-3xl);
+    font-weight: var(--weight-bold);
+  }
+
+  .notfound p {
+    color: var(--color-text-muted);
+  }
+
+  .notfound__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    justify-content: center;
+  }
+</style>

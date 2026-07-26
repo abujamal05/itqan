@@ -1,0 +1,309 @@
+---
+import ThemeToggle from './ThemeToggle.astro';
+import LangToggle from './LangToggle.astro';
+import { t, isLocale, defaultLocale, type Locale } from '../i18n';
+
+const locale: Locale = isLocale(Astro.currentLocale) ? Astro.currentLocale : defaultLocale;
+const strings = t(locale);
+const base = `/${locale}`;
+const path = Astro.url.pathname;
+
+const links = [
+  { href: `${base}/how-it-works/`, label: strings.nav.howItWorks },
+  { href: `${base}/proof/`, label: strings.nav.proof },
+];
+
+const isCurrent = (href: string) => path === href || path === href.replace(/\/$/, '');
+---
+
+<header class="site-header">
+  <div class="container header-row">
+    <!-- Icon-only mark: compact, and it swaps for dark surfaces (brand rule). -->
+    <a class="brand" href={`${base}/`} aria-label={strings.a11y.homeLink}>
+      <img class="brand-mark brand-mark--light" src="/logos/icon.webp" alt="" width="128" height="141" />
+      <img class="brand-mark brand-mark--dark" src="/logos/icon-reversed.webp" alt="" width="128" height="141" />
+    </a>
+
+    <nav class="site-nav" id="site-nav" aria-label={strings.a11y.mainNav} data-open="false">
+      <ul class="site-nav__list">
+        {
+          links.map((link) => (
+            <li>
+              <a
+                class="site-nav__link"
+                href={link.href}
+                aria-current={isCurrent(link.href) ? 'page' : undefined}
+              >
+                <span>{link.label}</span>
+              </a>
+            </li>
+          ))
+        }
+        <!-- Auth actions live in the menu on mobile; on desktop they move to the
+             tools cluster on the right (see .header-tools below). -->
+        <li class="site-nav__auth">
+          <a class="button button--ghost" href={`${base}/login/`}>{strings.actions.login}</a>
+        </li>
+        <li class="site-nav__auth">
+          <a class="button button--primary button--arrow" href={`${base}/signup/`}>
+            <span>{strings.actions.register}</span>
+            <svg class="button__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 12h14m-6-6 6 6-6 6"></path>
+            </svg>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="header-tools">
+      <LangToggle />
+      <ThemeToggle />
+      <!-- Divider groups utility toggles apart from the account actions. -->
+      <span class="header-divider" aria-hidden="true"></span>
+      <!-- Auth buttons, after the toggles, on desktop only. -->
+      <a class="button button--ghost header-auth" href={`${base}/login/`}>{strings.actions.login}</a>
+      <a class="button button--primary button--arrow header-auth" href={`${base}/signup/`}>
+        <span>{strings.actions.register}</span>
+        <svg class="button__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12h14m-6-6 6 6-6 6"></path>
+        </svg>
+      </a>
+      <button
+        class="icon-button menu-button"
+        type="button"
+        aria-expanded="false"
+        aria-controls="site-nav"
+        data-label-open={strings.a11y.menuOpen}
+        data-label-close={strings.a11y.menuClose}
+        aria-label={strings.a11y.menuOpen}
+      >
+        <svg class="menu-button__open" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16"></path>
+        </svg>
+        <svg class="menu-button__close" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<script>
+  const header = document.querySelector('.site-header');
+  const button = header?.querySelector<HTMLButtonElement>('.menu-button');
+  const nav = header?.querySelector<HTMLElement>('.site-nav');
+
+  if (button && nav) {
+    const setOpen = (open: boolean) => {
+      nav.dataset.open = String(open);
+      button.setAttribute('aria-expanded', String(open));
+      const label = open ? button.dataset.labelClose : button.dataset.labelOpen;
+      if (label) button.setAttribute('aria-label', label);
+    };
+
+    button.addEventListener('click', () => {
+      setOpen(nav.dataset.open !== 'true');
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && nav.dataset.open === 'true') {
+        setOpen(false);
+        button.focus();
+      }
+    });
+  }
+</script>
+
+<style>
+  .site-header {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: var(--z-sticky);
+    background-color: color-mix(in srgb, var(--color-bg) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-block-end: 1px solid var(--color-border);
+    view-transition-name: site-header;
+  }
+
+  .header-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding-block: var(--space-3);
+  }
+
+  /* Icon mark. Clear space for the icon is 20% of its height; padding covers it. */
+  .brand {
+    display: inline-flex;
+    padding: var(--space-1);
+    margin-inline-start: calc(-1 * var(--space-1));
+    border-radius: var(--radius-sm);
+    transition: transform var(--duration-fast) var(--ease-out);
+  }
+
+  .brand:hover {
+    transform: translateY(-1px);
+  }
+
+  .brand-mark {
+    width: 40px;
+    height: auto;
+  }
+
+  .brand-mark--dark {
+    display: none;
+  }
+
+  :global([data-theme='dark']) .brand-mark--light {
+    display: none;
+  }
+
+  :global([data-theme='dark']) .brand-mark--dark {
+    display: block;
+  }
+
+  /* Primary links sit next to the logo; the tools cluster is pushed to the end. */
+  .site-nav {
+    margin-inline-end: auto;
+  }
+
+  .site-nav__list {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .site-nav__link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    font-weight: var(--weight-medium);
+    color: var(--color-text);
+  }
+
+  /* Animated underline that grows from the inline-start edge on hover/current. */
+  .site-nav__link > span {
+    position: relative;
+  }
+
+  .site-nav__link > span::after {
+    content: '';
+    position: absolute;
+    inset-inline-start: 0;
+    inset-block-end: -4px;
+    inline-size: 100%;
+    block-size: 2px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-accent);
+    transform: scaleX(0);
+    transform-origin: inline-start;
+    transition: transform var(--duration-base) var(--ease-out);
+  }
+
+  .site-nav__link:hover > span::after,
+  .site-nav__link[aria-current='page'] > span::after {
+    transform: scaleX(1);
+  }
+
+  /* The auth items inside the nav are the mobile-menu copies; hidden on desktop. */
+  .site-nav__auth {
+    display: none;
+  }
+
+  .header-tools {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .header-divider {
+    inline-size: 1px;
+    block-size: var(--space-6);
+    background-color: var(--color-border);
+    margin-inline: var(--space-1);
+  }
+
+  .header-auth {
+    min-height: 40px;
+    padding-block: var(--space-2);
+  }
+
+  /* Arrow nudge + RTL mirroring for .button--arrow now lives in global.css so
+     it applies to every component's CTA arrow, not only the header. */
+
+  .menu-button {
+    display: none;
+  }
+
+  .menu-button__close {
+    display: none;
+  }
+
+  .menu-button[aria-expanded='true'] .menu-button__open {
+    display: none;
+  }
+
+  .menu-button[aria-expanded='true'] .menu-button__close {
+    display: block;
+  }
+
+  /* ---- Mobile: collapse links + auth into the menu; keep tools visible ---- */
+  @media (max-width: 51.99rem) {
+    .menu-button {
+      display: inline-flex;
+    }
+
+    .header-auth,
+    .header-divider {
+      display: none;
+    }
+
+    .site-nav {
+      position: absolute;
+      inset-inline: 0;
+      inset-block-start: 100%;
+      z-index: var(--z-dropdown);
+      margin-inline-end: 0;
+      background-color: var(--color-surface);
+      border-block-end: 1px solid var(--color-border);
+      box-shadow: var(--shadow-md);
+      display: none;
+    }
+
+    .site-nav[data-open='true'] {
+      display: block;
+    }
+
+    .site-nav__list {
+      flex-direction: column;
+      align-items: stretch;
+      padding: var(--space-4);
+      gap: var(--space-1);
+    }
+
+    .site-nav__link {
+      width: 100%;
+    }
+
+    .site-nav__auth {
+      display: block;
+    }
+
+    .site-nav__auth:first-of-type {
+      margin-block-start: var(--space-3);
+      padding-block-start: var(--space-3);
+      border-block-start: 1px solid var(--color-border);
+    }
+
+    .site-nav__auth .button {
+      width: 100%;
+    }
+  }
+</style>

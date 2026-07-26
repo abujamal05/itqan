@@ -1,0 +1,76 @@
+---
+import NoticeBox from '../NoticeBox.astro';
+import { t, type Locale } from '../../i18n';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const s = t(locale);
+---
+
+<div class="container legal">
+  <header class="page-head reveal">
+    <p class="eyebrow">{s.terms.eyebrow}</p>
+    <h1>{s.terms.heading}</h1>
+    <div class="page-head__rule" aria-hidden="true"></div>
+  </header>
+
+  <NoticeBox>
+    <p>{s.terms.notice}</p>
+  </NoticeBox>
+
+  <p class="legal__body">{s.terms.body}</p>
+</div>
+
+<style>
+  .legal {
+    max-inline-size: 44rem;
+    padding-block-end: var(--space-20);
+  }
+
+  .page-head {
+    padding-block: var(--space-20) var(--space-10);
+  }
+
+  .page-head h1 {
+    margin-block-start: var(--space-4);
+    font-size: var(--text-5xl);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-tight);
+  }
+
+  .page-head__rule {
+    margin-block-start: var(--space-6);
+    inline-size: var(--space-16);
+    block-size: 4px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-accent);
+    transform: scaleX(1);
+    transform-origin: 0 50%;
+    transition: transform var(--duration-slower) var(--ease-out);
+  }
+
+  :global([dir='rtl']) .page-head__rule {
+    transform-origin: 100% 50%;
+  }
+
+  :global(html.reveal-ready) .page-head.reveal:not(.is-visible) .page-head__rule {
+    transform: scaleX(0);
+  }
+
+  @media (max-width: 51.99rem) {
+    .page-head {
+      padding-block: var(--space-12) var(--space-8);
+    }
+    .page-head h1 {
+      font-size: var(--text-4xl);
+    }
+  }
+
+  .legal__body {
+    margin-block-start: var(--space-8);
+    font-size: var(--text-lg);
+  }
+</style>

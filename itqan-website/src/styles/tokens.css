@@ -1,0 +1,198 @@
+/* ============================================================================
+   ITQAN DESIGN TOKENS  —  single source of truth for all values
+   Architecture: three tiers (W3C DTCG convention)
+     1. PRIMITIVE  — raw values, no meaning. Never referenced by components.
+     2. SEMANTIC   — meaning mapped onto primitives. Components use ONLY these.
+     3. COMPONENT  — per-component overrides, used sparingly.
+   Dark mode is a SEMANTIC-LAYER SWAP: primitives never change, only the
+   semantic references flip. This is why theming is a token swap, not a rewrite.
+   ============================================================================ */
+
+:root {
+  /* ---- TIER 1: PRIMITIVES (the five brand values + derived ramp) ---------- */
+  /* Brand five (LOCKED) */
+  --paper:  #FAF8F3;   /* off-white */
+  --sand:   #EEE6D8;   /* warm neutral */
+  --gold:   #D08C2F;   /* brand gold */
+  --maroon: #820000;   /* deep red */
+  --navy:   #071055;   /* brand ink */
+
+  /* Navy ramp (derived — dark-mode surfaces + text tints) */
+  --navy-950: #05091F;
+  --navy-900: #060C2B;
+  --navy-800: #0B1440;
+  --navy-700: #14205C;
+  --navy-600: #202C74;
+  --navy-500: #071055;   /* = brand navy, the anchor */
+  --navy-300: #6B72A6;
+  --navy-200: #A9AEC9;
+  --navy-100: #D6D8E6;
+
+  /* Gold ramp (derived — states + dark-mode accent) */
+  --gold-600: #B07421;    /* pressed / darker gold */
+  --gold-500: #D08C2F;    /* = brand gold */
+  --gold-400: #E0A24A;    /* hover on dark / lift */
+  --gold-100: #F4E4CB;    /* tint fill on light */
+
+  /* Functional state primitives (NOT brand — never decorative) */
+  --red-500:   #820000;   /* danger = maroon */
+  --red-400:   #B5322E;   /* danger, dark-mode legible */
+  --amber-500: #D08C2F;   /* warning = gold (reuse) */
+  /* NOTE: no "success/valid" hue exists in the brand. --green-* below is a
+     PROPOSAL pending your approval — functional only, never decorative.
+     If you reject it, success states must rely on icon+label, not colour. */
+  --green-600: #1F6B4A;
+  --green-500: #2E8A5F;
+
+  /* ---- TIER 2: SEMANTIC (components reference ONLY these) ----------------- */
+  /* Surfaces */
+  --color-bg:            var(--paper);   /* app canvas */
+  --color-surface:       #FFFFFF;        /* raised cards on paper */
+  --color-surface-sunken:var(--sand);    /* wells, secondary panels */
+  --color-border:        #E4DDCF;        /* hairlines on light */
+  --color-border-strong: var(--navy-100);
+
+  /* Text (LOCKED RULE: body text is navy; gold is never body text on light) */
+  --color-text:          var(--navy);    /* primary */
+  --color-text-muted:    var(--navy-300);/* secondary */
+  --color-text-on-gold:  var(--navy);    /* text on a gold fill = navy, always */
+  --color-text-on-navy:  var(--paper);   /* text on a navy fill */
+  --color-text-inverse:  var(--paper);
+
+  /* Brand / accent / state (gold = fill, accent, state — not text on light) */
+  --color-accent:        var(--gold);
+  --color-accent-hover:  #B87826;
+  --color-accent-tint:   var(--gold-100);
+  --color-focus:         var(--navy);    /* focus ring, see components */
+
+  --color-danger:        var(--red-500);
+  --color-danger-tint:   #F6E1E1;
+  --color-warning:       var(--amber-500);
+  --color-success:       var(--green-500);   /* PROPOSAL — see primitive note */
+  --color-info:          var(--navy-600);
+
+  /* ---- TIER 1b: SPACING (4pt base) --------------------------------------- */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* ---- TYPOGRAPHY --------------------------------------------------------- */
+  --font-family: 'Rubik', system-ui, sans-serif;   /* Arabic + Latin, sole family */
+  --weight-regular: 400;   /* body */
+  --weight-medium: 500;    /* emphasis, labels */
+  --weight-semibold: 600;  /* subheads, verdicts */
+  --weight-bold: 700;      /* headlines — see Arabic caution in SKILL.md */
+
+  --text-xs: 0.75rem;    /* 12 */
+  --text-sm: 0.875rem;   /* 14 */
+  --text-base: 1rem;     /* 16 */
+  --text-lg: 1.125rem;   /* 18 */
+  --text-xl: 1.25rem;    /* 20 */
+  --text-2xl: 1.5rem;    /* 24 */
+  --text-3xl: 1.875rem;  /* 30 */
+  --text-4xl: 2.25rem;   /* 36 */
+  --text-5xl: 3rem;      /* 48 */
+
+  /* Line-height: Arabic needs more vertical room than Latin (diacritics). */
+  --leading-tight: 1.2;     /* display / headings */
+  --leading-latin: 1.5;     /* Latin body */
+  --leading-arabic: 1.75;   /* Arabic body — apply on [lang="ar"] / [dir="rtl"] */
+
+  /* Arabic renders ~10–15% smaller at equal px. Bump base size in Arabic. */
+  --font-scale-arabic: 1.08;
+
+  /* ---- RADIUS (brand reads soft/rounded, per the logo lockup) ------------ */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+
+  /* ---- ELEVATION (navy-tinted, never pure black) ------------------------- */
+  --shadow-sm: 0 1px 2px rgba(7,16,85,0.06);
+  --shadow-md: 0 4px 12px rgba(7,16,85,0.08);
+  --shadow-lg: 0 12px 32px rgba(7,16,85,0.12);
+
+  /* ---- MOTION (durations + easing) --------------------------------------- */
+  /* Durations. Product motion stays <300ms; exits run ~20% faster than entrances. */
+  --duration-instant: 100ms;  /* focus, tiny taps */
+  --duration-fast: 150ms;     /* micro-interactions: hover, press */
+  --duration-base: 200ms;     /* standard transition (Material reference) */
+  --duration-slow: 300ms;     /* toasts, drawers, screen-level */
+  --duration-slower: 500ms;   /* rare; large orchestrated moves only */
+
+  /* Easing. Curves from the Emil Kowalski / animations.dev canon.
+     Rule: entering/exiting -> ease-out; on-screen morph -> ease-in-out;
+     hover/colour -> ease; constant motion -> linear. Avoid ease-in for UI. */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);          /* signature entrance, settles */
+  --ease-out-soft: cubic-bezier(0.25, 0.46, 0.45, 0.94); /* gentler entrance */
+  --ease-in-out: cubic-bezier(0.65, 0.05, 0.36, 1);   /* movement/morph on screen */
+  --ease-hover: ease;                                  /* hover + colour transitions */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);              /* AVOID for UI; special cases only */
+
+  /* Spring (JS only — Framer Motion / motion.dev). CSS cannot express these.
+     Recommended Apple-style config: { duration: 0.5, bounce: 0.2 }.
+     Keep bounce 0.1–0.3; default to NO bounce for Itqan's trust-first tone. */
+
+  /* ---- Z-INDEX ----------------------------------------------------------- */
+  --z-base: 0; --z-dropdown: 100; --z-sticky: 200; --z-overlay: 300;
+  --z-modal: 400; --z-toast: 500;
+}
+
+/* ============================================================================
+   DARK MODE  —  semantic remap only. Primitives above are untouched.
+   ============================================================================ */
+[data-theme="dark"] {
+  --color-bg:            var(--navy-950);
+  --color-surface:       var(--navy-900);
+  --color-surface-sunken:var(--navy-800);
+  --color-border:        #1E2A5A;
+  --color-border-strong: var(--navy-600);
+
+  --color-text:          var(--paper);
+  --color-text-muted:    var(--navy-200);
+  --color-text-on-gold:  var(--navy);     /* unchanged: navy on gold always */
+  --color-text-on-navy:  var(--paper);
+  --color-text-inverse:  var(--navy);
+
+  --color-accent:        var(--gold-400); /* lifted for dark legibility */
+  --color-accent-hover:  var(--gold-500);
+  --color-accent-tint:   rgba(208,140,47,0.16);
+  --color-focus:         var(--gold-400); /* navy ring is invisible on dark */
+
+  --color-danger:        var(--red-400);
+  --color-danger-tint:   rgba(181,50,46,0.18);
+  --color-warning:       var(--gold-400);
+  --color-success:       #46A97A;
+  --color-info:          var(--navy-300);
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.45);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.55);
+}
+
+/* Respect the OS setting when no explicit [data-theme] is set. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    /* mirror the [data-theme="dark"] block if you want auto dark;
+       kept opt-in by default so the app controls the switch. */
+  }
+}
+
+/* Reduced motion: keep fades, drop movement. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

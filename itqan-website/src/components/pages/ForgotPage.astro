@@ -1,0 +1,47 @@
+---
+import NoticeBox from '../NoticeBox.astro';
+import { t, type Locale } from '../../i18n';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const s = t(locale);
+const base = `/${locale}`;
+---
+
+<div class="container legal">
+  <header class="page-head">
+    <h1>{s.forgot.heading}</h1>
+  </header>
+
+  <NoticeBox>
+    <p>{s.forgot.notice}</p>
+  </NoticeBox>
+
+  <p class="legal__back">
+    <a href={`${base}/login/`}>{s.forgot.back}</a>
+  </p>
+</div>
+
+<style>
+  .legal {
+    max-inline-size: 44rem;
+    padding-block-end: var(--space-20);
+  }
+
+  .page-head {
+    padding-block: var(--space-16) var(--space-8);
+  }
+
+  .page-head h1 {
+    font-size: var(--text-4xl);
+    font-weight: var(--weight-bold);
+  }
+
+  .legal__back {
+    margin-block-start: var(--space-8);
+    font-weight: var(--weight-medium);
+  }
+</style>

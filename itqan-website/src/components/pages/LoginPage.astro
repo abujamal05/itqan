@@ -1,0 +1,144 @@
+---
+import Hud from '../Hud.astro';
+import { t, type Locale } from '../../i18n';
+import { formEndpoints, appUrl } from '../../config';
+import '../../styles/forms.css';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const s = t(locale);
+const base = `/${locale}`;
+---
+
+<div class="container auth">
+  <div class="auth__main">
+    <p class="eyebrow">{s.login.eyebrow}</p>
+    <h1>{s.login.heading}</h1>
+
+    <form
+      class="form-card"
+      method="post"
+      action={formEndpoints.login}
+      novalidate
+      data-server-error={s.login.serverError}
+      data-success-url={appUrl}
+    >
+      <div class="form-summary" role="alert" tabindex="-1" hidden>
+        <Hud pose="error" size="sm" />
+        <div>
+          <p class="form-summary__heading">{s.login.summaryHeading}</p>
+          <ul class="form-summary__list"></ul>
+        </div>
+      </div>
+
+      <div class="field" data-msg-required={s.login.email.errorRequired} data-msg-format={s.login.email.errorFormat}>
+        <label for="li-email">{s.login.email.label}</label>
+        <div class="field__control">
+          <input id="li-email" name="email" type="email" autocomplete="email" dir="ltr" required aria-describedby="li-email-error" />
+          <span class="field__check" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"></path></svg>
+          </span>
+        </div>
+        <p class="field__error" id="li-email-error" hidden>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.5" r="0.5" fill="currentColor"></circle></svg>
+          <span class="field__error-text"></span>
+        </p>
+      </div>
+
+      <div class="field" data-msg-required={s.login.password.error}>
+        <label for="li-password">{s.login.password.label}</label>
+        <div class="field__control">
+          <input id="li-password" name="password" type="password" autocomplete="current-password" dir="ltr" required aria-describedby="li-password-error" />
+          <span class="field__check" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"></path></svg>
+          </span>
+        </div>
+        <p class="field__error" id="li-password-error" hidden>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.5" r="0.5" fill="currentColor"></circle></svg>
+          <span class="field__error-text"></span>
+        </p>
+      </div>
+
+      <button class="button button--primary form-submit" type="submit" data-submitting={s.login.submitting}>
+        <span class="spinner" aria-hidden="true"></span>
+        <span class="form-submit__label">{s.login.submit}</span>
+      </button>
+
+      <p class="auth__forgot">
+        <a href={`${base}/forgot-password/`}>{s.login.forgot}</a>
+      </p>
+    </form>
+
+    <p class="auth__alt">
+      {s.login.noAccount}
+      <a href={`${base}/signup/`}>{s.login.signupLink}</a>
+    </p>
+  </div>
+
+  <!-- Hud waves, positioned away from the form itself. -->
+  <div class="auth__aside">
+    <Hud pose="waving" size="md" />
+  </div>
+</div>
+
+<script>
+  import { initForm } from '../../scripts/form';
+  document
+    .querySelectorAll<HTMLFormElement>('form.form-card')
+    .forEach((form) => initForm(form));
+</script>
+
+<style>
+  .auth {
+    display: flex;
+    gap: var(--space-16);
+    align-items: flex-start;
+    padding-block: var(--space-16);
+  }
+
+  .auth__main {
+    flex: 0 1 30rem;
+  }
+
+  .auth__main h1 {
+    margin-block: var(--space-3) var(--space-8);
+    font-size: var(--text-4xl);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-tight);
+  }
+
+  .auth__forgot {
+    margin: 0;
+  }
+
+  .auth__alt {
+    margin-block-start: var(--space-6);
+    color: var(--color-text-muted);
+  }
+
+  .auth__aside {
+    flex: 0 0 auto;
+    margin-block-start: var(--space-16);
+  }
+
+  @media (max-width: 51.99rem) {
+    .auth {
+      flex-direction: column;
+      padding-block: var(--space-10);
+      gap: var(--space-8);
+    }
+
+    .auth__main {
+      flex-basis: auto;
+      inline-size: 100%;
+    }
+
+    .auth__aside {
+      margin-block-start: 0;
+      align-self: center;
+    }
+  }
+</style>

@@ -1,0 +1,183 @@
+---
+/**
+ * Hud, the mascot. Every appearance on the site goes through this component.
+ *
+ * Contract: drop files at public/mascot/{pose}.webm and public/mascot/{pose}.png
+ * and they are used automatically. No page changes needed. Until then a
+ * labelled box renders at the same aspect ratio.
+ *
+ * Rules enforced here (from the brand skill):
+ * - decoration only: aria-hidden, empty alt, never the only carrier of meaning
+ * - never below 120px wide
+ * - reduced motion gets the poster image and never loads the video
+ * - videos play only in the viewport, pause outside it
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+
+export type HudPose = 'flying-in' | 'idle' | 'waving' | 'thinking' | 'analyzing' | 'error';
+
+interface Props {
+  pose: HudPose;
+  /** Pose to hand over to after a play-once pose finishes (e.g. flying-in to idle). */
+  then?: HudPose;
+  size?: 'sm' | 'md' | 'lg';
+  /** Loops while in view. Play-once poses omit it. */
+  loop?: boolean;
+  /** Above the fold: start loading immediately instead of lazily. */
+  eager?: boolean;
+}
+
+const { pose, then: nextPose, size = 'md', loop = false, eager = false } = Astro.props;
+
+const mascotDir = path.join(process.cwd(), 'public', 'mascot');
+const exists = (file: string) => fs.existsSync(path.join(mascotDir, file));
+
+const video = exists(`${pose}.webm`) ? `/mascot/${pose}.webm` : null;
+const poster = exists(`${pose}.png`) ? `/mascot/${pose}.png` : null;
+const nextVideo = nextPose && exists(`${nextPose}.webm`) ? `/mascot/${nextPose}.webm` : null;
+
+const widths = { sm: '120px', md: '180px', lg: '250px' };
+const width = widths[size];
+---
+
+{
+  video ? (
+    <div class="hud" style={`--hud-width: ${width}`} aria-hidden="true">
+      <video
+        class="hud__video"
+        muted
+        playsinline
+        autoplay
+        loop={loop}
+        poster={poster ?? undefined}
+        preload="none"
+        data-src={video}
+        data-next-src={nextVideo ?? undefined}
+        data-eager={eager ? 'true' : undefined}
+      ></video>
+    </div>
+  ) : poster ? (
+    <div class="hud" style={`--hud-width: ${width}`} aria-hidden="true">
+      <img
+        class="hud__poster"
+        src={poster}
+        alt=""
+        width="400"
+        height="386"
+        loading={eager ? 'eager' : 'lazy'}
+      />
+    </div>
+  ) : (
+    <div class="hud hud--placeholder" style={`--hud-width: ${width}`} aria-hidden="true">
+      <span class="hud__pose-name">Hud</span>
+      <span class="hud__pose-file">{pose}{nextPose ? ` + ${nextPose}` : ''}</span>
+      <span class="hud__pose-hint">/mascot/{pose}.webm</span>
+    </div>
+  )
+}
+
+<script>
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const videos = document.querySelectorAll<HTMLVideoElement>('.hud__video');
+
+  videos.forEach((video) => {
+    if (reduced.matches) {
+      // Poster only. The video file is never requested.
+      video.removeAttribute('autoplay');
+      video.preload = 'none';
+      return;
+    }
+
+    const load = () => {
+      if (!video.src && video.dataset.src) video.src = video.dataset.src;
+    };
+
+    if (video.dataset.eager) load();
+
+    if (!('IntersectionObserver' in window)) {
+      load();
+      video.play().catch(() => {});
+      return;
+    }
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            load();
+            video.play().catch(() => {});
+          } else {
+            video.pause();
+          }
+        });
+      },
+      { rootMargin: '120px' }
+    );
+    io.observe(video);
+
+    // Play-once poses hand over to the next pose when they finish.
+    video.addEventListener('ended', () => {
+      const next = video.dataset.nextSrc;
+      if (next) {
+        video.src = next;
+        video.loop = true;
+        video.play().catch(() => {});
+      }
+    });
+  });
+</script>
+
+<style>
+  .hud {
+    inline-size: var(--hud-width);
+    min-inline-size: 120px; /* below this he becomes visual noise */
+    aspect-ratio: 400 / 386;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hud__video,
+  .hud__poster {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: contain;
+  }
+
+  /* Dark mode: his navy parts merge into the dark canvas, so add a very thin
+     cream keyline (stacked drop-shadows). Invisible on the light paper surface,
+     applied only on dark — kept out of the video so one clean file serves both. */
+  :global([data-theme='dark']) .hud__video,
+  :global([data-theme='dark']) .hud__poster {
+    filter: drop-shadow(0 0 1px var(--paper)) drop-shadow(0 0 1px var(--paper))
+      drop-shadow(0 0 1px var(--paper));
+  }
+
+  .hud--placeholder {
+    flex-direction: column;
+    gap: var(--space-1);
+    background-color: var(--color-surface-sunken);
+    border: 1px dashed var(--color-border-strong);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    text-align: center;
+  }
+
+  .hud__pose-name {
+    font-weight: var(--weight-semibold);
+    color: var(--color-text);
+  }
+
+  .hud__pose-file {
+    font-weight: var(--weight-medium);
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+
+  .hud__pose-hint {
+    color: var(--color-text-muted);
+    font-size: var(--text-xs);
+    direction: ltr;
+  }
+</style>

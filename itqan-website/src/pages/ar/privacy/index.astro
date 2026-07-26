@@ -1,0 +1,11 @@
+---
+import Base from '../../../layouts/Base.astro';
+import PrivacyPage from '../../../components/pages/PrivacyPage.astro';
+import { t } from '../../../i18n';
+
+const s = t('ar');
+---
+
+<Base title={`${s.privacy.title} | ${s.site.name}`} description={s.privacy.metaDescription}>
+  <PrivacyPage locale="ar" />
+</Base>

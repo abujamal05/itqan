@@ -1,0 +1,11 @@
+---
+import Base from '../../../layouts/Base.astro';
+import ForgotPage from '../../../components/pages/ForgotPage.astro';
+import { t } from '../../../i18n';
+
+const s = t('ar');
+---
+
+<Base title={`${s.forgot.title} | ${s.site.name}`} description={s.forgot.metaDescription}>
+  <ForgotPage locale="ar" />
+</Base>

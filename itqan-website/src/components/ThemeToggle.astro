@@ -1,0 +1,83 @@
+---
+import { t, isLocale, defaultLocale, type Locale } from '../i18n';
+
+const locale: Locale = isLocale(Astro.currentLocale) ? Astro.currentLocale : defaultLocale;
+const strings = t(locale);
+---
+
+<button
+  class="icon-button theme-toggle"
+  type="button"
+  data-label-to-dark={strings.a11y.themeToDark}
+  data-label-to-light={strings.a11y.themeToLight}
+  aria-label={strings.a11y.themeToDark}
+>
+  <svg
+    class="theme-toggle__moon"
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
+  </svg>
+  <svg
+    class="theme-toggle__sun"
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="4"></circle>
+    <path
+      d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4m11.4-11.4 1.4-1.4"
+    ></path>
+  </svg>
+</button>
+
+<script>
+  const button = document.querySelector<HTMLButtonElement>('.theme-toggle');
+
+  const applyLabel = () => {
+    if (!button) return;
+    const dark = document.documentElement.dataset.theme === 'dark';
+    const label = dark ? button.dataset.labelToLight : button.dataset.labelToDark;
+    if (label) button.setAttribute('aria-label', label);
+  };
+
+  applyLabel();
+
+  button?.addEventListener('click', () => {
+    const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    try {
+      localStorage.setItem('itqan-theme', next);
+    } catch (e) {
+      /* private mode: theme still applies for this page view */
+    }
+    applyLabel();
+  });
+</script>
+
+<style>
+  .theme-toggle__sun {
+    display: none;
+  }
+
+  :global([data-theme='dark']) .theme-toggle__moon {
+    display: none;
+  }
+
+  :global([data-theme='dark']) .theme-toggle__sun {
+    display: block;
+  }
+</style>

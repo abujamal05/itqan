@@ -1,0 +1,11 @@
+---
+import Base from '../../layouts/Base.astro';
+import HomePage from '../../components/pages/HomePage.astro';
+import { t } from '../../i18n';
+
+const s = t('ar');
+---
+
+<Base title={`${s.site.name} | ${s.site.strapline}`} description={s.site.description}>
+  <HomePage locale="ar" />
+</Base>

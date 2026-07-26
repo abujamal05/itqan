@@ -1,0 +1,47 @@
+---
+/**
+ * Single placeholder component for every missing asset. Renders a bordered
+ * sand box at the correct aspect ratio with a label naming what belongs
+ * there and its required dimensions. Never fabricate a substitute asset.
+ * Every usage must be listed in PLACEHOLDERS.md.
+ */
+interface Props {
+  label: string;
+  width: number;
+  height: number;
+}
+
+const { label, width, height } = Astro.props;
+---
+
+<div class="asset-placeholder" style={`aspect-ratio: ${width} / ${height}`}>
+  <span class="asset-placeholder__label">{label}</span>
+  <span class="asset-placeholder__dims" dir="ltr">{width} × {height}px</span>
+</div>
+
+<style>
+  .asset-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    inline-size: 100%;
+    background-color: var(--color-surface-sunken);
+    border: 1px dashed var(--color-border-strong);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    text-align: center;
+  }
+
+  .asset-placeholder__label {
+    font-weight: var(--weight-medium);
+    color: var(--color-text);
+    max-inline-size: 28ch;
+  }
+
+  .asset-placeholder__dims {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+</style>
