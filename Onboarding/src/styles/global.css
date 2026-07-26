@@ -1,0 +1,65 @@
+/* ============================================================================
+   GLOBAL BASE — Itqan onboarding
+   Values come ONLY from tokens.css. RTL is the base architecture: every
+   directional property here is logical (inline/block, start/end), never
+   physical, so one stylesheet serves Arabic and English.
+   ============================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  font-weight: var(--weight-regular);
+  font-size: var(--text-base);
+  line-height: var(--leading-latin);
+  color: var(--color-text);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  touch-action: manipulation;          /* removes the 300ms mobile tap delay */
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Arabic typography (rtl-bilingual §5): more line-height because harakat need
+   vertical room; ~8% larger because Arabic glyphs read smaller at equal px;
+   never letter-spaced, which would sever the cursive joins. */
+[lang="ar"], [dir="rtl"] { letter-spacing: normal; }
+/* body carries its own line-height, so the Arabic value must be set on body
+   directly — inheriting it from [dir="rtl"] on <html> would lose to that rule. */
+[dir="rtl"] body {
+  font-size: calc(var(--text-base) * var(--font-scale-arabic));
+  line-height: var(--leading-arabic);
+}
+
+/* Arabic body stays at 400 — bold Arabic body reads heavy on connected script.
+   600/700 is reserved for short headings and labels only. */
+[dir="rtl"] p, [dir="rtl"] li, [dir="rtl"] td { font-weight: var(--weight-regular); }
+
+h1, h2, h3, h4 { line-height: var(--leading-tight); margin: 0; font-weight: var(--weight-semibold); }
+p { margin: 0; }
+ul, ol { margin: 0; padding: 0; list-style: none; }
+
+a { color: inherit; text-decoration: none; }
+button, input, textarea, select { font-family: inherit; font-size: inherit; color: inherit; }
+img, svg, video { max-width: 100%; height: auto; display: block; }
+
+/* Focus ring is never removed (a11y §5 + audit rule). */
+:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; border-radius: var(--radius-sm); }
+:focus:not(:focus-visible) { outline: none; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* Numbers are read left-to-right even inside RTL text (bidi weak types).
+   This isolates them so the algorithm cannot reorder digits or mixed runs. */
+.num, bdi { unicode-bidi: isolate; }
+
+/* App root honours mobile safe areas (iOS notch, Android gesture bar). */
+#root { display: flex; flex-direction: column; min-height: 100dvh; }

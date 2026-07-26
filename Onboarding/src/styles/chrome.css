@@ -1,0 +1,286 @@
+/* ============================================================================
+   BRAND, MASCOT, AUTH, DOCUMENTS, MENU
+   Same rules as app.css: tokens only, logical properties only, every
+   interactive element carries its full state set.
+   ============================================================================ */
+
+/* -------------------------------------------------------------- BRAND MARK */
+/* Both files render and CSS picks the right one, so the swap costs no JS and
+   cannot flash the wrong mark on load. */
+.logo { display: inline-flex; align-items: center; }
+.logo__img { block-size: 100%; inline-size: auto; }
+.logo__img--dark { display: none; }
+[data-theme='dark'] .logo__img--light { display: none; }
+[data-theme='dark'] .logo__img--dark { display: block; }
+
+/* Clear space is 25% of the lockup's height, 20% for the icon; padding covers it. */
+.brand {
+  display: inline-flex; align-items: center;
+  min-block-size: 44px;                    /* it is a link, so it is a target */
+  padding: var(--space-1); margin-inline-start: calc(-1 * var(--space-1));
+  border-radius: var(--radius-sm);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+.brand:hover { transform: translateY(-1px); }
+.brand--side { margin-inline-start: 0; padding-inline: var(--space-3); }
+
+/* The lockup needs 140px to stay legible. Below that the icon is used rather
+   than a squeezed lockup, which would be a misuse of the mark. */
+.brand__icon { display: inline-flex; }
+.brand__lockup { display: none; }
+@media (min-width: 26rem) {
+  .brand__icon { display: none; }
+  .brand__lockup { display: inline-flex; }
+}
+
+/* ------------------------------------------------------ MASCOT + BUBBLE -- */
+.hud {
+  inline-size: var(--hud-width);
+  min-inline-size: 120px;               /* below this he is visual noise */
+  aspect-ratio: 400 / 386;
+  display: flex; align-items: center; justify-content: center;
+}
+.hud__video { inline-size: 100%; block-size: 100%; object-fit: contain; }
+
+/* On dark surfaces his navy parts merge into the canvas, so a hairline cream
+   keyline is added here — one video file then serves both themes. */
+[data-theme='dark'] .hud__video {
+  filter: drop-shadow(0 0 1px var(--paper)) drop-shadow(0 0 1px var(--paper))
+          drop-shadow(0 0 1px var(--paper));
+}
+
+.guide { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); }
+
+.guide__bubble {
+  position: relative;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+  max-inline-size: 22rem;
+  animation: bubble-in var(--duration-slow) var(--ease-out) both;
+}
+/* Tail: two stacked triangles so the 1px border reads through the notch. */
+.guide__bubble::before,
+.guide__bubble::after {
+  content: ''; position: absolute; inline-size: 0; block-size: 0;
+  inset-block-start: -10px; inset-inline-start: 50%; translate: -50% 0;
+  border-inline: 10px solid transparent;
+  border-block-end: 10px solid var(--color-border);
+}
+.guide__bubble::after {
+  inset-block-start: -9px;
+  border-block-end-color: var(--color-surface);
+}
+@keyframes bubble-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Narrow screens get a compact row instead of a stack: vertical space is the
+   scarce resource on a phone, and a stacked mascot pushes the task off screen. */
+@media (max-width: 56.24rem) {
+  .guide { flex-direction: row; align-items: center; gap: var(--space-3); }
+  .guide__hud { flex: 0 0 auto; }
+  .guide .hud { inline-size: 84px; min-inline-size: 84px; }
+  .guide__bubble { text-align: start; flex: 1; padding: var(--space-3) var(--space-4); }
+  /* The tail turns to point sideways at him, and mirrors with direction. */
+  .guide__bubble::before, .guide__bubble::after {
+    inset-block-start: 50%; inset-inline-start: -10px; translate: 0 -50%;
+    border-inline: none; border-block: 10px solid transparent;
+    border-inline-end: 10px solid var(--color-border);
+  }
+  .guide__bubble::after {
+    inset-inline-start: -9px;
+    border-block-color: transparent;
+    border-inline-end-color: var(--color-surface);
+  }
+  /* He stays on narrow screens now that he costs one short row, and leads the
+     content because he is the one introducing it. */
+  .stage__aside { display: flex; }
+  .stage--split .stage__aside { order: -1; }
+}
+
+/* ------------------------------------------------------------- DOCUMENTS -- */
+.docs { display: flex; flex-direction: column; gap: var(--space-3); }
+.doc {
+  display: flex; align-items: flex-start; gap: var(--space-4);
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: var(--radius-md); padding: var(--space-4);
+  animation: enter var(--duration-slow) var(--ease-out) both;
+}
+.doc[data-status='error'] { border-color: var(--color-danger); }
+.doc__thumb {
+  flex: 0 0 auto; inline-size: 48px; block-size: 48px; border-radius: var(--radius-sm);
+  background: var(--color-surface-sunken); display: grid; place-items: center;
+  overflow: hidden; color: var(--color-text);
+}
+.doc__thumb img { inline-size: 100%; block-size: 100%; object-fit: cover; }
+.doc__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.doc__name {
+  font-weight: var(--weight-medium);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.doc__meta { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.doc__size, .doc__status { font-size: var(--text-sm); }
+.doc__progress { display: flex; flex-direction: column; gap: var(--space-1); }
+.doc__status { display: inline-flex; align-items: center; gap: var(--space-2); }
+.doc__status--bad { color: var(--color-danger); }
+.doc__actions { display: flex; gap: var(--space-2); flex-shrink: 0; }
+
+.select {
+  min-block-size: 44px; padding-block: var(--space-2); padding-inline: var(--space-3);
+  border-radius: var(--radius-sm); border: 1px solid var(--color-border);
+  background: var(--color-surface); color: var(--color-text);
+  font-size: var(--text-sm); cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-hover);
+}
+.select:hover { border-color: var(--color-border-strong); }
+
+/* ------------------------------------------------------------------ MENU -- */
+.menu { position: relative; }
+.menu__trigger {
+  display: flex; align-items: center; gap: var(--space-2); inline-size: 100%;
+  min-block-size: 44px; padding: var(--space-2) var(--space-3);
+  background: transparent; border: 1px solid var(--color-border);
+  border-radius: var(--radius-md); color: var(--color-text); cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-hover),
+              border-color var(--duration-fast) var(--ease-hover);
+}
+.menu__trigger:hover { background: var(--color-surface-sunken); border-color: var(--color-border-strong); }
+.menu__name {
+  font-size: var(--text-sm); font-weight: var(--weight-medium);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.avatar {
+  flex: 0 0 auto; inline-size: 28px; block-size: 28px; border-radius: var(--radius-full);
+  background: var(--color-accent); color: var(--color-text-on-gold);
+  display: grid; place-items: center;
+  font-size: var(--text-xs); font-weight: var(--weight-semibold);
+}
+.menu__panel {
+  position: absolute; inset-block-end: calc(100% + var(--space-2)); inset-inline-start: 0;
+  min-inline-size: 15rem; z-index: var(--z-dropdown);
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: var(--radius-md); box-shadow: var(--shadow-lg);
+  padding: var(--space-2); display: flex; flex-direction: column; gap: var(--space-1);
+  animation: menu-in var(--duration-fast) var(--ease-out) both;
+  transform-origin: bottom center;
+}
+@keyframes menu-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+.menu__head {
+  padding: var(--space-3); border-block-end: 1px solid var(--color-border);
+  margin-block-end: var(--space-1);
+}
+.menu__headName { font-weight: var(--weight-medium); font-size: var(--text-sm); }
+.menu__headMail { font-size: var(--text-sm); overflow: hidden; text-overflow: ellipsis; }
+.menu__item {
+  display: flex; align-items: center; gap: var(--space-3); inline-size: 100%;
+  min-block-size: 44px; padding: var(--space-2) var(--space-3); text-align: start;
+  background: transparent; border: 0; border-radius: var(--radius-sm);
+  color: var(--color-text); cursor: pointer; font-size: var(--text-sm);
+  transition: background var(--duration-fast) var(--ease-hover);
+}
+.menu__item:hover { background: var(--color-surface-sunken); }
+.menu__item--danger { color: var(--color-danger); }
+.menu__item--danger:hover { background: var(--color-danger-tint); }
+
+/* In the phone header the menu opens downward instead of upward. */
+[data-mobile-header] .menu__panel {
+  inset-block-end: auto; inset-block-start: calc(100% + var(--space-2));
+  inset-inline-start: auto; inset-inline-end: 0; transform-origin: top center;
+}
+[data-mobile-header] .menu__trigger { border-color: transparent; padding-inline: var(--space-2); }
+[data-mobile-header] .menu__name { display: none; }
+
+/* -------------------------------------------- CHROME + MICROINTERACTIONS -- */
+.topbar__tools {
+  margin-inline-start: auto; display: flex; align-items: center;
+  gap: var(--space-2); flex-wrap: nowrap;
+}
+/* "Compact" means tighter padding and a smaller label, never a smaller target:
+   44px is the touch floor and these sit in the header where they are tapped
+   most often. */
+.btn--sm { min-height: 44px; padding-block: var(--space-2); padding-inline: var(--space-3); font-size: var(--text-sm); }
+.btn--sm.btn--icon { min-width: 44px; padding: var(--space-2); }
+
+/* Theme-toggle cross-fade. Both glyphs share one grid cell so the button never
+   changes width when the theme flips. */
+.swap { position: relative; display: grid; place-items: center; inline-size: 18px; block-size: 18px; }
+.swap > * {
+  grid-area: 1 / 1;
+  transition: opacity var(--duration-fast) var(--ease-hover),
+              transform var(--duration-base) var(--ease-out);
+}
+.swap__b { opacity: 0; transform: rotate(-90deg) scale(0.6); }
+.swap[data-on='true'] .swap__a { opacity: 0; transform: rotate(90deg) scale(0.6); }
+.swap[data-on='true'] .swap__b { opacity: 1; transform: none; }
+
+.callout--offer { background: var(--color-accent-tint); }
+
+/* Hidden until focused, then slides in — the standard skip-link behaviour. */
+.skip-link {
+  position: absolute; inset-inline-start: var(--space-2); inset-block-start: var(--space-2);
+  z-index: var(--z-toast); transform: translateY(-200%);
+  background: var(--color-surface); color: var(--color-text);
+  padding: var(--space-3) var(--space-4); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md); font-weight: var(--weight-medium);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+.skip-link:focus-visible { transform: none; }
+
+.boot { flex: 1; display: grid; place-items: center; min-block-size: 100dvh; }
+.spinner--lg { inline-size: 28px; block-size: 28px; border-width: 3px; color: var(--color-accent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .guide__bubble, .doc, .menu__panel, .form-summary { animation: none; }
+}
+
+/* ----------------------------------------------------------------- PRICE -- */
+/* Large and near the top: cost is the second thing anyone wants to know, and
+   a product that takes no commission has no reason to bury it. */
+.price {
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+}
+/* Free reads as a word, not a number. It is still weight and size that carry
+   the emphasis, never hue alone. */
+.price[data-free] { color: var(--color-text); }
+
+/* ------------------------------------------------------------- BROWSE BAR -- */
+.browse {
+  display: flex; align-items: center; gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.browse__filters { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.browse__actions { margin-inline-start: auto; display: flex; gap: var(--space-2); }
+/* Reserved line so announcing a result does not shift the grid beneath it. */
+.browse__status {
+  inline-size: 100%; min-block-size: 1.25rem;
+  font-size: var(--text-sm); color: var(--color-text);
+}
+@media (max-width: 34rem) {
+  .browse__actions { margin-inline-start: 0; inline-size: 100%; }
+  .browse__actions .btn { inline-size: 100%; }
+}
+
+.spin { animation: spin calc(var(--duration-slower) * 2) linear infinite; }
+
+/* ------------------------------------------------------------ DISCLOSURE -- */
+.disclosure {
+  cursor: pointer; font-size: var(--text-sm);
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  min-block-size: 44px;
+  border-radius: var(--radius-sm);
+}
+.disclosure:hover { color: var(--color-accent-hover); }
+
+@media (prefers-reduced-motion: reduce) {
+  .spin { animation: none; }
+}

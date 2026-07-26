@@ -1,0 +1,223 @@
+/**
+ * Onboarding flow state.
+ *
+ * Two load-bearing behaviours live here.
+ *
+ * 1. The analysis poll starts the moment the documents are submitted and keeps
+ *    running while the user answers the direction questions. The wait is real —
+ *    four agents run in sequence — so rather than parking them on a spinner we
+ *    spend it collecting something useful. Failure must not be destructive:
+ *    if the documents cannot be read, the answers already given survive.
+ *
+ * 2. Progress is saved to the account after every meaningful change. Nobody
+ *    owes us one uninterrupted sitting: a phone dies, a tab closes, someone
+ *    goes to find their certificate. Because the save goes through the API
+ *    rather than to this browser, finishing on a laptop after starting on a
+ *    phone works too. Saves are debounced so typing does not spam the endpoint.
+ */
+import {
+  createContext, useCallback, useContext, useEffect, useMemo, useRef, useState,
+} from 'react';
+import type { ReactNode } from 'react';
+import type { AnalysisJob, ConfirmedProfile, ItqanApi, OnboardingProgress, UploadedDocument } from '../api';
+
+export type Entry = 'document' | 'manual';
+export type Step = OnboardingProgress['step'];
+
+interface OnboardingValue {
+  entry: Entry;
+  documents: UploadedDocument[];
+  jobId: string | null;
+  analysis: AnalysisJob | null;
+  settled: boolean;
+  failed: boolean;
+  interests: string[];
+  notes: string;
+  profile: ConfirmedProfile | null;
+
+  /** Saved progress found on boot, offered rather than forced. */
+  resumable: OnboardingProgress | null;
+  dismissResume: () => void;
+  resume: () => void;
+
+  begin: (documents: UploadedDocument[]) => Promise<void>;
+  startManual: () => void;
+  toggleInterest: (id: string) => void;
+  setNotes: (v: string) => void;
+  completeProfile: (p: ConfirmedProfile) => void;
+  reset: () => void;
+}
+
+const Ctx = createContext<OnboardingValue | null>(null);
+const POLL_MS = 700;
+const SAVE_DEBOUNCE_MS = 600;
+
+export function OnboardingProvider({
+  api, enabled, children,
+}: {
+  api: ItqanApi;
+  /** Only load and save progress for a signed-in user still onboarding. */
+  enabled: boolean;
+  children: ReactNode;
+}) {
+  const [entry, setEntry] = useState<Entry>('document');
+  const [documents, setDocuments] = useState<UploadedDocument[]>([]);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<AnalysisJob | null>(null);
+  const [interests, setInterests] = useState<string[]>([]);
+  const [notes, setNotesState] = useState('');
+  const [profile, setProfile] = useState<ConfirmedProfile | null>(null);
+  const [resumable, setResumable] = useState<OnboardingProgress | null>(null);
+  const timer = useRef<number | null>(null);
+  const saveTimer = useRef<number | null>(null);
+  const step = useRef<Step>('upload');
+
+  /* ------------------------------------------------------------ resume -- */
+  useEffect(() => {
+    if (!enabled) { setResumable(null); return; }
+    let alive = true;
+    api.getProgress()
+      .then((p) => {
+        // Only worth offering if they actually got somewhere.
+        if (alive && p && (p.documents.length > 0 || p.interests.length > 0 || p.notes)) {
+          setResumable(p);
+        }
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [api, enabled]);
+
+  const resume = useCallback(() => {
+    const p = resumable;
+    if (!p) return;
+    setDocuments(p.documents);
+    setInterests(p.interests);
+    setNotesState(p.notes);
+    step.current = p.step;
+    setResumable(null);
+    // The job is not resumable across sessions, so the pipeline is re-run over
+    // the documents that were already stored. Cheaper than making them re-upload.
+    if (p.documents.length > 0) {
+      void api.startAnalysis(p.documents.map((d) => d.id)).then(({ jobId: id }) => setJobId(id));
+    }
+  }, [resumable, api]);
+
+  const dismissResume = useCallback(() => {
+    setResumable(null);
+    void api.clearProgress();
+  }, [api]);
+
+  /* -------------------------------------------------------------- save -- */
+  /**
+   * Two guards, both learned the hard way:
+   *
+   *  - Nothing is saved while a resume offer is on screen. The provider mounts
+   *    with empty state, so an unguarded auto-save would immediately overwrite
+   *    the very progress it just found and the "continue" button would restore
+   *    nothing.
+   *  - Empty state is never saved at all, so an untouched visit cannot leave a
+   *    hollow record that later triggers a pointless resume prompt.
+   */
+  const persist = useCallback(() => {
+    if (!enabled || resumable) return;
+    const empty = documents.length === 0 && interests.length === 0 && notes.trim() === '';
+    if (empty) return;
+
+    if (saveTimer.current) window.clearTimeout(saveTimer.current);
+    saveTimer.current = window.setTimeout(() => {
+      void api.saveProgress({
+        step: step.current,
+        documents,
+        interests,
+        notes,
+        documentId: documents[0]?.id ?? null,
+        updatedAt: Date.now(),
+      }).catch(() => {});
+    }, SAVE_DEBOUNCE_MS);
+  }, [api, enabled, resumable, documents, interests, notes]);
+
+  useEffect(() => { persist(); }, [persist]);
+  useEffect(() => () => { if (saveTimer.current) window.clearTimeout(saveTimer.current); }, []);
+
+  /* -------------------------------------------------------------- poll -- */
+  const stopPolling = useCallback(() => {
+    if (timer.current !== null) { window.clearTimeout(timer.current); timer.current = null; }
+  }, []);
+
+  useEffect(() => {
+    if (!jobId) return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const job = await api.getAnalysis(jobId);
+        if (cancelled) return;
+        setAnalysis(job);
+        if (job.stage !== 'done' && job.stage !== 'failed') {
+          timer.current = window.setTimeout(tick, POLL_MS);
+        }
+      } catch {
+        if (!cancelled) setAnalysis({ jobId, stage: 'failed', progress: 0, error: 'network' });
+      }
+    };
+    void tick();
+    return () => { cancelled = true; stopPolling(); };
+  }, [jobId, api, stopPolling]);
+
+  /* ------------------------------------------------------------ actions -- */
+  const begin = useCallback(async (docs: UploadedDocument[]) => {
+    setEntry('document');
+    setDocuments(docs);
+    setAnalysis(null);
+    step.current = 'questions';
+    const { jobId: id } = await api.startAnalysis(docs.map((d) => d.id));
+    setJobId(id);
+  }, [api]);
+
+  const startManual = useCallback(() => {
+    stopPolling();
+    setEntry('manual');
+    setDocuments([]);
+    setJobId(null);
+    setAnalysis(null);
+    step.current = 'confirm';
+  }, [stopPolling]);
+
+  const reset = useCallback(() => {
+    stopPolling();
+    setEntry('document');
+    setDocuments([]);
+    setJobId(null);
+    setAnalysis(null);
+    setInterests([]);
+    setNotesState('');
+    setProfile(null);
+    step.current = 'upload';
+    void api.clearProgress();
+  }, [stopPolling, api]);
+
+  const toggleInterest = useCallback((id: string) => {
+    setInterests((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
+  }, []);
+
+  const settled = analysis?.stage === 'done' || analysis?.stage === 'failed';
+  const failed = analysis?.stage === 'failed';
+
+  const value = useMemo<OnboardingValue>(() => ({
+    entry, documents, jobId, analysis,
+    settled: entry === 'manual' ? true : !!settled,
+    failed: !!failed,
+    interests, notes, profile,
+    resumable, dismissResume, resume,
+    begin, startManual, toggleInterest, setNotes: setNotesState,
+    completeProfile: setProfile, reset,
+  }), [entry, documents, jobId, analysis, settled, failed, interests, notes, profile,
+       resumable, dismissResume, resume, begin, startManual, toggleInterest, reset]);
+
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+}
+
+export function useOnboarding() {
+  const ctx = useContext(Ctx);
+  if (!ctx) throw new Error('useOnboarding must be used inside <OnboardingProvider>');
+  return ctx;
+}

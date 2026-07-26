@@ -1,0 +1,477 @@
+/* ============================================================================
+   COMPONENTS & LAYOUT — Itqan
+   Specs follow itqan-design-system/references/components.md exactly.
+   Every interactive element defines: default, hover, focus-visible, active,
+   disabled, loading, selected, error (whichever apply). Colour never carries
+   meaning alone — every state also has an icon, label, or shape.
+   ============================================================================ */
+
+/* ---------------------------------------------------------------- LAYOUT -- */
+
+/* Onboarding shell: a calm, single-column stage. Max width keeps line length
+   readable (~60ch) which matters more in Arabic than Latin. */
+.ob {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-block-start: env(safe-area-inset-top);
+  padding-block-end: env(safe-area-inset-bottom);
+  padding-inline: max(var(--space-5), env(safe-area-inset-left));
+}
+.ob__bar {
+  width: 100%; max-width: 68rem; margin-inline: auto;
+  padding-block: var(--space-5);
+  display: flex; align-items: center; gap: var(--space-4);
+}
+
+/* One row: mark at the start, progress taking the slack, controls at the end.
+   This rule was missing, so the header laid out as three stacked blocks. */
+.topbar {
+  display: flex; align-items: center; gap: var(--space-4);
+  flex-wrap: nowrap;
+  width: 100%; max-width: 68rem; margin-inline: auto;
+  padding-inline: var(--space-5);
+  padding-block: var(--space-4);
+}
+/* The progress meter is the only element allowed to give up width. */
+.topbar .steps { flex: 1 1 auto; min-width: 0; }
+.topbar .spacer { flex: 1 1 auto; }
+/* Below the meter's useful width it is dropped rather than crushed; the
+   "1/3" counter beside it still answers "how much is left". */
+@media (max-width: 32rem) {
+  .topbar .steps__list { display: none; }
+}
+.ob__main {
+  flex: 1; width: 100%; max-width: 68rem; margin-inline: auto;
+  display: flex; align-items: center;
+  padding-block: var(--space-6) var(--space-12);
+}
+
+/* Two-column stage: Hud beside the content on wide screens, content only on
+   narrow. Hud is decorative support, so it is the first thing dropped. */
+.stage { display: grid; gap: var(--space-8); width: 100%; align-items: center; }
+@media (min-width: 900px) {
+  .stage--split { grid-template-columns: minmax(0, 22rem) minmax(0, 1fr); gap: var(--space-12); }
+}
+.stage__aside { display: none; }
+@media (min-width: 900px) { .stage__aside { display: flex; flex-direction: column; align-items: center; gap: var(--space-4); } }
+.stage__content { min-width: 0; display: flex; flex-direction: column; gap: var(--space-6); }
+
+.headline { font-size: var(--text-3xl); font-weight: var(--weight-semibold); letter-spacing: -0.01em; }
+[dir="rtl"] .headline { letter-spacing: normal; }   /* never letter-space Arabic */
+@media (min-width: 640px) { .headline { font-size: var(--text-4xl); } }
+/* Lead paragraph. It keeps --color-text rather than --color-text-muted: muted
+   (navy-300) over the paper background measures 4.32:1, under the 4.5 floor for
+   normal-size text. Tokens are locked, so the hierarchy is carried by size and
+   position instead of colour — which is the more robust signal regardless. */
+.subhead { color: var(--color-text); font-size: var(--text-lg); max-width: 46ch; }
+.eyebrow {
+  font-size: var(--text-sm); font-weight: var(--weight-medium);
+  color: var(--color-text); display: inline-flex; align-items: center; gap: var(--space-2);
+}
+
+/* ---------------------------------------------------------------------------
+   A note on --color-text-muted.
+   Measured against the two non-white surfaces it fails WCAG AA for normal text:
+     on --color-bg (paper)            4.32:1   (needs 4.5)
+     on --color-surface-sunken (sand) 3.70:1   (needs 4.5)
+   It passes only on --color-surface (white), at 4.58:1. The tokens are locked,
+   so muted is used ONLY inside white cards below (.source, .match__org,
+   .skill__state, .choice__sub, .format). Everything sitting on paper or sand
+   takes --color-text and gets its hierarchy from size and weight instead.
+   The design system needs a muted step that clears 4.5 on paper; flagged.
+   --------------------------------------------------------------------------- */
+
+/* ---------------------------------------------------------------- BUTTON -- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  font-weight: var(--weight-medium); font-size: var(--text-base);
+  padding-block: var(--space-3); padding-inline: var(--space-5);
+  border-radius: var(--radius-md); border: 1px solid transparent;
+  min-height: 44px; cursor: pointer; text-align: center;
+  transition: background var(--duration-fast) var(--ease-hover),
+              color var(--duration-fast) var(--ease-hover),
+              border-color var(--duration-fast) var(--ease-hover),
+              box-shadow var(--duration-fast) var(--ease-out),
+              transform var(--duration-fast) var(--ease-out);
+}
+.btn--primary { background: var(--color-accent); color: var(--color-text-on-gold); }
+.btn--primary:hover:not(:disabled) { background: var(--color-accent-hover); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+.btn--primary:active:not(:disabled) { transform: translateY(0); transition-duration: var(--duration-instant); }
+
+.btn--secondary { background: transparent; border-color: var(--color-border-strong); color: var(--color-text); }
+.btn--secondary:hover:not(:disabled) { background: var(--color-surface-sunken); }
+.btn--secondary:active:not(:disabled) { transform: translateY(0); }
+
+/* components.md specifies gold text for ghost, but the design system also locks
+   "gold is never body text on light" — and gold on paper measures 2.65:1, far
+   under the floor. The locked rule wins over the component sketch, so ghost
+   takes text colour and is distinguished from secondary by having no border;
+   gold still identifies it through the hover tint. */
+.btn--ghost { background: transparent; color: var(--color-text); border-color: transparent; }
+.btn--ghost:hover:not(:disabled) { background: var(--color-accent-tint); }
+
+.btn--icon { padding: var(--space-2); min-width: 44px; }
+.btn--block { width: 100%; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn[data-loading="true"] { pointer-events: none; }
+
+/* Loading keeps the button width stable so the layout never jumps. */
+.spinner {
+  inline-size: 1em; block-size: 1em; border-radius: var(--radius-full);
+  border: 2px solid currentColor; border-block-start-color: transparent;
+  animation: spin var(--duration-slower) linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ------------------------------------------------------------------ CARD -- */
+.card {
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: var(--space-6);
+}
+.card--flat { box-shadow: none; }
+.card--sunken { background: var(--color-surface-sunken); border-color: transparent; box-shadow: none; }
+
+/* --------------------------------------------------------- CHOICE / TILE -- */
+/* Used for language pick and single-select options. Big target (Fitts's law). */
+.choice {
+  display: flex; align-items: center; gap: var(--space-4); width: 100%;
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg); padding: var(--space-5);
+  min-height: 44px; cursor: pointer; text-align: start;
+  transition: border-color var(--duration-fast) var(--ease-hover),
+              background var(--duration-fast) var(--ease-hover),
+              box-shadow var(--duration-base) var(--ease-out),
+              transform var(--duration-fast) var(--ease-out);
+}
+.choice:hover { border-color: var(--color-accent); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.choice:active { transform: translateY(0); }
+.choice__label { flex: 1; font-size: var(--text-xl); font-weight: var(--weight-medium); }
+.choice__sub { display: block; font-size: var(--text-sm); color: var(--color-text-muted); font-weight: var(--weight-regular); }
+/* Directional icon: mirrors in RTL because it encodes flow, not meaning. */
+.choice__go { color: var(--color-text-muted); flex-shrink: 0; }
+[dir="rtl"] .choice__go { transform: scaleX(-1); }
+
+/* ------------------------------------------------------------------ CHIP -- */
+.chip {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  padding-block: var(--space-2); padding-inline: var(--space-4);
+  border-radius: var(--radius-full); font-size: var(--text-sm);
+  border: 1px solid transparent; background: var(--color-surface-sunken);
+  color: var(--color-text); min-height: 44px; cursor: pointer;   /* touch floor */
+  transition: background var(--duration-fast) var(--ease-hover),
+              border-color var(--duration-fast) var(--ease-hover);
+}
+.chip:hover { border-color: var(--color-border-strong); }
+/* Selected carries a check icon as well as fill — never colour alone. */
+.chip[aria-pressed="true"] { background: var(--color-accent-tint); border-color: var(--color-accent); font-weight: var(--weight-medium); }
+
+/* Capability = something the user already has (check, tinted).
+   Gap = something to unlock (plus, sunken). Distinct icon AND shape. */
+.chip--capability { background: var(--color-accent-tint); border-color: transparent; cursor: default; }
+.chip--gap { background: var(--color-surface-sunken); border: 1px dashed var(--color-border-strong); cursor: default; }
+.chip--removable { padding-inline-end: var(--space-2); }
+.chip__x {
+  display: inline-flex; align-items: center; justify-content: center;
+  /* Nested inside a 44px chip, so it is sized to WCAG 2.5.8 (24px floor) with
+     room to spare rather than to 44px, which would force the chip much larger. */
+  inline-size: 32px; block-size: 32px; border-radius: var(--radius-full);
+  border: none; background: transparent; cursor: pointer; color: var(--color-text-muted);
+}
+.chip__x:hover { background: var(--color-surface); color: var(--color-text); }
+
+/* ----------------------------------------------------------------- BADGE -- */
+.badge {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  padding-block: var(--space-1); padding-inline: var(--space-3);
+  border-radius: var(--radius-full); font-size: var(--text-sm);
+  font-weight: var(--weight-medium); white-space: nowrap;
+}
+/* Strong: gold fill + navy text + check icon + the word. */
+.badge--strong { background: var(--color-accent); color: var(--color-text-on-gold); }
+/* Suggested: outline + muted + question icon + "Suggested — confirm".
+   Never presents below-threshold output as fact. */
+.badge--suggested { background: transparent; border: 1px dashed var(--color-text-muted); color: var(--color-text-muted); }
+.badge--neutral { background: var(--color-surface-sunken); color: var(--color-text); }
+
+/* ----------------------------------------------------------------- FIELD -- */
+.field { display: flex; flex-direction: column; gap: var(--space-2); }
+.field__label { font-size: var(--text-sm); font-weight: var(--weight-medium); }
+.field__hint { font-size: var(--text-sm); color: var(--color-text); }
+.input, .textarea {
+  width: 100%; background: var(--color-surface); color: var(--color-text);
+  border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+  padding-block: var(--space-3); padding-inline: var(--space-4);
+  min-height: 44px;
+  transition: border-color var(--duration-fast) var(--ease-hover),
+              box-shadow var(--duration-fast) var(--ease-hover);
+}
+.textarea { resize: vertical; min-height: 7rem; line-height: inherit; }
+.input:hover, .textarea:hover { border-color: var(--color-border-strong); }
+/* The outline is kept, not replaced. The gold tint alone measures about 1.2:1
+   against white, which would not satisfy the focus-indicator contrast rule;
+   the 2px --color-focus outline carries the indicator and the tint is only
+   there to soften it. */
+.input:focus-visible, .textarea:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+  border-color: var(--color-focus);
+  box-shadow: 0 0 0 3px var(--color-accent-tint);
+}
+.input:disabled, .textarea:disabled { background: var(--color-surface-sunken); color: var(--color-text-muted); cursor: not-allowed; }
+/* Error: border + icon + message. Never a red border alone. */
+.input[aria-invalid="true"], .textarea[aria-invalid="true"] { border-color: var(--color-danger); }
+.field__error {
+  display: flex; align-items: center; gap: var(--space-2);
+  font-size: var(--text-sm); color: var(--color-danger);
+}
+
+/* --------------------------------------------------------------- DROPZONE -- */
+.drop {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--space-3); text-align: center;
+  border: 2px dashed var(--color-border-strong); border-radius: var(--radius-lg);
+  background: var(--color-surface-sunken);
+  padding-block: var(--space-12); padding-inline: var(--space-5);
+  cursor: pointer; min-height: 44px;
+  transition: border-color var(--duration-fast) var(--ease-hover),
+              background var(--duration-fast) var(--ease-hover);
+}
+.drop:hover { border-color: var(--color-accent); }
+.drop[data-over="true"] { border-color: var(--color-accent); background: var(--color-accent-tint); }
+.drop__icon {
+  display: grid; place-items: center; inline-size: 56px; block-size: 56px;
+  border-radius: var(--radius-full); background: var(--color-surface); color: var(--color-accent);
+  box-shadow: var(--shadow-sm);
+}
+.drop__title { font-size: var(--text-lg); font-weight: var(--weight-medium); }
+.drop__hint { font-size: var(--text-sm); color: var(--color-text); }
+.formats { display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: center; }
+.format {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  background: var(--color-surface); border-radius: var(--radius-full);
+  padding-block: var(--space-2); padding-inline: var(--space-4);
+  font-size: var(--text-sm); color: var(--color-text-muted);
+}
+
+.filerow {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: var(--space-4); border-radius: var(--radius-md);
+  background: var(--color-surface); border: 1px solid var(--color-border);
+}
+.filerow__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: var(--weight-medium); }
+.filerow__meta { font-size: var(--text-sm); color: var(--color-text-muted); }
+
+/* --------------------------------------------------------------- PROGRESS -- */
+.steps { display: flex; align-items: center; gap: var(--space-3); flex: 1; }
+.steps__list { display: flex; align-items: center; gap: var(--space-2); flex: 1; }
+.steps__seg { flex: 1; height: 4px; border-radius: var(--radius-full); background: var(--color-surface-sunken); overflow: hidden; }
+.steps__seg > i {
+  display: block; block-size: 100%; inline-size: 0%;
+  background: var(--color-accent); border-radius: var(--radius-full);
+  transition: inline-size var(--duration-slow) var(--ease-out);
+}
+.steps__seg[data-state="done"] > i, .steps__seg[data-state="current"] > i { inline-size: 100%; }
+.steps__seg[data-state="current"] > i { background: var(--color-accent); }
+.steps__label { font-size: var(--text-sm); color: var(--color-text); white-space: nowrap; }
+
+/* Determinate work meter for the parse pipeline. */
+.meter { block-size: 6px; border-radius: var(--radius-full); background: var(--color-surface-sunken); overflow: hidden; }
+.meter > i { display: block; block-size: 100%; background: var(--color-accent); border-radius: var(--radius-full); transition: inline-size var(--duration-slow) var(--ease-out); }
+
+/* --------------------------------------------------------------- CALLOUT -- */
+.callout {
+  display: flex; gap: var(--space-3); align-items: flex-start;
+  padding: var(--space-4); border-radius: var(--radius-md);
+  background: var(--color-surface-sunken); font-size: var(--text-sm);
+}
+.callout--info { background: var(--color-surface-sunken); }
+.callout--danger { background: var(--color-danger-tint); color: var(--color-text); }
+.callout__icon { flex-shrink: 0; margin-block-start: 2px; }
+
+/* ------------------------------------------------------------- APP SHELL -- */
+.shell { flex: 1; display: flex; min-height: 100dvh; }
+.sidebar {
+  display: none; flex-direction: column; gap: var(--space-6);
+  inline-size: 17rem; flex-shrink: 0;
+  border-inline-end: 1px solid var(--color-border);
+  padding: var(--space-6) var(--space-4);
+  padding-block-start: max(var(--space-6), env(safe-area-inset-top));
+  background: var(--color-surface);
+  /* align-self is what makes sticky work inside a flex row. Without it the
+     sidebar stretches to the full content height, so it never sticks and its
+     background stops partway down the page. */
+  position: sticky; inset-block-start: 0;
+  block-size: 100dvh; align-self: flex-start;
+  transition: inline-size var(--duration-base) var(--ease-out);
+}
+@media (min-width: 900px) { .sidebar { display: flex; } }
+
+/* Collapsed: icons only, so the dashboard can go effectively full width.
+   Labels are removed from the flow rather than hidden, so they cannot be
+   read by a screen reader while invisible; each control keeps an aria-label. */
+.sidebar[data-collapsed='true'] { inline-size: 4.75rem; padding-inline: var(--space-2); }
+.sidebar[data-collapsed='true'] .nav__item { justify-content: center; padding-inline: var(--space-2); }
+.sidebar[data-collapsed='true'] .nav__label,
+.sidebar[data-collapsed='true'] .menu__name,
+.sidebar[data-collapsed='true'] .sidebar__langLabel { display: none; }
+.sidebar[data-collapsed='true'] .brand--side { padding-inline: 0; justify-content: center; }
+.sidebar[data-collapsed='true'] .sidebar__foot { flex-direction: column; }
+.sidebar[data-collapsed='true'] .menu__trigger { justify-content: center; padding-inline: var(--space-2); }
+
+.sidebar__head { display: flex; align-items: center; gap: var(--space-2); }
+.sidebar__collapse {
+  margin-inline-start: auto; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  inline-size: 44px; block-size: 44px; border-radius: var(--radius-md);
+  background: transparent; border: 1px solid transparent; cursor: pointer;
+  color: var(--color-text);
+  transition: background var(--duration-fast) var(--ease-hover);
+}
+.sidebar__collapse:hover { background: var(--color-surface-sunken); }
+.sidebar[data-collapsed='true'] .sidebar__head { flex-direction: column; gap: var(--space-3); }
+.sidebar[data-collapsed='true'] .sidebar__collapse { margin-inline-start: 0; }
+/* The chevron points the way it will move the panel, and mirrors in RTL. */
+.sidebar__collapse svg { transition: transform var(--duration-base) var(--ease-out); }
+[dir='rtl'] .sidebar__collapse svg { transform: scaleX(-1); }
+.sidebar[data-collapsed='true'] .sidebar__collapse svg { transform: scaleX(-1); }
+[dir='rtl'] .sidebar[data-collapsed='true'] .sidebar__collapse svg { transform: none; }
+
+.sidebar__foot { display: flex; gap: var(--space-2); }
+.nav { display: flex; flex-direction: column; gap: var(--space-1); }
+.nav__item {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding-block: var(--space-3); padding-inline: var(--space-4);
+  border-radius: var(--radius-md); color: var(--color-text-muted);
+  min-height: 44px; font-weight: var(--weight-medium);
+  transition: background var(--duration-fast) var(--ease-hover), color var(--duration-fast) var(--ease-hover);
+}
+.nav__item:hover { background: var(--color-surface-sunken); color: var(--color-text); }
+/* Selected: fill + weight + an accent rail, plus aria-current — not colour alone. */
+.nav__item[aria-current="page"] {
+  background: var(--color-accent-tint); color: var(--color-text);
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+[dir="rtl"] .nav__item[aria-current="page"] { box-shadow: inset -3px 0 0 var(--color-accent); }
+
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+/* The compact header carries language and theme on phones only; on desktop
+   those controls live in the sidebar footer instead. */
+@media (min-width: 900px) { [data-mobile-header] { display: none; } }
+.main__inner {
+  /* Wide enough that collapsing the sidebar actually buys usable space, and
+     still short enough that a line of prose does not run past comfort. */
+  width: 100%; max-width: 74rem; margin-inline: auto;
+  padding-inline: var(--space-5); padding-block: var(--space-8);
+  padding-block-end: calc(var(--space-20) + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: var(--space-6);
+}
+@media (min-width: 900px) { .main__inner { padding-block-end: var(--space-12); } }
+
+/* Mobile bottom nav — job browsing is the mobile-favoured surface, so the
+   primary destinations stay one thumb-tap away instead of behind a drawer. */
+.tabbar {
+  position: fixed; inset-inline: 0; inset-block-end: 0; z-index: var(--z-sticky);
+  display: flex; background: var(--color-surface);
+  border-block-start: 1px solid var(--color-border);
+  padding-block-end: env(safe-area-inset-bottom);
+}
+@media (min-width: 900px) { .tabbar { display: none; } }
+.tabbar__item {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: var(--space-1);
+  padding-block: var(--space-2); min-height: 56px; justify-content: center;
+  font-size: var(--text-xs); color: var(--color-text-muted);
+}
+.tabbar__item[aria-current="page"] { color: var(--color-text); font-weight: var(--weight-medium); }
+.tabbar__item[aria-current="page"] .tabbar__dot { background: var(--color-accent); }
+.tabbar__dot { inline-size: 4px; block-size: 4px; border-radius: var(--radius-full); background: transparent; }
+
+/* ------------------------------------------------------------ DATA CARDS -- */
+.grid { display: grid; gap: var(--space-4); }
+@media (min-width: 700px) { .grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1100px) { .grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+.section__head { display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; }
+.section__title { font-size: var(--text-xl); font-weight: var(--weight-semibold); }
+.section__note { font-size: var(--text-sm); color: var(--color-text); }
+
+.match { display: flex; flex-direction: column; gap: var(--space-4); }
+.match__top { display: flex; align-items: flex-start; gap: var(--space-3); }
+.match__title { font-size: var(--text-lg); font-weight: var(--weight-semibold); }
+.match__org { font-size: var(--text-sm); color: var(--color-text-muted); }
+/* "Why this match" — the standing name for the evidence chain. Bordered on the
+   inline-start edge so it reads as a quotation of evidence in both directions. */
+.why {
+  background: var(--color-surface-sunken); border-radius: var(--radius-md);
+  border-inline-start: 3px solid var(--color-accent);
+  padding: var(--space-4); font-size: var(--text-sm);
+}
+.why__head { display: flex; align-items: center; gap: var(--space-2); font-weight: var(--weight-medium); margin-block-end: var(--space-2); }
+.source { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); color: var(--color-text-muted); }
+.source a { text-decoration: underline; text-underline-offset: 3px; }
+.source a:hover { color: var(--color-text); }
+
+/* Readiness: a ring + the number + a sentence. The number never stands alone. */
+.readiness { display: flex; align-items: center; gap: var(--space-6); flex-wrap: wrap; }
+.ring { position: relative; inline-size: 108px; block-size: 108px; flex-shrink: 0; }
+.ring svg { transform: rotate(-90deg); }              /* start the arc at 12 o'clock */
+.ring__val {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: var(--text-2xl); font-weight: var(--weight-semibold);
+}
+
+/* Skill rows: capability and gap read differently by icon+label, not by hue. */
+.skill { display: flex; flex-direction: column; gap: var(--space-2); }
+.skill__head { display: flex; align-items: center; gap: var(--space-3); }
+.skill__name { flex: 1; font-weight: var(--weight-medium); font-size: var(--text-sm); }
+.skill__state { font-size: var(--text-sm); color: var(--color-text-muted); display: inline-flex; align-items: center; gap: var(--space-2); }
+
+/* ------------------------------------------------------------ SKELETON --- */
+.skeleton {
+  background: var(--color-surface-sunken); border-radius: var(--radius-sm);
+  /* Derived from a token rather than a literal. The scale tops out at 500ms
+     because product transitions stay short; an ambient looping pulse is a
+     different category and needs to be slower than any transition. */
+  animation: pulse calc(var(--duration-slower) * 3) var(--ease-in-out) infinite;
+}
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+/* ---------------------------------------------------------------- MISC --- */
+.stack { display: flex; flex-direction: column; gap: var(--space-4); }
+.stack--sm { gap: var(--space-2); }
+.stack--lg { gap: var(--space-6); }
+.row { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.row--end { justify-content: flex-end; }
+.spacer { flex: 1; }
+/* .muted is used on paper in several places, where the muted token fails AA
+   (see the note above), so it resolves to text colour and relies on the
+   smaller size for its secondary reading. */
+.muted { color: var(--color-text); }
+.text-sm { font-size: var(--text-sm); }
+.divider { block-size: 1px; background: var(--color-border); border: 0; }
+
+.empty { display: flex; flex-direction: column; align-items: center; gap: var(--space-4); text-align: center; padding-block: var(--space-12); }
+
+/* Entrance for step content. Fades only under reduced motion (tokens.css
+   already collapses durations, and transform is dropped here explicitly). */
+.enter { animation: enter var(--duration-slow) var(--ease-out) both; }
+@keyframes enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .enter { animation: fade var(--duration-slow) var(--ease-out) both; }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  .spinner, .skeleton { animation: none; }
+}
+
+.hud { display: block; }
+.hud--sm { inline-size: 96px; }
+.hud--md { inline-size: 160px; }
+.hud--lg { inline-size: 240px; }
+/* Hud faces into the content. The art faces inline-start by default, so it is
+   mirrored in LTR to keep him looking toward the text, never off-screen. */
+[dir="ltr"] .hud--face { transform: scaleX(-1); }
+
+.speech {
+  position: relative; background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg); padding: var(--space-4) var(--space-5);
+  box-shadow: var(--shadow-sm); font-size: var(--text-base); text-align: center;
+}

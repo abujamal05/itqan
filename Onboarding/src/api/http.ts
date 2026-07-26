@@ -1,0 +1,109 @@
+/**
+ * The API client. One thin fetch wrapper; no logic lives here, because
+ * extraction, ranking and matching all belong to the agent services.
+ *
+ * Auth is NOT implemented here. The marketing site owns log in and sign up:
+ * its forms post to /api/placeholder/{login,signup} and the response sets a
+ * session cookie on this origin. This app only ever *reads* that session
+ * through /api/session, and ends it through /api/logout. There is deliberately
+ * no login() or signup() method — having one would invite a second, competing
+ * sign-in surface, which is the thing we are avoiding.
+ *
+ * `credentials: 'same-origin'` is what carries the cookie.
+ */
+import type {
+  AnalysisJob, ConfirmedProfile, Course, DashboardData, ItqanApi, JobMatch,
+  OnboardingProgress, Session, UploadedDocument,
+} from './types';
+
+const BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '/api';
+
+export class HttpError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
+async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    ...init,
+    credentials: 'same-origin',
+    headers: init.body instanceof FormData
+      ? init.headers
+      : { 'Content-Type': 'application/json', ...init.headers },
+  });
+  if (!res.ok) throw new HttpError(res.status, `${res.status} on ${path}`);
+  if (res.status === 204) return undefined as T;
+  return res.json() as Promise<T>;
+}
+
+export function createHttpApi(): ItqanApi {
+  return {
+    /** Reads the session the site established. Null means "not signed in". */
+    async session() {
+      try {
+        return await req<Session>('/session');
+      } catch {
+        return null;
+      }
+    },
+    async logout() {
+      await req<void>('/logout', { method: 'POST' }).catch(() => {});
+    },
+
+    saveProgress(p, signal) {
+      return req<void>('/onboarding/progress', { method: 'PUT', body: JSON.stringify(p), signal });
+    },
+    getProgress(signal) {
+      return req<OnboardingProgress | null>('/onboarding/progress', { signal }).catch(() => null);
+    },
+    async clearProgress() {
+      await req<void>('/onboarding/progress', { method: 'DELETE' }).catch(() => {});
+    },
+
+    /**
+     * XHR rather than fetch: fetch still cannot report upload progress in any
+     * browser, and this is the one request where the user watches a bar.
+     */
+    uploadDocument({ file, kind, onProgress }, signal) {
+      return new Promise<UploadedDocument>((resolve, reject) => {
+        const form = new FormData();
+        form.append('file', file);
+        form.append('kind', kind);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `${BASE}/documents`);
+        xhr.withCredentials = true;
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) onProgress?.(e.loaded / e.total);
+        });
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try { resolve(JSON.parse(xhr.responseText) as UploadedDocument); }
+            catch { reject(new HttpError(xhr.status, 'bad json')); }
+          } else reject(new HttpError(xhr.status, 'upload failed'));
+        });
+        xhr.addEventListener('error', () => reject(new HttpError(0, 'network')));
+        xhr.addEventListener('abort', () => reject(new HttpError(0, 'aborted')));
+        signal?.addEventListener('abort', () => xhr.abort());
+        xhr.send(form);
+      });
+    },
+    startAnalysis(documentIds, signal) {
+      return req<{ jobId: string }>('/analysis', {
+        method: 'POST', body: JSON.stringify({ documentIds }), signal,
+      });
+    },
+    getAnalysis(jobId, signal) {
+      return req<AnalysisJob>(`/analysis/${encodeURIComponent(jobId)}`, { signal });
+    },
+    confirmProfile(profile: ConfirmedProfile, signal) {
+      return req<{ ok: true }>('/profile', { method: 'POST', body: JSON.stringify(profile), signal });
+    },
+    getDashboard(signal) { return req<DashboardData>('/dashboard', { signal }); },
+    getJobs(signal) { return req<JobMatch[]>('/jobs', { signal }); },
+    getCourses(signal) { return req<Course[]>('/courses', { signal }); },
+  };
+}

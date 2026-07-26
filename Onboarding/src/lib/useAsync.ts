@@ -1,0 +1,42 @@
+/**
+ * One small hook for "fetch on mount" so every data screen gets the same
+ * loading / error / ideal handling instead of each inventing its own.
+ * Aborts on unmount so a language switch mid-flight cannot set stale state.
+ */
+import { useCallback, useEffect, useState } from 'react';
+
+export interface AsyncState<T> {
+  data: T | null;
+  loading: boolean;
+  error: boolean;
+  reload: () => void;
+}
+
+export function useAsync<T>(fn: (signal: AbortSignal) => Promise<T>, deps: unknown[]): AsyncState<T> {
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [nonce, setNonce] = useState(0);
+
+  const reload = useCallback(() => setNonce((n) => n + 1), []);
+
+  useEffect(() => {
+    const ac = new AbortController();
+    setLoading(true);
+    setError(false);
+    fn(ac.signal)
+      .then((d) => {
+        if (!ac.signal.aborted) setData(d);
+      })
+      .catch(() => {
+        if (!ac.signal.aborted) setError(true);
+      })
+      .finally(() => {
+        if (!ac.signal.aborted) setLoading(false);
+      });
+    return () => ac.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [...deps, nonce]);
+
+  return { data, loading, error, reload };
+}
