@@ -9,7 +9,14 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
-html, body, #root { height: 100%; }
+/* min-height, never height.
+   `height: 100%` here caps the document at one viewport, so every descendant
+   is capped too — including .shell, which is the sticky sidebar's containing
+   block. A sticky element cannot escape its containing block, so the sidebar
+   could only stay pinned for the first screenful and then scrolled away,
+   leaving its background to stop mid page. A floor lets the page grow with
+   its content and the sidebar stays pinned the whole way down. */
+html, body { min-block-size: 100%; }
 
 body {
   margin: 0;

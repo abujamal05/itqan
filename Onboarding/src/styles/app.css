@@ -298,9 +298,11 @@
   padding: var(--space-6) var(--space-4);
   padding-block-start: max(var(--space-6), env(safe-area-inset-top));
   background: var(--color-surface);
-  /* align-self is what makes sticky work inside a flex row. Without it the
-     sidebar stretches to the full content height, so it never sticks and its
-     background stops partway down the page. */
+  /* Two things are required together, and each is useless without the other:
+     align-self stops this flex item stretching to the full content height
+     (a stretched item has nothing to stick within), and the containing block
+     .shell must be allowed to grow past one viewport — see the min-block-size
+     note in global.css. Miss either and the panel stops mid page. */
   position: sticky; inset-block-start: 0;
   block-size: 100dvh; align-self: flex-start;
   transition: inline-size var(--duration-base) var(--ease-out);
