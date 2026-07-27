@@ -150,11 +150,18 @@ export function itqanSite(): Plugin {
           if (accounts.some((a) => a.email === email)) {
             return json(res, 409, { error: 'email_taken' });
           }
+          // Same rule the deployed function enforces, so dev never accepts a
+          // password production would reject.
+          const pw = f.password ?? '';
+          const strongEnough = pw.length >= 8 && /[a-z]/.test(pw) && /[A-Z]/.test(pw)
+            && /\d/.test(pw) && /[^A-Za-z0-9]/.test(pw);
+          if (!strongEnough) return json(res, 400, { error: 'invalid_input' });
+
           const account: Account = {
             id: `u_${Date.now().toString(36)}`,
             fullName: (f.name ?? '').trim(),
             email,
-            password: f.password ?? '',
+            password: pw,
             onboarded: false,
           };
           accounts.push(account);

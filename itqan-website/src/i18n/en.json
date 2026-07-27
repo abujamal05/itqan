@@ -250,8 +250,9 @@
     },
     "password": {
       "label": "Password",
-      "hint": "At least 8 characters.",
-      "error": "Your password needs at least 8 characters."
+      "hint": "At least 8 characters, with an uppercase letter, a lowercase letter, a number and a symbol.",
+      "error": "Your password needs at least 8 characters.",
+      "errorWeak": "Add the missing pieces: an uppercase letter, a lowercase letter, a number and a symbol."
     },
     "consent": {
       "labelBefore": "I agree to Itqan processing my academic record and my data as described in the ",

@@ -80,7 +80,7 @@ const base = `/${locale}`;
 
   <!-- Hud waves, positioned away from the form itself. -->
   <div class="auth__aside">
-    <Hud pose="waving" size="md" />
+    <Hud pose="waving" size="md" loop />
   </div>
 </div>
 
@@ -92,11 +92,22 @@ const base = `/${locale}`;
 </script>
 
 <style>
+  /* Mascot at the inline start, form beside it, the pair centred on the page.
+     `order` rather than moving the markup: the form stays first in the DOM so
+     keyboard and screen-reader users reach it immediately, while Hud — who is
+     decoration and aria-hidden — simply renders ahead of it. Being logical,
+     `order` also mirrors on its own, so he sits left in English and right in
+     Arabic without a second rule. */
   .auth {
     display: flex;
-    gap: var(--space-16);
-    align-items: flex-start;
+    gap: var(--space-12);
+    align-items: center;
+    justify-content: center;
     padding-block: var(--space-16);
+  }
+
+  .auth__aside {
+    order: -1;
   }
 
   .auth__main {
@@ -121,7 +132,6 @@ const base = `/${locale}`;
 
   .auth__aside {
     flex: 0 0 auto;
-    margin-block-start: var(--space-16);
   }
 
   @media (max-width: 51.99rem) {
@@ -137,7 +147,7 @@ const base = `/${locale}`;
     }
 
     .auth__aside {
-      margin-block-start: 0;
+      order: 0;
       align-self: center;
     }
   }

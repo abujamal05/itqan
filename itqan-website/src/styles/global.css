@@ -165,6 +165,19 @@ a {
   }
 }
 
+/* Large displays.
+   72rem was chosen for a laptop and holds up there, but on a 27in monitor it
+   leaves the page as a narrow ribbon down the middle. These steps only raise
+   the ceiling above 1600px, so laptop, tablet and phone are untouched.
+   Widening is safe because the prose inside is already capped in `ch`: the
+   columns spread, the sentences do not get longer. */
+@media (min-width: 100rem) {
+  .container { max-width: 84rem; }
+}
+@media (min-width: 120rem) {
+  .container { max-width: 96rem; padding-inline: var(--space-8); }
+}
+
 /* ---- Buttons (per components.md) ------------------------------------------- */
 .button {
   display: inline-flex;

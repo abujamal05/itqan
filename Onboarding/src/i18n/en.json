@@ -168,5 +168,12 @@
   "courses.filterFree": "Free only",
   "courses.filterShort": "Under 10 hours",
   "courses.filterRecommended": "Recommended",
-  "upload.kindLabel": "What kind of document is this?"
+  "upload.kindLabel": "What kind of document is this?",
+  "a11y.homeLink": "Itqan, home page",
+  "journey.title": "Your journey",
+  "journey.progress": "{done} of {total} stages done",
+  "journey.state.done": "Done",
+  "journey.state.current": "You are here",
+  "journey.state.upcoming": "Still to come",
+  "journey.complete": "Every stage is done. Keep adding documents as you earn them."
 }

@@ -213,7 +213,7 @@ const stepIcons = [
   <div class="container">
     <div class="closing reveal">
       <div class="closing__bg" aria-hidden="true"></div>
-      <Hud pose="waving" size="md" />
+      <Hud pose="waving" size="md" loop />
       <h2>{s.home.closing.heading}</h2>
       <a class="button button--primary button--arrow" href={`${base}/signup/`}>
         <span>{s.actions.signup}</span>
@@ -238,14 +238,23 @@ const stepIcons = [
     pointer-events: none;
   }
 
-  /* A warm soft glow anchored near Hud; calm, not neon. */
-  .hero__bg::before {
+  /* A warm soft glow behind Hud; calm, not neon.
+     It hangs off the figure, not off the section. Anchored to the section it
+     was positioned from the viewport edge, so on a wide monitor it slid away
+     to the far right while Hud stayed with the centred container — leaving
+     him with no glow at all. Attached here it follows him at every width. */
+  .hero__figure::before {
     content: '';
     position: absolute;
-    inset-block-start: -8%;
-    inset-inline-end: -6%;
-    inline-size: 36rem;
-    block-size: 36rem;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    translate: -50% -50%;
+    inline-size: 140%;
+    block-size: 140%;
+    min-inline-size: 22rem;
+    min-block-size: 22rem;
+    z-index: -1;
+    pointer-events: none;
     border-radius: var(--radius-full);
     background: radial-gradient(
       circle,
@@ -329,6 +338,8 @@ const stepIcons = [
 
   .hero__figure {
     flex: 0 0 auto;
+    position: relative;   /* the glow above is positioned against this */
+    isolation: isolate;
   }
 
   @media (max-width: 51.99rem) {
@@ -660,6 +671,26 @@ const stepIcons = [
     flex: 0 0 auto;
     position: sticky;
     inset-block-start: var(--space-16);
+  }
+
+  /* Scales with the viewport instead of sitting at a fixed 180px, which read
+     as a stamp next to a full column of questions on a large monitor. The
+     floor keeps him above the 120px where he becomes visual noise. */
+  .faq__aside :global(.hud) {
+    inline-size: clamp(11rem, 16vw, 20rem);
+  }
+
+  /* He faces the questions, not away from them. The artwork looks toward the
+     inline-end by default, and the aside sits after the content, so in LTR he
+     needs mirroring. In RTL the column order flips and he already faces in. */
+  .faq__aside :global(.hud__video),
+  .faq__aside :global(.hud__poster) {
+    transform: scaleX(-1);
+  }
+
+  :global([dir='rtl']) .faq__aside :global(.hud__video),
+  :global([dir='rtl']) .faq__aside :global(.hud__poster) {
+    transform: none;
   }
 
   @media (max-width: 51.99rem) {

@@ -18,7 +18,27 @@
  * genuine milestones. Adding him to a results surface breaks the product's
  * whole argument, so do not.
  */
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+/**
+ * WebKit decodes WebM but discards the alpha channel, so every transparent
+ * pixel around Hud paints solid black. That is every browser on iPhone and
+ * iPad — they are all WebKit underneath — plus Safari on the Mac.
+ *
+ * There is no feature query for "alpha in WebM", so this is engine detection,
+ * which is the honest description of the bug. Those browsers get the
+ * transparent PNG instead: a still mascot beats a black rectangle. The real
+ * fix is shipping an HEVC-with-alpha companion file, which needs the source
+ * animations re-exported.
+ */
+function webmAlphaBroken() {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent;
+  const iOSLike = /iP(hone|od|ad)/.test(ua)
+    || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);  // iPadOS says Mac
+  const desktopSafari = /^((?!chrome|chromium|android|crios|fxios|edgios).)*safari/i.test(ua);
+  return iOSLike || desktopSafari;
+}
 
 export type Pose = 'flying-in' | 'idle' | 'waving' | 'thinking' | 'analyzing' | 'celebrating' | 'error';
 
@@ -39,13 +59,15 @@ export function Hud({
   eager?: boolean;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
+  // Decided once on mount so the markup does not flip after paint.
+  const [stillOnly] = useState(webmAlphaBroken);
   const src = `/mascot/${pose}.webm`;
   const poster = `/mascot/${pose}.png`;
   const nextSrc = nextPose ? `/mascot/${nextPose}.webm` : null;
 
   useEffect(() => {
     const video = ref.current;
-    if (!video) return;
+    if (!video || stillOnly) return;
 
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       video.removeAttribute('autoplay');
@@ -53,7 +75,14 @@ export function Hud({
       return;                       // poster only; the video is never fetched
     }
 
-    const load = () => { if (!video.src) video.src = src; };
+    const load = () => {
+      if (video.src) return;
+      video.src = src;
+      // Buffer the clip. With preload="none" a looping video can stall at the
+      // wrap point while it re-reads the start, which reads as a pause before
+      // the animation restarts.
+      video.preload = 'auto';
+    };
     if (eager) load();
 
     const onEnded = () => {
@@ -84,7 +113,15 @@ export function Hud({
       video.removeEventListener('ended', onEnded);
     };
     // Re-runs when the pose changes so a new clip is loaded and played.
-  }, [src, nextSrc, eager]);
+  }, [src, nextSrc, eager, stillOnly]);
+
+  if (stillOnly) {
+    return (
+      <div className="hud" style={{ ['--hud-width' as string]: `${WIDTHS[size]}px` }} aria-hidden="true">
+        <img className="hud__poster" src={poster} alt="" draggable={false} />
+      </div>
+    );
+  }
 
   return (
     <div className="hud" style={{ ['--hud-width' as string]: `${WIDTHS[size]}px` }} aria-hidden="true">

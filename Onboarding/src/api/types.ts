@@ -146,6 +146,22 @@ export interface SkillStanding {
   held: boolean;
 }
 
+/**
+ * One stage of the user's journey through the product.
+ *
+ * The service decides both the labels and which stage is current, because the
+ * truth lives with the pipeline, not the browser: a stage is "done" when the
+ * work actually finished, not when a screen was visited.
+ */
+export interface JourneyStage {
+  id: string;
+  /** Already localised by the service. */
+  label: string;
+  state: 'done' | 'current' | 'upcoming';
+  /** e.g. a completion date, or what happens next. Optional. */
+  detail?: string;
+}
+
 export interface DashboardData {
   readiness: number;          // 0..100, agent-computed
   readinessNote: string;      // plain-language explanation, authored by the agent
@@ -154,6 +170,8 @@ export interface DashboardData {
   topMatches: JobMatch[];
   gaps: string[];
   nextStep: { title: string; body: string; action: 'courses' | 'jobs' | 'documents' };
+  /** Where the user is in the overall process, oldest stage first. */
+  journey: JourneyStage[];
 }
 
 /* ----------------------------------------------------------------- AUTH -- */

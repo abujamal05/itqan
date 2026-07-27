@@ -157,4 +157,14 @@ export const dashboard = (l: Locale) => ({
     }, l),
     action: 'courses' as const,
   },
+  journey: [
+    { id: 'read',    label: pick({ ar: 'قراءة مستنداتك', en: 'Reading your documents' }, l),
+      state: 'done',     detail: pick({ ar: 'اكتملت 24 يوليو', en: 'Completed 24 Jul' }, l) },
+    { id: 'skills',  label: pick({ ar: 'تحديد مهاراتك', en: 'Identifying your skills' }, l),
+      state: 'done',     detail: pick({ ar: 'اكتملت 24 يوليو', en: 'Completed 24 Jul' }, l) },
+    { id: 'courses', label: pick({ ar: 'مطابقة الدورات', en: 'Matching courses' }, l),
+      state: 'current',  detail: pick({ ar: 'المرحلة الحالية', en: 'Where you are now' }, l) },
+    { id: 'jobs',    label: pick({ ar: 'التقديم على الوظائف', en: 'Applying for jobs' }, l),
+      state: 'upcoming', detail: pick({ ar: 'الخطوة القادمة', en: 'Next milestone' }, l) },
+  ],
 });

@@ -87,7 +87,7 @@ function AccountMenu() {
 }
 
 export function AppLayout() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     try { return localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { return false; }
   });
@@ -121,9 +121,11 @@ export function AppLayout() {
         data-collapsed={collapsed || undefined}
       >
         <div className="sidebar__head">
-          <NavLink to="/dashboard" className="brand brand--side" aria-label={t('brand.name')}>
+          {/* A plain anchor, not a router link: the mark leads Home, and Home
+              is the marketing site — a different app on the same product. */}
+          <a href={siteHome(locale)} className="brand brand--side" aria-label={t('a11y.homeLink')}>
             <Logo variant={collapsed ? 'icon' : 'lockup'} />
-          </NavLink>
+          </a>
           <button
             type="button"
             className="sidebar__collapse"
@@ -165,9 +167,9 @@ export function AppLayout() {
       <div className="main">
         {/* Phones get the mark and the same controls in a compact header. */}
         <header className="topbar" data-mobile-header>
-          <NavLink to="/dashboard" className="brand" aria-label={t('brand.name')}>
+          <a href={siteHome(locale)} className="brand" aria-label={t('a11y.homeLink')}>
             <Logo variant="icon" />
-          </NavLink>
+          </a>
           <span className="spacer" />
           <LangToggle compact />
           <ThemeToggle compact />

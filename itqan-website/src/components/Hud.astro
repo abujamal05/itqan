@@ -81,7 +81,39 @@ const width = widths[size];
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
   const videos = document.querySelectorAll<HTMLVideoElement>('.hud__video');
 
-  videos.forEach((video) => {
+  /**
+   * WebKit decodes WebM but throws the alpha channel away, so every
+   * transparent pixel around Hud paints solid black. That is every browser on
+   * iPhone and iPad (they are all WebKit underneath) plus Safari on the Mac.
+   *
+   * There is no feature query for "alpha in WebM", so this is engine
+   * detection, which is the honest description of the bug. Those browsers get
+   * the transparent PNG instead: a still mascot is a large step better than a
+   * black rectangle. The real fix is shipping an HEVC-with-alpha companion
+   * file, which needs the source animations re-exported.
+   */
+  const ua = navigator.userAgent;
+  const iOSLike = /iP(hone|od|ad)/.test(ua)
+    || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1); // iPadOS reports as Mac
+  const desktopSafari = /^((?!chrome|chromium|android|crios|fxios|edgios).)*safari/i.test(ua);
+  const noWebmAlpha = iOSLike || desktopSafari;
+
+  if (noWebmAlpha) {
+    videos.forEach((video) => {
+      const poster = video.getAttribute('poster');
+      if (!poster) return;
+      const img = document.createElement('img');
+      img.className = 'hud__poster';
+      img.src = poster;
+      img.alt = '';
+      img.width = 400;
+      img.height = 386;
+      img.loading = video.dataset.eager ? 'eager' : 'lazy';
+      video.replaceWith(img);
+    });
+  }
+
+  (noWebmAlpha ? [] : videos).forEach((video) => {
     if (reduced.matches) {
       // Poster only. The video file is never requested.
       video.removeAttribute('autoplay');
@@ -90,7 +122,13 @@ const width = widths[size];
     }
 
     const load = () => {
-      if (!video.src && video.dataset.src) video.src = video.dataset.src;
+      if (!video.src && video.dataset.src) {
+        video.src = video.dataset.src;
+        // Buffer the whole clip. With preload="none" a looping video can stall
+        // at the wrap point while it re-reads the start, which reads as the
+        // animation pausing before it restarts.
+        video.preload = 'auto';
+      }
     };
 
     if (video.dataset.eager) load();
@@ -120,6 +158,7 @@ const width = widths[size];
     video.addEventListener('ended', () => {
       const next = video.dataset.nextSrc;
       if (next) {
+        video.preload = 'auto';
         video.src = next;
         video.loop = true;
         video.play().catch(() => {});

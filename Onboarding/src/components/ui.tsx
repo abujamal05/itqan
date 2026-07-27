@@ -46,12 +46,22 @@ export function Card({ children, className = '', ...rest }: { children: ReactNod
  * it must say "Suggested — confirm" and never state the result plainly.
  * Colour, icon and word all carry the state so hue is never load-bearing.
  */
-export function ConfidenceBadge({ strong, label }: { strong: boolean; label: string }) {
+export function ConfidenceBadge({
+  strong, label, percent,
+}: { strong: boolean; label: string; percent?: string }) {
   const Icon = strong ? Check : HelpCircle;
   return (
     <span className={`badge ${strong ? 'badge--strong' : 'badge--suggested'}`}>
       <Icon size={14} aria-hidden="true" />
       {label}
+      {percent && (
+        <>
+          {/* Decorative separator: the space in the accessible name is enough,
+              and a screen reader announcing "bullet" adds nothing. */}
+          <span className="badge__sep" aria-hidden="true">•</span>
+          <span className="num">{percent}%</span>
+        </>
+      )}
     </span>
   );
 }

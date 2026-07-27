@@ -27,7 +27,21 @@ function validate(field: HTMLElement): string | null {
   if (value && input.minLength > 0 && value.length < input.minLength) {
     return field.dataset.msgMinlength ?? null;
   }
+  // Composition, checked only where a password is being SET. Login is left
+  // alone deliberately: telling someone their own correct password is invalid
+  // helps nobody and leaks the policy to whoever is typing.
+  if (value && field.dataset.check === 'password' && !isStrongPassword(value)) {
+    return field.dataset.msgWeak ?? null;
+  }
   return null;
+}
+
+/** Upper, lower, digit and one symbol. Length is handled by minlength above. */
+export function isStrongPassword(value: string): boolean {
+  return /[a-z]/.test(value)
+    && /[A-Z]/.test(value)
+    && /\d/.test(value)
+    && /[^A-Za-z0-9]/.test(value);
 }
 
 function showError(field: HTMLElement, message: string): void {

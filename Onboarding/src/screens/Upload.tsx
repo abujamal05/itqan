@@ -105,10 +105,15 @@ export function Upload() {
 
             <hr className="divider" />
 
+            {/* A real bordered button, not a ghost. As a ghost it was
+                invisible until hovered, so the one escape route for someone
+                without their documents read as body text and was missed. It
+                stays visually quieter than the primary action — secondary,
+                not hidden. */}
             <div className="stack stack--sm">
-              <button type="button" className="btn btn--ghost" onClick={goManual} style={{ alignSelf: 'flex-start' }}>
+              <Button variant="secondary" onClick={goManual} style={{ alignSelf: 'flex-start' }}>
                 {t('upload.noDoc')}
-              </button>
+              </Button>
               <p className="text-sm muted">{t('upload.noDocHint')}</p>
             </div>
           </div>

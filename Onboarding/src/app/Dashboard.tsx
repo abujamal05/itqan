@@ -24,6 +24,7 @@ import { useOnboarding } from '../state/onboarding';
 import { useAuth } from '../state/auth';
 import { Card, CapabilityChip, EmptyState, ErrorState, GapChip, LoadingBlock } from '../components/ui';
 import { MatchCard } from '../components/MatchCard';
+import { Journey } from '../components/Journey';
 
 export function Dashboard() {
   const { t, locale } = useI18n();
@@ -151,6 +152,9 @@ export function Dashboard() {
           </div>
         )}
       </section>
+
+      {/* 5. Where this sits in the whole process. */}
+      <Journey stages={data.journey} />
     </div>
   );
 }

@@ -40,11 +40,13 @@
   aspect-ratio: 400 / 386;
   display: flex; align-items: center; justify-content: center;
 }
-.hud__video { inline-size: 100%; block-size: 100%; object-fit: contain; }
+.hud__video,
+.hud__poster { inline-size: 100%; block-size: 100%; object-fit: contain; }
 
 /* On dark surfaces his navy parts merge into the canvas, so a hairline cream
    keyline is added here — one video file then serves both themes. */
-[data-theme='dark'] .hud__video {
+[data-theme='dark'] .hud__video,
+[data-theme='dark'] .hud__poster {
   filter: drop-shadow(0 0 1px var(--paper)) drop-shadow(0 0 1px var(--paper))
           drop-shadow(0 0 1px var(--paper));
 }
@@ -310,4 +312,84 @@
 
 @media (prefers-reduced-motion: reduce) {
   .spin { animation: none; }
+}
+
+/* ---------------------------------------------------------------- JOURNEY -- */
+/* A horizontal track on wide screens, a vertical one on phones. Both use the
+   same markup; only the axis changes, so there is one component to reason
+   about. State is never carried by colour alone: done has a check, current a
+   filled ring plus aria-current, upcoming an open outline, and each states its
+   condition in words. */
+.journey {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6) var(--space-5);
+}
+.journey__stage {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center;
+  gap: var(--space-2); text-align: center;
+  padding-inline: var(--space-2);
+}
+/* Drawn on the item rather than between items, so it mirrors with direction
+   automatically and never trails off the last stage. */
+.journey__line {
+  position: absolute;
+  inset-block-start: 18px;
+  inset-inline-end: 50%;
+  inline-size: 100%;
+  block-size: 2px;
+  background: var(--color-border);
+  z-index: 0;
+}
+.journey__stage[data-state='done'] .journey__line,
+.journey__stage[data-state='current'] .journey__line { background: var(--color-accent); }
+
+.journey__marker {
+  position: relative; z-index: 1;
+  inline-size: 36px; block-size: 36px; border-radius: var(--radius-full);
+  display: grid; place-items: center;
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  color: var(--color-text);
+}
+.journey__dot {
+  inline-size: 8px; block-size: 8px; border-radius: var(--radius-full);
+  background: var(--color-border-strong);
+}
+.journey__stage[data-state='done'] .journey__marker {
+  background: var(--color-accent); border-color: var(--color-accent);
+  color: var(--color-text-on-gold);
+}
+.journey__stage[data-state='current'] .journey__marker {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 4px var(--color-accent-tint);
+}
+.journey__stage[data-state='current'] .journey__dot { background: var(--color-accent); }
+
+.journey__label { font-size: var(--text-sm); font-weight: var(--weight-medium); }
+.journey__stage[data-state='upcoming'] .journey__label { font-weight: var(--weight-regular); }
+.journey__detail { font-size: var(--text-xs); }
+
+/* Phones: one column, marker beside the label, the track running downward. */
+@media (max-width: 40rem) {
+  .journey { grid-template-columns: 1fr; gap: var(--space-4); }
+  .journey__stage {
+    flex-direction: row; align-items: center; text-align: start;
+    gap: var(--space-3); padding-inline: 0;
+  }
+  .journey__line {
+    inset-block-start: auto;
+    inset-block-end: 50%;
+    inset-inline-end: auto;
+    inset-inline-start: 17px;
+    inline-size: 2px;
+    block-size: var(--space-4);
+  }
+  .journey__label { flex: 1; }
+  .journey__detail { flex: 0 0 auto; }
 }

@@ -22,8 +22,15 @@ export default async function handler(req, res) {
   const password = String(form.password || '');
 
   // The site validates all of this client side too; this is the backstop for
-  // anything that reaches the endpoint directly.
-  if (!fullName || !email || password.length < 8) {
+  // anything that reaches the endpoint directly. Client-side validation is a
+  // courtesy to the user, never a control — the rule has to hold here as well.
+  const strongEnough = password.length >= 8
+    && /[a-z]/.test(password)
+    && /[A-Z]/.test(password)
+    && /\d/.test(password)
+    && /[^A-Za-z0-9]/.test(password);
+
+  if (!fullName || !email || !strongEnough) {
     return json(res, 400, { error: 'invalid_input' });
   }
   if (ACCOUNTS.some((a) => a.email === email)) {

@@ -42,13 +42,15 @@ export function MatchCard({
               <bdi>{job.employer}</bdi> · <bdi>{job.location}</bdi>
             </p>
           </div>
-          <div className="stack stack--sm" style={{ alignItems: 'flex-end' }}>
-            <ConfidenceBadge
-              strong={strong}
-              label={strong ? t('jobs.matchStrong') : t('jobs.matchSuggested')}
-            />
-            <span className="text-sm muted num">{formatNumber(Math.round(job.score * 100))}%</span>
-          </div>
+          {/* Label and figure in one badge. Split apart they read as two
+              separate claims and the number floated free of the word that
+              qualifies it; together they are a single verdict. The word still
+              leads, so the state survives without the number. */}
+          <ConfidenceBadge
+            strong={strong}
+            label={strong ? t('jobs.matchStrong') : t('jobs.matchSuggested')}
+            percent={formatNumber(Math.round(job.score * 100))}
+          />
         </div>
 
         <div className="why">

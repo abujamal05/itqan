@@ -193,6 +193,9 @@
    Never presents below-threshold output as fact. */
 .badge--suggested { background: transparent; border: 1px dashed var(--color-text-muted); color: var(--color-text-muted); }
 .badge--neutral { background: var(--color-surface-sunken); color: var(--color-text); }
+/* Separates the verdict from its figure inside one badge. Decorative, so it is
+   aria-hidden in the markup; the space alone reads correctly aloud. */
+.badge__sep { opacity: 0.55; }
 
 /* ----------------------------------------------------------------- FIELD -- */
 .field { display: flex; flex-direction: column; gap: var(--space-2); }
@@ -476,4 +479,22 @@
   position: relative; background: var(--color-surface); border: 1px solid var(--color-border);
   border-radius: var(--radius-lg); padding: var(--space-4) var(--space-5);
   box-shadow: var(--shadow-sm); font-size: var(--text-base); text-align: center;
+}
+
+/* ==========================================================================
+   LARGE DISPLAYS
+   The widths above were tuned on a laptop and hold up there, but on a 27in
+   monitor they leave the product as a narrow ribbon down the middle. These
+   steps only raise the ceiling above 1600px, so laptop, tablet and phone are
+   unchanged. Card grids spread; prose stays capped by its own measure.
+   ========================================================================== */
+@media (min-width: 100rem) {
+  .ob__bar, .ob__main, .topbar { max-width: 80rem; }
+  .main__inner { max-width: 86rem; }
+}
+@media (min-width: 120rem) {
+  .ob__bar, .ob__main, .topbar { max-width: 92rem; }
+  .main__inner { max-width: 100rem; }
+  /* A third column earns its place once there is genuinely room for it. */
+  .grid--2 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }

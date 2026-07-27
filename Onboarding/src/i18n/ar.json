@@ -168,5 +168,12 @@
   "courses.filterFree": "المجانية فقط",
   "courses.filterShort": "أقل من 10 ساعات",
   "courses.filterRecommended": "المقترحة",
-  "upload.kindLabel": "ما نوع هذا المستند؟"
+  "upload.kindLabel": "ما نوع هذا المستند؟",
+  "a11y.homeLink": "إتقان، الصفحة الرئيسية",
+  "journey.title": "رحلتك",
+  "journey.progress": "{done} من {total} مراحل مكتملة",
+  "journey.state.done": "مكتملة",
+  "journey.state.current": "أنت هنا",
+  "journey.state.upcoming": "لم تبدأ بعد",
+  "journey.complete": "اكتملت كل المراحل. أضف مستنداتك كلما حصلت عليها."
 }
