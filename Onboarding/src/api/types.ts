@@ -89,14 +89,42 @@ export interface AnalysisJob {
   error?: string;
 }
 
+/**
+ * What the user told us about the work they want, asked one question at a time
+ * during the pipeline wait.
+ *
+ * Structured rather than free tags: every field here is something the matching
+ * agent can filter or rank on directly. `preferredRole` is the one open field,
+ * because a job title is a thing people already have words for and a fixed list
+ * would be wrong for most of them.
+ *
+ * Every field is nullable. The questions only re-rank results, so refusing to
+ * answer must never block anyone from their own transcript.
+ */
+export interface Preferences {
+  /** 'free' = free courses only. 'any' = free and paid both fine. */
+  coursePricing: 'free' | 'any' | null;
+  workArrangement: 'remote' | 'hybrid' | 'onsite' | null;
+  /** Free text, in the user's own words. May be empty. */
+  preferredRole: string;
+  /** Whether to surface adjacent roles they did not name. */
+  openToOtherRoles: 'yes' | 'no' | null;
+}
+
+export const emptyPreferences = (): Preferences => ({
+  coursePricing: null,
+  workArrangement: null,
+  preferredRole: '',
+  openToOtherRoles: null,
+});
+
 /** What the user confirmed. This, not the raw extraction, drives everything. */
 export interface ConfirmedProfile {
   fullName: string;
   birthDate: string | null;
   graduationDate: string | null;
   skills: string[];
-  interests: string[];
-  notes: string;
+  preferences: Preferences;
   documentId: string | null;
 }
 
@@ -201,8 +229,7 @@ export interface Session {
 export interface OnboardingProgress {
   step: 'upload' | 'questions' | 'confirm';
   documents: UploadedDocument[];
-  interests: string[];
-  notes: string;
+  preferences: Preferences;
   documentId: string | null;
   updatedAt: number;
 }

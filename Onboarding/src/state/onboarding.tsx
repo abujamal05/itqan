@@ -19,7 +19,10 @@ import {
   createContext, useCallback, useContext, useEffect, useMemo, useRef, useState,
 } from 'react';
 import type { ReactNode } from 'react';
-import type { AnalysisJob, ConfirmedProfile, ItqanApi, OnboardingProgress, UploadedDocument } from '../api';
+import type {
+  AnalysisJob, ConfirmedProfile, ItqanApi, OnboardingProgress, Preferences, UploadedDocument,
+} from '../api';
+import { emptyPreferences } from '../api';
 
 export type Entry = 'document' | 'manual';
 export type Step = OnboardingProgress['step'];
@@ -31,8 +34,7 @@ interface OnboardingValue {
   analysis: AnalysisJob | null;
   settled: boolean;
   failed: boolean;
-  interests: string[];
-  notes: string;
+  preferences: Preferences;
   profile: ConfirmedProfile | null;
 
   /** Saved progress found on boot, offered rather than forced. */
@@ -42,8 +44,8 @@ interface OnboardingValue {
 
   begin: (documents: UploadedDocument[]) => Promise<void>;
   startManual: () => void;
-  toggleInterest: (id: string) => void;
-  setNotes: (v: string) => void;
+  /** Merges one answer; the rest are left alone. */
+  setPreference: <K extends keyof Preferences>(key: K, value: Preferences[K]) => void;
   completeProfile: (p: ConfirmedProfile) => void;
   reset: () => void;
 }
@@ -64,8 +66,7 @@ export function OnboardingProvider({
   const [documents, setDocuments] = useState<UploadedDocument[]>([]);
   const [jobId, setJobId] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisJob | null>(null);
-  const [interests, setInterests] = useState<string[]>([]);
-  const [notes, setNotesState] = useState('');
+  const [preferences, setPreferences] = useState<Preferences>(emptyPreferences);
   const [profile, setProfile] = useState<ConfirmedProfile | null>(null);
   const [resumable, setResumable] = useState<OnboardingProgress | null>(null);
   const timer = useRef<number | null>(null);
@@ -79,7 +80,8 @@ export function OnboardingProvider({
     api.getProgress()
       .then((p) => {
         // Only worth offering if they actually got somewhere.
-        if (alive && p && (p.documents.length > 0 || p.interests.length > 0 || p.notes)) {
+        const answered = p && Object.values(p.preferences ?? {}).some((v) => v !== null && v !== '');
+        if (alive && p && (p.documents.length > 0 || answered)) {
           setResumable(p);
         }
       })
@@ -91,8 +93,7 @@ export function OnboardingProvider({
     const p = resumable;
     if (!p) return;
     setDocuments(p.documents);
-    setInterests(p.interests);
-    setNotesState(p.notes);
+    setPreferences(p.preferences ?? emptyPreferences());
     step.current = p.step;
     setResumable(null);
     // The job is not resumable across sessions, so the pipeline is re-run over
@@ -120,7 +121,8 @@ export function OnboardingProvider({
    */
   const persist = useCallback(() => {
     if (!enabled || resumable) return;
-    const empty = documents.length === 0 && interests.length === 0 && notes.trim() === '';
+    const answered = Object.values(preferences).some((v) => v !== null && v !== '');
+    const empty = documents.length === 0 && !answered;
     if (empty) return;
 
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
@@ -128,13 +130,12 @@ export function OnboardingProvider({
       void api.saveProgress({
         step: step.current,
         documents,
-        interests,
-        notes,
+        preferences,
         documentId: documents[0]?.id ?? null,
         updatedAt: Date.now(),
       }).catch(() => {});
     }, SAVE_DEBOUNCE_MS);
-  }, [api, enabled, resumable, documents, interests, notes]);
+  }, [api, enabled, resumable, documents, preferences]);
 
   useEffect(() => { persist(); }, [persist]);
   useEffect(() => () => { if (saveTimer.current) window.clearTimeout(saveTimer.current); }, []);
@@ -188,16 +189,16 @@ export function OnboardingProvider({
     setDocuments([]);
     setJobId(null);
     setAnalysis(null);
-    setInterests([]);
-    setNotesState('');
+    setPreferences(emptyPreferences());
     setProfile(null);
     step.current = 'upload';
     void api.clearProgress();
   }, [stopPolling, api]);
 
-  const toggleInterest = useCallback((id: string) => {
-    setInterests((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
-  }, []);
+  const setPreference = useCallback(
+    <K extends keyof Preferences>(key: K, value: Preferences[K]) => {
+      setPreferences((cur) => ({ ...cur, [key]: value }));
+    }, []);
 
   const settled = analysis?.stage === 'done' || analysis?.stage === 'failed';
   const failed = analysis?.stage === 'failed';
@@ -206,12 +207,12 @@ export function OnboardingProvider({
     entry, documents, jobId, analysis,
     settled: entry === 'manual' ? true : !!settled,
     failed: !!failed,
-    interests, notes, profile,
+    preferences, profile,
     resumable, dismissResume, resume,
-    begin, startManual, toggleInterest, setNotes: setNotesState,
+    begin, startManual, setPreference,
     completeProfile: setProfile, reset,
-  }), [entry, documents, jobId, analysis, settled, failed, interests, notes, profile,
-       resumable, dismissResume, resume, begin, startManual, toggleInterest, reset]);
+  }), [entry, documents, jobId, analysis, settled, failed, preferences, profile,
+       resumable, dismissResume, resume, begin, startManual, setPreference, reset]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -1,49 +1,72 @@
 /**
- * Screen 3 — direction, asked while the document is being read.
+ * Step 2 — four questions about the work they want, asked one at a time,
+ * while the documents are being read.
  *
- * This is the best idea in the sketches and it is kept: the four agents take
- * real time, and a user staring at a progress bar is a user deciding whether
- * to close the tab. Asking something useful during the wait converts dead time
- * into signal, and by the time the answers are given the reading is usually
- * finished. The wait effectively costs nothing.
+ * The parallel wait is the best idea in the original sketches and it is kept:
+ * four agents take real time, and a user watching a progress bar is a user
+ * deciding whether to close the tab. Asking something useful during that wait
+ * turns dead time into signal, and by the time the answers are given the
+ * reading has usually finished.
  *
- * Changes from the sketch:
- *  - The sketch asked one open ended question. A blank box is the highest
- *    effort input there is, and this user may be demoralised and on a phone.
- *    Selectable interests come first (recognition rather than recall), with
- *    the free text kept as an optional elaboration for people who want it.
- *  - Everything here is skippable. The answers only re-rank results; refusing
- *    to answer must never block someone from their own transcript.
- *  - Continue is never blocked on the pipeline. If the reading is still
- *    running the user may move on, and the confirmation screen shows its own
- *    loading state. Trapping someone behind a spinner they did not ask for is
- *    the thing this screen exists to avoid.
- *  - Failure is non destructive: the answers survive, and the user is offered
- *    another file or the manual route.
+ * One question per screen rather than a single long form. Each question is a
+ * different kind of decision, and stacking them makes the screen read as
+ * paperwork; alone, each is a two second answer. The cost is more steps, which
+ * is why the count is stated up front and every question can be skipped.
+ *
+ * Choice questions advance on selection. There is no Continue to hunt for and
+ * no second tap to confirm something already decided; Back is always there,
+ * and the selection stays visible so a change of mind is one tap. The open
+ * question needs Continue, because there is no moment a machine can call "done
+ * typing".
+ *
+ * Nothing here blocks anything. The answers only re-rank results, so refusing
+ * to answer must never stand between someone and their own transcript.
  */
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { useOnboarding } from '../state/onboarding';
-import { Button, Callout, Chip, TextField } from '../components/ui';
+import type { Preferences } from '../api';
+import { Button, Callout, TextField } from '../components/ui';
 import { HudGuide } from '../components/HudGuide';
 import { SiteHeader } from '../components/SiteHeader';
 
-const INTERESTS = [
-  'tech', 'data', 'engineering', 'business', 'finance',
-  'health', 'education', 'design', 'energy', 'public',
-] as const;
+/** Each question names the field it fills, so answers cannot drift from state. */
+type ChoiceQuestion = {
+  kind: 'choice';
+  field: 'coursePricing' | 'workArrangement' | 'openToOtherRoles';
+  options: string[];
+};
+type TextQuestion = { kind: 'text'; field: 'preferredRole' };
+type Question = (ChoiceQuestion | TextQuestion) & { id: string };
+
+const QUESTIONS: Question[] = [
+  { id: 'coursePricing', kind: 'choice', field: 'coursePricing', options: ['free', 'any'] },
+  { id: 'workArrangement', kind: 'choice', field: 'workArrangement', options: ['remote', 'hybrid', 'onsite'] },
+  { id: 'preferredRole', kind: 'text', field: 'preferredRole' },
+  { id: 'openToOtherRoles', kind: 'choice', field: 'openToOtherRoles', options: ['yes', 'no'] },
+];
 
 export function Questions() {
   const { t, formatNumber } = useI18n();
   const navigate = useNavigate();
-  const {
-    interests, toggleInterest, notes, setNotes,
-    analysis, settled, failed, entry,
-  } = useOnboarding();
+  const { preferences, setPreference, analysis, settled, failed, entry } = useOnboarding();
+  const [index, setIndex] = useState(0);
 
+  const q = QUESTIONS[index];
+  const isLast = index === QUESTIONS.length - 1;
   const pct = Math.round((analysis?.progress ?? 0) * 100);
   const reading = entry === 'document' && !settled;
   const done = entry === 'document' && settled && !failed;
+
+  const goNext = () => (isLast ? navigate('/confirm') : setIndex((i) => i + 1));
+  const goBack = () => (index === 0 ? navigate('/upload') : setIndex((i) => i - 1));
+
+  const choose = (value: string) => {
+    setPreference(q.field as keyof Preferences, value as never);
+    // A beat so the selection is seen before the screen moves on.
+    window.setTimeout(goNext, 220);
+  };
 
   return (
     <div className="ob">
@@ -62,7 +85,7 @@ export function Questions() {
 
           <div className="stage__content">
             {/* Pipeline status. Announced politely so it reaches a screen
-                reader without stealing focus from the question below. */}
+                reader without stealing focus from the question. */}
             {entry === 'document' && !failed && (
               <div className="card card--sunken" role="status" aria-live="polite">
                 <div className="stack stack--sm">
@@ -70,11 +93,9 @@ export function Questions() {
                     <span className="text-sm" style={{ fontWeight: 'var(--weight-medium)' }}>
                       {done ? t('questions.readingDone') : t('questions.reading')}
                     </span>
-                    <span className="text-sm muted num">{formatNumber(pct)}%</span>
+                    <span className="text-sm num">{formatNumber(pct)}%</span>
                   </div>
-                  <div className="meter">
-                    <i style={{ inlineSize: `${pct}%` }} />
-                  </div>
+                  <div className="meter"><i style={{ inlineSize: `${pct}%` }} /></div>
                 </div>
               </div>
             )}
@@ -97,44 +118,59 @@ export function Questions() {
             )}
 
             <div className="stack stack--sm">
-              <span className="eyebrow">{t('questions.eyebrow')}</span>
-              <h1 className="headline">{t('questions.title')}</h1>
-              <p className="subhead">{t('questions.sub')}</p>
+              <span className="eyebrow">
+                {t('questions.counter', {
+                  current: formatNumber(index + 1),
+                  total: formatNumber(QUESTIONS.length),
+                })}
+              </span>
+              {/* key remounts the heading so a screen reader re-reads the new
+                  question rather than leaving focus on stale text. */}
+              <h1 className="headline" key={q.id}>{t(`q.${q.id}.title`)}</h1>
+              <p className="subhead">{t(`q.${q.id}.help`)}</p>
             </div>
 
-            <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
-              <legend className="field__label" style={{ marginBlockEnd: 'var(--space-3)' }}>
-                {t('questions.pickHint')}
-              </legend>
-              <div className="row" style={{ gap: 'var(--space-2)' }}>
-                {INTERESTS.map((id) => (
-                  <Chip
-                    key={id}
-                    selected={interests.includes(id)}
-                    onToggle={() => toggleInterest(id)}
-                  >
-                    {t(`interest.${id}`)}
-                  </Chip>
-                ))}
+            {q.kind === 'choice' ? (
+              <div className="stack" role="group" aria-label={t(`q.${q.id}.title`)}>
+                {q.options.map((opt) => {
+                  const selected = preferences[q.field] === opt;
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      className="choice"
+                      aria-pressed={selected}
+                      onClick={() => choose(opt)}
+                    >
+                      <span className="choice__label">
+                        {t(`q.${q.id}.opt.${opt}`)}
+                        <span className="choice__sub">{t(`q.${q.id}.optHelp.${opt}`)}</span>
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
-            </fieldset>
-
-            <TextField
-              label={t('questions.freeLabel')}
-              placeholder={t('questions.freePlaceholder')}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-            />
+            ) : (
+              <TextField
+                label={t(`q.${q.id}.label`)}
+                placeholder={t(`q.${q.id}.placeholder`)}
+                value={preferences.preferredRole}
+                onChange={(e) => setPreference('preferredRole', e.target.value)}
+                rows={2}
+              />
+            )}
 
             {reading && <p className="text-sm muted">{t('questions.waiting')}</p>}
 
             <div className="row">
-              <Button variant="secondary" onClick={() => navigate('/upload')}>
-                {t('action.back')}
-              </Button>
-              <Button onClick={() => navigate('/confirm')}>{t('questions.cta')}</Button>
-              <button type="button" className="btn btn--ghost" onClick={() => navigate('/confirm')}>
+              <Button variant="secondary" onClick={goBack}>{t('action.back')}</Button>
+              {/* Choice questions advance themselves, so Continue would be a
+                  second way to do the same thing. It appears only where the
+                  user has to say when they are finished. */}
+              {q.kind === 'text' && (
+                <Button onClick={goNext}>{t('questions.cta')}</Button>
+              )}
+              <button type="button" className="btn btn--ghost" onClick={goNext}>
                 {t('questions.skip')}
               </button>
             </div>

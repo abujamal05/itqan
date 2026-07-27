@@ -49,7 +49,7 @@ export function Confirm() {
   const api = useApi();
   // Flips the account's onboarded flag so the guards stop routing back here.
   const { markOnboarded: onDone } = useAuth();
-  const { analysis, entry, settled, failed, interests, notes, documents, completeProfile } = useOnboarding();
+  const { analysis, entry, settled, failed, preferences, documents, completeProfile } = useOnboarding();
 
   const result = analysis?.stage === 'done' ? analysis.result : undefined;
   const waiting = entry === 'document' && !settled;
@@ -122,8 +122,7 @@ export function Confirm() {
       birthDate: draft.birth || null,
       graduationDate: draft.graduation || null,
       skills: draft.skills.map((s) => s.name),
-      interests,
-      notes,
+      preferences,
       documentId: documents[0]?.id ?? null,
     };
     try {

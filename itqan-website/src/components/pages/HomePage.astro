@@ -30,7 +30,6 @@ const stepIcons = [
 
 <!-- 1. Hero. Hud flies in once, then idles. Evidence surfaces stay away from him. -->
 <section class="hero">
-  <div class="hero__bg" aria-hidden="true"></div>
   <div class="container hero__grid">
     <div class="hero__copy">
       <p class="hero__kicker reveal">
@@ -231,36 +230,77 @@ const stepIcons = [
     overflow: hidden;
   }
 
-  .hero__bg {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-  }
-
-  /* A warm soft glow behind Hud; calm, not neon.
+  /* A large light source behind Hud that extends well past him, giving the
+     hero depth instead of a flat panel.
      It hangs off the figure, not off the section. Anchored to the section it
      was positioned from the viewport edge, so on a wide monitor it slid away
      to the far right while Hud stayed with the centred container — leaving
-     him with no glow at all. Attached here it follows him at every width. */
-  .hero__figure::before {
+     him with no glow at all. Attached here it follows him at every width.
+
+     Two stacked layers: a wide, soft outer field and a tighter, brighter core.
+     One gradient either reads as a flat disc or blows out the middle; two give
+     a falloff that looks like light rather than a shape. */
+  .hero__figure::before,
+  .hero__figure::after {
     content: '';
     position: absolute;
     inset-block-start: 50%;
     inset-inline-start: 50%;
-    translate: -50% -50%;
-    inline-size: 140%;
-    block-size: 140%;
-    min-inline-size: 22rem;
-    min-block-size: 22rem;
     z-index: -1;
     pointer-events: none;
     border-radius: var(--radius-full);
+    will-change: transform;
+  }
+
+  /* Outer field: broad, faint, extends far beyond the mascot. */
+  .hero__figure::before {
+    inline-size: 260%;
+    block-size: 260%;
+    min-inline-size: 32rem;
+    min-block-size: 32rem;
+    translate: -50% -50%;
     background: radial-gradient(
       circle,
-      color-mix(in srgb, var(--color-accent) 20%, transparent),
-      transparent 68%
+      color-mix(in srgb, var(--color-accent) 22%, transparent) 0%,
+      color-mix(in srgb, var(--color-accent) 9%, transparent) 38%,
+      transparent 70%
     );
+    animation: glow-drift 18s var(--ease-in-out) infinite;
+  }
+
+  /* Inner core: sits right behind him and lifts the backdrop his artwork is
+     composited over, which also stops the dark canvas reading through the
+     transparent gaps in the mascot art. */
+  .hero__figure::after {
+    inline-size: 130%;
+    block-size: 130%;
+    min-inline-size: 16rem;
+    min-block-size: 16rem;
+    translate: -50% -50%;
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--color-accent) 26%, transparent) 0%,
+      transparent 62%
+    );
+    animation: glow-breathe 12s var(--ease-in-out) infinite;
+  }
+
+  /* Slow enough to be felt rather than watched. Transform and opacity only,
+     so it stays on the compositor and never triggers layout. */
+  @keyframes glow-drift {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.9; }
+    33%      { transform: translate3d(2.5%, -2%, 0) scale(1.06); opacity: 1; }
+    66%      { transform: translate3d(-2%, 2.5%, 0) scale(0.97); opacity: 0.85; }
+  }
+  @keyframes glow-breathe {
+    0%, 100% { transform: scale(1); opacity: 0.85; }
+    50%      { transform: scale(1.1); opacity: 1; }
+  }
+
+  /* Motion is decoration here, so it goes entirely rather than being reduced. */
+  @media (prefers-reduced-motion: reduce) {
+    .hero__figure::before,
+    .hero__figure::after { animation: none; }
   }
 
   .hero__grid {
@@ -343,6 +383,17 @@ const stepIcons = [
   }
 
   @media (max-width: 51.99rem) {
+    /* The homepage is the first thing anyone sees, and on a phone the mascot
+       plus his glow filled most of the first screen before a word was read.
+       He is removed from the hero here — homepage only, phone only. He stays
+       on desktop, on every other page, and in the closing section below, which
+       is the one place on this page where he is the invitation rather than
+       decoration. Removed from the flow rather than hidden, so his video is
+       never fetched on a phone connection either. */
+    .hero__figure {
+      display: none;
+    }
+
     .hero {
       padding-block: var(--space-12) var(--space-10);
     }

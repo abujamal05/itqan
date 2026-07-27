@@ -184,13 +184,31 @@ const width = widths[size];
     object-fit: contain;
   }
 
-  /* Dark mode: his navy parts merge into the dark canvas, so add a very thin
-     cream keyline (stacked drop-shadows). Invisible on the light paper surface,
-     applied only on dark — kept out of the video so one clean file serves both. */
-  :global([data-theme='dark']) .hud__video,
-  :global([data-theme='dark']) .hud__poster {
-    filter: drop-shadow(0 0 1px var(--paper)) drop-shadow(0 0 1px var(--paper))
-      drop-shadow(0 0 1px var(--paper));
+  /* Two jobs, one filter.
+   *
+   * 1. ASSET BUG WORKAROUND. The mascot artwork has fully transparent holes
+   *    punched through it at the eyes — measured: alpha 0 right beside an
+   *    opaque navy pupil. Whatever sits behind the mascot therefore shows
+   *    through the eye. On paper that reads as a white highlight and looks
+   *    correct, which is why nobody noticed; on the dark canvas the eye turns
+   *    black, and behind the hero glow it would take the glow's colour.
+   *    A blurred paper-coloured drop-shadow is drawn behind the alpha, so it
+   *    floods those holes with paper in every theme and the eye reads right
+   *    wherever he stands. 3px is the measured minimum that fills the hole
+   *    completely; 1px only reached 188,188,189 (grey).
+   *
+   * 2. Keyline. On dark surfaces his navy parts would otherwise merge into the
+   *    canvas, and the same shadow gives him a hairline cream edge.
+   *
+   * THE REAL FIX IS IN THE ARTWORK: re-export the mascot with the eyes painted
+   * opaque instead of cut out. Then this can drop back to a 1px keyline under
+   * [data-theme='dark'] only. Kept out of the video file so one clean asset
+   * still serves both themes.
+   */
+  .hud__video,
+  .hud__poster {
+    filter: drop-shadow(0 0 3px var(--paper)) drop-shadow(0 0 3px var(--paper))
+      drop-shadow(0 0 3px var(--paper));
   }
 
   .hud--placeholder {

@@ -52,6 +52,15 @@ html {
 
 body {
   min-height: 100dvh;
+  /* Sticky footer. body was already 100dvh tall but laid out as static blocks,
+     so on a short page (log in, sign up, 404) header + main + footer stopped
+     where the content stopped and the leftover height showed as blank space
+     UNDER the footer. As a column with main taking the slack, the footer is
+     always the last thing on the page with nothing beneath it.
+     body::before is position:fixed, so it stays out of the flow and does not
+     become a stray flex item. */
+  display: flex;
+  flex-direction: column;
   background-color: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-family);
@@ -148,6 +157,12 @@ a {
 
 .skip-link:focus-visible {
   transform: translateY(0);
+}
+
+/* Takes the leftover height so the footer is pinned to the bottom of a short
+   page and flush with the content on a long one. */
+main {
+  flex: 1 0 auto;
 }
 
 /* ---- Layout helpers ----------------------------------------------------------

@@ -43,12 +43,17 @@
 .hud__video,
 .hud__poster { inline-size: 100%; block-size: 100%; object-fit: contain; }
 
-/* On dark surfaces his navy parts merge into the canvas, so a hairline cream
-   keyline is added here — one video file then serves both themes. */
-[data-theme='dark'] .hud__video,
-[data-theme='dark'] .hud__poster {
-  filter: drop-shadow(0 0 1px var(--paper)) drop-shadow(0 0 1px var(--paper))
-          drop-shadow(0 0 1px var(--paper));
+/* Two jobs, one filter — see the long note in itqan-website/src/components/Hud.astro.
+   The mascot artwork has fully transparent holes at the eyes (measured: alpha 0
+   beside an opaque navy pupil), so whatever is behind him shows through them.
+   On paper that reads as a white highlight; on the dark canvas the eye turns
+   black. A blurred paper drop-shadow floods those holes in every theme, and
+   doubles as the keyline that stops his navy merging into a dark background.
+   The real fix is re-exporting the artwork with opaque eyes. */
+.hud__video,
+.hud__poster {
+  filter: drop-shadow(0 0 3px var(--paper)) drop-shadow(0 0 3px var(--paper))
+          drop-shadow(0 0 3px var(--paper));
 }
 
 .guide { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); }
