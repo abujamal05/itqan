@@ -8,3 +8,10 @@
 node_modules/
 dist/
 .env
+
+# Playwright: browser binaries live in the user cache, but these run/output dirs
+# are per-run artifacts and never belong in the repo.
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
