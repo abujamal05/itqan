@@ -275,23 +275,35 @@ const stepIcons = [
         paper theme and only registered against dark navy — which is why it
         seemed to appear "in Arabic only" when Arabic happened to be in dark
         mode. It now clears both themes.
-      - The swing is large and unmistakable: the core roughly doubles in
-        brightness, scales 0.8 -> 1.3, drifts and rotates ~20deg, on a 9s cycle
-        with the field on 13s. Coprime, so the pair only realigns every ~2min
-        and never reads as an obvious loop. Still smooth easing, so it breathes
-        rather than pulses.
+      - The swing is large and unmistakable: the core goes 0.4 -> 1 opacity and
+        0.75 -> 1.35 scale while drifting and rotating ~32deg.
 
-     Two details that are load-bearing rather than decorative:
+     SMOOTHNESS COMES FROM THE LOOP SHAPE, not the easing curve. A multi-keyframe
+     loop decelerates to a full stop at EVERY keyframe, and those repeated stops
+     are what read as stutter however gentle the curve is. So each layer is two
+     keyframes on `alternate` instead: velocity now rests only at the two
+     extremes, which is exactly where a breath pauses. The core's full there-and
+     -back swing is 2.5s x 2 = 5s. The field runs at 3.25s (6.5s round trip) so
+     the pair drifts in and out of phase and never looks mechanically locked,
+     while the core still sets the ~5s rhythm the eye actually reads.
+
+     Easing is `--ease-in-out` per itqan-motion's decision table: this is an
+     element already on screen, morphing in place.
+
+     Three details that are load-bearing rather than decorative:
 
       - Every stop ends on the accent at ZERO alpha, never the `transparent`
         keyword. `transparent` is transparent BLACK, and an engine that
         interpolates without premultiplying drags the midtones toward grey,
         which is what a glow with a dirty ring around it is.
-      - `filter: blur()` on each layer. Wide gradients with small alpha steps
-        band into visible rings on WebKit, which does not dither them; blurring
-        pushes each step below a pixel. Rasterised once, then only transformed,
-        so it costs nothing per frame — and neither transform nor opacity ever
-        triggers layout or paint, however far the layers travel.
+      - `filter: blur()` on each layer smooths the gradient's alpha steps, which
+        band into visible rings on WebKit because it does not dither them. Held
+        at the 20px ceiling itqan-motion sets for animated layers; the extra
+        gradient stops do the rest of the softening that a wider blur was doing.
+      - Only transform and opacity animate, so both layers stay on the
+        compositor and neither triggers layout or paint however far they travel.
+        `translate3d` in the keyframes promotes the layer without a standing
+        `will-change`, which the skill asks be temporary rather than permanent.
      --------------------------------------------------------------------- */
   .hero::before,
   .hero::after {
@@ -300,85 +312,94 @@ const stepIcons = [
     z-index: -1;
     pointer-events: none;
     border-radius: var(--radius-full);
-    will-change: transform, opacity;
   }
 
   /* Outer field: broad, filling the inline-end half of the hero and reaching
      well into the middle so the light has somewhere to fall off to. */
   .hero::before {
-    inline-size: min(130vw, 60rem);
+    inline-size: min(130vw, 62rem);
     aspect-ratio: 1 / 1.15;
-    inset-block-start: -22%;
-    inset-inline-end: -14%;
+    inset-block-start: -20%;
+    inset-inline-end: -12%;
     background: radial-gradient(
       closest-side at 50% 50%,
-      color-mix(in srgb, var(--color-accent) 42%, transparent) 0%,
-      color-mix(in srgb, var(--color-accent) 24%, transparent) 34%,
-      color-mix(in srgb, var(--color-accent) 9%, transparent) 62%,
-      color-mix(in srgb, var(--color-accent) 0%, transparent) 84%
+      color-mix(in srgb, var(--color-accent) 46%, transparent) 0%,
+      color-mix(in srgb, var(--color-accent) 32%, transparent) 26%,
+      color-mix(in srgb, var(--color-accent) 18%, transparent) 46%,
+      color-mix(in srgb, var(--color-accent) 7%, transparent) 66%,
+      color-mix(in srgb, var(--color-accent) 0%, transparent) 86%
     );
-    filter: blur(34px);
-    animation: glow-field 13s var(--ease-in-out) infinite;
+    filter: blur(20px);
+    /* Base pose, used as-is when motion is reduced. */
+    transform: rotate(calc(var(--glow-lean) * -8deg)) scale(1.02);
+    animation: glow-field 3.25s var(--ease-in-out) infinite alternate;
   }
 
   /* The core: brighter, its centre sitting just inside the inline-end edge at
      mid height, where the reference light is strongest. This is the layer the
-     eye registers as "something is happening over there". */
+     eye registers as "something is happening over there", and the one that sets
+     the 5s rhythm. */
   .hero::after {
-    inline-size: min(90vw, 40rem);
+    inline-size: min(92vw, 42rem);
     aspect-ratio: 1 / 1.3;
-    inset-block-start: 2%;
-    inset-inline-end: -6%;
+    inset-block-start: 0%;
+    inset-inline-end: -4%;
     background: radial-gradient(
       closest-side at 50% 50%,
-      color-mix(in srgb, var(--color-accent) 58%, transparent) 0%,
-      color-mix(in srgb, var(--color-accent) 30%, transparent) 38%,
+      color-mix(in srgb, var(--color-accent) 62%, transparent) 0%,
+      color-mix(in srgb, var(--color-accent) 44%, transparent) 24%,
+      color-mix(in srgb, var(--color-accent) 26%, transparent) 44%,
       color-mix(in srgb, var(--color-accent) 8%, transparent) 66%,
-      color-mix(in srgb, var(--color-accent) 0%, transparent) 82%
+      color-mix(in srgb, var(--color-accent) 0%, transparent) 84%
     );
-    filter: blur(30px);
-    animation: glow-core 9s var(--ease-in-out) infinite;
+    filter: blur(20px);
+    transform: rotate(calc(var(--glow-lean) * -10deg)) scale(1);
+    animation: glow-core 2.5s var(--ease-in-out) infinite alternate;
   }
 
-  /* Each angle is multiplied by --glow-lean so the whole thing mirrors in
-     Arabic instead of leaning the wrong way out of the opposite corner. */
+  /* Two keyframes each, on `alternate`. Each angle and inline offset is
+     multiplied by --glow-lean so the whole thing mirrors in Arabic instead of
+     leaning the wrong way out of the opposite corner. */
   @keyframes glow-field {
-    0%, 100% {
-      transform: translate3d(0, 0, 0) rotate(calc(var(--glow-lean) * -12deg)) scale(1);
-      opacity: 0.7;
+    from {
+      transform: translate3d(calc(var(--glow-lean) * 5%), -4%, 0) rotate(calc(var(--glow-lean) * -21deg)) scale(0.86);
+      opacity: 0.55;
     }
-    30% {
-      transform: translate3d(calc(var(--glow-lean) * -9%), 6%, 0) rotate(calc(var(--glow-lean) * 2deg)) scale(1.18);
+    to {
+      transform: translate3d(calc(var(--glow-lean) * -8%), 6%, 0) rotate(calc(var(--glow-lean) * 4deg)) scale(1.2);
       opacity: 1;
-    }
-    62% {
-      transform: translate3d(calc(var(--glow-lean) * 6%), -5%, 0) rotate(calc(var(--glow-lean) * -22deg)) scale(0.88);
-      opacity: 0.62;
     }
   }
 
   @keyframes glow-core {
-    0%, 100% {
-      transform: translate3d(0, 0, 0) rotate(calc(var(--glow-lean) * -16deg)) scale(0.82);
-      opacity: 0.55;
+    from {
+      transform: translate3d(calc(var(--glow-lean) * 6%), -5%, 0) rotate(calc(var(--glow-lean) * -26deg)) scale(0.75);
+      opacity: 0.4;
     }
-    36% {
-      transform: translate3d(calc(var(--glow-lean) * -10%), 9%, 0) rotate(calc(var(--glow-lean) * 4deg)) scale(1.3);
+    to {
+      transform: translate3d(calc(var(--glow-lean) * -9%), 8%, 0) rotate(calc(var(--glow-lean) * 6deg)) scale(1.35);
       opacity: 1;
-    }
-    70% {
-      transform: translate3d(calc(var(--glow-lean) * 5%), -4%, 0) rotate(calc(var(--glow-lean) * -24deg)) scale(1.0);
-      opacity: 0.7;
     }
   }
 
-  /* Motion is decoration here, so it goes entirely rather than being reduced.
-     The light itself stays: it is part of the composition, not the animation. */
+  /* Reduced motion is not NO motion (itqan-motion §5): movement goes, the fade
+     stays. An opacity breathe does not trigger vestibular symptoms, and killing
+     the light's life entirely was overcorrecting — it left a flat gold smear
+     where a light source should be.
+
+     Only the animation NAME and duration are overridden, so the shorthand's
+     `infinite alternate` still applies and the base `transform` on each layer
+     holds its pose. */
   @media (prefers-reduced-motion: reduce) {
     .hero::before,
     .hero::after {
-      animation: none;
-      will-change: auto;
+      animation-name: glow-fade;
+      animation-duration: 6s;
+    }
+
+    @keyframes glow-fade {
+      from { opacity: 0.6; }
+      to   { opacity: 1; }
     }
   }
 
