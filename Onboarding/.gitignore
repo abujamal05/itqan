@@ -15,3 +15,6 @@ dist/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Lighthouse reports are generated output.
+/lighthouse-reports/
