@@ -45,6 +45,10 @@
 .hud__poster {
   position: relative; z-index: 1;
   inline-size: 100%; block-size: 100%; object-fit: contain;
+  /* Shrink below the intrinsic 400x386 so the container's aspect-ratio wins.
+     WebKit otherwise enforces the flex item's intrinsic height as a minimum and
+     the box grows to 386px tall (see the matching note in Hud.astro). */
+  min-inline-size: 0; min-block-size: 0;
 }
 
 /* Two jobs, one filter — see the long note in itqan-website/src/components/Hud.astro.

@@ -227,7 +227,10 @@ const stepIcons = [
   .hero {
     position: relative;
     padding-block: var(--space-20) var(--space-16);
-    overflow: hidden;
+    /* Clip only the horizontal bleed (which would add a scrollbar); let the glow
+       fade downward past the section instead of hitting the hard rectangular
+       edge `overflow: hidden` gave it. */
+    overflow-x: clip;
     isolation: isolate;
 
     /* Which way the light leans. Both glow layers are tilted, and a tilt is
@@ -323,10 +326,10 @@ const stepIcons = [
     inset-inline-end: -12%;
     background: radial-gradient(
       closest-side at 50% 50%,
-      color-mix(in srgb, var(--color-accent) 46%, transparent) 0%,
-      color-mix(in srgb, var(--color-accent) 32%, transparent) 26%,
-      color-mix(in srgb, var(--color-accent) 18%, transparent) 46%,
-      color-mix(in srgb, var(--color-accent) 7%, transparent) 66%,
+      color-mix(in srgb, var(--color-accent) 22%, transparent) 0%,
+      color-mix(in srgb, var(--color-accent) 14%, transparent) 30%,
+      color-mix(in srgb, var(--color-accent) 7%, transparent) 52%,
+      color-mix(in srgb, var(--color-accent) 3%, transparent) 68%,
       color-mix(in srgb, var(--color-accent) 0%, transparent) 86%
     );
     filter: blur(20px);
@@ -346,10 +349,10 @@ const stepIcons = [
     inset-inline-end: -4%;
     background: radial-gradient(
       closest-side at 50% 50%,
-      color-mix(in srgb, var(--color-accent) 62%, transparent) 0%,
-      color-mix(in srgb, var(--color-accent) 44%, transparent) 24%,
-      color-mix(in srgb, var(--color-accent) 26%, transparent) 44%,
-      color-mix(in srgb, var(--color-accent) 8%, transparent) 66%,
+      color-mix(in srgb, var(--color-accent) 30%, transparent) 0%,
+      color-mix(in srgb, var(--color-accent) 18%, transparent) 30%,
+      color-mix(in srgb, var(--color-accent) 8%, transparent) 52%,
+      color-mix(in srgb, var(--color-accent) 3%, transparent) 68%,
       color-mix(in srgb, var(--color-accent) 0%, transparent) 84%
     );
     filter: blur(20px);

@@ -11,5 +11,23 @@ node_modules/
 
 # Build caches
 .vercel/
-**/.astro/
 **/*.tsbuildinfo
+
+# Astro's generated folder.
+#
+# The TYPE DECLARATIONS inside it are tracked on purpose. They are what lets a
+# fresh clone typecheck before anyone has run `astro sync`, and a change to them
+# is a real change worth seeing in a diff — previously the whole folder was
+# ignored while every file in it was already tracked, so `types.d.ts` sat
+# permanently modified and could not be committed without -f.
+#
+# Only the machine-local caches beside them stay out. `settings.json` holds
+# nothing but an update-check timestamp, so tracking it would put a meaningless
+# one-line diff in every commit and bury the changes this rule exists to show.
+#
+# The pattern ignores the folder's CONTENTS (`/*`) rather than the folder
+# itself: git cannot re-include a file whose parent directory is excluded, so
+# `**/.astro/` with a `!` negation below it would silently do nothing.
+**/.astro/*
+!**/.astro/*.d.ts
+!**/.astro/*.mjs

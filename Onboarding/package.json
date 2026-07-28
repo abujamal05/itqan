@@ -7,7 +7,14 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "e2e:serve": "npm --prefix ../itqan-website run build && vite --port 4333 --strictPort",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:chromium": "playwright test --project=chromium",
+    "test:e2e:webkit": "playwright test --project=webkit",
+    "test:e2e:report": "playwright show-report",
+    "lighthouse": "node scripts/lighthouse.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.26.0",
@@ -16,10 +23,13 @@
     "react-router-dom": "^7.18.1"
   },
   "devDependencies": {
-    "@types/node": "^24.13.2",
+    "@playwright/test": "^1.62.0",
+    "@types/node": "^26.1.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
+    "chrome-launcher": "^1.2.1",
+    "lighthouse": "^13.4.1",
     "oxlint": "^1.71.0",
     "typescript": "~6.0.2",
     "vite": "^8.1.1"

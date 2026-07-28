@@ -262,13 +262,25 @@ const width = widths[size];
     justify-content: center;
   }
 
-  .hud__video,
-  .hud__poster {
+  /* GLOBAL on purpose, not scoped. The WebKit fallback poster is created in the
+   * script above with `document.createElement('img')`, so it never carries the
+   * `data-astro-cid` hash Astro adds to markup — a scoped `.hud__poster` rule
+   * would silently skip the one element WebKit always renders. Left scoped, that
+   * poster fell back to the browser defaults `object-fit: fill` and
+   * `min-block-size: auto`, which STRETCHED the mascot art into a 250x386 box.
+   * The image on the page is exactly the case these rules must reach. */
+  :global(.hud__video),
+  :global(.hud__poster) {
     position: relative;
     z-index: 1;
     inline-size: 100%;
     block-size: 100%;
     object-fit: contain;
+    /* Let the media shrink below its intrinsic 400x386 so the container's
+       aspect-ratio drives the box. Without it the flex item's automatic
+       minimum is its intrinsic height and the box grows to 386px tall. */
+    min-inline-size: 0;
+    min-block-size: 0;
   }
 
   /* The contact shadow.
@@ -341,8 +353,8 @@ const width = widths[size];
    * full-layer rasterisation of a 400px figure that is often the only animated
    * thing on screen. The visible result is identical and it is a third cheaper.
    */
-  .hud__video,
-  .hud__poster {
+  :global(.hud__video),
+  :global(.hud__poster) {
     filter: drop-shadow(0 0 3px var(--paper)) drop-shadow(0 0 3px var(--paper));
   }
 
