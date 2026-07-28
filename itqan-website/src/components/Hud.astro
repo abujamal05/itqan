@@ -37,7 +37,19 @@ const video = exists(`${pose}.webm`) ? `/mascot/${pose}.webm` : null;
 const poster = exists(`${pose}.png`) ? `/mascot/${pose}.png` : null;
 const nextVideo = nextPose && exists(`${nextPose}.webm`) ? `/mascot/${nextPose}.webm` : null;
 
-const widths = { sm: '120px', md: '180px', lg: '250px' };
+/**
+ * Fluid, not fixed. A single px width made him oversized on a 360px phone and
+ * undersized on a 27in monitor, and the still fallback showed it worst because
+ * a frozen figure is looked at rather than glanced at. Each size is a range:
+ * a floor that keeps him above the 120px where he becomes noise, a viewport
+ * term so he tracks the layout, and a ceiling so he never dominates.
+ * `aspect-ratio` on .hud holds the proportions at every step of that range.
+ */
+const widths = {
+  sm: 'clamp(120px, 16vw, 140px)',
+  md: 'clamp(140px, 22vw, 180px)',
+  lg: 'clamp(160px, 30vw, 250px)',
+};
 const width = widths[size];
 ---
 
@@ -52,6 +64,8 @@ const width = widths[size];
         loop={loop}
         poster={poster ?? undefined}
         preload="none"
+        width="400"
+        height="386"
         data-src={video}
         data-next-src={nextVideo ?? undefined}
         data-eager={eager ? 'true' : undefined}
@@ -65,6 +79,7 @@ const width = widths[size];
         alt=""
         width="400"
         height="386"
+        decoding="async"
         loading={eager ? 'eager' : 'lazy'}
       />
     </div>
@@ -78,48 +93,92 @@ const width = widths[size];
 }
 
 <script>
+  /**
+   * Decide whether the mascot can animate CORRECTLY here, and show the still
+   * PNG whenever the answer is no. A clean still beats a broken animation, and
+   * the page must never be the thing that decides that on the user's behalf by
+   * guessing wrong.
+   *
+   * Three separate failures are handled, because they are three different
+   * bugs and only the first is about the browser's name:
+   *
+   *  1. WEBM ALPHA IS DISCARDED. WebKit decodes the file and throws the alpha
+   *     channel away, painting every transparent pixel solid black — a black
+   *     rectangle where the bird should be. That is every browser on iPhone and
+   *     iPad (all WebKit underneath) plus Safari on the Mac. There is no
+   *     feature query for it, so the engine is identified up front and the
+   *     video is never requested at all. Skipping the request is the point:
+   *     the clips are 220-470KB and downloading one on a phone to discover it
+   *     cannot be used is the worst of both.
+   *
+   *  2. PLAYBACK NEVER STARTS. Low Power Mode on iOS, a data saver, or a
+   *     refused autoplay leaves a video element that loaded fine and simply
+   *     never moves. Checked by watching the clock rather than trusting
+   *     play() to resolve.
+   *
+   *  3. ALPHA IS DISCARDED SOMEWHERE ELSE. Read back from the first painted
+   *     frame, so any engine that regresses degrades to the still instead of
+   *     showing a black box. Free, because the frame is already decoded.
+   *
+   * The real fix for (1) is shipping an HEVC-with-alpha companion file, which
+   * needs the source animations re-exported.
+   */
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
   const videos = document.querySelectorAll<HTMLVideoElement>('.hud__video');
 
   /**
-   * WebKit decodes WebM but throws the alpha channel away, so every
-   * transparent pixel around Hud paints solid black. That is every browser on
-   * iPhone and iPad (they are all WebKit underneath) plus Safari on the Mac.
-   *
-   * There is no feature query for "alpha in WebM", so this is engine
-   * detection, which is the honest description of the bug. Those browsers get
-   * the transparent PNG instead: a still mascot is a large step better than a
-   * black rectangle. The real fix is shipping an HEVC-with-alpha companion
-   * file, which needs the source animations re-exported.
+   * Every WebKit browser reports Apple as the vendor, on every platform, and
+   * nothing else does — Chrome and Edge say "Google Inc.", Firefox says "".
+   * That covers Safari, and Chrome/Firefox/Edge on iOS, which are WebKit in a
+   * different coat and were the ones the old user-agent regex let through.
    */
-  const ua = navigator.userAgent;
-  const iOSLike = /iP(hone|od|ad)/.test(ua)
-    || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1); // iPadOS reports as Mac
-  const desktopSafari = /^((?!chrome|chromium|android|crios|fxios|edgios).)*safari/i.test(ua);
-  const noWebmAlpha = iOSLike || desktopSafari;
+  const isWebKit = navigator.vendor === 'Apple Computer, Inc.';
 
-  if (noWebmAlpha) {
-    videos.forEach((video) => {
-      const poster = video.getAttribute('poster');
-      if (!poster) return;
-      const img = document.createElement('img');
-      img.className = 'hud__poster';
-      img.src = poster;
-      img.alt = '';
-      img.width = 400;
-      img.height = 386;
-      img.loading = video.dataset.eager ? 'eager' : 'lazy';
-      video.replaceWith(img);
-    });
-  }
+  /** Swaps a video for its poster, in place, keeping the layout box identical. */
+  const toStill = (video: HTMLVideoElement) => {
+    const poster = video.getAttribute('poster');
+    if (!poster || !video.parentNode) return;
+    const img = document.createElement('img');
+    img.className = 'hud__poster';
+    img.src = poster;
+    img.alt = '';
+    img.width = 400;
+    img.height = 386;
+    img.decoding = 'async';
+    img.loading = video.dataset.eager ? 'eager' : 'lazy';
+    video.replaceWith(img);
+  };
 
-  (noWebmAlpha ? [] : videos).forEach((video) => {
-    if (reduced.matches) {
-      // Poster only. The video file is never requested.
-      video.removeAttribute('autoplay');
-      video.preload = 'none';
+  /**
+   * True when the painted frame still has transparent corners. The artwork is
+   * centred in a 400x386 frame, so all four corners are empty; if they come
+   * back opaque the alpha channel was dropped on the way in.
+   */
+  const keptAlpha = (video: HTMLVideoElement) => {
+    try {
+      const c = document.createElement('canvas');
+      c.width = 8;
+      c.height = 8;
+      const ctx = c.getContext('2d', { willReadFrequently: true });
+      if (!ctx) return true;                 // cannot tell; assume it is fine
+      ctx.drawImage(video, 0, 0, 8, 8);
+      const { data } = ctx.getImageData(0, 0, 8, 8);
+      const corners = [0, 7, 56, 63].map((px) => data[px * 4 + 3]);
+      return Math.min(...corners) < 250;
+    } catch {
+      return true;                           // never fail closed on a probe
+    }
+  };
+
+  videos.forEach((video) => {
+    if (isWebKit || reduced.matches) {
+      // Reduced motion gets the still for the same reason, and neither case
+      // ever requests the clip.
+      toStill(video);
       return;
     }
+
+    let verified = false;
 
     const load = () => {
       if (!video.src && video.dataset.src) {
@@ -131,11 +190,36 @@ const width = widths[size];
       }
     };
 
+    /**
+     * Once playback reports it has started: has the clock actually moved, and
+     * did the frame keep its alpha. Either answer being no means the still is
+     * the better mascot.
+     *
+     * Finding it PAUSED at the end of the window is not a failure — that is the
+     * observer below doing its job because the user scrolled him out of view.
+     * Falling back on that would take the animation away from anyone who
+     * scrolls quickly, so the check simply re-arms for the next time he plays.
+     */
+    const verify = () => {
+      if (verified) return;
+      verified = true;
+      const at = video.currentTime;
+      window.setTimeout(() => {
+        if (!video.isConnected) return;
+        if (video.paused) { verified = false; return; }
+        if (video.currentTime === at || !keptAlpha(video)) toStill(video);
+      }, 600);
+    };
+
+    video.addEventListener('playing', verify);
+    // Nothing to play back means nothing to verify.
+    video.addEventListener('error', () => toStill(video), { once: true });
+
     if (video.dataset.eager) load();
 
     if (!('IntersectionObserver' in window)) {
       load();
-      video.play().catch(() => {});
+      video.play().catch(() => toStill(video));
       return;
     }
 
@@ -144,7 +228,7 @@ const width = widths[size];
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             load();
-            video.play().catch(() => {});
+            video.play().catch(() => toStill(video));
           } else {
             video.pause();
           }
@@ -169,6 +253,7 @@ const width = widths[size];
 
 <style>
   .hud {
+    position: relative;
     inline-size: var(--hud-width);
     min-inline-size: 120px; /* below this he becomes visual noise */
     aspect-ratio: 400 / 386;
@@ -179,9 +264,55 @@ const width = widths[size];
 
   .hud__video,
   .hud__poster {
+    position: relative;
+    z-index: 1;
     inline-size: 100%;
     block-size: 100%;
     object-fit: contain;
+  }
+
+  /* The contact shadow.
+   *
+   * It is a separate painted element, not another `drop-shadow()` on the
+   * artwork, and that is the whole point. Filters on a composited layer are
+   * rasterised at the layer's resolution, which on iOS is often lower than the
+   * page's, so a shadow drawn that way arrives with visible steps in it while
+   * the same rule looks smooth on a desktop GPU. A blurred gradient is drawn by
+   * the same painter as everything else and lands identically on both.
+   *
+   * The stops end on navy at zero alpha rather than the `transparent` keyword.
+   * `transparent` is transparent BLACK, and an engine that interpolates without
+   * premultiplying darkens the midpoint into a grey ring on the way out.
+   */
+  .hud::before {
+    content: '';
+    position: absolute;
+    z-index: 0;
+    inset-inline: 8%;
+    inset-block-end: 2%;
+    block-size: 22%;
+    border-radius: var(--radius-full);
+    pointer-events: none;
+    background: radial-gradient(
+      50% 50% at 50% 50%,
+      color-mix(in srgb, var(--navy) 24%, transparent) 0%,
+      color-mix(in srgb, var(--navy) 13%, transparent) 45%,
+      color-mix(in srgb, var(--navy) 4%, transparent) 74%,
+      color-mix(in srgb, var(--navy) 0%, transparent) 100%
+    );
+    filter: blur(5px);
+  }
+
+  /* On the dark canvas a navy shadow is invisible against navy, so it inverts
+     to the same soft pool in the surface colour instead of disappearing. */
+  :global([data-theme='dark']) .hud::before {
+    background: radial-gradient(
+      50% 50% at 50% 50%,
+      color-mix(in srgb, var(--navy-950) 55%, transparent) 0%,
+      color-mix(in srgb, var(--navy-950) 30%, transparent) 45%,
+      color-mix(in srgb, var(--navy-950) 9%, transparent) 74%,
+      color-mix(in srgb, var(--navy-950) 0%, transparent) 100%
+    );
   }
 
   /* Two jobs, one filter.
@@ -204,11 +335,15 @@ const width = widths[size];
    * opaque instead of cut out. Then this can drop back to a 1px keyline under
    * [data-theme='dark'] only. Kept out of the video file so one clean asset
    * still serves both themes.
+   *
+   * Two passes, not three. One 3px pass is what the measurement showed fills
+   * the hole; the third was insurance, and on a phone each pass is another
+   * full-layer rasterisation of a 400px figure that is often the only animated
+   * thing on screen. The visible result is identical and it is a third cheaper.
    */
   .hud__video,
   .hud__poster {
-    filter: drop-shadow(0 0 3px var(--paper)) drop-shadow(0 0 3px var(--paper))
-      drop-shadow(0 0 3px var(--paper));
+    filter: drop-shadow(0 0 3px var(--paper)) drop-shadow(0 0 3px var(--paper));
   }
 
   .hud--placeholder {

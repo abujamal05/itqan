@@ -39,6 +39,12 @@ interface OnboardingValue {
 
   /** Saved progress found on boot, offered rather than forced. */
   resumable: OnboardingProgress | null;
+  /**
+   * True until the saved-progress lookup has answered. Anything that decides
+   * where the user belongs has to wait for it, or a reload races the fetch and
+   * throws them off the step they were on. See RequireFlow in App.tsx.
+   */
+  checking: boolean;
   dismissResume: () => void;
   resume: () => void;
 
@@ -69,13 +75,26 @@ export function OnboardingProvider({
   const [preferences, setPreferences] = useState<Preferences>(emptyPreferences);
   const [profile, setProfile] = useState<ConfirmedProfile | null>(null);
   const [resumable, setResumable] = useState<OnboardingProgress | null>(null);
+  /**
+   * Which value of `enabled` the saved-progress lookup has answered for, or
+   * null before it has run at all.
+   *
+   * A plain boolean is not enough. `enabled` is false for the first renders,
+   * while the session is still being read, and flips to true in the same render
+   * that first shows a guarded route — one render before the effect below can
+   * react. A flag saying "checked" would still be set from the disabled pass and
+   * the route would decide on stale information, which is the whole bug.
+   * Comparing against the current `enabled` closes that window synchronously.
+   */
+  const [checkedFor, setCheckedFor] = useState<boolean | null>(null);
+  const checking = checkedFor !== enabled;
   const timer = useRef<number | null>(null);
   const saveTimer = useRef<number | null>(null);
   const step = useRef<Step>('upload');
 
   /* ------------------------------------------------------------ resume -- */
   useEffect(() => {
-    if (!enabled) { setResumable(null); return; }
+    if (!enabled) { setResumable(null); setCheckedFor(false); return; }
     let alive = true;
     api.getProgress()
       .then((p) => {
@@ -85,7 +104,10 @@ export function OnboardingProvider({
           setResumable(p);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      // Settled either way. A failed lookup must not leave the flow waiting
+      // forever; it just means there is nothing to offer.
+      .finally(() => { if (alive) setCheckedFor(true); });
     return () => { alive = false; };
   }, [api, enabled]);
 
@@ -99,7 +121,13 @@ export function OnboardingProvider({
     // The job is not resumable across sessions, so the pipeline is re-run over
     // the documents that were already stored. Cheaper than making them re-upload.
     if (p.documents.length > 0) {
+      setEntry('document');
       void api.startAnalysis(p.documents.map((d) => d.id)).then(({ jobId: id }) => setJobId(id));
+    } else {
+      // Answers but no documents is the manual route. Without this the entry
+      // stays 'document' with nothing to analyse, the flow never counts as
+      // started, and the resume offer reappears on every screen.
+      setEntry('manual');
     }
   }, [resumable, api]);
 
@@ -208,11 +236,11 @@ export function OnboardingProvider({
     settled: entry === 'manual' ? true : !!settled,
     failed: !!failed,
     preferences, profile,
-    resumable, dismissResume, resume,
+    resumable, checking, dismissResume, resume,
     begin, startManual, setPreference,
     completeProfile: setProfile, reset,
   }), [entry, documents, jobId, analysis, settled, failed, preferences, profile,
-       resumable, dismissResume, resume, begin, startManual, setPreference, reset]);
+       resumable, checking, dismissResume, resume, begin, startManual, setPreference, reset]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

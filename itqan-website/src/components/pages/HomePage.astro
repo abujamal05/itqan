@@ -228,79 +228,152 @@ const stepIcons = [
     position: relative;
     padding-block: var(--space-20) var(--space-16);
     overflow: hidden;
+    isolation: isolate;
+
+    /* Which way the light leans. Both glow layers are tilted, and a tilt is
+       the one thing a logical property cannot mirror for us: `inset-inline-end`
+       moves the shape to the other corner in Arabic but leaves it leaning the
+       same way, which reads as light coming from the wrong place. Every angle
+       below is multiplied by this, so the whole composition mirrors with the
+       page instead of only its position. */
+    --glow-lean: 1;
   }
 
-  /* A large light source behind Hud that extends well past him, giving the
-     hero depth instead of a flat panel.
-     It hangs off the figure, not off the section. Anchored to the section it
-     was positioned from the viewport edge, so on a wide monitor it slid away
-     to the far right while Hud stayed with the centred container — leaving
-     him with no glow at all. Attached here it follows him at every width.
+  :global([dir='rtl']) .hero {
+    --glow-lean: -1;
+  }
 
-     Two stacked layers: a wide, soft outer field and a tighter, brighter core.
-     One gradient either reads as a flat disc or blows out the middle; two give
-     a falloff that looks like light rather than a shape. */
-  .hero__figure::before,
-  .hero__figure::after {
+  /* THE HERO LIGHT
+     ---------------------------------------------------------------------
+     A single large light source bleeding in from the corner the mascot
+     stands in, breathing slowly. It is anchored to the SECTION's inline-end
+     edge, not to the mascot, because the shape being drawn is light entering
+     the page rather than a halo around a figure — a glow that stays centred
+     on him reads as a sticker no matter how soft it is.
+
+     Logical properties, so it is the right corner in English and the left in
+     Arabic. Both are the corner Hud stands in, because he sits at the
+     inline-end of the hero grid in either direction. That is the whole reason
+     it keeps working when the page flips.
+
+     Two stacked layers: a wide faint field and a tighter, brighter beam. One
+     gradient either reads as a flat disc or blows out its middle; two give a
+     falloff that looks like light. Both are ELLIPSES, tilted — a circle at this
+     size reads as a spotlight aimed at the page, and the reference is a shaft
+     of light entering it.
+
+     THE MOTION IS THE POINT. An earlier pass moved these 2-3% over 22 seconds,
+     which is animation on paper and a still image to look at. The swing here is
+     large enough to see without watching for it: the beam roughly doubles in
+     brightness across its cycle, travels around a tenth of its own width, and
+     swings about 16 degrees, which is the difference between the brightest and
+     dimmest frames of the reference. The two layers run on 17s and 11s —
+     deliberately not multiples of each other, so the pair only returns to the
+     same arrangement every three minutes and never reads as a loop.
+
+     Three details that are load-bearing rather than decorative:
+
+      - Every stop ends on the accent at ZERO alpha, never on the `transparent`
+        keyword. `transparent` is transparent BLACK, and an engine that
+        interpolates without premultiplying drags the midtones toward grey,
+        which is what a glow with a dirty ring around it is.
+      - `filter: blur()` on each layer. Wide gradients with small alpha steps
+        band into visible rings on WebKit, which does not dither them; blurring
+        pushes each step below a pixel. It is rasterised once and then only
+        transformed, so it costs nothing per frame.
+      - Only transform and opacity animate, so both layers stay on the
+        compositor and neither ever triggers layout or paint, no matter how far
+        they travel.
+     --------------------------------------------------------------------- */
+  .hero::before,
+  .hero::after {
     content: '';
     position: absolute;
-    inset-block-start: 50%;
-    inset-inline-start: 50%;
     z-index: -1;
     pointer-events: none;
     border-radius: var(--radius-full);
-    will-change: transform;
+    will-change: transform, opacity;
   }
 
-  /* Outer field: broad, faint, extends far beyond the mascot. */
-  .hero__figure::before {
-    inline-size: 260%;
-    block-size: 260%;
-    min-inline-size: 32rem;
-    min-block-size: 32rem;
-    translate: -50% -50%;
+  /* Outer field: broad and faint, hanging off the corner so its centre is
+     past the edge of the page and only the falloff is ever on screen. */
+  .hero::before {
+    inline-size: min(118vw, 68rem);
+    aspect-ratio: 1 / 1.2;
+    inset-block-start: -34%;
+    inset-inline-end: -32%;
     background: radial-gradient(
-      circle,
-      color-mix(in srgb, var(--color-accent) 22%, transparent) 0%,
-      color-mix(in srgb, var(--color-accent) 9%, transparent) 38%,
-      transparent 70%
+      closest-side at 50% 50%,
+      color-mix(in srgb, var(--color-accent) 30%, transparent) 0%,
+      color-mix(in srgb, var(--color-accent) 17%, transparent) 32%,
+      color-mix(in srgb, var(--color-accent) 6%, transparent) 60%,
+      color-mix(in srgb, var(--color-accent) 0%, transparent) 82%
     );
-    animation: glow-drift 18s var(--ease-in-out) infinite;
+    filter: blur(32px);
+    animation: glow-sweep 17s var(--ease-in-out) infinite;
   }
 
-  /* Inner core: sits right behind him and lifts the backdrop his artwork is
-     composited over, which also stops the dark canvas reading through the
-     transparent gaps in the mascot art. */
-  .hero__figure::after {
-    inline-size: 130%;
-    block-size: 130%;
-    min-inline-size: 16rem;
-    min-block-size: 16rem;
-    translate: -50% -50%;
+  /* The beam: narrower, brighter, and it moves the most. This is the layer the
+     eye actually registers as "something is happening over there". */
+  .hero::after {
+    inline-size: min(74vw, 38rem);
+    aspect-ratio: 1 / 1.45;
+    inset-block-start: -10%;
+    inset-inline-end: -16%;
     background: radial-gradient(
-      circle,
-      color-mix(in srgb, var(--color-accent) 26%, transparent) 0%,
-      transparent 62%
+      closest-side at 50% 50%,
+      color-mix(in srgb, var(--color-accent) 34%, transparent) 0%,
+      color-mix(in srgb, var(--color-accent) 14%, transparent) 44%,
+      color-mix(in srgb, var(--color-accent) 0%, transparent) 74%
     );
-    animation: glow-breathe 12s var(--ease-in-out) infinite;
+    filter: blur(26px);
+    animation: glow-beam 11s var(--ease-in-out) infinite;
   }
 
-  /* Slow enough to be felt rather than watched. Transform and opacity only,
-     so it stays on the compositor and never triggers layout. */
-  @keyframes glow-drift {
-    0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.9; }
-    33%      { transform: translate3d(2.5%, -2%, 0) scale(1.06); opacity: 1; }
-    66%      { transform: translate3d(-2%, 2.5%, 0) scale(0.97); opacity: 0.85; }
-  }
-  @keyframes glow-breathe {
-    0%, 100% { transform: scale(1); opacity: 0.85; }
-    50%      { transform: scale(1.1); opacity: 1; }
+  /* Each angle is multiplied by --glow-lean so the whole thing mirrors in
+     Arabic instead of leaning the wrong way out of the opposite corner. */
+  @keyframes glow-sweep {
+    0%, 100% {
+      transform: translate3d(0, 0, 0) rotate(calc(var(--glow-lean) * -14deg)) scale(1);
+      opacity: 0.55;
+    }
+    28% {
+      transform: translate3d(calc(var(--glow-lean) * -7%), 5%, 0) rotate(calc(var(--glow-lean) * -3deg)) scale(1.16);
+      opacity: 1;
+    }
+    58% {
+      transform: translate3d(calc(var(--glow-lean) * 4%), -4%, 0) rotate(calc(var(--glow-lean) * -21deg)) scale(0.9);
+      opacity: 0.48;
+    }
+    80% {
+      transform: translate3d(calc(var(--glow-lean) * -3%), 2%, 0) rotate(calc(var(--glow-lean) * -9deg)) scale(1.07);
+      opacity: 0.85;
+    }
   }
 
-  /* Motion is decoration here, so it goes entirely rather than being reduced. */
+  @keyframes glow-beam {
+    0%, 100% {
+      transform: translate3d(0, 0, 0) rotate(calc(var(--glow-lean) * -19deg)) scale(0.94);
+      opacity: 0.45;
+    }
+    38% {
+      transform: translate3d(calc(var(--glow-lean) * -6%), 7%, 0) rotate(calc(var(--glow-lean) * -5deg)) scale(1.22);
+      opacity: 1;
+    }
+    72% {
+      transform: translate3d(calc(var(--glow-lean) * 3%), -3%, 0) rotate(calc(var(--glow-lean) * -26deg)) scale(1.02);
+      opacity: 0.62;
+    }
+  }
+
+  /* Motion is decoration here, so it goes entirely rather than being reduced.
+     The light itself stays: it is part of the composition, not the animation. */
   @media (prefers-reduced-motion: reduce) {
-    .hero__figure::before,
-    .hero__figure::after { animation: none; }
+    .hero::before,
+    .hero::after {
+      animation: none;
+      will-change: auto;
+    }
   }
 
   .hero__grid {
@@ -378,8 +451,7 @@ const stepIcons = [
 
   .hero__figure {
     flex: 0 0 auto;
-    position: relative;   /* the glow above is positioned against this */
-    isolation: isolate;
+    position: relative;
   }
 
   @media (max-width: 51.99rem) {
@@ -404,9 +476,6 @@ const stepIcons = [
     }
     .hero__title {
       font-size: var(--text-4xl);
-    }
-    .hero__figure {
-      align-self: center;
     }
   }
 
@@ -433,6 +502,9 @@ const stepIcons = [
   .link-arrow {
     display: inline-flex;
     align-items: center;
+    /* It is a standalone action sitting on its own line, not a link inside a
+       sentence, so it takes the 44px touch floor. Measured at 30px before. */
+    min-block-size: 44px;
     gap: var(--space-2);
     font-weight: var(--weight-semibold);
     color: var(--color-text);

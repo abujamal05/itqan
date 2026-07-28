@@ -174,6 +174,15 @@ main {
   padding-inline: var(--space-4);
 }
 
+/* Smallest phones. 16px each side is 10% of a 320px screen spent on nothing,
+   and it was the last thing standing between the header row and a horizontal
+   scrollbar there. Only this step is narrower; 360px and up is unchanged. */
+@media (max-width: 24rem) {
+  .container {
+    padding-inline: var(--space-3);
+  }
+}
+
 @media (min-width: 48rem) {
   .container {
     padding-inline: var(--space-6);

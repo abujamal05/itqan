@@ -15,7 +15,7 @@
  * Everything waits on `booting` so a signed-in user is never bounced back to
  * the site while the session is still being read.
  */
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useEffect, type ReactNode } from 'react';
 import { I18nProvider, useI18n } from './i18n';
 import { ThemeProvider } from './lib/theme';
@@ -23,10 +23,12 @@ import { ApiProvider, useApi } from './state/api';
 import { AuthProvider, useAuth } from './state/auth';
 import { OnboardingProvider, useOnboarding } from './state/onboarding';
 import { siteLogin } from './lib/site';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 import { Upload } from './screens/Upload';
 import { Questions } from './screens/Questions';
 import { Confirm } from './screens/Confirm';
+import { ResumeGate } from './screens/ResumeGate';
 import { AppLayout } from './app/AppLayout';
 import { Dashboard } from './app/Dashboard';
 import { Jobs } from './app/Jobs';
@@ -74,15 +76,45 @@ function RequireApp({ children }: { children: ReactNode }) {
 }
 
 /**
- * The later onboarding steps need flow state that only exists in memory. A
- * reload or a pasted URL lands there with nothing, so this sends them back to
- * the first step, which is where the "pick up where you left off" offer lives.
+ * The later onboarding steps need flow state that only exists in memory, so a
+ * reload or a pasted URL lands there with nothing.
+ *
+ * Three cases, in order, and the order is the fix:
+ *   still checking  — hold. Deciding before the saved-progress lookup answers
+ *                     is what made a reload race the fetch and always lose.
+ *   saved progress  — offer to restore it HERE, on the step they were on. A
+ *                     phone browser reloads a backgrounded tab, so bouncing to
+ *                     step one meant this screen "did not load" on exactly the
+ *                     devices that discard tabs and worked everywhere else.
+ *   nothing saved   — step one really is where they belong.
  */
 function RequireFlow({ children }: { children: ReactNode }) {
-  const { entry, documents, analysis } = useOnboarding();
+  const { entry, documents, analysis, resumable, checking } = useOnboarding();
   const started = entry === 'manual' || documents.length > 0 || !!analysis;
-  if (!started) return <Navigate to="/upload" replace />;
-  return <>{children}</>;
+  if (started) return <>{children}</>;
+  if (checking) return <Booting />;
+  if (resumable) return <ResumeGate />;
+  return <Navigate to="/upload" replace />;
+}
+
+/**
+ * One boundary around the routed screen rather than around the whole tree, so a
+ * screen that throws does not take the providers, the session or the language
+ * with it — and so navigating away is enough to recover.
+ */
+function ScreenBoundary({ children }: { children: ReactNode }) {
+  const { t } = useI18n();
+  const { pathname } = useLocation();
+  return (
+    <ErrorBoundary
+      resetKey={pathname}
+      title={t('state.errorTitle')}
+      body={t('state.errorSub')}
+      retryLabel={t('action.retry')}
+    >
+      {children}
+    </ErrorBoundary>
+  );
 }
 
 /** Onboarding state needs the client and only tracks progress while relevant. */
@@ -125,20 +157,22 @@ export default function App() {
               <FollowSessionLocale />
               <WithOnboarding>
                 <SkipLink />
-                <Routes>
-                  <Route path="/upload" element={<RequireOnboarding><Upload /></RequireOnboarding>} />
-                  <Route path="/questions" element={<RequireOnboarding><RequireFlow><Questions /></RequireFlow></RequireOnboarding>} />
-                  <Route path="/confirm" element={<RequireOnboarding><RequireFlow><Confirm /></RequireFlow></RequireOnboarding>} />
+                <ScreenBoundary>
+                  <Routes>
+                    <Route path="/upload" element={<RequireOnboarding><Upload /></RequireOnboarding>} />
+                    <Route path="/questions" element={<RequireOnboarding><RequireFlow><Questions /></RequireFlow></RequireOnboarding>} />
+                    <Route path="/confirm" element={<RequireOnboarding><RequireFlow><Confirm /></RequireFlow></RequireOnboarding>} />
 
-                  <Route element={<RequireApp><AppLayout /></RequireApp>}>
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/jobs" element={<Jobs />} />
-                    <Route path="/courses" element={<Courses />} />
-                  </Route>
+                    <Route element={<RequireApp><AppLayout /></RequireApp>}>
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/jobs" element={<Jobs />} />
+                      <Route path="/courses" element={<Courses />} />
+                    </Route>
 
-                  {/* Entry point: the guards decide where this actually lands. */}
-                  <Route path="*" element={<RequireApp><Navigate to="/dashboard" replace /></RequireApp>} />
-                </Routes>
+                    {/* Entry point: the guards decide where this actually lands. */}
+                    <Route path="*" element={<RequireApp><Navigate to="/dashboard" replace /></RequireApp>} />
+                  </Routes>
+                </ScreenBoundary>
               </WithOnboarding>
             </AuthProvider>
           </ApiProvider>

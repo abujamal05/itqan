@@ -53,7 +53,14 @@ export function Dashboard() {
         <Card>
           <div className="readiness">
             <Ring value={data.readiness} />
-            <div className="stack stack--sm" style={{ flex: 1, minWidth: '16rem' }}>
+            {/* `min(16rem, 100%)`, not a bare 16rem. The bare value is a hard
+                floor: on a 320px phone the card's content box is 215px, the
+                block refused to go under 256, and the readiness sentence — the
+                first thing on the first screen — hung 16px outside the card.
+                The intent was "prefer to sit beside the ring, wrap under it
+                when there is no room", and `min()` is that intent expressed
+                without a floor the layout cannot honour. */}
+            <div className="stack stack--sm" style={{ flex: 1, minWidth: 'min(16rem, 100%)' }}>
               <h2 className="section__title">{t('dash.readiness')}</h2>
               <p>{data.readinessNote}</p>
               <details>

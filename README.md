@@ -56,6 +56,11 @@ which serves the site's build at `/`, the app under `/app/`, and implements ever
 In production they are two origins and the plugin does not ship. This difference is the single most
 important thing to understand about the dev setup.
 
+That includes `/api/handoff`, the endpoint the site's forms navigate to on success. There is nothing
+to hand over locally — one origin, one cookie — so it is a plain redirect to `/app/`. It still has to
+exist: without it every local sign in ended on the site's own 404 page and the flow could not be
+walked before deploying.
+
 ### Test accounts
 
 Password for both: `itqan1234`
@@ -274,7 +279,14 @@ informed consent.
 
 **Interrupted onboarding.** Progress saves after every meaningful change, debounced. Returning is
 *offered*, never forced — silently restoring is disorienting and silently discarding is worse.
-Landing on a later step with no in-memory state sends the user back to step one, where the offer is.
+
+Landing on a later step with no in-memory state makes that offer **on the step being asked for**, not
+back at step one. The earlier redirect was correct on paper and wrong in practice: a phone browser
+discards a backgrounded tab, so leaving the app to find a certificate and coming back reloaded the
+page and threw the user off the question they were answering. From their side the step simply did not
+load, and whether it happened at all depended on the device — which is what "works here, breaks
+there" usually turns out to be. The guard (`RequireFlow` in `App.tsx`) now waits for the saved
+progress lookup to answer before deciding anything; deciding before it answered was the actual bug.
 
 ---
 
@@ -582,9 +594,13 @@ back to a 1px dark-mode keyline.
 
 **b. WebM alpha does not work in WebKit.** Every browser on iPhone and iPad plus Safari on macOS
 decodes the WebM but discards the alpha channel, painting every transparent pixel solid black. There
-is no feature query for this, so the code does engine detection and falls back to the transparent PNG
-— a still mascot rather than a black rectangle. **The real fix is to ship an HEVC-with-alpha
-companion file** alongside each `.webm`.
+is no feature query for this, so the engine is identified up front — `navigator.vendor` is
+`Apple Computer, Inc.` on every WebKit browser and nothing else, which also catches Chrome and
+Firefox on iOS — and those browsers get the transparent PNG and never request the clip at all. Three
+further failures are caught at runtime and fall back the same way: playback that never starts (Low
+Power Mode, a data saver, a refused autoplay), a decode error, and a frame that comes back opaque on
+any engine that regresses. **The real fix is to ship an HEVC-with-alpha companion file** alongside
+each `.webm`; the detection can then be deleted rather than tuned.
 
 Both are one job for whoever owns the mascot artwork.
 
@@ -605,10 +621,6 @@ Recorded so the brief can absorb or overturn them.
 
 ### 11.5 Still open
 
-- **Hero glow does not yet match the reference.** The references show a large glow bleeding in from
-  the **left or right edge of the page**, breathing. The current implementation is a radial glow
-  centred **behind the mascot**. This is a straightforward CSS change — no library needed — and is
-  the next thing to do.
 - **Forgot-password** is linked from the login page but the flow is not built.
 - **Saved job postings** do not persist (see 9.4).
 - **Rubik loads from the Google Fonts CDN** on the app; the site self-hosts it. Self-host in both.

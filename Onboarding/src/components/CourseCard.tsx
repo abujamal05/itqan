@@ -21,16 +21,10 @@ import type { Course } from '../api';
 import { Badge, Card, GapChip } from './ui';
 
 export function CourseCard({ course }: { course: Course }) {
-  const { t, locale, formatDate, formatNumber } = useI18n();
+  const { t, formatDate, formatNumber, formatMoney } = useI18n();
   const free = course.price === 0;
 
-  const price = free
-    ? t('courses.free')
-    : new Intl.NumberFormat(locale === 'ar' ? 'ar-OM-u-nu-latn' : 'en-GB', {
-        style: 'currency',
-        currency: course.currency,
-        maximumFractionDigits: course.price % 1 === 0 ? 0 : 2,
-      }).format(course.price);
+  const price = free ? t('courses.free') : formatMoney(course.price, course.currency);
 
   return (
     <Card>

@@ -35,7 +35,13 @@ export function MatchCard({
     <Card>
       <div className="match">
         <div className="match__top">
-          <div className="stack stack--sm" style={{ flex: 1, minWidth: 0 }}>
+          {/* `1 1 12rem`, not `1` with a zero basis. With a zero basis the
+              confidence badge — which must not break mid-verdict, so it does
+              not shrink — took the whole row on a 320px phone and the job
+              title was squeezed to 14px of nothing. A real basis makes the two
+              stop fitting instead of one starving the other, and .match__top
+              wraps them onto separate lines. */}
+          <div className="stack stack--sm" style={{ flex: '1 1 12rem', minWidth: 0 }}>
             <span className="eyebrow">{job.arrangement}</span>
             <h3 className="match__title"><bdi>{job.title}</bdi></h3>
             <p className="match__org">

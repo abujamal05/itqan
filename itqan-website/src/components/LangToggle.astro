@@ -83,7 +83,11 @@ const enHref = alternatePath(Astro.url.pathname, 'en');
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 38px;
+    /* 44px, the project's touch floor, not the 38 it used to be. This is the
+       one control a graduate reading the wrong language needs first, it sits in
+       the header where thumbs are least accurate, and it was the only target on
+       the site measuring under the floor at every width. */
+    min-height: 44px;
     padding-inline: var(--space-3);
     border-radius: var(--radius-full);
     text-decoration: none;
@@ -101,6 +105,22 @@ const enHref = alternatePath(Astro.url.pathname, 'en');
 
   .lang-switch__opt:not([aria-current='true']):hover {
     color: var(--color-text);
+  }
+
+  /* Smallest phones. The header row is the mark, both language names, the theme
+     toggle and the menu button, and at 320px that stopped fitting once every
+     target was raised to the 44px floor — the page gained a horizontal scroll.
+     What gives way is this control's padding, not its height and not either
+     language name: both languages stay visible in their own script, which is
+     the rule that made this a segmented control rather than a dropdown. */
+  @media (max-width: 24rem) {
+    .lang-switch {
+      gap: 0;
+    }
+
+    .lang-switch__opt {
+      padding-inline: var(--space-2);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
