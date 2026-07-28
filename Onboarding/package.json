@@ -14,7 +14,9 @@
     "test:e2e:chromium": "playwright test --project=chromium",
     "test:e2e:webkit": "playwright test --project=webkit",
     "test:e2e:report": "playwright show-report",
-    "lighthouse": "node scripts/lighthouse.mjs"
+    "lighthouse": "node scripts/lighthouse.mjs",
+    "qa:prod": "node scripts/qa-prod.mjs",
+    "qa:func": "node scripts/qa-func.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.26.0",
