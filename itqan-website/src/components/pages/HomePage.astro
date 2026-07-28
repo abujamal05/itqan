@@ -227,7 +227,10 @@ const stepIcons = [
   .hero {
     position: relative;
     padding-block: var(--space-20) var(--space-16);
-    overflow: hidden;
+    /* Clip only the horizontal bleed (which would add a scrollbar); let the glow
+       fade downward past the section instead of hitting the hard rectangular
+       edge `overflow: hidden` gave it. */
+    overflow-x: clip;
     isolation: isolate;
 
     /* Which way the light leans. Both glow layers are tilted, and a tilt is
