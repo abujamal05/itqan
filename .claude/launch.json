@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "itqan-website", "run", "dev"],
       "port": 4321
+    },
+    {
+      "name": "itqan-app",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "Onboarding", "run", "dev", "--", "--port", "4333", "--strictPort"],
+      "port": 4333
     }
   ]
 }

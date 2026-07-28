@@ -181,8 +181,15 @@
 .chip__x:hover { background: var(--color-surface); color: var(--color-text); }
 
 /* ----------------------------------------------------------------- BADGE -- */
+/* `white-space: nowrap` keeps each PART of the verdict intact — "Suggested —
+   confirm" must never break across lines — while `flex-wrap` lets the figure
+   drop below the label when the badge cannot fit its line. Without the wrap the
+   longer suggested label ran 21px outside its card on a 320px phone; without
+   the nowrap the locked label itself would break. Both are needed. */
 .badge {
   display: inline-flex; align-items: center; gap: var(--space-2);
+  flex-wrap: wrap; row-gap: var(--space-1);
+  max-inline-size: 100%;
   padding-block: var(--space-1); padding-inline: var(--space-3);
   border-radius: var(--radius-full); font-size: var(--text-sm);
   font-weight: var(--weight-medium); white-space: nowrap;
@@ -392,7 +399,11 @@
 .tabbar__dot { inline-size: 4px; block-size: 4px; border-radius: var(--radius-full); background: transparent; }
 
 /* ------------------------------------------------------------ DATA CARDS -- */
-.grid { display: grid; gap: var(--space-4); }
+/* `minmax(0, 1fr)`, not the implicit `auto`. An auto-sized track is allowed to
+   grow to its widest item, so one long job title made the card wider than the
+   column and it hung out of the grid on a narrow phone. The explicit zero
+   minimum is what lets the card shrink and the title wrap instead. */
+.grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
 @media (min-width: 700px) { .grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (min-width: 1100px) { .grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
@@ -401,7 +412,10 @@
 .section__note { font-size: var(--text-sm); color: var(--color-text); }
 
 .match { display: flex; flex-direction: column; gap: var(--space-4); }
-.match__top { display: flex; align-items: flex-start; gap: var(--space-3); }
+/* Wraps. The title and the confidence badge sit side by side while both fit,
+   and the badge drops to its own line when they do not, rather than one of them
+   winning the row outright. */
+.match__top { display: flex; align-items: flex-start; gap: var(--space-3); flex-wrap: wrap; }
 .match__title { font-size: var(--text-lg); font-weight: var(--weight-semibold); }
 .match__org { font-size: var(--text-sm); color: var(--color-text-muted); }
 /* "Why this match" — the standing name for the evidence chain. Bordered on the
@@ -467,13 +481,10 @@
   .spinner, .skeleton { animation: none; }
 }
 
-.hud { display: block; }
-.hud--sm { inline-size: 96px; }
-.hud--md { inline-size: 160px; }
-.hud--lg { inline-size: 240px; }
-/* Hud faces into the content. The art faces inline-start by default, so it is
-   mirrored in LTR to keep him looking toward the text, never off-screen. */
-[dir="ltr"] .hud--face { transform: scaleX(-1); }
+/* The mascot's own rules live in chrome.css, next to the bubble he speaks
+   through. An earlier fixed-width set lived here too and was dead — no markup
+   ever carried the classes — but it shadowed the real definition for anyone
+   grepping, so it is gone rather than kept "just in case". */
 
 .speech {
   position: relative; background: var(--color-surface); border: 1px solid var(--color-border);

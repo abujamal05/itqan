@@ -18,8 +18,42 @@ const DICTS: Record<Locale, Record<string, string>> = { ar, en };
 const STORAGE_KEY = 'itqan.locale';
 
 export const dirFor = (l: Locale): Dir => (l === 'ar' ? 'rtl' : 'ltr');
-/** Force Latin digits even in Arabic, so dates and scores read consistently. */
-const intlLocale = (l: Locale) => (l === 'ar' ? 'ar-OM-u-nu-latn' : 'en-GB');
+
+/**
+ * Force Latin digits even in Arabic, so dates and scores read consistently.
+ *
+ * The tag is resolved through Intl once rather than trusted. A build with
+ * trimmed ICU data throws RangeError on an unsupported tag, and because these
+ * formatters are called during render that throw is a blank screen on whichever
+ * device shipped the smaller build and nowhere else — the hardest class of bug
+ * to report. Falling back to the bare language keeps the numerals right on every
+ * engine that does support the extension and keeps the page up on any that does
+ * not.
+ */
+const LOCALE_TAGS: Record<Locale, string[]> = {
+  ar: ['ar-OM-u-nu-latn', 'ar-OM', 'ar'],
+  en: ['en-GB', 'en'],
+};
+
+const resolveTag = (l: Locale): string | undefined => {
+  for (const tag of LOCALE_TAGS[l]) {
+    try {
+      new Intl.NumberFormat(tag);
+      new Intl.DateTimeFormat(tag);
+      return tag;
+    } catch {
+      /* try the next, less specific tag */
+    }
+  }
+  return undefined;   // the engine's own default; never throws
+};
+
+const RESOLVED: Record<Locale, string | undefined> = {
+  ar: resolveTag('ar'),
+  en: resolveTag('en'),
+};
+
+const intlLocale = (l: Locale) => RESOLVED[l];
 
 interface I18nValue {
   locale: Locale;
@@ -29,6 +63,10 @@ interface I18nValue {
   toggleLocale: () => void;
   formatDate: (iso: string, opts?: Intl.DateTimeFormatOptions) => string;
   formatNumber: (n: number) => string;
+  /** Price plus its currency. A service returns the two separately, never a
+   *  formatted string, so the "free only" filter and locale formatting both
+   *  keep working. */
+  formatMoney: (amount: number, currency: string) => string;
 }
 
 const I18nContext = createContext<I18nValue | null>(null);
@@ -77,14 +115,43 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     (iso: string, opts: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' }) => {
       const d = new Date(iso);
       if (Number.isNaN(d.getTime())) return iso;
-      return new Intl.DateTimeFormat(intlLocale(locale), opts).format(d);
+      // Formatting is presentation. It is never worth taking a screen down for,
+      // so anything the engine refuses degrades to the raw value.
+      try {
+        return new Intl.DateTimeFormat(intlLocale(locale), opts).format(d);
+      } catch {
+        return iso;
+      }
     },
     [locale],
   );
 
   const formatNumber = useCallback(
-    (n: number) => new Intl.NumberFormat(intlLocale(locale)).format(n),
+    (n: number) => {
+      try {
+        return new Intl.NumberFormat(intlLocale(locale)).format(n);
+      } catch {
+        return String(n);
+      }
+    },
     [locale],
+  );
+
+  const formatMoney = useCallback(
+    (amount: number, currency: string) => {
+      try {
+        return new Intl.NumberFormat(intlLocale(locale), {
+          style: 'currency',
+          currency,
+          maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
+        }).format(amount);
+      } catch {
+        // An unknown currency code throws too, and a price the user can still
+        // read beats a screen that will not render.
+        return `${currency} ${formatNumber(amount)}`;
+      }
+    },
+    [locale, formatNumber],
   );
 
   useEffect(() => {
@@ -93,8 +160,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, [locale, dir]);
 
   const value = useMemo(
-    () => ({ locale, dir, t, setLocale, toggleLocale, formatDate, formatNumber }),
-    [locale, dir, t, setLocale, toggleLocale, formatDate, formatNumber],
+    () => ({ locale, dir, t, setLocale, toggleLocale, formatDate, formatNumber, formatMoney }),
+    [locale, dir, t, setLocale, toggleLocale, formatDate, formatNumber, formatMoney],
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

@@ -132,9 +132,28 @@ const isCurrent = (href: string) => path === href || path === href.replace(/\/$/
     padding-block: var(--space-3);
   }
 
+  /* Under about 380px the mark, both language options, the theme toggle and the
+     menu button stop fitting on one row with a 16px gap. The gap is what gives
+     way, not any of the controls: they are all at the touch floor and shrinking
+     one to buy space for another trades a real problem for the same problem. */
+  @media (max-width: 24rem) {
+    .header-row {
+      gap: var(--space-2);
+    }
+
+    .header-tools {
+      gap: var(--space-1);
+    }
+  }
+
   /* Icon mark. Clear space for the icon is 20% of its height; padding covers it. */
   .brand {
     display: inline-flex;
+    /* Never shrinks. As an ordinary flex item it did, and at 320px the row ran
+       out of room and squeezed the mark down to 8px — a squeezed mark is a
+       brand misuse, not a responsive layout. Everything else in the row gives
+       way first. */
+    flex: 0 0 auto;
     padding: var(--space-1);
     margin-inline-start: calc(-1 * var(--space-1));
     border-radius: var(--radius-sm);
@@ -230,8 +249,12 @@ const isCurrent = (href: string) => path === href || path === href.replace(/\/$/
     margin-inline: var(--space-1);
   }
 
+  /* 44px, the touch floor, not the 40 it used to be. These only appear at
+     52rem and up, which reads as "desktop" and is where the compaction came
+     from — but an iPad in landscape is 1024px wide and entirely a touch
+     device. There is no width at which a target may be under the floor. */
   .header-auth {
-    min-height: 40px;
+    min-height: 44px;
     padding-block: var(--space-2);
   }
 

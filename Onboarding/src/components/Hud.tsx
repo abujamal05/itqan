@@ -9,8 +9,7 @@
  *   - videos play only while in the viewport and pause outside it
  *   - play-once poses hand over to a follow-up pose (flying-in -> idle)
  *   - never below 120px wide, where he becomes visual noise
- *   - on dark surfaces a hairline cream keyline stops his navy parts merging
- *     into the canvas (in CSS, so one video file serves both themes)
+ *   - the still fallback is a first-class rendering, not a degraded one
  *
  * LOCKED SCOPE (itqan-brand §6): Hud never appears beside a trust-critical
  * moment — no verdicts, scores, real matches, data tables, or the confirmation
@@ -18,31 +17,70 @@
  * genuine milestones. Adding him to a results surface breaks the product's
  * whole argument, so do not.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
- * WebKit decodes WebM but discards the alpha channel, so every transparent
- * pixel around Hud paints solid black. That is every browser on iPhone and
- * iPad — they are all WebKit underneath — plus Safari on the Mac.
+ * WebKit decodes WebM and throws the alpha channel away, so every transparent
+ * pixel around Hud paints solid black — a black rectangle where the bird should
+ * be. That is every browser on iPhone and iPad (all WebKit underneath) plus
+ * Safari on the Mac.
  *
- * There is no feature query for "alpha in WebM", so this is engine detection,
- * which is the honest description of the bug. Those browsers get the
- * transparent PNG instead: a still mascot beats a black rectangle. The real
- * fix is shipping an HEVC-with-alpha companion file, which needs the source
- * animations re-exported.
+ * Every WebKit browser reports Apple as the vendor, on every platform, and
+ * nothing else does: Chrome and Edge say "Google Inc.", Firefox says "". That
+ * catches Chrome and Firefox on iOS too, which are WebKit in a different coat
+ * and are exactly what a user-agent regex lets through.
+ *
+ * These browsers never request the clip at all. That matters as much as the
+ * rendering: the files are 220-470KB and spending that on a phone to discover
+ * the result is unusable is the worst of both. The real fix is shipping an
+ * HEVC-with-alpha companion file, which needs the source animations re-exported.
  */
-function webmAlphaBroken() {
-  if (typeof navigator === 'undefined') return false;
-  const ua = navigator.userAgent;
-  const iOSLike = /iP(hone|od|ad)/.test(ua)
-    || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);  // iPadOS says Mac
-  const desktopSafari = /^((?!chrome|chromium|android|crios|fxios|edgios).)*safari/i.test(ua);
-  return iOSLike || desktopSafari;
+function isWebKit() {
+  return typeof navigator !== 'undefined' && navigator.vendor === 'Apple Computer, Inc.';
+}
+
+function prefersReducedMotion() {
+  return typeof window !== 'undefined'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+/**
+ * True when the painted frame still has transparent corners. The artwork is
+ * centred in a 400x386 frame so all four corners are empty; if they read back
+ * opaque, the alpha channel was dropped on the way in and the still is the
+ * better answer. Never throws — a probe that fails is not evidence of anything.
+ */
+function keptAlpha(video: HTMLVideoElement) {
+  try {
+    const c = document.createElement('canvas');
+    c.width = 8;
+    c.height = 8;
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return true;
+    ctx.drawImage(video, 0, 0, 8, 8);
+    const { data } = ctx.getImageData(0, 0, 8, 8);
+    const corners = [0, 7, 56, 63].map((px) => data[px * 4 + 3]);
+    return Math.min(...corners) < 250;
+  } catch {
+    return true;
+  }
 }
 
 export type Pose = 'flying-in' | 'idle' | 'waving' | 'thinking' | 'analyzing' | 'celebrating' | 'error';
 
-const WIDTHS = { sm: 120, md: 180, lg: 250 } as const;
+/**
+ * Fluid, not fixed. A single px width made him oversized on a 360px phone and
+ * undersized on a 27in monitor, and the still fallback shows it worst because a
+ * frozen figure is looked at rather than glanced at. Each size is a range: a
+ * floor that keeps him above the 120px where he becomes noise, a viewport term
+ * so he tracks the layout, and a ceiling so he never dominates. The container's
+ * `aspect-ratio` holds his proportions at every step of that range.
+ */
+const WIDTHS = {
+  sm: 'clamp(120px, 16vw, 140px)',
+  md: 'clamp(140px, 22vw, 180px)',
+  lg: 'clamp(160px, 30vw, 250px)',
+} as const;
 
 export function Hud({
   pose,
@@ -59,8 +97,15 @@ export function Hud({
   eager?: boolean;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
-  // Decided once on mount so the markup does not flip after paint.
-  const [stillOnly] = useState(webmAlphaBroken);
+  /**
+   * Decided once on mount so the markup does not flip after paint, then allowed
+   * to turn ON later if playback turns out not to work. It never turns back:
+   * having seen the animation fail once, retrying it on every pose change would
+   * flicker between a black box and a still.
+   */
+  const [stillOnly, setStillOnly] = useState(() => isWebKit() || prefersReducedMotion());
+  const fallBack = useCallback(() => setStillOnly(true), []);
+
   const src = `/mascot/${pose}.webm`;
   const poster = `/mascot/${pose}.png`;
   const nextSrc = nextPose ? `/mascot/${nextPose}.webm` : null;
@@ -68,12 +113,6 @@ export function Hud({
   useEffect(() => {
     const video = ref.current;
     if (!video || stillOnly) return;
-
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      video.removeAttribute('autoplay');
-      video.preload = 'none';
-      return;                       // poster only; the video is never fetched
-    }
 
     const load = () => {
       if (video.src) return;
@@ -85,46 +124,88 @@ export function Hud({
     };
     if (eager) load();
 
+    /**
+     * Once playback reports it has started: has the clock actually moved, and
+     * did the frame keep its alpha. Low Power Mode on iOS, a data saver, or a
+     * refused autoplay all leave a video that loaded fine and simply never
+     * moves, and play() resolving is not evidence that it did.
+     *
+     * Finding it PAUSED at the end of the window is not a failure — that is the
+     * observer below doing its job because the user scrolled him out of view.
+     * Falling back on that would take the animation away from anyone who
+     * scrolls quickly, so the check re-arms for the next time he plays.
+     */
+    let verified = false;
+    let timer = 0;
+    const verify = () => {
+      if (verified) return;
+      verified = true;
+      const at = video.currentTime;
+      timer = window.setTimeout(() => {
+        if (!video.isConnected) return;
+        if (video.paused) { verified = false; return; }
+        if (video.currentTime === at || !keptAlpha(video)) fallBack();
+      }, 600);
+    };
+
     const onEnded = () => {
       if (!nextSrc) return;
       video.src = nextSrc;
       video.loop = true;
-      void video.play().catch(() => {});
+      void video.play().catch(fallBack);
     };
+
+    video.addEventListener('playing', verify);
     video.addEventListener('ended', onEnded);
+    video.addEventListener('error', fallBack);
+
+    const cleanup = () => {
+      window.clearTimeout(timer);
+      video.removeEventListener('playing', verify);
+      video.removeEventListener('ended', onEnded);
+      video.removeEventListener('error', fallBack);
+    };
 
     if (!('IntersectionObserver' in window)) {
       load();
-      void video.play().catch(() => {});
-      return () => video.removeEventListener('ended', onEnded);
+      void video.play().catch(fallBack);
+      return cleanup;
     }
 
     const io = new IntersectionObserver(
       (entries) => entries.forEach((e) => {
-        if (e.isIntersecting) { load(); void video.play().catch(() => {}); }
+        if (e.isIntersecting) { load(); void video.play().catch(fallBack); }
         else video.pause();
       }),
       { rootMargin: '120px' },
     );
     io.observe(video);
 
-    return () => {
-      io.disconnect();
-      video.removeEventListener('ended', onEnded);
-    };
+    return () => { io.disconnect(); cleanup(); };
     // Re-runs when the pose changes so a new clip is loaded and played.
-  }, [src, nextSrc, eager, stillOnly]);
+  }, [src, nextSrc, eager, stillOnly, fallBack]);
+
+  const box = { ['--hud-width' as string]: WIDTHS[size] };
 
   if (stillOnly) {
     return (
-      <div className="hud" style={{ ['--hud-width' as string]: `${WIDTHS[size]}px` }} aria-hidden="true">
-        <img className="hud__poster" src={poster} alt="" draggable={false} />
+      <div className="hud" style={box} aria-hidden="true">
+        <img
+          className="hud__poster"
+          src={poster}
+          alt=""
+          width={400}
+          height={386}
+          decoding="async"
+          loading={eager ? 'eager' : 'lazy'}
+          draggable={false}
+        />
       </div>
     );
   }
 
   return (
-    <div className="hud" style={{ ['--hud-width' as string]: `${WIDTHS[size]}px` }} aria-hidden="true">
+    <div className="hud" style={box} aria-hidden="true">
       <video
         ref={ref}
         key={src}
@@ -135,6 +216,8 @@ export function Hud({
         loop={loop}
         poster={poster}
         preload="none"
+        width={400}
+        height={386}
       />
     </div>
   );

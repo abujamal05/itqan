@@ -47,8 +47,20 @@ body {
    600/700 is reserved for short headings and labels only. */
 [dir="rtl"] p, [dir="rtl"] li, [dir="rtl"] td { font-weight: var(--weight-regular); }
 
-h1, h2, h3, h4 { line-height: var(--leading-tight); margin: 0; font-weight: var(--weight-semibold); }
-p { margin: 0; }
+/* Every long string on these screens arrives from a service — job titles,
+   employer names, course names, skill names — so its length is not something
+   this codebase controls. Without this a single unbroken token pushed a card
+   out past its grid column on a 320px phone, which is the marketing site's rule
+   for the same reason; it was simply missing here. */
+h1, h2, h3, h4 {
+  line-height: var(--leading-tight); margin: 0; font-weight: var(--weight-semibold);
+  overflow-wrap: break-word;
+}
+p { margin: 0; overflow-wrap: break-word; }
+/* `anywhere` rather than `break-word` where the content is a single foreign
+   token with no break opportunity at all: an English job title in an Arabic
+   layout is exactly that case, and break-word declines to split it. */
+bdi { overflow-wrap: anywhere; }
 ul, ol { margin: 0; padding: 0; list-style: none; }
 
 a { color: inherit; text-decoration: none; }

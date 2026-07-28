@@ -35,13 +35,17 @@
 
 /* ------------------------------------------------------ MASCOT + BUBBLE -- */
 .hud {
+  position: relative;
   inline-size: var(--hud-width);
   min-inline-size: 120px;               /* below this he is visual noise */
   aspect-ratio: 400 / 386;
   display: flex; align-items: center; justify-content: center;
 }
 .hud__video,
-.hud__poster { inline-size: 100%; block-size: 100%; object-fit: contain; }
+.hud__poster {
+  position: relative; z-index: 1;
+  inline-size: 100%; block-size: 100%; object-fit: contain;
+}
 
 /* Two jobs, one filter — see the long note in itqan-website/src/components/Hud.astro.
    The mascot artwork has fully transparent holes at the eyes (measured: alpha 0
@@ -49,11 +53,47 @@
    On paper that reads as a white highlight; on the dark canvas the eye turns
    black. A blurred paper drop-shadow floods those holes in every theme, and
    doubles as the keyline that stops his navy merging into a dark background.
+   Two passes, not three: one 3px pass is what the measurement showed fills the
+   hole, and each pass is another full-layer rasterisation on a phone.
    The real fix is re-exporting the artwork with opaque eyes. */
 .hud__video,
 .hud__poster {
-  filter: drop-shadow(0 0 3px var(--paper)) drop-shadow(0 0 3px var(--paper))
-          drop-shadow(0 0 3px var(--paper));
+  filter: drop-shadow(0 0 3px var(--paper)) drop-shadow(0 0 3px var(--paper));
+}
+
+/* The contact shadow — a painted element, not another drop-shadow() on the
+   artwork, and that distinction is the fix. Filters on a composited layer are
+   rasterised at that layer's resolution, which on iOS is often below the page's,
+   so a shadow drawn that way arrives with steps in it while the same rule looks
+   smooth on a desktop GPU. A blurred gradient goes through the ordinary painter
+   and lands identically on both.
+   The stops end on navy at zero alpha rather than the `transparent` keyword,
+   which is transparent BLACK and greys the midpoint on any engine that
+   interpolates without premultiplying. */
+.hud::before {
+  content: '';
+  position: absolute; z-index: 0;
+  inset-inline: 8%; inset-block-end: 2%; block-size: 22%;
+  border-radius: var(--radius-full);
+  pointer-events: none;
+  background: radial-gradient(
+    50% 50% at 50% 50%,
+    color-mix(in srgb, var(--navy) 24%, transparent) 0%,
+    color-mix(in srgb, var(--navy) 13%, transparent) 45%,
+    color-mix(in srgb, var(--navy) 4%, transparent) 74%,
+    color-mix(in srgb, var(--navy) 0%, transparent) 100%
+  );
+  filter: blur(5px);
+}
+/* On the dark canvas a navy shadow is invisible against navy. */
+[data-theme='dark'] .hud::before {
+  background: radial-gradient(
+    50% 50% at 50% 50%,
+    color-mix(in srgb, var(--navy-950) 55%, transparent) 0%,
+    color-mix(in srgb, var(--navy-950) 30%, transparent) 45%,
+    color-mix(in srgb, var(--navy-950) 9%, transparent) 74%,
+    color-mix(in srgb, var(--navy-950) 0%, transparent) 100%
+  );
 }
 
 .guide { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); }

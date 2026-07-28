@@ -186,6 +186,24 @@ export function itqanSite(): Plugin {
           ]);
         }
 
+        /**
+         * The site's forms navigate to /api/handoff on success — that value is
+         * baked into the built HTML by itqan-website/src/config.ts. In
+         * production it is the cross-domain bridge: it mints a short-lived
+         * signed token and redirects to the app's own origin with it.
+         *
+         * Here there is only one origin and the session cookie already reaches
+         * the app, so there is nothing to hand over. It still has to EXIST,
+         * though: without it every local sign in ended on the site's 404 page,
+         * and the whole flow could not be walked before deploying, which is the
+         * one thing this plugin is for.
+         */
+        if (url === '/api/handoff') {
+          res.statusCode = 302;
+          res.setHeader('Location', cookies[COOKIE] ? '/app/' : '/');
+          return res.end();
+        }
+
         // Everything below is the app talking to its own backend.
         const token = cookies[COOKIE];
         const me = token ? accounts.find((a) => a.id === idFromToken(token)) : undefined;
