@@ -98,6 +98,23 @@ dead session. No loops.
 **`/auth/session` never triggers refresh.** A 401 there is a normal answer
 ("not signed in"), not an error. It is called with `retryOnAuthFailure: false`.
 
+### CSP: one trap when the API is on another origin
+
+Both projects now ship a Content-Security-Policy (`vercel.json`) with
+`connect-src 'self'`. That is correct while the API is same-origin — the
+preferred setup — but **if you move FastAPI to its own domain, every request
+will be blocked by the browser before it is sent**, and the console error will
+say CSP, not CORS. Add the API origin to `connect-src` in
+`Onboarding/vercel.json` at the same time you set `VITE_API_BASE_URL`:
+
+```json
+"connect-src 'self' https://api.itqan.example"
+```
+
+Static assets (`/assets`, `/fonts`, `/mascot`) are served
+`immutable, max-age=31536000`; they are content-hashed, so this is safe. Do not
+add that header to HTML or to any `/api` response.
+
 ### Browser support note
 
 `client.ts` composes its abort signals by hand rather than using

@@ -16,7 +16,7 @@
  * the site while the session is still being read.
  */
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { useEffect, type ReactNode } from 'react';
+import { Suspense, lazy, useEffect, type ReactNode } from 'react';
 import { I18nProvider, useI18n } from './i18n';
 import { ThemeProvider } from './lib/theme';
 import { ApiProvider, useApi } from './state/api';
@@ -26,14 +26,30 @@ import { siteLogin } from './lib/site';
 import { setApiLocale } from './api/http';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
+/**
+ * Route-level code splitting.
+ *
+ * Onboarding and the signed-in product are disjoint in time: nobody sees the
+ * dashboard, jobs and courses while they are still uploading a CV, and an
+ * already-onboarded user never sees the upload flow again. Shipping all of it
+ * in one 315KB bundle meant every first-time visitor downloaded and parsed
+ * screens they could not reach — on the phone connection this product is
+ * actually used on.
+ *
+ * The onboarding screens stay EAGER. They are the first thing a new account
+ * sees, and a lazy chunk there would trade a smaller bundle for a spinner on
+ * the very first screen — the wrong way round. Only the post-onboarding
+ * surfaces are split.
+ */
 import { Upload } from './screens/Upload';
 import { Questions } from './screens/Questions';
 import { Confirm } from './screens/Confirm';
 import { ResumeGate } from './screens/ResumeGate';
-import { AppLayout } from './app/AppLayout';
-import { Dashboard } from './app/Dashboard';
-import { Jobs } from './app/Jobs';
-import { Courses } from './app/Courses';
+
+const AppLayout = lazy(() => import('./app/AppLayout').then((m) => ({ default: m.AppLayout })));
+const Dashboard = lazy(() => import('./app/Dashboard').then((m) => ({ default: m.Dashboard })));
+const Jobs = lazy(() => import('./app/Jobs').then((m) => ({ default: m.Jobs })));
+const Courses = lazy(() => import('./app/Courses').then((m) => ({ default: m.Courses })));
 
 /** Full-page hold while the session is read. Deliberately quiet. */
 function Booting() {
@@ -171,6 +187,10 @@ export default function App() {
               <WithOnboarding>
                 <SkipLink />
                 <ScreenBoundary>
+                  {/* Same quiet hold as the session boot, so a chunk fetch on a
+                      slow connection looks like something the app already does
+                      rather than a new kind of blank. */}
+                  <Suspense fallback={<Booting />}>
                   <Routes>
                     <Route path="/upload" element={<RequireOnboarding><Upload /></RequireOnboarding>} />
                     <Route path="/questions" element={<RequireOnboarding><RequireFlow><Questions /></RequireFlow></RequireOnboarding>} />
@@ -185,6 +205,7 @@ export default function App() {
                     {/* Entry point: the guards decide where this actually lands. */}
                     <Route path="*" element={<RequireApp><Navigate to="/dashboard" replace /></RequireApp>} />
                   </Routes>
+                  </Suspense>
                 </ScreenBoundary>
               </WithOnboarding>
             </AuthProvider>

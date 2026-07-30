@@ -5,9 +5,21 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#FAF8F3" />
+
+    <!-- Rubik Arabic, preloaded. Arabic is the default locale, so this is the
+         file the first paint almost always needs; without the preload the
+         browser only discovers it after parsing the CSS, which is a round trip
+         of blank text. The Latin cut is NOT preloaded on purpose — an English
+         user fetches it a beat later, which is the right trade when Arabic is
+         the common case and preloading both would waste ~35KB on every visit.
+         `crossorigin` is required even same-origin: fonts are fetched in CORS
+         mode, and omitting it downloads the file twice. -->
+    <link rel="preload" href="/fonts/rubik-arabic-wght-normal.woff2"
+          as="font" type="font/woff2" crossorigin />
+
     <title>Itqan — Onboarding</title>
-    <script type="module" crossorigin src="/assets/index-dMxNaoql.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-WO9zhbdB.css">
+    <script type="module" crossorigin src="/assets/index-B_QoiuYE.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BQXIeWF_.css">
   </head>
   <body>
     <div id="root"></div>

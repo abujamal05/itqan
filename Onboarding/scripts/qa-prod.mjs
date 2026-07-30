@@ -6,7 +6,7 @@
  *
  * Usage: node scripts/qa-prod.mjs   (BASE overridable via QA_BASE)
  */
-import { chromium, webkit, devices } from 'playwright-core';
+import { chromium, webkit } from 'playwright-core';
 
 const BASE = (process.env.QA_BASE ?? 'https://itqan-site.vercel.app').replace(/\/$/, '');
 const VIEWPORTS = [320, 375, 390, 414, 768, 820, 1024, 1280, 1440, 1920];

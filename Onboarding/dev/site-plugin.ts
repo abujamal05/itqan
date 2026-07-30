@@ -50,7 +50,8 @@ const PIPELINE_MS = 7000;
 /** Document ids the pipeline will refuse, so the failure path is reachable. */
 const unreadable = new Set<string>();
 
-const publicUser = ({ password, ...u }: Account) => u;
+/** Strips the password before anything leaves the server. */
+const publicUser = ({ password: _password, ...u }: Account) => u;
 
 const sleep = (ms: number) => new Promise<void>((r) => { setTimeout(r, ms); });
 
