@@ -22,7 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { Plugin, Connect } from 'vite';
 import type { ServerResponse } from 'node:http';
-import { analysisResult, courses, dashboard, jobs } from './data.js';
+import { courses, dashboard, jobs, pipelineResult } from './data.js';
 import type { Locale } from './data.js';
 
 const SITE_DIST = path.resolve(__dirname, '../../itqan-website/dist');
@@ -45,13 +45,21 @@ const accounts: Account[] = [
 /** Progress and profile per account, so a reload does not restart onboarding. */
 const progress = new Map<string, unknown>();
 
-/** How long the fake pipeline takes end to end, and the jobs in flight. */
+/** How long the fake pipeline takes end to end. */
 const PIPELINE_MS = 7000;
-const jobs_ = new Map<string, { started: number; bad: boolean }>();
 /** Document ids the pipeline will refuse, so the failure path is reachable. */
 const unreadable = new Set<string>();
 
 const publicUser = ({ password, ...u }: Account) => u;
+
+const sleep = (ms: number) => new Promise<void>((r) => { setTimeout(r, ms); });
+
+/**
+ * The CSRF cookie is deliberately NOT httpOnly — the client has to read it to
+ * echo it back in X-CSRF-Token (double submit). Production does the same; see
+ * BACKEND_INTEGRATION.md §2.
+ */
+const csrfCookie = () => `csrf_token=dev-csrf; Path=/; SameSite=Lax`;
 const tokenFor = (id: string) => `dev.${id}`;
 const idFromToken = (t: string) => t.split('.')[1] ?? '';
 
@@ -167,6 +175,7 @@ export function itqanSite(): Plugin {
           accounts.push(account);
           return json(res, 200, { ok: true }, [
             `${COOKIE}=${tokenFor(account.id)}; Path=/; SameSite=Lax`,
+            csrfCookie(),
             setLocale,
           ]);
         }
@@ -182,6 +191,7 @@ export function itqanSite(): Plugin {
           if (!hit) return json(res, 401, { error: 'invalid_credentials' });
           return json(res, 200, { ok: true }, [
             `${COOKIE}=${tokenFor(hit.id)}; Path=/; SameSite=Lax`,
+            csrfCookie(),
             setLocale,
           ]);
         }
@@ -208,8 +218,11 @@ export function itqanSite(): Plugin {
         const token = cookies[COOKIE];
         const me = token ? accounts.find((a) => a.id === idFromToken(token)) : undefined;
 
-        if (url === '/api/session') {
-          if (!me) return json(res, 401, { error: 'no_session' });
+        // Paths match BACKEND_INTEGRATION.md exactly. They live under /auth
+        // because that is what FastAPI will serve; if these two drift apart,
+        // local dev passes and production 401s on every request.
+        if (url === '/api/auth/session') {
+          if (!me) return json(res, 401, { code: 'no_session', message: 'Not signed in' });
           return json(res, 200, {
             token,
             user: publicUser(me),
@@ -217,8 +230,22 @@ export function itqanSite(): Plugin {
           });
         }
 
-        if (url === '/api/logout' && req.method === 'POST') {
-          return json(res, 200, { ok: true }, [`${COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`]);
+        /**
+         * Refresh. There is no real token rotation here — dev sessions do not
+         * expire — but the ENDPOINT has to exist and answer 200/401 correctly,
+         * because the client's single-flight refresh runs against it on every
+         * 401 and its absence would look like a dead session.
+         */
+        if (url === '/api/auth/refresh' && req.method === 'POST') {
+          if (!me) return json(res, 401, { code: 'no_session', message: 'Not signed in' });
+          return json(res, 200, { ok: true }, [csrfCookie()]);
+        }
+
+        if (url === '/api/auth/logout' && req.method === 'POST') {
+          return json(res, 200, { ok: true }, [
+            `${COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`,
+            `csrf_token=; Path=/; Max-Age=0; SameSite=Lax`,
+          ]);
         }
 
         if (!me) return json(res, 401, { error: 'no_session' });
@@ -239,26 +266,27 @@ export function itqanSite(): Plugin {
           });
         }
 
+        /**
+         * The synchronous pipeline, matching the production contract: one POST
+         * that holds open for the whole A -> C -> E run and returns every
+         * envelope at once. The delay is deliberately real so the questions
+         * screen is exercised the way a user will meet it.
+         */
         if (url === '/api/analysis' && req.method === 'POST') {
           const f = parseBody(await body(req), req.headers['content-type'] ?? '');
-          const ids: string[] = Array.isArray((f as never as { documentIds: string[] }).documentIds)
-            ? (f as never as { documentIds: string[] }).documentIds : [];
-          const jobId = `job_${Date.now().toString(36)}`;
-          jobs_.set(jobId, { started: Date.now(), bad: ids.some((d) => unreadable.has(d)) });
-          return json(res, 200, { jobId });
-        }
+          const ids: string[] = Array.isArray((f as never as { document_ids: string[] }).document_ids)
+            ? (f as never as { document_ids: string[] }).document_ids : [];
 
-        if (url.startsWith('/api/analysis/')) {
-          const jobId = decodeURIComponent(url.slice('/api/analysis/'.length));
-          const job = jobs_.get(jobId);
-          if (!job) return json(res, 404, { error: 'no_job' });
-          if (job.bad) return json(res, 200, { jobId, stage: 'failed', progress: 0, error: 'unreadable' });
-          const p = Math.min(1, (Date.now() - job.started) / PIPELINE_MS);
-          const stage = p >= 1 ? 'done' : p > 0.66 ? 'matching' : p > 0.33 ? 'translating' : 'reading';
-          return json(res, 200, {
-            jobId, stage, progress: p,
-            result: stage === 'done' ? analysisResult(locale) : undefined,
-          });
+          if (ids.some((d) => unreadable.has(d))) {
+            await sleep(1200);
+            return json(res, 422, {
+              code: 'agent_a_unreadable_document',
+              message: 'The documents could not be read.',
+            });
+          }
+
+          await sleep(PIPELINE_MS);
+          return json(res, 200, pipelineResult(locale));
         }
 
         if (url === '/api/dashboard') return json(res, 200, dashboard(locale));

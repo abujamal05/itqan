@@ -46,7 +46,17 @@ export async function resetProgress(page: Page): Promise<void> {
   await page.request.delete('/api/onboarding/progress');
 }
 
-/** A minimal in-memory PDF, enough for the upload endpoint to accept a row. */
-export function fakeTranscript(name = 'transcript.pdf') {
+/**
+ * A minimal in-memory PDF. The filename matters: the upload screen guesses the
+ * document kind from it, and the CV is the kind the flow requires (Agent A's
+ * contract), so a file named "transcript.pdf" leaves the continue button
+ * correctly disabled.
+ */
+export function fakePdf(name: string) {
   return { name, mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 itqan e2e fixture') };
 }
+
+/** The required document. */
+export const fakeCv = () => fakePdf('cv.pdf');
+/** The optional corroborating document. */
+export const fakeTranscript = () => fakePdf('transcript.pdf');

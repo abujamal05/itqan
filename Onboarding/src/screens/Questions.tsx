@@ -55,7 +55,12 @@ export function Questions() {
 
   const q = QUESTIONS[index];
   const isLast = index === QUESTIONS.length - 1;
-  const pct = Math.round((analysis?.progress ?? 0) * 100);
+  /**
+   * Null progress means the server reports none — the pipeline runs inside one
+   * synchronous request, so there is nothing to report until it finishes. The
+   * meter goes indeterminate rather than sitting at 0%, which reads as stalled.
+   */
+  const pct = analysis?.progress == null ? null : Math.round(analysis.progress * 100);
   const reading = entry === 'document' && !settled;
   const done = entry === 'document' && settled && !failed;
 
@@ -93,9 +98,20 @@ export function Questions() {
                     <span className="text-sm" style={{ fontWeight: 'var(--weight-medium)' }}>
                       {done ? t('questions.readingDone') : t('questions.reading')}
                     </span>
-                    <span className="text-sm num">{formatNumber(pct)}%</span>
+                    {pct !== null && <span className="text-sm num">{formatNumber(pct)}%</span>}
                   </div>
-                  <div className="meter"><i style={{ inlineSize: `${pct}%` }} /></div>
+                  {/* Determinate when the server gives a number, indeterminate
+                      when it cannot. Never a fabricated bar. */}
+                  <div
+                    className={`meter${pct === null && !done ? ' meter--indeterminate' : ''}`}
+                    role="progressbar"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    {...(pct === null ? {} : { 'aria-valuenow': done ? 100 : pct })}
+                    aria-label={done ? t('questions.readingDone') : t('questions.reading')}
+                  >
+                    <i style={pct === null ? undefined : { inlineSize: `${done ? 100 : pct}%` }} />
+                  </div>
                 </div>
               </div>
             )}

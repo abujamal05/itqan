@@ -16,6 +16,7 @@ import type { ReactNode } from 'react';
 import type { Locale } from '../i18n';
 import type { User } from '../api';
 import { useApi } from './api';
+import { onAuthLost, resetAuthState } from '../api/client';
 
 interface AuthValue {
   user: User | null;
@@ -44,14 +45,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSessionLocale(s?.locale ?? null);
       })
       .catch(() => { if (alive) setUser(null); })
-      .finally(() => { if (alive) setBooting(false); });
+      .finally(() => { if (alive) { setBooting(false); resetAuthState(); } });
     return () => { alive = false; };
   }, [api]);
 
   const logout = useCallback(async () => {
     await api.logout().catch(() => {});
     setUser(null);
+    resetAuthState();
   }, [api]);
+
+  /**
+   * A dead session has to clear THIS state, not just fail the request that
+   * discovered it. Without this the app keeps rendering as signed-in while
+   * every call 401s — the user sees a dashboard full of error states instead
+   * of being sent back to sign in.
+   *
+   * The transport fires this once per dead session (see client.ts), so a screen
+   * with six parallel requests does not produce six logouts.
+   */
+  useEffect(() => onAuthLost(() => {
+    setUser(null);
+    setBooting(false);
+  }), []);
 
   const markOnboarded = useCallback(() => {
     setUser((u) => (u ? { ...u, onboarded: true } : u));

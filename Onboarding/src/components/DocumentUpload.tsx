@@ -12,7 +12,7 @@
  * predictably ("CV_2025.pdf", "transcript.pdf"). A guess the user can see and
  * override beats an empty required dropdown they must fill six times.
  *
- * Only the transcript is required, and the requirement is stated where it is
+ * Only the CV is required (Agent A's input contract), and the requirement is stated where it is
  * felt — on the disabled Continue button — rather than as an asterisk they
  * have to hunt for.
  *
@@ -288,6 +288,12 @@ export function DocumentUpload({
   );
 }
 
-export const hasTranscript = (items: Item[]) =>
+/**
+ * Whether the one document the pipeline cannot run without is present.
+ * Keyed off REQUIRED_KIND rather than a literal, so the day the contract
+ * changes again this follows it — it was called `hasTranscript` while checking
+ * for a CV, which is exactly the kind of stale name that misleads a reader.
+ */
+export const hasRequiredDocument = (items: Item[]) =>
   items.some((i) => i.kind === REQUIRED_KIND && i.status === 'done');
 export const anyUploading = (items: Item[]) => items.some((i) => i.status === 'uploading');

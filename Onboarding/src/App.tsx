@@ -23,6 +23,7 @@ import { ApiProvider, useApi } from './state/api';
 import { AuthProvider, useAuth } from './state/auth';
 import { OnboardingProvider, useOnboarding } from './state/onboarding';
 import { siteLogin } from './lib/site';
+import { setApiLocale } from './api/http';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 import { Upload } from './screens/Upload';
@@ -137,6 +138,18 @@ function FollowSessionLocale() {
     // Runs only when the session first reports a language.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionLocale]);
+
+  /**
+   * Keeps the API layer's language in step with the UI's.
+   *
+   * The backend sends human-readable strings as {en, ar} pairs and the mapper
+   * in http.ts picks one. It needs to know which — and it is a plain module,
+   * not a hook, so it cannot read the i18n context itself. Without this the
+   * picker silently stays on its default and an English user gets Arabic job
+   * titles, which looks like a backend bug and is not one.
+   */
+  useEffect(() => { setApiLocale(locale); }, [locale]);
+
   return null;
 }
 

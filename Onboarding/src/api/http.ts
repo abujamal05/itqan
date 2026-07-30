@@ -148,8 +148,68 @@ export function createHttpApi(): ItqanApi {
      * recommendations. `readiness` stays null when Agent C could not compute a
      * gap score; the UI says so rather than showing a zero.
      */
-    getDashboard(signal) { return request<DashboardData>('/dashboard', { signal }); },
-    getJobs(signal) { return request<JobMatch[]>('/jobs', { signal }); },
-    getCourses(signal) { return request<Course[]>('/courses', { signal }); },
+    async getDashboard(signal) {
+      return localiseDashboard(await request<RawDashboard>('/dashboard', { signal }));
+    },
+    async getJobs(signal) {
+      return (await request<RawJobMatch[]>('/jobs', { signal })).map(localiseJob);
+    },
+    async getCourses(signal) {
+      return (await request<RawCourse[]>('/courses', { signal })).map(localiseCourse);
+    },
   };
 }
+
+/* ------------------------------------------------------------ localising -- */
+
+/**
+ * The bilingual seam.
+ *
+ * The backend sends human-readable strings as `{en, ar}` (the agreed contract),
+ * but every screen expects a plain string. Collapsing them here — once, at the
+ * boundary — is what keeps `pickText` out of components. Miss this and React
+ * renders the literal text "[object Object]" wherever a title should be, which
+ * is exactly what happened before these mappers existed.
+ *
+ * `Localisable<T>` marks the fields that may arrive either way: the backend is
+ * allowed to send a plain string (already picked) OR the pair, and both work.
+ * That tolerance is deliberate — it lets the backend adopt bilingual payloads
+ * field by field without breaking the app mid-migration.
+ */
+type Localisable<T, K extends keyof T> = Omit<T, K> & { [P in K]: T[P] | LocalizedText };
+
+type RawJobMatch = Localisable<JobMatch, 'title' | 'arrangement' | 'why' | 'location'>;
+type RawCourse = Localisable<Course, 'title'>;
+type RawDashboard = Omit<DashboardData, 'readinessNote' | 'topMatches' | 'nextStep' | 'journey'> & {
+  readinessNote: string | LocalizedText;
+  topMatches: RawJobMatch[];
+  nextStep: { title: string | LocalizedText; body: string | LocalizedText; action: DashboardData['nextStep']['action'] };
+  journey: Array<Omit<DashboardData['journey'][number], 'label' | 'detail'>
+    & { label: string | LocalizedText; detail?: string | LocalizedText }>;
+};
+
+const localiseJob = (j: RawJobMatch): JobMatch => ({
+  ...j,
+  title: pickText(j.title),
+  arrangement: pickText(j.arrangement),
+  location: pickText(j.location),
+  why: pickText(j.why),
+});
+
+const localiseCourse = (c: RawCourse): Course => ({ ...c, title: pickText(c.title) });
+
+const localiseDashboard = (d: RawDashboard): DashboardData => ({
+  ...d,
+  readinessNote: pickText(d.readinessNote),
+  topMatches: d.topMatches.map(localiseJob),
+  nextStep: {
+    action: d.nextStep.action,
+    title: pickText(d.nextStep.title),
+    body: pickText(d.nextStep.body),
+  },
+  journey: d.journey.map((s) => ({
+    ...s,
+    label: pickText(s.label),
+    detail: s.detail == null ? undefined : pickText(s.detail),
+  })),
+});

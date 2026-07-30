@@ -337,6 +337,12 @@ claim is made.
 **This is the section to read before writing any backend.** The frontend is finished and correct; it
 is waiting for real services behind a contract that already exists.
 
+> **Superseded in part.** The backend-facing layer has since been rebuilt for
+> the real FastAPI + JWT + PostgreSQL system. Read
+> [`BACKEND_INTEGRATION.md`](BACKEND_INTEGRATION.md) first — it is the current
+> source of truth for endpoints, auth, and the agent contracts. What follows
+> stays accurate about *why* the seam is shaped the way it is.
+
 ### 9.1 The one rule
 
 > **`Onboarding/src/api/types.ts` is the contract. It is the only thing the screens depend on.**
@@ -371,8 +377,7 @@ Auth and the bridge live on the **site**; everything else on the **app**.
 | `POST /api/logout` | app | — | `200`, clears cookie |
 | `GET/PUT/DELETE /api/onboarding/progress` | app | `OnboardingProgress` | resumable progress |
 | `POST /api/documents` | app | multipart: `file`, `kind` | `UploadedDocument` |
-| `POST /api/analysis` | app | `{ documentIds: string[] }` | `{ jobId }` |
-| `GET /api/analysis/:jobId` | app | — | `AnalysisJob` (poll) |
+| `POST /api/analysis` | app | `{ document_ids: string[] }` | `PipelineResult` (**synchronous**, runs A→C→E) |
 | `POST /api/profile` | app | `ConfirmedProfile` | `{ ok: true }`, marks onboarded |
 | `GET /api/dashboard` | app | — | `DashboardData` |
 | `GET /api/jobs` | app | — | `JobMatch[]` |

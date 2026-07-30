@@ -2,9 +2,10 @@
  * API CONTRACT — the seam between this UI and the agent services.
  *
  * The agents are API-based: this app never runs inference, never holds a model,
- * and never does its own matching. It POSTs a document, polls an analysis job,
- * and GETs already-ranked results. Swapping or re-hosting an agent changes
- * nothing here as long as these shapes hold.
+ * and never does its own matching. It POSTs a document, awaits ONE synchronous
+ * analysis call that runs A -> C -> E, and GETs already-ranked results.
+ * Swapping or re-hosting an agent changes nothing here as long as these shapes
+ * hold. The agent-side envelopes live in ./agents.ts; see BACKEND_INTEGRATION.md.
  *
  * Trust rules baked into the types (itqan-brand §8), not left to the UI to
  * remember:
@@ -17,8 +18,21 @@
 
 import type { SkillOrigin, EvidenceQuality, MatchStatus } from './agents';
 
+/**
+ * Re-exported one by one, NOT with `export *`.
+ *
+ * A star re-export would collide: this file's `Confidence` is a bare 0..1
+ * number used all over the UI, while agents.ts has an `interface Confidence`
+ * (Agent A's `{overall, by_field}` envelope). Under `export *` the local one
+ * silently wins and any import of the agent envelope resolves to `number`
+ * instead — a type error that only shows up wherever someone reads
+ * `.overall`. Agent envelopes are imported from './agents' directly.
+ */
 export type { SkillOrigin, EvidenceQuality, MatchStatus };
-export * from './agents';
+export type {
+  LocalizedText, CandidateProfile, SkillGap, CourseRecommendations,
+  PipelineResult, AgentId, MissingSkillDetail, RequirementMatch,
+} from './agents';
 
 /** Confidence threshold above which output may be stated as fact. */
 export const TRUST_THRESHOLD = 0.85;

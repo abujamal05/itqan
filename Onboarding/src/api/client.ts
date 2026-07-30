@@ -104,31 +104,69 @@ async function parseError(res: Response, path: string): Promise<ApiError> {
   return ApiError.fromResponse(res.status, body, `${res.status} on ${path}`);
 }
 
+/**
+ * A timeout signal plus a `dispose` to stop its timer.
+ *
+ * Hand-rolled rather than `AbortSignal.timeout()` + `AbortSignal.any()`, which
+ * would have been the tidy way to write this and would also have broken the
+ * entire app on any iPhone older than iOS 17.4: `AbortSignal.any` shipped in
+ * Safari 17.4 and `AbortSignal.timeout` in Safari 16, so on those devices every
+ * request in the app throws `TypeError: AbortSignal.any is not a function`
+ * before it is even sent. `AbortController` itself is supported everywhere we
+ * care about, so composing by hand costs a few lines and removes the floor.
+ *
+ * Disposing matters: an undisposed timer keeps a 20s handle alive per request,
+ * and on a list screen that is dozens of pending timers holding closures.
+ */
+function withTimeout(timeoutMs: number, external?: AbortSignal) {
+  const controller = new AbortController();
+  const onExternalAbort = () => controller.abort(external?.reason);
+
+  if (external) {
+    if (external.aborted) controller.abort(external.reason);
+    else external.addEventListener('abort', onExternalAbort, { once: true });
+  }
+
+  // A distinct reason so the caller can tell "we gave up waiting" apart from
+  // "the caller cancelled", which are different errors to the user.
+  const id = setTimeout(() => controller.abort(new DOMException('Timeout', 'TimeoutError')), timeoutMs);
+
+  return {
+    signal: controller.signal,
+    dispose() {
+      clearTimeout(id);
+      external?.removeEventListener('abort', onExternalAbort);
+    },
+  };
+}
+
 async function send(path: string, opts: RequestOptions): Promise<Response> {
   const { body, timeoutMs = REQUEST_TIMEOUT_MS, signal, headers, ...rest } = opts;
   const method = (rest.method ?? 'GET').toUpperCase();
 
-  // Our own timeout, combined with any caller signal, so an abort from either
-  // side cancels the request rather than leaking it.
-  const timer = AbortSignal.timeout(timeoutMs);
-  const composed = signal ? AbortSignal.any([signal, timer]) : timer;
+  const timeout = withTimeout(timeoutMs, signal);
+  const composed = timeout.signal;
 
   const isForm = body instanceof FormData;
-  return fetch(`${API_BASE}${path}`, {
-    ...rest,
-    method,
-    // `include` rather than `same-origin`: identical behaviour on one origin,
-    // and it keeps working if the backend is ever moved to its own domain.
-    credentials: 'include',
-    signal: composed,
-    headers: {
-      Accept: 'application/json',
-      ...(isForm || body === undefined ? {} : { 'Content-Type': 'application/json' }),
-      ...(MUTATING.test(method) ? csrfHeader() : {}),
-      ...(headers as Record<string, string> | undefined),
-    },
-    body: isForm ? body : body === undefined ? undefined : JSON.stringify(body),
-  });
+  try {
+    return await fetch(`${API_BASE}${path}`, {
+      ...rest,
+      method,
+      // `include` rather than `same-origin`: identical behaviour on one origin,
+      // and it keeps working if the backend is ever moved to its own domain.
+      credentials: 'include',
+      signal: composed,
+      headers: {
+        Accept: 'application/json',
+        ...(isForm || body === undefined ? {} : { 'Content-Type': 'application/json' }),
+        ...(MUTATING.test(method) ? csrfHeader() : {}),
+        ...(headers as Record<string, string> | undefined),
+      },
+      body: isForm ? body : body === undefined ? undefined : JSON.stringify(body),
+    });
+  } finally {
+    timeout.dispose();
+  }
 }
 
 /**
@@ -143,13 +181,14 @@ export async function request<T>(path: string, opts: RequestOptions = {}): Promi
     res = await send(path, opts);
   } catch (e) {
     // fetch only rejects for network failure or abort — never for HTTP status.
-    const aborted = e instanceof DOMException && e.name === 'AbortError';
+    // The caller cancelling is not an error the UI should render, so it is
+    // rethrown untouched; anything else becomes a typed ApiError.
+    if (opts.signal?.aborted) throw e;
     const timedOut = e instanceof DOMException && e.name === 'TimeoutError';
-    if (opts.signal?.aborted) throw e;                    // caller cancelled: propagate
     throw new ApiError({
-      kind: timedOut || aborted ? 'timeout' : 'network',
+      kind: timedOut ? 'timeout' : 'network',
       status: 0,
-      message: timedOut || aborted ? `Timed out on ${path}` : `Network error on ${path}`,
+      message: timedOut ? `Timed out after ${opts.timeoutMs ?? 'default'}ms on ${path}` : `Network error on ${path}`,
     });
   }
 

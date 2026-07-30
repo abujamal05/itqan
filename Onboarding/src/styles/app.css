@@ -509,3 +509,23 @@
   /* A third column earns its place once there is genuinely room for it. */
   .grid--2 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+
+/* Indeterminate work meter — used when the server genuinely cannot report
+   progress (the pipeline runs inside one synchronous request). A sliding band
+   says "still working" without claiming a percentage the app does not know.
+   Transform only, so it stays on the compositor. */
+.meter--indeterminate { position: relative; overflow: hidden; }
+.meter--indeterminate > i {
+  position: absolute; inset-block: 0; inline-size: 40%;
+  animation: meter-slide 1.4s var(--ease-in-out) infinite;
+}
+@keyframes meter-slide {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(350%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Movement removed, presence kept — the band pulses in place instead. */
+  .meter--indeterminate > i {
+    inline-size: 100%; animation: pulse calc(var(--duration-slower) * 3) var(--ease-in-out) infinite;
+  }
+}

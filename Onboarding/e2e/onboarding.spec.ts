@@ -12,7 +12,7 @@
  * specs. The read-only dashboard checks below are safe everywhere.
  */
 import { test, expect } from '@playwright/test';
-import { login, resetProgress, fakeTranscript, ACCOUNTS } from './helpers';
+import { login, resetProgress, fakeCv, ACCOUNTS } from './helpers';
 
 test.describe('dashboard (onboarded account)', () => {
   test.beforeEach(async ({ page }) => {
@@ -53,7 +53,7 @@ test.describe('onboarding flow (fresh account)', () => {
     await expect(page.getByRole('heading', { name: 'Add your documents' })).toBeVisible();
 
     // Add a transcript; the CTA unlocks once the upload settles.
-    await page.locator('input[type="file"]').setInputFiles(fakeTranscript());
+    await page.locator('input[type="file"]').setInputFiles(fakeCv());
     await expect(page.locator('.doc')).toHaveCount(1);
     const cta = page.getByRole('button', { name: 'Read my documents' });
     await expect(cta).toBeEnabled();
@@ -87,7 +87,7 @@ test.describe('onboarding flow (fresh account)', () => {
   test('"Start again" from the resume offer returns to step one', async ({ page }) => {
     // Seed some progress, then land on a later step to trigger the offer.
     await page.goto('/app/upload');
-    await page.locator('input[type="file"]').setInputFiles(fakeTranscript());
+    await page.locator('input[type="file"]').setInputFiles(fakeCv());
     const cta = page.getByRole('button', { name: 'Read my documents' });
     await expect(cta).toBeEnabled();
     await Promise.all([

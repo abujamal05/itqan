@@ -3,11 +3,13 @@
  *
  * Two load-bearing behaviours live here.
  *
- * 1. The analysis poll starts the moment the documents are submitted and keeps
- *    running while the user answers the direction questions. The wait is real —
- *    four agents run in sequence — so rather than parking them on a spinner we
- *    spend it collecting something useful. Failure must not be destructive:
- *    if the documents cannot be read, the answers already given survive.
+ * 1. The analysis request is fired the moment the documents are submitted and
+ *    is left in flight while the user answers the direction questions. The wait
+ *    is real — the backend runs A -> C -> E inside that one request — so rather
+ *    than parking them on a spinner we spend it collecting something useful.
+ *    Nothing awaits it before navigating; the result lands in state whenever it
+ *    arrives. Failure must not be destructive: if the documents cannot be read,
+ *    the answers already given survive.
  *
  * 2. Progress is saved to the account after every meaningful change. Nobody
  *    owes us one uninterrupted sitting: a phone dies, a tab closes, someone
@@ -88,7 +90,6 @@ export function OnboardingProvider({
    */
   const [checkedFor, setCheckedFor] = useState<boolean | null>(null);
   const checking = checkedFor !== enabled;
-  const timer = useRef<number | null>(null);
   const saveTimer = useRef<number | null>(null);
   /** Cancels an in-flight synchronous pipeline run. */
   const abortRun = useRef<AbortController | null>(null);
@@ -190,9 +191,11 @@ export function OnboardingProvider({
   useEffect(() => { persist(); }, [persist]);
   useEffect(() => () => { if (saveTimer.current) window.clearTimeout(saveTimer.current); }, []);
 
-  /* -------------------------------------------------------------- poll -- */
-  const stopPolling = useCallback(() => {
-    if (timer.current !== null) { window.clearTimeout(timer.current); timer.current = null; }
+  /* ------------------------------------------------------------ cancel -- */
+  /** Aborts an in-flight run; used when the flow is reset or abandoned. */
+  const cancelRun = useCallback(() => {
+    abortRun.current?.abort();
+    abortRun.current = null;
   }, []);
 
   /**
@@ -221,16 +224,16 @@ export function OnboardingProvider({
   }, [runPipeline]);
 
   const startManual = useCallback(() => {
-    stopPolling();
+    cancelRun();
     setEntry('manual');
     setDocuments([]);
     setJobId(null);
     setAnalysis(null);
     step.current = 'confirm';
-  }, [stopPolling]);
+  }, [cancelRun]);
 
   const reset = useCallback(() => {
-    stopPolling();
+    cancelRun();
     setEntry('document');
     setDocuments([]);
     setJobId(null);
@@ -239,7 +242,7 @@ export function OnboardingProvider({
     setProfile(null);
     step.current = 'upload';
     void api.clearProgress();
-  }, [stopPolling, api]);
+  }, [cancelRun, api]);
 
   const setPreference = useCallback(
     <K extends keyof Preferences>(key: K, value: Preferences[K]) => {

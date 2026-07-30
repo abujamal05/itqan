@@ -168,3 +168,63 @@ export const dashboard = (l: Locale) => ({
       state: 'upcoming', detail: pick({ ar: 'الخطوة القادمة', en: 'Next milestone' }, l) },
   ],
 });
+
+/**
+ * The synchronous pipeline envelope, shaped exactly like the production
+ * contract in `Onboarding/src/api/agents.ts` (snake_case, `{en, ar}` pairs).
+ *
+ * This is deliberately NOT the old UI-shaped `analysisResult`. Dev must
+ * exercise the same mapping code production will, or the mapper is only ever
+ * tested in production — which is how the last dev/prod drift bug happened.
+ */
+export const pipelineResult = (l: Locale) => {
+  const bi = (en: string, ar: string) => ({ en, ar });
+  void l; // both languages are sent; the client picks. Kept for signature parity.
+  return {
+    run_id: `run_${Date.now().toString(36)}`,
+    candidate_profile: {
+      candidate_id: 'u_maryam',
+      full_name: { value: 'Maryam Salim Al Balushi', confidence: 0.96, evidence_quote: 'Maryam Salim Al Balushi' },
+      email: null,
+      phone: null,
+      birth_date: { value: '2001-04-12', confidence: 0.71, evidence_quote: 'D.O.B 12/04/2001' },
+      graduation_date: { value: '2025-06', confidence: 0.9, evidence_quote: 'Date of award: June 2025' },
+      education: [],
+      skills: [
+        { name: 'SQL', origin: 'coursework_derived', quality: 'medium',
+          evidence_quote: 'Database Systems II — A', from_course: 'Database Systems II', esco_code: 'S1.2.3' },
+        { name: 'Python', origin: 'project', quality: 'high',
+          evidence_quote: 'Built an inventory tracker in Python', from_course: null, esco_code: 'S1.1.1' },
+        { name: 'Technical writing', origin: 'claim_only', quality: 'low',
+          evidence_quote: null, from_course: null, esco_code: null },
+      ],
+      confidence: { overall: 0.91 },
+      provenance: {
+        source_documents: ['doc_dev'],
+        unresolved_gaps: ['phone number not found'],
+        extracted_at: new Date().toISOString(),
+      },
+    },
+    skill_gap: {
+      candidate_id: 'u_maryam',
+      generated_at: new Date().toISOString(),
+      postings: [],
+      aggregate: {
+        missing_skill_details: [
+          { skill: 'Power BI', skill_label: bi('Power BI', 'باور بي آي'),
+            esco_code: 'S1.4.7', priority_score: 3.21, demand_trend: 'rising' },
+        ],
+        matched_skills: ['SQL', 'Python'],
+        overall_gap_score: 0.42,
+        overall_gap_score_range: [0.35, 0.55],
+      },
+    },
+    course_recommendations: {
+      candidate_id: 'u_maryam',
+      generated_at: new Date().toISOString(),
+      recommendations: [],
+      no_course_found: [],
+    },
+    warnings: [],
+  };
+};

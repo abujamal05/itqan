@@ -98,6 +98,14 @@ dead session. No loops.
 **`/auth/session` never triggers refresh.** A 401 there is a normal answer
 ("not signed in"), not an error. It is called with `retryOnAuthFailure: false`.
 
+### Browser support note
+
+`client.ts` composes its abort signals by hand rather than using
+`AbortSignal.timeout()` / `AbortSignal.any()`. Those are Safari 16 / Safari 17.4
+respectively, and on anything older every request in the app would throw
+`TypeError` before being sent. If you add fetch code elsewhere, do not reach for
+them — this product has real users on older iPhones.
+
 ### CSRF
 
 You set a **non-httpOnly** `csrf_token` cookie. The client reads it and echoes it
@@ -518,9 +526,21 @@ gap. Do not run an agent inside those GETs.
 ### Keep dev and prod in step
 
 `Onboarding/dev/site-plugin.ts` is a dev-only stand-in implementing the same
-endpoints. **It has already caused one bug** by accepting a password production
-rejected. Either update it alongside your API, or delete it and point
-`VITE_API_BASE_URL` at a real FastAPI instance.
+endpoints, and it now mirrors this document exactly: `/auth/session`,
+`/auth/refresh`, `/auth/logout`, the `csrf_token` cookie, and a **synchronous**
+`POST /analysis` that returns a real `PipelineResult` after a deliberate delay.
+`Onboarding/dev/data.ts` holds that fixture in agent shape (snake_case,
+`{en, ar}`), so local dev exercises the same mapping code production will.
+
+**It has already caused one bug** by accepting a password production rejected.
+When you change a contract, change it in three places or the drift comes back:
+this document, the dev plugin, and your FastAPI app. Or delete the plugin and
+point `VITE_API_BASE_URL` at a real instance.
+
+There is an E2E guard for the auth transport (`Onboarding/e2e/auth.spec.ts`)
+covering cookie issuance, the no-refresh-on-`/auth/session` rule, and that a
+dead session does not loop refreshes. Run it against your backend with
+`QA_BASE`/`VITE_API_BASE_URL` pointed at it.
 
 ### Verifying without the UI
 
