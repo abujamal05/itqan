@@ -1,118 +1,155 @@
 /**
- * The API client. One thin fetch wrapper; no logic lives here, because
- * extraction, ranking and matching all belong to the agent services.
+ * The API surface, and the one place agent envelopes become UI types.
  *
- * Auth is NOT implemented here. The marketing site owns log in and sign up:
- * its forms post to /api/placeholder/{login,signup} and the response sets a
- * session cookie on this origin. This app only ever *reads* that session
- * through /api/session, and ends it through /api/logout. There is deliberately
- * no login() or signup() method — having one would invite a second, competing
- * sign-in surface, which is the thing we are avoiding.
+ * Transport (auth, refresh, CSRF, timeouts, errors) lives in `client.ts`; the
+ * agent JSON shapes live in `agents.ts`. This file is the seam between them.
+ * Mapping happens HERE and only here, so a screen never learns an agent's field
+ * name and a backend rename never reaches a component.
  *
- * `credentials: 'same-origin'` is what carries the cookie.
+ * Auth is deliberately incomplete, on purpose: the marketing site owns log in
+ * and sign up. This app only READS the session (`/auth/session`) and ends it
+ * (`/auth/logout`). There is no login() method and there must never be one — a
+ * second sign-in surface is a second thing to keep in step and the first to
+ * drift.
  */
 import type {
-  AnalysisJob, ConfirmedProfile, Course, DashboardData, ItqanApi, JobMatch,
-  OnboardingProgress, Session, UploadedDocument,
+  AnalysisJob, AnalysisResult, ConfirmedProfile, Course, DashboardData, ItqanApi,
+  JobMatch, OnboardingProgress, Session, Skill, UploadedDocument,
 } from './types';
+import type { CandidateProfile, LocalizedText, PipelineResult } from './agents';
+import { request, upload } from './client';
+import { ANALYSIS_TIMEOUT_MS } from '../config/env';
 import { takeHandoffToken } from '../lib/site';
 
-const BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '/api';
+/* --------------------------------------------------------------- mapping -- */
 
-export class HttpError extends Error {
-  status: number;
-  constructor(status: number, message: string) {
-    super(message);
-    this.status = status;
-  }
+/** Current UI language. Set by the i18n provider; drives bilingual picking. */
+let activeLocale: 'ar' | 'en' = 'ar';
+export function setApiLocale(locale: 'ar' | 'en') { activeLocale = locale; }
+
+/**
+ * Picks a language out of a bilingual field. Falls back to English when the
+ * Arabic is genuinely absent — better an English job title than the literal
+ * string "null" on screen.
+ */
+export function pickText(t: LocalizedText | string | null | undefined): string {
+  if (t == null) return '';
+  if (typeof t === 'string') return t;
+  return (activeLocale === 'ar' ? t.ar : t.en) || t.en || '';
 }
 
-async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    ...init,
-    credentials: 'same-origin',
-    headers: init.body instanceof FormData
-      ? init.headers
-      : { 'Content-Type': 'application/json', ...init.headers },
-  });
-  if (!res.ok) throw new HttpError(res.status, `${res.status} on ${path}`);
-  if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
+/** 0..1 -> 0..100, preserving null. Never invents a number for "unknown". */
+export const toPercent = (n: number | null | undefined): number | null =>
+  n == null ? null : Math.round(n * 100);
+
+/** Agent A's skills -> the confirm screen's editable list. */
+function mapSkills(profile: CandidateProfile): Skill[] {
+  return profile.skills.map((s, i) => ({
+    id: s.esco_code ?? `${s.name}-${i}`,
+    name: s.name,
+    // Quality is Agent A's clamped evidence tier; it maps onto the UI's 0..1
+    // confidence so the existing "Suggested — confirm" threshold keeps working
+    // without every screen learning about tiers.
+    confidence: s.quality === 'high' ? 0.95 : s.quality === 'medium' ? 0.8 : 0.5,
+    fromCourse: s.from_course ?? undefined,
+    origin: s.origin,
+    quality: s.quality,
+    evidenceQuote: s.evidence_quote,
+  }));
 }
+
+function mapAnalysisResult(profile: CandidateProfile): AnalysisResult {
+  const field = <T,>(f: { value: T; confidence: number; evidence_quote: string | null } | null) =>
+    (f == null ? null : { value: f.value, confidence: f.confidence, evidence: f.evidence_quote ?? undefined });
+  return {
+    fullName: field(profile.full_name),
+    birthDate: field(profile.birth_date),
+    graduationDate: field(profile.graduation_date),
+    skills: mapSkills(profile),
+  };
+}
+
+/* ------------------------------------------------------------------ api -- */
 
 export function createHttpApi(): ItqanApi {
   return {
     /**
-     * Reads the session the site established. Null means "not signed in".
+     * Reads the session the site established. Null means "not signed in", which
+     * is a normal answer here — so a 401 must NOT trigger the refresh/replay
+     * dance, hence `retryOnAuthFailure: false`.
      *
-     * On the first load after signing in on the site, the URL carries a
-     * short-lived handoff token; it is passed here so the exchange and the
-     * "who am I" both happen in one request, leaving no window where the app
-     * is loaded but not yet authenticated.
+     * On the first load after signing in, the URL carries a short-lived handoff
+     * token; it is exchanged in this same request so there is no window where
+     * the app is loaded but not yet authenticated.
      */
-    async session() {
+    async session(signal) {
       const handoff = takeHandoffToken();
       try {
-        return await req<Session>(handoff ? `/session?t=${encodeURIComponent(handoff)}` : '/session');
+        return await request<Session>(
+          handoff ? `/auth/session?t=${encodeURIComponent(handoff)}` : '/auth/session',
+          { signal, retryOnAuthFailure: false },
+        );
       } catch {
         return null;
       }
     },
+
     async logout() {
-      await req<void>('/logout', { method: 'POST' }).catch(() => {});
+      await request<void>('/auth/logout', { method: 'POST' }).catch(() => {});
     },
 
     saveProgress(p, signal) {
-      return req<void>('/onboarding/progress', { method: 'PUT', body: JSON.stringify(p), signal });
+      return request<void>('/onboarding/progress', { method: 'PUT', body: p, signal });
     },
     getProgress(signal) {
-      return req<OnboardingProgress | null>('/onboarding/progress', { signal }).catch(() => null);
+      return request<OnboardingProgress | null>('/onboarding/progress', { signal }).catch(() => null);
     },
     async clearProgress() {
-      await req<void>('/onboarding/progress', { method: 'DELETE' }).catch(() => {});
+      await request<void>('/onboarding/progress', { method: 'DELETE' }).catch(() => {});
+    },
+
+    uploadDocument({ file, kind, onProgress }, signal) {
+      const form = new FormData();
+      form.append('file', file);
+      form.append('kind', kind);
+      return upload<UploadedDocument>('/documents', form, onProgress, signal);
     },
 
     /**
-     * XHR rather than fetch: fetch still cannot report upload progress in any
-     * browser, and this is the one request where the user watches a bar.
+     * The synchronous pipeline. One request, held open while Agent A reads the
+     * documents, Agent C computes the gap and Agent E picks the courses; it
+     * resolves with everything at once.
+     *
+     * `progress` is null throughout by design — the server reports none, and
+     * inventing one would put a fabricated number on the screen whose whole
+     * argument is that Itqan does not fabricate.
      */
-    uploadDocument({ file, kind, onProgress }, signal) {
-      return new Promise<UploadedDocument>((resolve, reject) => {
-        const form = new FormData();
-        form.append('file', file);
-        form.append('kind', kind);
+    async runAnalysis(documentIds, signal) {
+      const res = await request<PipelineResult>('/analysis', {
+        method: 'POST',
+        body: { document_ids: documentIds, locale: activeLocale },
+        timeoutMs: ANALYSIS_TIMEOUT_MS,
+        signal,
+      });
+      return {
+        jobId: res.run_id,
+        stage: 'done',
+        progress: null,
+        result: mapAnalysisResult(res.candidate_profile),
+      } satisfies AnalysisJob;
+    },
 
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', `${BASE}/documents`);
-        xhr.withCredentials = true;
-        xhr.upload.addEventListener('progress', (e) => {
-          if (e.lengthComputable) onProgress?.(e.loaded / e.total);
-        });
-        xhr.addEventListener('load', () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            try { resolve(JSON.parse(xhr.responseText) as UploadedDocument); }
-            catch { reject(new HttpError(xhr.status, 'bad json')); }
-          } else reject(new HttpError(xhr.status, 'upload failed'));
-        });
-        xhr.addEventListener('error', () => reject(new HttpError(0, 'network')));
-        xhr.addEventListener('abort', () => reject(new HttpError(0, 'aborted')));
-        signal?.addEventListener('abort', () => xhr.abort());
-        xhr.send(form);
-      });
-    },
-    startAnalysis(documentIds, signal) {
-      return req<{ jobId: string }>('/analysis', {
-        method: 'POST', body: JSON.stringify({ documentIds }), signal,
-      });
-    },
-    getAnalysis(jobId, signal) {
-      return req<AnalysisJob>(`/analysis/${encodeURIComponent(jobId)}`, { signal });
-    },
     confirmProfile(profile: ConfirmedProfile, signal) {
-      return req<{ ok: true }>('/profile', { method: 'POST', body: JSON.stringify(profile), signal });
+      return request<{ ok: true }>('/profile', { method: 'POST', body: profile, signal });
     },
-    getDashboard(signal) { return req<DashboardData>('/dashboard', { signal }); },
-    getJobs(signal) { return req<JobMatch[]>('/jobs', { signal }); },
-    getCourses(signal) { return req<Course[]>('/courses', { signal }); },
+
+    /**
+     * Assembled by the backend from Agent C's skill_gap and Agent E's
+     * recommendations. `readiness` stays null when Agent C could not compute a
+     * gap score; the UI says so rather than showing a zero.
+     */
+    getDashboard(signal) { return request<DashboardData>('/dashboard', { signal }); },
+    getJobs(signal) { return request<JobMatch[]>('/jobs', { signal }); },
+    getCourses(signal) { return request<Course[]>('/courses', { signal }); },
   };
 }

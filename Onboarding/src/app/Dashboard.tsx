@@ -170,9 +170,25 @@ export function Dashboard() {
  * Readiness ring. The arc is decorative; the number and the sentence beside it
  * carry the meaning, so nothing is lost if colour cannot be perceived.
  */
-function Ring({ value }: { value: number }) {
-  const { formatNumber } = useI18n();
+function Ring({ value }: { value: number | null }) {
+  const { t, formatNumber } = useI18n();
   const r = 48;
+  /**
+   * Null means Agent C had nothing to compute a gap score from. It renders as
+   * an empty ring with a dash, never as 0 — a fabricated zero reads as "you
+   * match nothing", which is the exact misreading the pipeline's own honesty
+   * rules exist to prevent.
+   */
+  if (value == null) {
+    return (
+      <div className="ring" role="img" aria-label={t('dash.readinessUnknown')}>
+        <svg width="108" height="108" viewBox="0 0 108 108" aria-hidden="true" focusable="false">
+          <circle cx="54" cy="54" r={r} fill="none" stroke="var(--color-surface-sunken)" strokeWidth="8" />
+        </svg>
+        <span className="ring__val" aria-hidden="true">—</span>
+      </div>
+    );
+  }
   const c = 2 * Math.PI * r;
   const filled = (Math.min(100, Math.max(0, value)) / 100) * c;
 

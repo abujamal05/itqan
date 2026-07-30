@@ -184,5 +184,6 @@
   "q.openToOtherRoles.opt.yes": "نعم، اعرضها أيضاً",
   "q.openToOtherRoles.optHelp.yes": "تظهر أدوار قريبة إلى جانب ما طلبته.",
   "q.openToOtherRoles.opt.no": "لا، ابقَ قريباً مما ذكرته",
-  "q.openToOtherRoles.optHelp.no": "أدوار قريبة من المسمّى الذي ذكرته فقط."
+  "q.openToOtherRoles.optHelp.no": "أدوار قريبة من المسمّى الذي ذكرته فقط.",
+  "dash.readinessUnknown": "لا توجد بيانات كافية لحساب جاهزيتك بعد"
 }

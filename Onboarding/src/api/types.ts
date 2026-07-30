@@ -15,6 +15,11 @@
  *     `source`, because nothing fabricated is displayable.
  */
 
+import type { SkillOrigin, EvidenceQuality, MatchStatus } from './agents';
+
+export type { SkillOrigin, EvidenceQuality, MatchStatus };
+export * from './agents';
+
 /** Confidence threshold above which output may be stated as fact. */
 export const TRUST_THRESHOLD = 0.85;
 
@@ -34,6 +39,16 @@ export interface Skill {
   confidence: Confidence;
   /** The transcript course this skill was translated from. */
   fromCourse?: string;
+  /**
+   * How Agent A came by this skill. Load-bearing, not decoration: a
+   * `claim_only` skill is an unverified assertion and must never be presented
+   * with the same force as a project-proven one.
+   */
+  origin?: SkillOrigin;
+  /** Agent A's clamped evidence tier. */
+  quality?: EvidenceQuality;
+  /** A verified verbatim quote from the document, or null. Never paraphrased. */
+  evidenceQuote?: string | null;
 }
 
 /* ------------------------------------------------------------ DOCUMENTS -- */
@@ -53,8 +68,15 @@ export type DocumentKind =
   | 'recommendation'
   | 'other';
 
-/** The one kind the pipeline cannot run without. */
-export const REQUIRED_KIND: DocumentKind = 'transcript';
+/**
+ * The one kind the pipeline cannot run without.
+ *
+ * This is the CV, not the transcript: Agent A's input contract is "CV required,
+ * transcript optional", and the transcript's job is corroboration —
+ * `research_curriculum` uses it to raise a rating, and `derive_coursework_skills`
+ * promotes skills from passed courses. Neither can run without a CV to enrich.
+ */
+export const REQUIRED_KIND: DocumentKind = 'cv';
 
 export const DOCUMENT_KINDS: DocumentKind[] = [
   'transcript', 'cv', 'certificate', 'certification', 'recommendation', 'other',
@@ -83,8 +105,17 @@ export type AnalysisStage = 'queued' | 'reading' | 'translating' | 'matching' | 
 export interface AnalysisJob {
   jobId: string;
   stage: AnalysisStage;
-  /** 0..1, for a determinate meter. Users tolerate a wait they can see. */
-  progress: number;
+  /**
+   * 0..1 when the server can report it, NULL when it cannot.
+   *
+   * With the synchronous backend it is null for the whole wait and the meter
+   * renders indeterminate. Driving a bar from elapsed time instead would be a
+   * fabricated number on a screen whose entire argument is that Itqan does not
+   * fabricate — so the UI admits it does not know. If the backend later moves
+   * to job+polling, filling this in restores the determinate meter with no
+   * other change.
+   */
+  progress: number | null;
   result?: AnalysisResult;
   error?: string;
 }
@@ -163,15 +194,27 @@ export interface Course {
   currency: string;
   /** Skills this course unlocks — ties every course to a real gap. */
   unlocks: string[];
+  /**
+   * Gaps this course also closes beyond the ones it was selected for. Agent E's
+   * set-cover recommends a course once and lists the rest here, so the UI shows
+   * the full value instead of repeating the card per skill.
+   */
+  coversOtherSkills?: string[];
   recommended: boolean;
   source: Source;
 }
 
 export interface SkillStanding {
   name: string;
-  /** 0..1 how well evidenced this is by the transcript. */
+  /** 0..1 how well evidenced this is by the documents. */
   level: number;
   held: boolean;
+  /**
+   * Agent C's verdict. `possible_match` is published uncertainty, not a
+   * rounding error — it must render as its own state and never be collapsed
+   * into held/missing, which would resolve the doubt in one direction silently.
+   */
+  status?: MatchStatus;
 }
 
 /**
@@ -191,7 +234,16 @@ export interface JourneyStage {
 }
 
 export interface DashboardData {
-  readiness: number;          // 0..100, agent-computed
+  /**
+   * 0..100, derived from Agent C's gap_score — or NULL when there was nothing
+   * to compute it from (no parsable requirements, or everything landed
+   * unresolved). Null must render as "not enough to judge yet", never as 0:
+   * a fabricated zero reads as a perfect gap and is the exact failure the
+   * architecture doc calls out.
+   */
+  readiness: number | null;
+  /** [lower, upper] band expressing the uncertainty `possible_match` carries. */
+  readinessRange?: [number, number] | null;
   readinessNote: string;      // plain-language explanation, authored by the agent
   strengths: string[];        // capability first — always shown before gaps
   standings: SkillStanding[];
@@ -258,9 +310,18 @@ export interface ItqanApi {
     signal?: AbortSignal,
   ): Promise<UploadedDocument>;
 
-  /** Starts the pipeline over the whole set. Returns the job to poll. */
-  startAnalysis(documentIds: string[], signal?: AbortSignal): Promise<{ jobId: string }>;
-  getAnalysis(jobId: string, signal?: AbortSignal): Promise<AnalysisJob>;
+  /**
+   * Runs the whole A -> C -> E pipeline over the uploaded set and resolves with
+   * the finished result. ONE request, held open for the duration — the backend
+   * is synchronous by decision, so there is no job id and nothing to poll.
+   *
+   * Consequences the callers must handle, and the reason this is documented
+   * here rather than discovered: there is no server-reported progress, so the
+   * wait is indeterminate; and the request is long enough that every gateway
+   * timeout in front of FastAPI matters (see ANALYSIS_TIMEOUT_MS). A timeout
+   * arrives as an ApiError of kind 'timeout', which is retryable.
+   */
+  runAnalysis(documentIds: string[], signal?: AbortSignal): Promise<AnalysisJob>;
   confirmProfile(profile: ConfirmedProfile, signal?: AbortSignal): Promise<{ ok: true }>;
   getDashboard(signal?: AbortSignal): Promise<DashboardData>;
   getJobs(signal?: AbortSignal): Promise<JobMatch[]>;

@@ -23,6 +23,7 @@ import type {
   AnalysisJob, ConfirmedProfile, ItqanApi, OnboardingProgress, Preferences, UploadedDocument,
 } from '../api';
 import { emptyPreferences } from '../api';
+import { isApiError } from '../api/errors';
 
 export type Entry = 'document' | 'manual';
 export type Step = OnboardingProgress['step'];
@@ -57,7 +58,6 @@ interface OnboardingValue {
 }
 
 const Ctx = createContext<OnboardingValue | null>(null);
-const POLL_MS = 700;
 const SAVE_DEBOUNCE_MS = 600;
 
 export function OnboardingProvider({
@@ -90,7 +90,29 @@ export function OnboardingProvider({
   const checking = checkedFor !== enabled;
   const timer = useRef<number | null>(null);
   const saveTimer = useRef<number | null>(null);
+  /** Cancels an in-flight synchronous pipeline run. */
+  const abortRun = useRef<AbortController | null>(null);
   const step = useRef<Step>('upload');
+
+  /**
+   * Kicks off the synchronous A -> C -> E run and files the result when it
+   * lands. Defined before `resume` and `begin` because both start a run and
+   * neither should own the cancellation bookkeeping.
+   */
+  const runPipeline = useCallback((docs: UploadedDocument[]) => {
+    abortRun.current?.abort();
+    const controller = new AbortController();
+    abortRun.current = controller;
+    void api.runAnalysis(docs.map((d) => d.id), controller.signal)
+      .then((job) => { if (!controller.signal.aborted) setAnalysis(job); })
+      .catch((err: unknown) => {
+        if (controller.signal.aborted) return;
+        setAnalysis({
+          jobId: '', stage: 'failed', progress: null,
+          error: isApiError(err) ? err.kind : 'unknown',
+        });
+      });
+  }, [api]);
 
   /* ------------------------------------------------------------ resume -- */
   useEffect(() => {
@@ -122,14 +144,14 @@ export function OnboardingProvider({
     // the documents that were already stored. Cheaper than making them re-upload.
     if (p.documents.length > 0) {
       setEntry('document');
-      void api.startAnalysis(p.documents.map((d) => d.id)).then(({ jobId: id }) => setJobId(id));
+      runPipeline(p.documents);
     } else {
       // Answers but no documents is the manual route. Without this the entry
       // stays 'document' with nothing to analyse, the flow never counts as
       // started, and the resume offer reappears on every screen.
       setEntry('manual');
     }
-  }, [resumable, api]);
+  }, [resumable, runPipeline]);
 
   const dismissResume = useCallback(() => {
     setResumable(null);
@@ -173,34 +195,30 @@ export function OnboardingProvider({
     if (timer.current !== null) { window.clearTimeout(timer.current); timer.current = null; }
   }, []);
 
-  useEffect(() => {
-    if (!jobId) return;
-    let cancelled = false;
-    const tick = async () => {
-      try {
-        const job = await api.getAnalysis(jobId);
-        if (cancelled) return;
-        setAnalysis(job);
-        if (job.stage !== 'done' && job.stage !== 'failed') {
-          timer.current = window.setTimeout(tick, POLL_MS);
-        }
-      } catch {
-        if (!cancelled) setAnalysis({ jobId, stage: 'failed', progress: 0, error: 'network' });
-      }
-    };
-    void tick();
-    return () => { cancelled = true; stopPolling(); };
-  }, [jobId, api, stopPolling]);
+  /**
+   * The backend runs A -> C -> E inside one synchronous request, so there is
+   * nothing to poll: `begin()` awaits the whole thing. What remains here is
+   * cancellation — if the user leaves the flow mid-run we abort the request
+   * rather than letting a two-minute call resolve into unmounted state.
+   */
+  useEffect(() => () => abortRun.current?.abort(), []);
 
   /* ------------------------------------------------------------ actions -- */
+  /**
+   * Starts the pipeline and awaits it. Resolves as soon as the documents are
+   * submitted so the caller can navigate straight to the questions — the run
+   * continues in the background and lands in state when it finishes, which is
+   * the whole point of asking the questions during the wait.
+   */
   const begin = useCallback(async (docs: UploadedDocument[]) => {
     setEntry('document');
     setDocuments(docs);
     setAnalysis(null);
     step.current = 'questions';
-    const { jobId: id } = await api.startAnalysis(docs.map((d) => d.id));
-    setJobId(id);
-  }, [api]);
+
+    // Deliberately not awaited: navigation must not wait on the pipeline.
+    runPipeline(docs);
+  }, [runPipeline]);
 
   const startManual = useCallback(() => {
     stopPolling();

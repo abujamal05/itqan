@@ -184,5 +184,6 @@
   "q.openToOtherRoles.opt.yes": "Yes, show me those too",
   "q.openToOtherRoles.optHelp.yes": "Related roles appear alongside the ones you asked for.",
   "q.openToOtherRoles.opt.no": "No, keep it close to what I said",
-  "q.openToOtherRoles.optHelp.no": "Only roles near the title you gave."
+  "q.openToOtherRoles.optHelp.no": "Only roles near the title you gave.",
+  "dash.readinessUnknown": "Not enough yet to judge your readiness"
 }
