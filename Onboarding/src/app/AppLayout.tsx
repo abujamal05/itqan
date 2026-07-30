@@ -22,6 +22,7 @@ import type { LucideIcon } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useAuth } from '../state/auth';
 import { Logo } from '../components/Logo';
+import { PipelineProgress } from '../components/PipelineProgress';
 import { LangToggle, ThemeToggle } from '../components/Controls';
 import { Menu, MenuItem } from '../components/Menu';
 import { siteHome, siteLogin } from '../lib/site';
@@ -177,6 +178,14 @@ export function AppLayout() {
         </header>
 
         <main className="main__inner" id="main">
+          {/* Above the page, on every page.
+              Confirming the profile is what starts Agent C and Agent E, so the
+              user reaches the dashboard while those are still running. Without
+              this they would see empty pages on a working product and conclude
+              it was broken — the bar has to follow them, not live back on the
+              screen they have already left. It renders nothing once the run is
+              done, or for a session that ran no agents at all. */}
+          <PipelineProgress />
           <Outlet />
         </main>
       </div>

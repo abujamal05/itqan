@@ -19,6 +19,8 @@ import { useCallback, useMemo, useState } from 'react';
 import { useI18n } from '../i18n';
 import { useApi } from '../state/api';
 import { useAsync } from '../lib/useAsync';
+import { useOnboarding } from '../state/onboarding';
+import { useRunInFlight } from '../components/PipelineProgress';
 import { isStrong } from '../api';
 import { Card, EmptyState, ErrorState, LoadingBlock } from '../components/ui';
 import { MatchCard } from '../components/MatchCard';
@@ -30,7 +32,11 @@ type Filter = 'all' | 'strong' | 'saved';
 export function Jobs() {
   const { t, locale, formatNumber } = useI18n();
   const api = useApi();
-  const { data, loading, error, reload } = useAsync((s) => api.getJobs(s), [api, locale]);
+  const { settled } = useOnboarding();
+  const inFlight = useRunInFlight();
+  // Re-fetch when the run lands; see the same note in Dashboard.tsx.
+  const { data, loading, error, reload } = useAsync((s) => api.getJobs(s),
+                                                   [api, locale, settled]);
   const [filter, setFilter] = useState<Filter>('all');
   const [saved, setSaved] = useState<string[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -92,7 +98,10 @@ export function Jobs() {
 
       {!loading && !error && (
         shown.length === 0
-          ? <EmptyState title={t('jobs.empty')} body={t('jobs.emptySub')} />
+          ? inFlight
+            // An empty list during a run means "not yet", not "nothing exists".
+            ? <EmptyState title={t('state.workingTitle')} body={t('state.workingSub')} />
+            : <EmptyState title={t('jobs.empty')} body={t('jobs.emptySub')} />
           : (
             <div className="grid grid--2">
               {shown.map((j) => (

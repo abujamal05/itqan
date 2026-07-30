@@ -1,9 +1,11 @@
 /**
  * Step 1 — the documents.
  *
- * Only the transcript is required; everything else widens what can be matched.
+ * Only the CV is required; everything else widens what can be matched. (Agent A
+ * requires a CV and treats the transcript as optional — the gate follows the
+ * pipeline, not the other way round.)
  * That asymmetry is stated plainly rather than enforced silently: Continue is
- * disabled without a transcript AND says why, because a disabled button with no
+ * disabled without a CV AND says why, because a disabled button with no
  * explanation is the most common dead end in a signup flow.
  *
  * Two additions the sketch did not have:
@@ -22,7 +24,7 @@ import { ShieldCheck } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useOnboarding } from '../state/onboarding';
 import { Button, Callout } from '../components/ui';
-import { DocumentUpload, hasTranscript, anyUploading, itemsFromDocuments } from '../components/DocumentUpload';
+import { DocumentUpload, hasRequiredDocument, anyUploading, itemsFromDocuments } from '../components/DocumentUpload';
 import type { Item } from '../components/DocumentUpload';
 import { HudGuide } from '../components/HudGuide';
 import { SiteHeader } from '../components/SiteHeader';
@@ -48,7 +50,7 @@ export function Upload() {
     });
   }, [documents]);
 
-  const ready = hasTranscript(items);
+  const ready = hasRequiredDocument(items);
   const uploading = anyUploading(items);
 
   const submit = async () => {
@@ -93,7 +95,7 @@ export function Upload() {
 
             {/* The requirement is explained next to the control it blocks. */}
             {!ready && items.length > 0 && (
-              <Callout>{t('upload.missingTranscript')}</Callout>
+              <Callout>{t('upload.missingRequired')}</Callout>
             )}
             {ready && <p className="text-sm muted">{t('upload.othersLater')}</p>}
 

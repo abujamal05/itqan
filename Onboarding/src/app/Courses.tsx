@@ -14,6 +14,8 @@ import { useCallback, useMemo, useState } from 'react';
 import { useI18n } from '../i18n';
 import { useApi } from '../state/api';
 import { useAsync } from '../lib/useAsync';
+import { useOnboarding } from '../state/onboarding';
+import { useRunInFlight } from '../components/PipelineProgress';
 import { Card, EmptyState, ErrorState, LoadingBlock } from '../components/ui';
 import { CourseCard } from '../components/CourseCard';
 import { BrowseBar } from '../components/BrowseBar';
@@ -24,7 +26,11 @@ type Filter = 'all' | 'free' | 'short' | 'recommended';
 export function Courses() {
   const { t, locale, formatNumber } = useI18n();
   const api = useApi();
-  const { data, loading, error, reload } = useAsync((s) => api.getCourses(s), [api, locale]);
+  const { settled } = useOnboarding();
+  const inFlight = useRunInFlight();
+  // Re-fetch when the run lands; see the same note in Dashboard.tsx.
+  const { data, loading, error, reload } = useAsync((s) => api.getCourses(s),
+                                                   [api, locale, settled]);
   const [filter, setFilter] = useState<Filter>('all');
   const [refreshing, setRefreshing] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -89,7 +95,10 @@ export function Courses() {
 
       {!loading && !error && (
         shown.length === 0
-          ? <EmptyState title={t('courses.empty')} body={t('courses.emptySub')} />
+          ? inFlight
+            // An empty list during a run means "not yet", not "nothing exists".
+            ? <EmptyState title={t('state.workingTitle')} body={t('state.workingSub')} />
+            : <EmptyState title={t('courses.empty')} body={t('courses.emptySub')} />
           : (
             <div className="grid grid--3">
               {shown.map((c) => <CourseCard key={c.id} course={c} />)}

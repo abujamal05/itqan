@@ -46,8 +46,21 @@ const accounts: Account[] = [
 const progress = new Map<string, unknown>();
 
 /** How long the fake pipeline takes end to end, and the jobs in flight. */
-const PIPELINE_MS = 7000;
-const jobs_ = new Map<string, { started: number; bad: boolean }>();
+/**
+ * The stub emulates BOTH halves of the run, because the real backend pauses.
+ *
+ * `PHASE_ONE_MS` is Agent A reading the documents; the run then sits at
+ * `awaiting_confirmation` until POST /api/profile, which is what starts Agent C
+ * and Agent E (`PHASE_TWO_MS`). Emulating the pause matters: a stub that ran
+ * straight through to `done` would hide the exact states the UI now has to
+ * handle, and a dev stub that accepts what production does not has already
+ * caused one bug in this codebase.
+ */
+const PHASE_ONE_MS = 5000;
+const PHASE_TWO_MS = 6000;
+const jobs_ = new Map<string, {
+  started: number; bad: boolean; confirmedAt?: number;
+}>();
 /** Document ids the pipeline will refuse, so the failure path is reachable. */
 const unreadable = new Set<string>();
 
@@ -131,7 +144,17 @@ const localeFromReferer = (ref = '') => (/\/en(\/|$)/.test(ref) ? 'en' : 'ar');
 
 /* ---------------------------------------------------------------- plugin -- */
 
-export function itqanSite(): Plugin {
+export interface ItqanSiteOptions {
+  /**
+   * When set, a real backend is serving /api behind Vite's proxy, so this stub
+   * must not answer it. The plugin still serves the built marketing site at `/`,
+   * which is where log in and sign up live — dropping the plugin entirely would
+   * take the login form with it.
+   */
+  apiTarget?: string;
+}
+
+export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
   return {
     name: 'itqan-site',
     configureServer(server) {
@@ -139,6 +162,8 @@ export function itqanSite(): Plugin {
       server.middlewares.use(async (req, res, next) => {
         const url = (req.url ?? '').split('?')[0];
         if (!url.startsWith('/api/')) return next();
+        // A real backend owns /api; yield rather than race it.
+        if (options.apiTarget) return next();
 
         const cookies = readCookies(req.headers.cookie);
         const setLocale = `${LOCALE_COOKIE}=${localeFromReferer(req.headers.referer)}; Path=/; SameSite=Lax`;
@@ -253,11 +278,36 @@ export function itqanSite(): Plugin {
           const job = jobs_.get(jobId);
           if (!job) return json(res, 404, { error: 'no_job' });
           if (job.bad) return json(res, 200, { jobId, stage: 'failed', progress: 0, error: 'unreadable' });
-          const p = Math.min(1, (Date.now() - job.started) / PIPELINE_MS);
-          const stage = p >= 1 ? 'done' : p > 0.66 ? 'matching' : p > 0.33 ? 'translating' : 'reading';
+
+          // Phase one: reading -> translating -> the pause, at 0.75.
+          //
+          // The real backend reports a checkpoint per graph node — eleven of them
+          // in Agent A — so the stub advances in comparable steps rather than one
+          // smooth ramp, which would hide how the bar actually behaves. Quantised
+          // to 20 notches: fine enough to look continuous, coarse enough to still
+          // be visibly stepwise.
+          const one = Math.min(1, (Date.now() - job.started) / PHASE_ONE_MS);
+          if (one < 1) {
+            const stepped = Math.floor(one * 20) / 20;
+            return json(res, 200, {
+              jobId, progress: 0.02 + stepped * 0.73,
+              stage: stepped > 0.25 ? 'translating' : 'reading',
+            });
+          }
+          if (job.confirmedAt === undefined) {
+            // The extraction is attached AT THE PAUSE. That is what lets the
+            // confirm screen show the details instead of a skeleton.
+            return json(res, 200, {
+              jobId, stage: 'awaiting_confirmation', progress: 0.75,
+              result: analysisResult(locale),
+            });
+          }
+          // Phase two: matching -> done.
+          const two = Math.min(1, (Date.now() - job.confirmedAt) / PHASE_TWO_MS);
           return json(res, 200, {
-            jobId, stage, progress: p,
-            result: stage === 'done' ? analysisResult(locale) : undefined,
+            jobId, stage: two >= 1 ? 'done' : 'matching',
+            progress: 0.75 + (Math.floor(two * 12) / 12) * 0.25,
+            result: analysisResult(locale),
           });
         }
 
@@ -275,12 +325,19 @@ export function itqanSite(): Plugin {
         }
 
         // Marks onboarding done on the ACCOUNT, so returning on another device
-        // does not restart it.
+        // does not restart it — AND starts phase two, which is the real
+        // backend's behaviour: the answers in this payload are what shape the
+        // matching, so the matching cannot have run before it arrives.
         if (url === '/api/profile' && req.method === 'POST') {
           await body(req);
           me.onboarded = true;
           progress.delete(me.id);
-          return json(res, 200, { ok: true });
+          const paused = [...jobs_.entries()].reverse()
+            .find(([, j]) => !j.bad && j.confirmedAt === undefined
+              && Date.now() - j.started >= PHASE_ONE_MS);
+          if (!paused) return json(res, 200, { ok: true });
+          paused[1].confirmedAt = Date.now();
+          return json(res, 200, { ok: true, jobId: paused[0] });
         }
 
         return next();
@@ -292,6 +349,11 @@ export function itqanSite(): Plugin {
         if (url.startsWith('/app') || url.startsWith('/@') || url.startsWith('/node_modules')) {
           return next();
         }
+        // /api belongs to a backend, never to the site. A plugin's middleware is
+        // registered BEFORE Vite's proxy, so without this the site's 404 page
+        // answers every API call and the proxy never sees one — which presents
+        // as a completely broken backend rather than as a routing mistake.
+        if (url === '/api' || url.startsWith('/api/')) return next();
         if (!fs.existsSync(SITE_DIST)) {
           res.statusCode = 503;
           res.setHeader('Content-Type', 'text/plain; charset=utf-8');

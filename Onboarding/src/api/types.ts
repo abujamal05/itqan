@@ -39,25 +39,34 @@ export interface Skill {
 /* ------------------------------------------------------------ DOCUMENTS -- */
 
 /**
- * What kind of document this is. The transcript is the only one the pipeline
- * strictly needs; the rest add evidence and widen what can be matched.
+ * What kind of document this is. The CV is the only one the pipeline strictly
+ * needs; the transcript and the rest add evidence and widen what can be matched.
  * Keeping the kind explicit lets the reader agent pick the right extractor
  * instead of inferring it from content, and lets the UI say plainly which
  * evidence is still missing rather than silently under-reading.
  */
 export type DocumentKind =
-  | 'transcript'
   | 'cv'
+  | 'transcript'
   | 'certificate'
   | 'certification'
   | 'recommendation'
   | 'other';
 
-/** The one kind the pipeline cannot run without. */
-export const REQUIRED_KIND: DocumentKind = 'transcript';
+/**
+ * The one kind the pipeline cannot run without.
+ *
+ * This is `cv`, not `transcript`, because the pipeline is the authority: Agent A
+ * requires `--cv` and treats `--transcript` as optional, and an unreadable CV is
+ * the only fatal case in its graph. This constant previously said `transcript`,
+ * which let a user satisfy the gate with no CV at all — the one document the
+ * extraction cannot proceed without.
+ */
+export const REQUIRED_KIND: DocumentKind = 'cv';
 
+/** Required kind first: it is the one the upload screen asks for by name. */
 export const DOCUMENT_KINDS: DocumentKind[] = [
-  'transcript', 'cv', 'certificate', 'certification', 'recommendation', 'other',
+  'cv', 'transcript', 'certificate', 'certification', 'recommendation', 'other',
 ];
 
 export interface UploadedDocument {
@@ -78,7 +87,17 @@ export interface AnalysisResult {
   skills: Skill[];
 }
 
-export type AnalysisStage = 'queued' | 'reading' | 'translating' | 'matching' | 'done' | 'failed';
+/**
+ * `awaiting_confirmation` is the pause, and it is different in kind from the
+ * others: every other stage advances when work finishes, this one advances when
+ * the USER acts. Agent A has read the documents and its extraction is attached;
+ * Agent C does not start until the details are confirmed, so the answers given
+ * during the wait are inputs to the matching rather than a record of it.
+ */
+export type AnalysisStage =
+  | 'queued' | 'reading' | 'translating'
+  | 'awaiting_confirmation'
+  | 'matching' | 'done' | 'failed';
 
 export interface AnalysisJob {
   jobId: string;
@@ -126,6 +145,16 @@ export interface ConfirmedProfile {
   skills: string[];
   preferences: Preferences;
   documentId: string | null;
+}
+
+/**
+ * Confirming the profile is what STARTS the matching, so the response carries the
+ * job to keep watching. Absent when there was no paused run to start — the manual
+ * route, where the user typed their details instead of uploading anything.
+ */
+export interface ConfirmProfileResult {
+  ok: true;
+  jobId?: string;
 }
 
 /** Provenance attached to anything recommended. Never optional in practice. */
@@ -261,7 +290,7 @@ export interface ItqanApi {
   /** Starts the pipeline over the whole set. Returns the job to poll. */
   startAnalysis(documentIds: string[], signal?: AbortSignal): Promise<{ jobId: string }>;
   getAnalysis(jobId: string, signal?: AbortSignal): Promise<AnalysisJob>;
-  confirmProfile(profile: ConfirmedProfile, signal?: AbortSignal): Promise<{ ok: true }>;
+  confirmProfile(profile: ConfirmedProfile, signal?: AbortSignal): Promise<ConfirmProfileResult>;
   getDashboard(signal?: AbortSignal): Promise<DashboardData>;
   getJobs(signal?: AbortSignal): Promise<JobMatch[]>;
   getCourses(signal?: AbortSignal): Promise<Course[]>;

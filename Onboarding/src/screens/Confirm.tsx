@@ -31,6 +31,7 @@ import { useAuth } from '../state/auth';
 import { isStrong } from '../api';
 import type { Skill } from '../api';
 import { Button, Callout, Card, LoadingBlock } from '../components/ui';
+import { PipelineProgress } from '../components/PipelineProgress';
 import { SiteHeader } from '../components/SiteHeader';
 
 interface Draft {
@@ -49,10 +50,41 @@ export function Confirm() {
   const api = useApi();
   // Flips the account's onboarded flag so the guards stop routing back here.
   const { markOnboarded: onDone } = useAuth();
-  const { analysis, entry, settled, failed, preferences, documents, completeProfile } = useOnboarding();
+  const { analysis, entry, ready, failed, preferences, documents, completeProfile } = useOnboarding();
 
-  const result = analysis?.stage === 'done' ? analysis.result : undefined;
-  const waiting = entry === 'document' && !settled;
+  /**
+   * Whatever the stage, if the extraction is here, show it.
+   *
+   * This used to be `analysis?.stage === 'done' ? analysis.result : undefined`,
+   * and `done` meant all three agents had finished — so this screen sat on a
+   * skeleton for around three minutes waiting for a course recommender whose
+   * output it does not display. Agent A's extraction is the only thing being
+   * confirmed here, and the run now pauses precisely so it can be shown the
+   * moment it exists.
+   */
+  const result = analysis?.result;
+  /**
+   * `!failed` matters as much as `!ready`.
+   *
+   * A failed run has no result, so a check on readiness alone left this screen
+   * showing a skeleton forever on the one path that most needs to move on — the
+   * document could not be read, and the answer is to let the user type their
+   * details in. The heading already switches to the manual wording; the body has
+   * to follow it.
+   */
+  const waiting = entry === 'document' && !ready && !failed;
+
+  /**
+   * A graduation date the document gave us as a YEAR, with no month.
+   *
+   * The field is `<input type="month">`, which can only hold `yyyy-mm`, so a bare
+   * year silently renders as an empty box — under a "suggested, confirm" badge
+   * referring to a value the user cannot see. Rather than pad it to January, which
+   * would state a month the document never did, the year is shown and the user is
+   * asked for the month.
+   */
+  const gradYearOnly = /^\d{4}$/.test(result?.graduationDate?.value ?? '')
+    ? result!.graduationDate!.value : null;
 
   const [draft, setDraft] = useState<Draft>({ name: '', birth: '', graduation: '', skills: [] });
   const [seeded, setSeeded] = useState(false);
@@ -155,6 +187,13 @@ export function Confirm() {
               </p>
             </div>
 
+            {/* The bar belongs HERE most of all.
+                This is the screen the user lands on after answering everything,
+                and the one that has to wait for Agent A. Without it they get a
+                bare skeleton with no percentage, no stage and no reason — which
+                is indistinguishable from a hung app. */}
+            <PipelineProgress />
+
             {waiting ? (
               <Card><LoadingBlock rows={4} /></Card>
             ) : (
@@ -187,6 +226,10 @@ export function Confirm() {
                       type="date"
                       max={iso(today)}
                       error={show('birth')}
+                      // Always empty, and not an oversight: Agent A does not
+                      // extract a birth date — it is not a field it reads — so
+                      // saying so beats an unexplained blank box. Optional.
+                      hint={t('confirm.birthNotRead')}
                     />
                     <FieldRow
                       label={t('confirm.graduation')}
@@ -195,6 +238,9 @@ export function Confirm() {
                       onChange={(v) => setDraft((d) => ({ ...d, graduation: v }))}
                       type="month"
                       error={show('graduation')}
+                      hint={gradYearOnly && !draft.graduation
+                        ? t('confirm.gradYearOnly', { year: gradYearOnly })
+                        : undefined}
                     />
                   </div>
                 </Card>
@@ -310,13 +356,15 @@ export function Confirm() {
  * like collaboration rather than cleaning up after a machine.
  */
 function FieldRow({
-  label, provenance, value, onChange, error, ...rest
+  label, provenance, value, onChange, error, hint, ...rest
 }: {
   label: string;
   provenance?: { confidence: number; evidence?: string } | null;
   value: string;
   onChange: (v: string) => void;
   error?: string;
+  /** Said about the field itself — why it is empty, or what is still needed. */
+  hint?: string | null;
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'>) {
   const { t } = useI18n();
   const sure = provenance ? isStrong(provenance.confidence) : null;
@@ -344,7 +392,9 @@ function FieldRow({
         aria-invalid={error ? true : undefined}
         {...rest}
       />
-      {sure === false && !error && <p className="field__hint">{t('confirm.lowConfidenceHelp')}</p>}
+      {hint && !error && <p className="field__hint">{hint}</p>}
+      {!hint && sure === false && !error
+        && <p className="field__hint">{t('confirm.lowConfidenceHelp')}</p>}
       {error && (
         <p className="field__error">
           <AlertCircle size={14} aria-hidden="true" />

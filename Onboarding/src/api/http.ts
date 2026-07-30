@@ -12,8 +12,8 @@
  * `credentials: 'same-origin'` is what carries the cookie.
  */
 import type {
-  AnalysisJob, ConfirmedProfile, Course, DashboardData, ItqanApi, JobMatch,
-  OnboardingProgress, Session, UploadedDocument,
+  AnalysisJob, ConfirmProfileResult, ConfirmedProfile, Course, DashboardData, ItqanApi,
+  JobMatch, OnboardingProgress, Session, UploadedDocument,
 } from './types';
 import { takeHandoffToken } from '../lib/site';
 
@@ -109,7 +109,7 @@ export function createHttpApi(): ItqanApi {
       return req<AnalysisJob>(`/analysis/${encodeURIComponent(jobId)}`, { signal });
     },
     confirmProfile(profile: ConfirmedProfile, signal) {
-      return req<{ ok: true }>('/profile', { method: 'POST', body: JSON.stringify(profile), signal });
+      return req<ConfirmProfileResult>('/profile', { method: 'POST', body: JSON.stringify(profile), signal });
     },
     getDashboard(signal) { return req<DashboardData>('/dashboard', { signal }); },
     getJobs(signal) { return req<JobMatch[]>('/jobs', { signal }); },

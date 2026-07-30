@@ -9,6 +9,13 @@
  *    spend it collecting something useful. Failure must not be destructive:
  *    if the documents cannot be read, the answers already given survive.
  *
+ *    The run PAUSES at `awaiting_confirmation`: Agent A is finished and its
+ *    extraction is attached, and Agent C does not start until the user confirms.
+ *    That is why `ready` and `settled` are two different flags here. `ready`
+ *    means "there is something to show you"; `settled` means "the agents have
+ *    finished". Confirming re-arms the poll, because the second half runs while
+ *    the user is already looking at the dashboard.
+ *
  * 2. Progress is saved to the account after every meaningful change. Nobody
  *    owes us one uninterrupted sitting: a phone dies, a tab closes, someone
  *    goes to find their certificate. Because the save goes through the API
@@ -32,7 +39,14 @@ interface OnboardingValue {
   documents: UploadedDocument[];
   jobId: string | null;
   analysis: AnalysisJob | null;
+  /** The agents have finished (or failed). Drives the progress bar. */
   settled: boolean;
+  /**
+   * Agent A's extraction is available. TRUE AT THE PAUSE, well before `settled`,
+   * which is the point: the confirm screen shows the details as soon as they
+   * exist instead of waiting for the course recommender.
+   */
+  ready: boolean;
   failed: boolean;
   preferences: Preferences;
   profile: ConfirmedProfile | null;
@@ -87,6 +101,15 @@ export function OnboardingProvider({
    * Comparing against the current `enabled` closes that window synchronously.
    */
   const [checkedFor, setCheckedFor] = useState<boolean | null>(null);
+  /**
+   * Bumped to restart the poll for a job it is already watching.
+   *
+   * Confirming starts phase two on the SAME job, so `jobId` does not change and
+   * the poll effect would not re-run — it had already stopped itself at
+   * `awaiting_confirmation`. Without this the dashboard would never learn the run
+   * finished, which is the whole of what the user sees.
+   */
+  const [pollNonce, setPollNonce] = useState(0);
   const checking = checkedFor !== enabled;
   const timer = useRef<number | null>(null);
   const saveTimer = useRef<number | null>(null);
@@ -181,7 +204,11 @@ export function OnboardingProvider({
         const job = await api.getAnalysis(jobId);
         if (cancelled) return;
         setAnalysis(job);
-        if (job.stage !== 'done' && job.stage !== 'failed') {
+        // Stops at the pause as well as at the end. Nothing changes server-side
+        // while a person fills in a form, so polling through it would be minutes
+        // of requests that can only return the same row.
+        if (job.stage !== 'done' && job.stage !== 'failed'
+            && job.stage !== 'awaiting_confirmation') {
           timer.current = window.setTimeout(tick, POLL_MS);
         }
       } catch {
@@ -190,7 +217,7 @@ export function OnboardingProvider({
     };
     void tick();
     return () => { cancelled = true; stopPolling(); };
-  }, [jobId, api, stopPolling]);
+  }, [jobId, api, stopPolling, pollNonce]);
 
   /* ------------------------------------------------------------ actions -- */
   const begin = useCallback(async (docs: UploadedDocument[]) => {
@@ -223,24 +250,47 @@ export function OnboardingProvider({
     void api.clearProgress();
   }, [stopPolling, api]);
 
+  /**
+   * The details are confirmed, so phase two is running. Keep the profile locally
+   * AND resume the poll, so the progress the user sees on the dashboard is the
+   * real state of Agent C and Agent E rather than a page that looks broken.
+   */
+  const completeProfile = useCallback((p: ConfirmedProfile) => {
+    setProfile(p);
+    setAnalysis((cur) => (cur && cur.stage === 'awaiting_confirmation'
+      // Optimistic only in ORDER, not in content: the next poll overwrites this
+      // with the server's real stage. It exists so the bar does not flash
+      // "waiting for you" for one tick after the user has plainly acted.
+      ? { ...cur, stage: 'matching', progress: Math.max(cur.progress, 0.8) }
+      : cur));
+    setPollNonce((n) => n + 1);
+  }, []);
+
   const setPreference = useCallback(
     <K extends keyof Preferences>(key: K, value: Preferences[K]) => {
       setPreferences((cur) => ({ ...cur, [key]: value }));
     }, []);
 
+  // Two different questions, and conflating them was the three-minute skeleton:
+  // the confirm screen waited for `settled` (the WHOLE pipeline) when all it
+  // needed was Agent A's extraction.
   const settled = analysis?.stage === 'done' || analysis?.stage === 'failed';
+  const ready = analysis?.result != null;
   const failed = analysis?.stage === 'failed';
 
   const value = useMemo<OnboardingValue>(() => ({
     entry, documents, jobId, analysis,
     settled: entry === 'manual' ? true : !!settled,
+    // Manual entry has nothing to extract, so there is nothing to wait for.
+    ready: entry === 'manual' ? true : !!ready,
     failed: !!failed,
     preferences, profile,
     resumable, checking, dismissResume, resume,
     begin, startManual, setPreference,
-    completeProfile: setProfile, reset,
-  }), [entry, documents, jobId, analysis, settled, failed, preferences, profile,
-       resumable, checking, dismissResume, resume, begin, startManual, setPreference, reset]);
+    completeProfile, reset,
+  }), [entry, documents, jobId, analysis, settled, ready, failed, preferences, profile,
+       resumable, checking, dismissResume, resume, begin, startManual, setPreference,
+       completeProfile, reset]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

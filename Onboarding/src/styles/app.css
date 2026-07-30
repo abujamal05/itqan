@@ -287,7 +287,23 @@
 
 /* Determinate work meter for the parse pipeline. */
 .meter { block-size: 6px; border-radius: var(--radius-full); background: var(--color-surface-sunken); overflow: hidden; }
-.meter > i { display: block; block-size: 100%; background: var(--color-accent); border-radius: var(--radius-full); transition: inline-size var(--duration-slow) var(--ease-out); }
+.meter > i { display: block; block-size: 100%; background: var(--color-accent); border-radius: var(--radius-full); transition: inline-size var(--duration-slower) var(--ease-out); }
+/* A step that is still running.
+   The bar's WIDTH only ever moves when a real graph node finishes, so a long step
+   — OCR on a scanned CV is around seventy seconds — legitimately holds one
+   position for a while, and a still bar reads as a hung app. This sweeps a
+   highlight across the filled portion instead: it says "working" without claiming
+   progress that has not happened, which a creeping width would. */
+.meter > i.is-working {
+  background-image: linear-gradient(90deg, transparent 0%, rgb(255 255 255 / 38%) 50%, transparent 100%);
+  background-size: 220% 100%;
+  animation: meter-sweep 1.8s linear infinite;
+}
+@keyframes meter-sweep { from { background-position: 220% 0; } to { background-position: -220% 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .meter > i { transition: none; }
+  .meter > i.is-working { animation: none; }
+}
 
 /* --------------------------------------------------------------- CALLOUT -- */
 .callout {

@@ -12,7 +12,7 @@
  * predictably ("CV_2025.pdf", "transcript.pdf"). A guess the user can see and
  * override beats an empty required dropdown they must fill six times.
  *
- * Only the transcript is required, and the requirement is stated where it is
+ * Only the CV is required, and the requirement is stated where it is
  * felt — on the disabled Continue button — rather than as an asterisk they
  * have to hunt for.
  *
@@ -288,6 +288,8 @@ export function DocumentUpload({
   );
 }
 
-export const hasTranscript = (items: Item[]) =>
+/** Named for the RULE, not for one document: the required kind is `cv`, and a
+ *  helper called hasTranscript would be a lie the next reader has to discover. */
+export const hasRequiredDocument = (items: Item[]) =>
   items.some((i) => i.kind === REQUIRED_KIND && i.status === 'done');
 export const anyUploading = (items: Item[]) => items.some((i) => i.status === 'uploading');

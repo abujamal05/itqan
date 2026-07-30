@@ -25,13 +25,20 @@ import { useAuth } from '../state/auth';
 import { Card, CapabilityChip, EmptyState, ErrorState, GapChip, LoadingBlock } from '../components/ui';
 import { MatchCard } from '../components/MatchCard';
 import { Journey } from '../components/Journey';
+import { useRunInFlight } from '../components/PipelineProgress';
 
 export function Dashboard() {
   const { t, locale } = useI18n();
   const api = useApi();
   const { profile } = useOnboarding();
   const { user } = useAuth();
-  const { data, loading, error, reload } = useAsync((s) => api.getDashboard(s), [api, locale]);
+  const { settled } = useOnboarding();
+  const inFlight = useRunInFlight();
+  // `settled` in the deps is what makes the page fill itself in: the dashboard
+  // reads the FINISHED run, so it has to re-fetch the moment one exists rather
+  // than making the user reload a page that was correct when it loaded.
+  const { data, loading, error, reload } = useAsync((s) => api.getDashboard(s),
+                                                   [api, locale, settled]);
 
   // The account is the source of truth for who this is: the onboarding profile
   // only exists in the session that ran onboarding, so a returning user has
@@ -39,6 +46,11 @@ export function Dashboard() {
   const firstName = (user?.fullName || profile?.fullName || '').trim().split(/\s+/)[0] || '';
 
   if (loading) return <Card><LoadingBlock rows={5} /></Card>;
+  // The dashboard 404s until the pipeline's second half lands, and rendering an
+  // error for that told a working product's users it was broken.
+  if ((error || !data) && inFlight) {
+    return <Card><EmptyState title={t('state.workingTitle')} body={t('state.workingSub')} /></Card>;
+  }
   if (error || !data) return <ErrorState onRetry={reload} />;
 
   return (

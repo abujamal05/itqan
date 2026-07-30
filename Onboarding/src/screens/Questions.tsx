@@ -30,6 +30,7 @@ import type { Preferences } from '../api';
 import { Button, Callout, TextField } from '../components/ui';
 import { HudGuide } from '../components/HudGuide';
 import { SiteHeader } from '../components/SiteHeader';
+import { PipelineProgress } from '../components/PipelineProgress';
 
 /** Each question names the field it fills, so answers cannot drift from state. */
 type ChoiceQuestion = {
@@ -50,14 +51,15 @@ const QUESTIONS: Question[] = [
 export function Questions() {
   const { t, formatNumber } = useI18n();
   const navigate = useNavigate();
-  const { preferences, setPreference, analysis, settled, failed, entry } = useOnboarding();
+  const { preferences, setPreference, ready, failed, entry } = useOnboarding();
   const [index, setIndex] = useState(0);
 
   const q = QUESTIONS[index];
   const isLast = index === QUESTIONS.length - 1;
-  const pct = Math.round((analysis?.progress ?? 0) * 100);
-  const reading = entry === 'document' && !settled;
-  const done = entry === 'document' && settled && !failed;
+  // `ready`, not `settled`: what this screen is waiting on is Agent A's reading.
+  // Agent C and Agent E do not start until the user confirms, so waiting for the
+  // whole pipeline here would wait for something that cannot happen yet.
+  const done = entry === 'document' && ready && !failed;
 
   const goNext = () => (isLast ? navigate('/confirm') : setIndex((i) => i + 1));
   const goBack = () => (index === 0 ? navigate('/upload') : setIndex((i) => i - 1));
@@ -86,19 +88,7 @@ export function Questions() {
           <div className="stage__content">
             {/* Pipeline status. Announced politely so it reaches a screen
                 reader without stealing focus from the question. */}
-            {entry === 'document' && !failed && (
-              <div className="card card--sunken" role="status" aria-live="polite">
-                <div className="stack stack--sm">
-                  <div className="row" style={{ justifyContent: 'space-between' }}>
-                    <span className="text-sm" style={{ fontWeight: 'var(--weight-medium)' }}>
-                      {done ? t('questions.readingDone') : t('questions.reading')}
-                    </span>
-                    <span className="text-sm num">{formatNumber(pct)}%</span>
-                  </div>
-                  <div className="meter"><i style={{ inlineSize: `${pct}%` }} /></div>
-                </div>
-              </div>
-            )}
+            <PipelineProgress />
 
             {failed && (
               <Callout tone="danger">
@@ -160,7 +150,7 @@ export function Questions() {
               />
             )}
 
-            {reading && <p className="text-sm muted">{t('questions.waiting')}</p>}
+            {!done && <p className="text-sm muted">{t('questions.waiting')}</p>}
 
             <div className="row">
               <Button variant="secondary" onClick={goBack}>{t('action.back')}</Button>
