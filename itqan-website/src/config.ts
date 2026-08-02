@@ -7,8 +7,12 @@ export const formEndpoints = {
   login: '/api/placeholder/login',
 } as const;
 
-/** Placeholder until the real domain is decided. Also set in astro.config.mjs. */
-export const siteUrl = 'https://itqan.example';
+/**
+ * The deployed origin. Single-sourced from astro.config's `site` (Astro exposes
+ * it as `import.meta.env.SITE`), so it can never drift from what canonical URLs
+ * and hreflang use. Set it via the ITQAN_SITE_URL build env, not here.
+ */
+export const siteUrl = import.meta.env.SITE ?? 'https://itqan.example';
 
 /**
  * Where a successful sign up or log in lands.

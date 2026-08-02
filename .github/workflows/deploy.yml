@@ -1,0 +1,188 @@
+# Frontend deploy — builds the site and the app into one static tree and rsyncs
+# it to the VPS that Caddy serves (DEPLOY.md §7). This is NOT a Docker build:
+# the frontend is static files; Docker is the backend stack in the other repo.
+#
+#   /            the marketing site   (itqan-website)
+#   /app/*       the onboarding app   (Onboarding, SPA fallback handled by Caddy)
+#
+# Gated on the full test suite because there are no per-PR preview URLs on a
+# single VPS — the tests are the safety net a CDN preview would otherwise be.
+name: Deploy frontend
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+# One deploy at a time, and let a running one finish rather than shipping a
+# half-tested newer commit on top of it.
+concurrency:
+  group: deploy-frontend
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Test & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            Onboarding/package-lock.json
+            itqan-website/package-lock.json
+
+      - name: Install (app)
+        working-directory: Onboarding
+        run: npm ci
+      - name: Install (site)
+        working-directory: itqan-website
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: Onboarding
+        run: npx tsc -b --pretty false
+
+      # Arabic and English must stay at exactly equal keys — a missing key is a
+      # user-visible raw string like "dash.readinessUnknown".
+      - name: i18n parity
+        working-directory: Onboarding
+        run: |
+          node -e "
+          const fs = require('fs');
+          const ar = Object.keys(JSON.parse(fs.readFileSync('src/i18n/ar.json','utf8'))).sort();
+          const en = Object.keys(JSON.parse(fs.readFileSync('src/i18n/en.json','utf8'))).sort();
+          const onlyAr = ar.filter(k => !en.includes(k));
+          const onlyEn = en.filter(k => !ar.includes(k));
+          if (onlyAr.length || onlyEn.length) {
+            console.error('i18n key mismatch');
+            if (onlyAr.length) console.error('  only in ar:', onlyAr.join(', '));
+            if (onlyEn.length) console.error('  only in en:', onlyEn.join(', '));
+            process.exit(1);
+          }
+          console.log('i18n parity OK (' + ar.length + ' keys)');
+          "
+
+      - name: Install browsers
+        working-directory: Onboarding
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      # The app's E2E suite serves the built site itself (see playwright.config
+      # webServer), so the site must be built before the tests run.
+      - name: Build site (for the test server)
+        working-directory: itqan-website
+        run: npm run build
+
+      - name: E2E
+        working-directory: Onboarding
+        env:
+          CI: 'true'
+          E2E_FORCE_FIREFOX: '1'
+        run: npx playwright test
+
+      # ---- Production builds, with the deploy-specific config ----
+      # ITQAN_SITE_URL bakes into canonical URLs / hreflang / sitemap; it cannot
+      # be read at serve time, so it must be present here. Rebuilt after the test
+      # build so the deployed HTML carries the real origin, not the placeholder.
+      - name: Build site (production)
+        working-directory: itqan-website
+        env:
+          ITQAN_SITE_URL: ${{ vars.ITQAN_SITE_URL }}
+        run: |
+          if [ -z "$ITQAN_SITE_URL" ]; then
+            echo "::error::ITQAN_SITE_URL variable is not set (repo → Settings → Variables)."
+            exit 1
+          fi
+          npm run build
+
+      # VITE_APP_BASE=/app/ mounts the app under /app/ — both its asset URLs and
+      # its router basename. Wrong here = every asset 404s and the page is blank.
+      # VITE_APP_BASE=/app/ mounts the app under /app/ (asset URLs + router base).
+      # VITE_SITE_SAME_ORIGIN=1 makes links to the site relative paths, because
+      # one host serves both — never leave VITE_API_BASE_URL set here, /api is
+      # same-origin by default and that is the point (DEPLOY.md).
+      - name: Build app (production, based at /app/)
+        working-directory: Onboarding
+        env:
+          VITE_APP_BASE: /app/
+          VITE_SITE_SAME_ORIGIN: '1'
+        run: npm run build
+
+      # Assemble the single tree Caddy serves: site at the root, app under /app/.
+      - name: Assemble web tree
+        run: |
+          rm -rf web
+          mkdir -p web
+          cp -r itqan-website/dist/. web/
+          mkdir -p web/app
+          cp -r Onboarding/dist/. web/app/
+          echo "Assembled $(du -sh web | cut -f1) into web/"
+
+      - name: Upload web tree
+        uses: actions/upload-artifact@v4
+        with:
+          name: web
+          path: web/
+          retention-days: 3
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: Onboarding/playwright-report/
+          retention-days: 7
+
+  deploy:
+    name: Ship to VPS
+    needs: verify
+    runs-on: ubuntu-latest
+    # Never deploy from a fork PR or a branch — only a real push/dispatch on main.
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: web
+          path: web
+
+      - name: Load SSH key
+        run: |
+          if [ -z "${{ secrets.VPS_SSH_KEY }}" ]; then
+            echo "::error::VPS_SSH_KEY secret is not set. It must be the PRIVATE key whose public half is in /home/itqan/.ssh/authorized_keys."
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # accept-new: trust the host on first contact, then pin it — avoids a
+          # hardcoded fingerprint while still refusing a changed one later.
+          ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      # --delay-updates: every file is staged on the far side and swapped in at
+      # the end, so no request is ever served a half-copied site.
+      # --delete: the web root mirrors the build exactly (removed files go away).
+      - name: Rsync to /opt/itqan/web
+        run: |
+          rsync -az --delete --delay-updates \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new" \
+            web/ "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/itqan/web/"
+
+      # Prove the deploy actually serves, rather than declaring success because
+      # rsync exited 0. Hits the site root, the SPA, and the backend health.
+      - name: Smoke test
+        env:
+          BASE: ${{ vars.ITQAN_SITE_URL }}
+        run: |
+          fail=0
+          for path in "/" "/app/" "/api/health"; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "$BASE$path" || echo 000)
+            echo "$path -> $code"
+            case "$code" in 200|301|302) ;; *) fail=1 ;; esac
+          done
+          [ "$fail" = 0 ] || { echo "::error::smoke test failed"; exit 1; }
+
+      - name: Clean up key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

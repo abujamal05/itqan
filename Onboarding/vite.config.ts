@@ -37,12 +37,20 @@ const API_TARGET = process.env.ITQAN_API;
 
 export default defineConfig(({ command }) => ({
   /**
-   * Dev serves the site at / and this app under /app/ on one origin, so the
-   * app needs that prefix. In production the app is its own Vercel project on
-   * its own domain and owns the root — keeping /app/ there is what made every
-   * asset 404 and the page render blank.
+   * Where this app is mounted, which decides both the asset URLs and the router
+   * basename (`import.meta.env.BASE_URL`).
+   *
+   *   dev            /app/   — the plugin serves the site at / and this under /app/
+   *   Vercel (prod)  /       — the app is its own origin and owns the root
+   *   VPS (prod)     /app/   — one Caddy serves the site at / and this at /app/
+   *
+   * The two production targets genuinely differ, so the base is an env override
+   * rather than a constant: the VPS deploy builds with VITE_APP_BASE=/app/, and
+   * anything unset keeps the Vercel-correct root. Getting this wrong is silent —
+   * every asset 404s and the page renders blank — so it is driven from the one
+   * place that knows the target: the deploy workflow.
    */
-  base: command === 'serve' ? '/app/' : '/',
+  base: command === 'serve' ? '/app/' : (process.env.VITE_APP_BASE || '/'),
   plugins: [react(), itqanSite({ apiTarget: API_TARGET })],
   server: API_TARGET
     ? { proxy: { '/api': { target: API_TARGET, changeOrigin: false } } }
