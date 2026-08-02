@@ -46,7 +46,18 @@ export async function resetProgress(page: Page): Promise<void> {
   await page.request.delete('/api/onboarding/progress');
 }
 
-/** A minimal in-memory PDF, enough for the upload endpoint to accept a row. */
-export function fakeTranscript(name = 'transcript.pdf') {
+/**
+ * A minimal in-memory PDF. The FILENAME is load-bearing: the upload screen
+ * guesses the document kind from it, and the flow requires a CV (Agent A's
+ * contract, REQUIRED_KIND='cv'). Uploading `transcript.pdf` leaves the continue
+ * button correctly disabled — which is exactly the stale-test trap that broke
+ * this spec when REQUIRED_KIND moved from transcript to cv.
+ */
+export function fakePdf(name: string) {
   return { name, mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 itqan e2e fixture') };
 }
+
+/** The required document — unlocks the continue button. */
+export const fakeCv = () => fakePdf('cv.pdf');
+/** The optional corroborating document. */
+export const fakeTranscript = () => fakePdf('transcript.pdf');

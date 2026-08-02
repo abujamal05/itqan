@@ -1,21 +1,31 @@
 /**
  * Where the marketing site lives, from this app's point of view.
  *
- * The two differ by environment and that difference is real, not incidental:
+ * There are three environments and the difference is real, not incidental:
  *
- *   dev         one origin. The Vite plugin serves the site at / and this app
- *               under /app/, so a plain path is correct.
- *   production  two Vercel projects on two domains, so anything pointing at
- *               the site has to be absolute or it lands on a 404 here.
+ *   dev            one origin. The Vite plugin serves the site at / and this
+ *                  app under /app/, so a plain path is correct.
+ *   Vercel (prod)  two projects on two domains, so a link to the site must be
+ *                  absolute or it 404s here.
+ *   VPS (prod)     one Caddy serves both, so plain paths are correct again —
+ *                  and better, because they carry no baked-in domain to go
+ *                  stale when the real one is chosen.
  *
- * Set VITE_SITE_URL on the app project if the site moves.
+ * The single-host case is opt-in via VITE_SITE_SAME_ORIGIN=1 (the deploy sets
+ * it) rather than inferred, so the Vercel two-origin default is never changed
+ * by accident — getting it wrong there sends every "home"/"log in" link to a
+ * 404, silently. Set VITE_SITE_URL to move the site on a two-origin setup.
  */
 const CONFIGURED = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/+$/, '');
 
-/** Empty in dev, so links stay same-origin relative paths. */
-export const SITE_ORIGIN = import.meta.env.PROD
-  ? (CONFIGURED || 'https://itqan-site.vercel.app')
-  : '';
+/** True when the site and this app share one origin (dev, or a single-host VPS). */
+const SAME_ORIGIN = !import.meta.env.PROD
+  || import.meta.env.VITE_SITE_SAME_ORIGIN === '1';
+
+/** Empty when same-origin, so links stay relative; absolute only across domains. */
+export const SITE_ORIGIN = SAME_ORIGIN
+  ? ''
+  : (CONFIGURED || 'https://itqan-site.vercel.app');
 
 export const siteHome = (locale: string) => `${SITE_ORIGIN}/${locale}/`;
 export const siteLogin = (locale: string) => `${SITE_ORIGIN}/${locale}/login/`;
