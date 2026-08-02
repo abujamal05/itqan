@@ -159,6 +159,19 @@ jobs:
           # accept-new: trust the host on first contact, then pin it — avoids a
           # hardcoded fingerprint while still refusing a changed one later.
           ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+      
+      - name: Debug SSH key
+        run: |
+          echo "GitHub key fingerprint:"
+          ssh-keygen -lf ~/.ssh/deploy_key
+
+          echo
+          echo "Testing SSH..."
+          ssh -v \
+            -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} exit
 
       # --delay-updates: every file is staged on the far side and swapped in at
       # the end, so no request is ever served a half-copied site.
