@@ -93,8 +93,13 @@ and computed styles (`javascript_tool`) instead of pixels, and say so.
 ## How to use the skills — READ THIS
 
 The Itqan skills are the source of truth and split into clear roles. Load the one that owns the decision
-before making it; do not answer a design question from memory when a skill owns it. When two sources
-conflict, **Itqan's locked rules always win** over generic advice.
+before making it; do not answer a design question from memory when a skill owns it.
+
+**When two sources conflict on a LOCKED thing, Itqan wins** — identity, marks, palette, typeface, the Hud
+fence, the voice, the trust rules. **When they conflict on anything else, the specialist skill usually
+wins.** Composition, hierarchy, depth, material, boldness, easing and physicality are *not* locked, and
+treating them as locked is what produced the flat, lifeless output this system was corrected for in
+August 2026. Read `itqan-design-system/references/depth-and-materials.md` before styling any surface.
 
 ### Authoritative — these DEFINE the locked things (obey, do not override)
 
@@ -108,8 +113,8 @@ conflict, **Itqan's locked rules always win** over generic advice.
 | Skill | Owns | Load when |
 |---|---|---|
 | **itqan-ux-craft** | Behaviour and process — screen states, the 8 interaction states, forms, errors, accessibility, RTL/bilingual engineering | Structuring any screen or flow; forms; empty/loading/error states; responsive; a11y |
-| **itqan-motion** | Motion choreography and implementation — easing, duration, the RTL-safe patterns, reduced motion | Animating or reviewing motion of anything |
-| **frontend-design** (generic) | General aesthetic taste | Broad visual direction, when nothing Itqan-specific owns it |
+| **itqan-motion** | Motion choreography and implementation — the two registers, easing, duration, RTL-safe patterns, the animated mascot, reduced motion | Animating or reviewing motion of anything |
+| **frontend-design** (generic) | General aesthetic taste | Broad visual direction, when nothing more specific owns it |
 
 ### Router / verifier
 
@@ -117,21 +122,48 @@ conflict, **Itqan's locked rules always win** over generic advice.
 |---|---|
 | **itqan-ui-review** | Use **first** to decide which skill to read, and **last** to audit. Owns routing and verification only — no design values of its own. |
 
-### ui-ux-pro-max — general build helper ONLY (newly installed)
+### Design strategy — impeccable (use it ALWAYS)
 
-This skill is a general web-build design database (UI patterns, accessibility checklists, colour/type
-recommenders, motion presets, chart types across many stacks). **Its only job here is to help build
-better generic UI/UX and to sanity-check craft.** 
+`impeccable` is installed at `.claude/skills/impeccable/` and is the **design strategy and direction**
+authority for this project. Load it before deciding what a surface should look like — mode, visual world,
+composition, hierarchy, how bold to go — and use its scoped commands (`critique`, `bolder`, `delight`,
+`layout`, `typeset`, `animate`, `polish`, `audit`) rather than improvising.
+
+- Product truth lives in the workspace-root `PRODUCT.md`, written by `/impeccable init`.
+- It runs a design-detector hook after every UI file edit and on Stop. That is configured in
+  `.claude/settings.local.json`; `/impeccable hooks status` reports it.
+- **It never sets Itqan's palette, typeface, logo rules, mascot rules, or voice.** Those stay locked by
+  `itqan-brand` and `itqan-design-system`. Everything else is its call.
+
+### Motion craft — Emil Kowalski's skills
+
+Installed at `.agents/skills/`, symlinked into `.claude/skills/`. These are the **implementation canon**
+behind the easing and duration tokens; they do not compete with anything Itqan has locked.
+
+| Skill | Use it for |
+|---|---|
+| **emil-design-eng** | The craft philosophy — easing, duration, physicality, springs, interruptibility, the invisible details |
+| **review-animations** | Strict review of a diff's motion before shipping |
+| **improve-animations** | A prioritised roadmap when a whole codebase's motion needs lifting |
+| **find-animation-opportunities** | When a surface feels dead and you need to know what should move — and what shouldn't |
+| **animation-vocabulary** | Naming an effect precisely before building it |
+| **apple-design** | Gesture, spring, translucency, optical typography |
+
+Itqan overrides them on exactly three things: RTL-safe direction, the Hud fence, and the product-register
+limits on trust-critical surfaces. Everything else follows the canon.
+
+### ui-ux-pro-max — general build helper ONLY
+
+A general web-build design database (UI patterns, accessibility checklists, colour/type recommenders,
+motion presets, chart types). **Its only job here is generic craft sanity-checking**, and `impeccable` now
+covers most of what it was installed for.
 
 - **Never** let it set or change Itqan's voice, brand identity, colour palette, typography, logo rules,
-  or mascot rules. Those are locked by `itqan-brand` and `itqan-design-system`.
+  or mascot rules.
 - It is a *recommender*; Itqan has already made those choices. Where it suggests a style, palette, or
-  font that differs from the tokens, **ignore it and use the tokens.** The itqan-ui-review skill warns
-  explicitly against importing an outside recommender that competes with the source of truth.
-- Good uses: general accessibility/interaction checklists, layout and responsive patterns, performance
-  ideas, non-brand craft questions on other projects.
-- Rule of thumb: **ui-ux-pro-max may inform HOW something is built; it never decides what Itqan looks
-  like or sounds like.**
+  font that differs from the tokens, **ignore it and use the tokens.**
+- Rule of thumb: **it may inform HOW something is built; it never decides what Itqan looks like or sounds
+  like.**
 
 ## Open decisions — do not invent these (flag and ask)
 
@@ -140,10 +172,22 @@ better generic UI/UX and to sanity-check craft.**
   locked detail is missing, ask rather than invent.
 - The skill's own `audit.py` and its `rulebook.md` / `review-playbook.md` are **not installed**;
   `scripts/audit.py` here is the stand-in.
-- Skill contradiction: the brand checklist calls `#D08C2F` "retired ochre" while `tokens.css` defines it
-  as `--gold`. The site only references the token, so it is unaffected, but the upstream files disagree.
 - Layout grid, sub-32px icon, three of four Hud poses, and the real reversed marks are TBD — see
   `PLACEHOLDERS.md`.
+- **Pending sign-off in the design system:** the functional green `--color-success`, and the new
+  `--color-accent-ink` (`--gold-800`) for gold-flavoured emphasis text on light.
+
+## Palette revision — 2026-08-03 (NOT YET APPLIED TO THIS APP)
+
+The final brand gold is **`#F39F1C`**. `#D08C2F` is **retired**, which resolves the long-standing
+contradiction between the brand checklist and `tokens.css` — the checklist was right and the token was
+stale. The skills have been updated; **this app has not.** `src/styles/tokens.css` still defines the old
+gold and its old ramp, as does `Onboarding/src/styles/tokens.css`. Applying it is a separate, approved
+piece of work — do not assume it has happened.
+
+The same revision added a depth and material layer to the design system (layered shadows, rim light,
+gradients, off-centre glows, texture, five surfaces, display type) and replaced the blanket
+`prefers-reduced-motion` kill switch with motion scalars. None of that has reached this app's CSS either.
 
 ## Everything still pending
 

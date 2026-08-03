@@ -31,3 +31,32 @@ node_modules/
 **/.astro/*
 !**/.astro/*.d.ts
 !**/.astro/*.mjs
+
+# Vendored design skills, installed by a command rather than committed — the
+# same rule node_modules follows above.
+#
+#   npx impeccable install          -> .claude/skills/impeccable, .github/*
+#   npx skills@latest add emilkowalski/skills  -> .agents/skills + symlinks
+#
+# `.agents/skills/` IS tracked: it is 150KB of real files and the actual source
+# for the Emil skills. What is ignored is everything derived from it or
+# reinstallable:
+#
+#  - `.claude/skills/<emil skill>` are ABSOLUTE symlinks into one machine's home
+#    directory. Committing them hands every other clone a broken path.
+#  - `.github/skills` and `.github/hooks` are a byte-identical 3.2MB copy of
+#    impeccable for GitHub Copilot, which nothing in this project uses.
+#  - `.claude/skills/impeccable` is 3.2MB restored by one command.
+#
+# The Itqan skills under `.claude/skills/itqan-*` are OURS and stay tracked.
+.claude/skills/impeccable/
+.claude/skills/animation-vocabulary
+.claude/skills/apple-design
+.claude/skills/emil-design-eng
+.claude/skills/find-animation-opportunities
+.claude/skills/improve-animations
+.claude/skills/pick-ui-library
+.claude/skills/prototype
+.claude/skills/review-animations
+.github/skills/
+.github/hooks/
