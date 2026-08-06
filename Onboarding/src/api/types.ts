@@ -47,11 +47,7 @@ export interface Skill {
  */
 export type DocumentKind =
   | 'cv'
-  | 'transcript'
-  | 'certificate'
-  | 'certification'
-  | 'recommendation'
-  | 'other';
+  | 'transcript';
 
 /**
  * The one kind the pipeline cannot run without.
@@ -64,10 +60,29 @@ export type DocumentKind =
  */
 export const REQUIRED_KIND: DocumentKind = 'cv';
 
-/** Required kind first: it is the one the upload screen asks for by name. */
-export const DOCUMENT_KINDS: DocumentKind[] = [
-  'cv', 'transcript', 'certificate', 'certification', 'recommendation', 'other',
-];
+/**
+ * The only two kinds offered, required first.
+ *
+ * Narrowed from six. The extra kinds (certificate, certification,
+ * recommendation, other) were choices the pipeline could not act on: Agent A
+ * takes a CV and an optional transcript and nothing else, so every other option
+ * was a decision asked of the user that changed no outcome — and one of them,
+ * 'other', was the silent default that let a file sit in the list satisfying
+ * nothing while looking accepted.
+ */
+export const DOCUMENT_KINDS: DocumentKind[] = ['cv', 'transcript'];
+
+/**
+ * Coerces any kind that is not one of the two into the SUPPORTING one.
+ *
+ * Two sources can still hand us a retired value: onboarding progress saved
+ * before this change, and a backend row created then. Mapping them to
+ * 'transcript' rather than 'cv' is deliberate — an old 'certificate' must not
+ * silently satisfy the CV requirement, which is the one gate the pipeline
+ * cannot run without.
+ */
+export const normaliseKind = (kind: string): DocumentKind =>
+  (kind === 'cv' ? 'cv' : 'transcript');
 
 export interface UploadedDocument {
   id: string;

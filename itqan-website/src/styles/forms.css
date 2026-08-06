@@ -207,3 +207,59 @@
     transform: rotate(360deg);
   }
 }
+
+/* ---- Password reveal ----------------------------------------------------
+   A password field is the one input a user cannot proofread, so a reveal
+   toggle removes the single most common cause of a failed sign in: a typo
+   nobody can see. It is a real <button> (focusable, Enter/Space, announced)
+   rather than an icon with a click handler, and it never submits the form.
+
+   It shares the inline-end edge with the validation check, so the input keeps
+   room for both and the check sits inboard of the button — otherwise a valid
+   password draws the tick straight on top of the eye. */
+.field__reveal {
+  position: absolute;
+  inset-inline-end: var(--space-2);
+  inset-block-start: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* The 44px touch floor this project holds everywhere else. */
+  inline-size: 44px;
+  block-size: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-hover);
+}
+
+.field__reveal:hover { background-color: var(--color-surface-sunken); }
+
+/* Never remove the ring: this control is reachable by keyboard and its state
+   is not obvious without one. */
+.field__reveal:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Only ever one glyph: open eye means "click to show", struck-through eye
+   means "click to hide". The state also rides on aria-pressed, so it is never
+   carried by the icon alone. */
+.field__reveal-off { display: none; }
+.field__reveal[aria-pressed='true'] .field__reveal-on { display: none; }
+.field__reveal[aria-pressed='true'] .field__reveal-off { display: block; }
+
+/* Room for the button, and for the tick beside it when the field validates. */
+.field:has(.field__reveal) input:not([type='checkbox']) {
+  padding-inline-end: var(--space-12);
+}
+.field[data-state='valid']:has(.field__reveal) input:not([type='checkbox']) {
+  padding-inline-end: calc(var(--space-12) + var(--space-6));
+}
+.field:has(.field__reveal) .field__check {
+  inset-inline-end: var(--space-12);
+}

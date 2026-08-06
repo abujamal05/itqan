@@ -213,10 +213,31 @@
   border: 1px solid var(--color-border); border-radius: var(--radius-sm);
   padding-block: var(--space-3); padding-inline: var(--space-4);
   min-height: 44px;
+  /* A form control is a flex item here (.field is a column flex container), and
+     a flex item's automatic minimum size is its INTRINSIC width, not zero. For
+     a plain text input that is harmless; for date and month inputs it is not —
+     iOS Safari sizes them from the native picker they render, which is wider
+     than a phone's form column, and `width: 100%` cannot pull them back under
+     an automatic minimum. The result is the field hanging outside its card.
+     These two lines are what let the declared width actually win. */
+  min-inline-size: 0;
+  max-inline-size: 100%;
   transition: border-color var(--duration-fast) var(--ease-hover),
               box-shadow var(--duration-fast) var(--ease-hover);
 }
 .textarea { resize: vertical; min-height: 7rem; line-height: inherit; }
+
+/* Date and month specifically. Safari lays the native picker out at its own
+   intrinsic size and, unlike other controls, does not shrink it to the box —
+   pinning the width here is what keeps "Your details" inside the card on a
+   phone. Left as native controls on purpose: the platform picker is far better
+   than anything re-implemented, so only the sizing is corrected. */
+.input[type='date'],
+.input[type='month'] {
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
 .input:hover, .textarea:hover { border-color: var(--color-border-strong); }
 /* The outline is kept, not replaced. The gold tint alone measures about 1.2:1
    against white, which would not satisfy the focus-indicator contrast rule;

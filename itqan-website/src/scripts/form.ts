@@ -163,3 +163,43 @@ export function initForm(form: HTMLFormElement): void {
     }
   });
 }
+
+/**
+ * Password reveal.
+ *
+ * Lives here rather than in its own module because this script is already on
+ * every page that has a password field, and the site's whole shipped-JS budget
+ * is about a kilobyte — a second bundle for one toggle would cost more in
+ * requests than it does in bytes.
+ *
+ * Three details that make it a real control rather than a decorative icon:
+ *  - the button is never inside the tab order twice and never submits: it is
+ *    type="button", so Enter in the password field still submits the FORM;
+ *  - `aria-pressed` carries the state, so a screen reader announces "show
+ *    password, pressed" instead of relying on which of two eyes is drawn;
+ *  - the caret position is preserved across the type swap. Changing an input's
+ *    type moves the caret to the end in every browser, which is maddening when
+ *    you reveal a password mid-typing to check one character.
+ */
+for (const button of document.querySelectorAll<HTMLButtonElement>('[data-reveal]')) {
+  const input = document.getElementById(button.getAttribute('aria-controls') ?? '');
+  if (!(input instanceof HTMLInputElement)) continue;
+
+  button.addEventListener('click', () => {
+    const reveal = input.type === 'password';
+    const { selectionStart, selectionEnd } = input;
+
+    input.type = reveal ? 'text' : 'password';
+    button.setAttribute('aria-pressed', String(reveal));
+    const label = reveal ? button.dataset.labelHide : button.dataset.labelShow;
+    if (label) button.setAttribute('aria-label', label);
+
+    // Restore the caret. Only meaningful while the field has focus, and
+    // setSelectionRange throws on input types that do not support it — both
+    // guarded rather than assumed.
+    if (document.activeElement === input && selectionStart !== null) {
+      try { input.setSelectionRange(selectionStart, selectionEnd ?? selectionStart); }
+      catch { /* type does not support selection; harmless */ }
+    }
+  });
+}

@@ -14,7 +14,7 @@
   "action.add": "Add",
   "upload.hud": "Send me what you have and I will go read it.",
   "upload.title": "Add your documents",
-  "upload.sub": "Your transcript is the one Itqan needs to start. Add anything else you have and it will read those too.",
+  "upload.sub": "Your CV is the one Itqan needs to start. Add your transcript too and it will read that as well.",
   "upload.drop": "Drag your files here",
   "upload.browse": "or browse your device",
   "upload.formatPdf": "PDF",
@@ -141,7 +141,7 @@
   "upload.uploading": "Uploading",
   "upload.done": "Ready",
   "upload.missingRequired": "Add your CV to continue. It is the one document Itqan cannot read your background without — a transcript is welcome too, and adds evidence.",
-  "upload.othersLater": "You can add the others later. Only the transcript is needed to start.",
+  "upload.othersLater": "You can add your transcript later. It is optional, and it lets Itqan corroborate what your CV claims.",
   "upload.retry": "Try that file again",
   "upload.previewOf": "Preview of {name}",
   "nav.site": "Main site",
@@ -193,5 +193,6 @@
   "q.openToOtherRoles.opt.yes": "Yes, show me those too",
   "q.openToOtherRoles.optHelp.yes": "Related roles appear alongside the ones you asked for.",
   "q.openToOtherRoles.opt.no": "No, keep it close to what I said",
-  "q.openToOtherRoles.optHelp.no": "Only roles near the title you gave."
+  "q.openToOtherRoles.optHelp.no": "Only roles near the title you gave.",
+  "a11y.dashboardLink": "Itqan, go to your dashboard"
 }

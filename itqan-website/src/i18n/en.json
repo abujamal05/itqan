@@ -16,7 +16,9 @@
     "menuClose": "Close menu",
     "mainNav": "Main navigation",
     "footerNav": "Site links",
-    "homeLink": "Itqan, home page"
+    "homeLink": "Itqan, home page",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
   },
   "nav": {
     "home": "Home",
