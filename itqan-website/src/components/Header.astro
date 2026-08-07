@@ -112,6 +112,23 @@ const isCurrent = (href: string) => path === href || path === href.replace(/\/$/
         button.focus();
       }
     });
+
+    /* Tapping the page behind an open menu closes it. Escape already did, but
+       that is the keyboard answer; on a phone the menu covers the content and
+       reaching back for the same small button to dismiss it is the fiddliest
+       part of the header. Focus leaving the header closes it too, so tabbing
+       past the last link does not leave a panel open behind the page. */
+    document.addEventListener('pointerdown', (e) => {
+      if (nav.dataset.open !== 'true') return;
+      if (!header?.contains(e.target as Node)) setOpen(false);
+    });
+
+    header?.addEventListener('focusout', () => {
+      window.setTimeout(() => {
+        if (nav.dataset.open !== 'true') return;
+        if (!header.contains(document.activeElement)) setOpen(false);
+      }, 0);
+    });
   }
 </script>
 
@@ -223,8 +240,16 @@ const isCurrent = (href: string) => path === href || path === href.replace(/\/$/
     border-radius: var(--radius-full);
     background-color: var(--color-accent);
     transform: scaleX(0);
-    transform-origin: inline-start;
+    /* `transform-origin` takes PHYSICAL positions only — `inline-start` is not
+       a valid value, so the declaration was dropped and every underline grew
+       from its own centre outwards in both languages. Mirrored by hand below,
+       which is the only way to get a logical origin today. */
+    transform-origin: left;
     transition: transform var(--duration-base) var(--ease-out);
+  }
+
+  :global([dir='rtl']) .site-nav__link > span::after {
+    transform-origin: right;
   }
 
   .site-nav__link:hover > span::after,
@@ -289,6 +314,13 @@ const isCurrent = (href: string) => path === href || path === href.replace(/\/$/
       display: none;
     }
 
+    /* The panel drops in rather than appearing.
+       `display: none` -> `block` gave the one control a thumb uses most on a
+       phone no transition at all, while every other control on the site has
+       one. `display` is animated with `allow-discrete` so the panel is still
+       fully removed from the layout and the tab order when closed — a
+       visibility-only hide would leave the links keyboard reachable behind a
+       shut menu. Vertical movement only, so it behaves identically in Arabic. */
     .site-nav {
       position: absolute;
       inset-inline: 0;
@@ -299,10 +331,33 @@ const isCurrent = (href: string) => path === href || path === href.replace(/\/$/
       border-block-end: 1px solid var(--color-border);
       box-shadow: var(--shadow-md);
       display: none;
+      opacity: 0;
+      transform: translateY(-8px);
+      transition:
+        opacity var(--duration-fast) var(--ease-out),
+        transform var(--duration-fast) var(--ease-out),
+        display var(--duration-fast) allow-discrete;
     }
 
     .site-nav[data-open='true'] {
       display: block;
+      opacity: 1;
+      transform: none;
+      transition-duration: var(--duration-base);
+    }
+
+    /* Entry pose, so the panel animates in on the frame it becomes displayed. */
+    @starting-style {
+      .site-nav[data-open='true'] {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .site-nav {
+        transform: none;
+      }
     }
 
     .site-nav__list {

@@ -31,9 +31,9 @@ motion is RTL-aware, and **reduced motion** removes movement while keeping opaci
 | # | Interaction | Trigger | What happens |
 |---|---|---|---|
 | 11 | Logo | hover | lift `translateY(-1px)` (`--duration-fast`, `--ease-out`) |
-| 12 | Nav-link underline | hover / current page | gold underline grows from inline-start (`scaleX 0→1`, `--duration-base`) |
+| 12 | Nav-link underline | hover / current page | gold underline grows from the reading-start edge (`scaleX 0→1`, `--duration-base`). Origin is set physically (`left`, mirrored to `right` under `[dir='rtl']`) because `transform-origin` has no logical keywords — it read `inline-start` and silently grew from the centre in both languages until 2026-08-07 |
 | 13 | Register arrow | hover | arrow nudges `translateX(3px)`, RTL-mirrored (`--duration-fast`) |
-| 14 | Mobile menu | tap / Escape | opens/closes; hamburger↔close icon swap; Escape returns focus to the button |
+| 14 | Mobile menu | tap / Escape / outside tap / focus leaving the header | panel drops in: `opacity 0→1` + `translateY(-8px)→0` over `--duration-base`, out over `--duration-fast`, with `display` on `allow-discrete` and an `@starting-style` entry pose so it stays out of the layout and tab order when shut. Hamburger↔close icon swap; Escape returns focus to the button |
 | 15 | Sticky header | scroll | translucent `backdrop-filter: blur` (state) |
 
 ## Language toggle (`LangToggle.astro`)
@@ -47,7 +47,7 @@ motion is RTL-aware, and **reduced motion** removes movement while keeping opaci
 
 | # | Interaction | Trigger | What happens |
 |---|---|---|---|
-| 18 | Icon swap | toggle | moon ↔ sun; logo swaps colour/reversed with the theme |
+| 18 | Icon swap | toggle | moon ↔ sun cross-fade with a counter-rotation: outgoing glyph turns 90° and drops to `scale(0.6)` while the incoming one settles upright (`--duration-fast` opacity, `--duration-base` transform, `--ease-out`). Both glyphs share one grid cell so the 44px box never reflows. Logo swaps colour/reversed with the theme |
 
 ## Forms (`forms.css`)
 
@@ -118,3 +118,19 @@ and matches the new rule. What the skill now additionally requires, and this sit
 prefer a play-once pose handing over to a loop (`flying-in` → `idle`) over a bare loop, and match the pose
 to the moment rather than the layout. The fence is unchanged: he stays off `/proof`, the worked-example
 blocks, and anything that looks like a result.
+
+## Deliberately not animated
+
+**FAQ disclosure height.** A `::details-content` `block-size: 0 → auto` transition was built and removed
+on 2026-08-07. `CSS.supports('selector(::details-content)')` returns true in current Chromium and the
+`block-size: 0` half applies, but the `[open]` rule that releases it does not, so every answer rendered
+clipped to zero height. A feature query that reports support for a pseudo-element it does not fully
+implement cannot gate this safely, and a hidden answer is a far worse failure than an instant one. The
+chevron still rotates 180° on open, which is the half of the gesture that can move without hiding content.
+Revisit when `::details-content` ships complete.
+
+**Component transitions vs the reveal.** `html.reveal-ready .reveal` sets `transition: opacity, transform`
+and outweighs a plain component rule, so any component that also needs a hover transition must match on
+both classes (`.card.reveal`, `.proof-row.reveal`, `.faq-item.reveal`, `.about-team__card.reveal`) **and**
+carry `opacity` in its own list — otherwise it either loses the hover properties or loses the entrance
+fade. Four components hit this; a fifth will too.

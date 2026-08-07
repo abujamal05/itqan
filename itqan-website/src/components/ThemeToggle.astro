@@ -69,15 +69,37 @@ const strings = t(locale);
 </script>
 
 <style>
+  /* The two glyphs are stacked in one 20px cell and cross-fade with a short
+     counter-rotation, rather than one disappearing and the other appearing in
+     the same frame. This is the only control on the site whose whole job is to
+     change how the page looks, and it was the one that moved least.
+     Kept off the layout: both icons are absolutely positioned inside a fixed
+     box, so nothing in the header row shifts during the swap. */
+  .theme-toggle {
+    display: inline-grid;
+    place-items: center;
+  }
+
+  .theme-toggle svg {
+    grid-area: 1 / 1;
+    pointer-events: none;
+    transition:
+      opacity var(--duration-fast) var(--ease-hover),
+      transform var(--duration-base) var(--ease-out);
+  }
+
   .theme-toggle__sun {
-    display: none;
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.6);
   }
 
   :global([data-theme='dark']) .theme-toggle__moon {
-    display: none;
+    opacity: 0;
+    transform: rotate(90deg) scale(0.6);
   }
 
   :global([data-theme='dark']) .theme-toggle__sun {
-    display: block;
+    opacity: 1;
+    transform: none;
   }
 </style>

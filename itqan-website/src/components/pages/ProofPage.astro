@@ -95,52 +95,8 @@ const base = `/${locale}`;
 </div>
 
 <style>
-  .page-head {
-    padding-block: var(--space-20) var(--space-12);
-    max-inline-size: 46rem;
-  }
-
-  .page-head h1 {
-    margin-block-start: var(--space-4);
-    font-size: var(--text-5xl);
-    font-weight: var(--weight-bold);
-    line-height: var(--leading-tight);
-  }
-
-  .page-head__rule {
-    margin-block-start: var(--space-6);
-    inline-size: var(--space-16);
-    block-size: 4px;
-    border-radius: var(--radius-full);
-    background-color: var(--color-accent);
-    transform: scaleX(1);
-    transform-origin: 0 50%;
-    transition: transform var(--duration-slower) var(--ease-out);
-  }
-
-  :global([dir='rtl']) .page-head__rule {
-    transform-origin: 100% 50%;
-  }
-
-  :global(html.reveal-ready) .page-head.reveal:not(.is-visible) .page-head__rule {
-    transform: scaleX(0);
-  }
-
-  .page-head__intro {
-    margin-block-start: var(--space-6);
-    font-size: var(--text-lg);
-    line-height: 1.6;
-    color: var(--color-text-muted);
-  }
-
-  @media (max-width: 51.99rem) {
-    .page-head {
-      padding-block: var(--space-12) var(--space-8);
-    }
-    .page-head h1 {
-      font-size: var(--text-4xl);
-    }
-  }
+  /* .page-head and its rule/intro now live in global.css — this block was
+     duplicated verbatim across four page components. */
 
   h2 {
     font-size: var(--text-3xl);
@@ -167,7 +123,14 @@ const base = `/${locale}`;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     padding: var(--space-6);
+  }
+
+  /* Both classes, so this outweighs `html.reveal-ready .reveal` in global.css —
+     otherwise the reveal's transition list wins and the hover shadow snaps. */
+  .proof-row.reveal {
     transition:
+      opacity var(--duration-slow) var(--ease-out),
+      transform var(--duration-slow) var(--ease-out),
       box-shadow var(--duration-base) var(--ease-out),
       border-color var(--duration-base) var(--ease-out);
   }
@@ -322,18 +285,26 @@ const base = `/${locale}`;
       inline-size: 100%;
     }
 
+    /* Square cell so the rotated arrow fits its own layout box; at 40x12 it
+       overhung by 14px top and bottom and touched the rows either side. */
     .proof-row__connector {
       inline-size: 40px;
+      block-size: 40px;
       align-self: flex-start;
       margin-inline-start: var(--space-4);
+      display: grid;
+      place-items: center;
     }
 
     .proof-row__connector svg {
+      inline-size: 40px;
       transform: rotate(90deg);
     }
 
+    /* Points DOWN in Arabic too. The extra scaleX(-1) applied before the
+       rotation and turned the arrow back up the page. */
     :global([dir='rtl']) .proof-row__connector svg {
-      transform: rotate(90deg) scaleX(-1);
+      transform: rotate(90deg);
     }
   }
 

@@ -366,6 +366,36 @@ html.reveal-ready .stagger > :nth-child(4) {
   }
 }
 
+/* ---- Section rhythm ------------------------------------------------------------
+   These lived in HomePage's SCOPED style block, which meant AboutPage — which
+   uses `.section`, `.section--sunken`, `.section__heading` and the whole closing
+   block — matched none of them and rendered with no vertical padding, no sunken
+   bands and an unstyled call to action. Astro scopes a component's styles to that
+   component's elements, so a shared page skeleton has to live here. */
+.section {
+  position: relative;
+  padding-block: var(--space-20);
+}
+
+.section--sunken {
+  background-color: var(--color-surface-sunken);
+}
+
+.section__heading {
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+}
+
+/* Phones do not need 80px of air between every band: at that width the padding
+   is a third of the viewport and the page reads as disconnected fragments
+   rather than one argument. The groups stay clearly separated at 56px. */
+@media (max-width: 51.99rem) {
+  .section {
+    padding-block: var(--space-16);
+  }
+}
+
 /* ---- Section header + eyebrow (grouping and scan-ability) --------------------- */
 .section__head {
   display: flex;
@@ -381,7 +411,8 @@ html.reveal-ready .stagger > :nth-child(4) {
   gap: var(--space-2);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
-  color: var(--color-accent-hover);
+  /* Not --color-accent-hover: that is a fill colour and measured 3.46:1 here. */
+  color: var(--color-accent-ink);
 }
 
 /* A short gold tick before the eyebrow label; drawn, not a colour-only cue. */
@@ -391,6 +422,115 @@ html.reveal-ready .stagger > :nth-child(4) {
   block-size: 2px;
   border-radius: var(--radius-full);
   background-color: var(--color-accent);
+}
+
+/* ---- Page head (proof, how it works, privacy, terms) ---------------------------
+   This block was copy-pasted into four page components, four times, with two
+   slightly different paddings between them. One definition, one rhythm. */
+.page-head {
+  padding-block: var(--space-20) var(--space-12);
+  max-inline-size: 46rem;
+}
+
+.page-head h1 {
+  margin-block-start: var(--space-4);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+}
+
+/* Display type is fluid rather than one step at one breakpoint. The old pair of
+   fixed sizes meant the headline jumped 36 -> 48px the instant the viewport
+   crossed 832px and then never grew again, so a tablet got a headline built for
+   a phone and a 27in monitor got one built for a laptop. */
+.page-head h1,
+.hero__title {
+  font-size: clamp(var(--text-4xl), 2.5vw + 1.25rem, var(--text-5xl));
+}
+
+.page-head__rule {
+  margin-block-start: var(--space-6);
+  inline-size: var(--space-16);
+  block-size: 4px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-accent);
+  transform: scaleX(1);
+  transform-origin: 0 50%;
+  transition: transform var(--duration-slower) var(--ease-out);
+}
+
+[dir='rtl'] .page-head__rule {
+  transform-origin: 100% 50%;
+}
+
+html.reveal-ready .page-head.reveal:not(.is-visible) .page-head__rule {
+  transform: scaleX(0);
+}
+
+.page-head__intro {
+  margin-block-start: var(--space-6);
+  font-size: var(--text-lg);
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 51.99rem) {
+  .page-head {
+    padding-block: var(--space-12) var(--space-8);
+  }
+}
+
+/* ---- Closing call to action ---------------------------------------------------
+   Shared by the home and about pages. Scoped to HomePage it left the about
+   page's closing as a bare heading and a button on the page background. */
+.section--closing {
+  padding-block: var(--space-20);
+}
+
+.closing {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-6);
+  padding: var(--space-16) var(--space-6);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.closing__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 0%,
+    color-mix(in srgb, var(--color-accent) 16%, transparent),
+    transparent 60%
+  );
+}
+
+.closing > :not(.closing__bg) {
+  position: relative;
+  z-index: 1;
+}
+
+.closing h2 {
+  font-size: var(--text-4xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  max-inline-size: 18ch;
+}
+
+@media (max-width: 51.99rem) {
+  .closing {
+    padding: var(--space-12) var(--space-5);
+  }
+  .closing h2 {
+    font-size: var(--text-3xl);
+  }
 }
 
 /* ---- Crafted-paper texture ---------------------------------------------------
@@ -462,6 +602,17 @@ html.reveal-ready .reveal:not(.is-visible) .draw-stroke {
     stroke-dashoffset: 0;
   }
 }
+
+/* ---- Disclosure (FAQ) ---------------------------------------------------------
+   NOT animated, deliberately. A `::details-content` height transition was built
+   and then removed: `CSS.supports('selector(::details-content)')` returns true
+   in current Chromium, and the `block-size: 0` half of the pair applies, but the
+   `[open]` rule that releases it does not — so every answer rendered clipped to
+   zero height. A feature query that reports support for a pseudo-element it
+   does not fully implement cannot gate this safely, and a hidden answer is a far
+   worse failure than an instant one. The chevron still rotates on open, which is
+   the part of the gesture that can be animated without hiding content.
+   Revisit when `::details-content` ships completely. */
 
 /* ---- Utilities ---------------------------------------------------------------- */
 .visually-hidden {
