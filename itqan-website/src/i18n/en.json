@@ -16,12 +16,15 @@
     "menuClose": "Close menu",
     "mainNav": "Main navigation",
     "footerNav": "Site links",
-    "homeLink": "Itqan, home page"
+    "homeLink": "Itqan, home page",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
   },
   "nav": {
     "home": "Home",
     "howItWorks": "How it works",
-    "proof": "Proof"
+    "proof": "Proof",
+    "about": "Who we are"
   },
   "actions": {
     "login": "Log in",
@@ -368,5 +371,48 @@
   "ph": {
     "stepShare": "Illustration: sharing the record",
     "stepPlan": "Illustration: the plan for closing gaps"
+  },
+  "about": {
+    "title": "Who we are",
+    "metaDescription": "Why we built Itqan, how it works, and what it does. We show you the distance to the job you want and the shortest way to close it.",
+    "eyebrow": "Who we are",
+    "whyHeading": "You know where you want to end up. No one tells you how far that is, or which way to go.",
+    "whyBody": "We started Itqan because that distance should be visible from the start, not discovered after years of applying and being turned down. The hard part was never what you already have. It is what stands between you and where you want to be, and what to do about it.",
+    "missionLabel": "Our mission",
+    "mission": "We show you how far you are from the job you want, the shortest way to close that distance, and the real jobs that fit you today.",
+    "visionLabel": "Our vision",
+    "vision": "A world where no graduate has to guess their next step.",
+    "howEyebrow": "How we do it",
+    "howHeading": "Three things we hold to.",
+    "how1Title": "We measure against the real market.",
+    "how1Body": "Live Gulf demand, not a generic checklist of what a role is supposed to need.",
+    "how2Title": "We show our working.",
+    "how2Body": "Every recommendation carries its reason and a real source you can open. Nothing invented is ever shown to you.",
+    "how3Title": "We never sell your results.",
+    "how3Body": "No employer can buy a place in what you see.",
+    "whatEyebrow": "What Itqan does",
+    "whatHeading": "Three things, in order.",
+    "what1Title": "Measures the gap",
+    "what1Body": "between you and the role you want.",
+    "what2Title": "Shows the shortest path",
+    "what2Body": "across it, in real courses.",
+    "what3Title": "Finds the jobs that fit you now,",
+    "what3Body": "each with a plain reason.",
+    "evidenceEyebrow": "What we found",
+    "evidenceHeading": "We asked graduates and final year students in Oman.",
+    "evidenceBody": "Roughly two thirds had read a job posting and could not tell whether a course they took counted as the skill being asked for. Nearly nine in ten were blocked by postings demanding experience they did not have. Nearly half of those who were rejected could not say why.",
+    "evidenceQualifier": "An early sample, drawn from the graduates we are launching to. We are widening it.",
+    "whereEyebrow": "Where we sit",
+    "whereBody": "We are embedded at UTAS, which is both our first pilot and where our survey came from. Our regulator, MTCIT, runs Khuta, which we treat as a distribution channel rather than a competitor. We start in Oman, then Saudi Arabia and the wider Gulf.",
+    "payEyebrow": "What you will never pay for",
+    "payBody": "You never pay to get hired. The core is free forever: the gap, the full path, the top job matches and the advisor. The paid tier is for people who already have income, not for you if you are still looking. Employers and universities pay for access to candidates who agreed to it.",
+    "refuseHeading": "And what we refuse.",
+    "refuse1": "We will not sell a place in your results.",
+    "refuse2": "We will not invent a course or a job that does not exist.",
+    "refuse3": "We will not promise you a job.",
+    "refuse4": "We will not publish an accuracy figure we have not measured.",
+    "teamEyebrow": "The team",
+    "teamHeading": "Four roles, clearly owned.",
+    "linkedinLabel": "{name} on LinkedIn"
   }
 }

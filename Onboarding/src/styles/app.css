@@ -213,10 +213,31 @@
   border: 1px solid var(--color-border); border-radius: var(--radius-sm);
   padding-block: var(--space-3); padding-inline: var(--space-4);
   min-height: 44px;
+  /* A form control is a flex item here (.field is a column flex container), and
+     a flex item's automatic minimum size is its INTRINSIC width, not zero. For
+     a plain text input that is harmless; for date and month inputs it is not —
+     iOS Safari sizes them from the native picker they render, which is wider
+     than a phone's form column, and `width: 100%` cannot pull them back under
+     an automatic minimum. The result is the field hanging outside its card.
+     These two lines are what let the declared width actually win. */
+  min-inline-size: 0;
+  max-inline-size: 100%;
   transition: border-color var(--duration-fast) var(--ease-hover),
               box-shadow var(--duration-fast) var(--ease-hover);
 }
 .textarea { resize: vertical; min-height: 7rem; line-height: inherit; }
+
+/* Date and month specifically. Safari lays the native picker out at its own
+   intrinsic size and, unlike other controls, does not shrink it to the box —
+   pinning the width here is what keeps "Your details" inside the card on a
+   phone. Left as native controls on purpose: the platform picker is far better
+   than anything re-implemented, so only the sizing is corrected. */
+.input[type='date'],
+.input[type='month'] {
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
 .input:hover, .textarea:hover { border-color: var(--color-border-strong); }
 /* The outline is kept, not replaced. The gold tint alone measures about 1.2:1
    against white, which would not satisfy the focus-indicator contrast rule;
@@ -525,3 +546,41 @@
   /* A third column earns its place once there is genuinely room for it. */
   .grid--2 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+
+/* The sidebar's one ACTION, as opposed to its destinations.
+   Tinted and bordered so it reads as a button in a list of links, which is what
+   it is: the nav rows change where you are, this one changes your data. It sits
+   below them with a little air, so it is never mistaken for a fourth page. */
+.nav__item--action {
+  margin-block-start: var(--space-3);
+  background: var(--color-accent-tint);
+  border: 1px dashed var(--color-accent);
+  color: var(--color-text);
+  font-weight: var(--weight-medium);
+}
+.nav__item--action:hover { background: var(--color-accent-tint); border-style: solid; }
+/* Current-page styling would claim it is a destination; it keeps the accent
+   rail only, so "you are here" still reads while on the screen. */
+.nav__item--action[aria-current='page'] { box-shadow: inset 3px 0 0 var(--color-accent); }
+[dir='rtl'] .nav__item--action[aria-current='page'] { box-shadow: inset -3px 0 0 var(--color-accent); }
+
+/* ---------------------------------------------------------------- PROFILE -- */
+/* Label and value on one line while there is room, stacked when there is not.
+   A definition list layout in flexbox: the label keeps a predictable column so
+   the eye can run down it, and the value takes the rest. */
+.profile__row {
+  display: flex; flex-wrap: wrap; align-items: baseline;
+  gap: var(--space-2) var(--space-4);
+  padding-block: var(--space-2);
+  border-block-end: 1px solid var(--color-border);
+}
+.profile__row:last-child { border-block-end: 0; }
+.profile__label {
+  flex: 0 0 auto; min-inline-size: 10rem;
+  font-size: var(--text-sm); color: var(--color-text-muted);
+}
+.profile__value { flex: 1 1 12rem; min-inline-size: 0; overflow-wrap: anywhere; }
+/* Missing is stated, never blank: an empty row reads as a broken screen, and
+   the whole point of this one is to show what is still needed. */
+.profile__value--missing { color: var(--color-text-muted); font-style: italic; }
+.profile__icon { vertical-align: -3px; margin-inline-end: var(--space-2); color: var(--color-accent-hover); }

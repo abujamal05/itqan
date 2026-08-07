@@ -16,6 +16,17 @@ export type Dir = 'rtl' | 'ltr';
 
 const DICTS: Record<Locale, Record<string, string>> = { ar, en };
 const STORAGE_KEY = 'itqan.locale';
+/**
+ * The key the MARKETING SITE writes when its language switch is used.
+ *
+ * It is a different key from this app's, and that mismatch was the bug behind
+ * "onboarding changes my language": a user who chose English on the site had it
+ * recorded under `itqan-lang`, which this app never read, so onboarding opened
+ * in the Arabic default and looked like it had thrown the choice away. Both are
+ * read here, and both are written on every change, so the preference survives
+ * crossing between the two halves in either direction.
+ */
+const SITE_STORAGE_KEY = 'itqan-lang';
 
 export const dirFor = (l: Locale): Dir => (l === 'ar' ? 'rtl' : 'ltr');
 
@@ -74,12 +85,41 @@ const I18nContext = createContext<I18nValue | null>(null);
 const interpolate = (s: string, vars?: Record<string, string | number>) =>
   vars ? s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? `{${k}}`)) : s;
 
+const asLocale = (v: string | null | undefined): Locale | null =>
+  (v === 'ar' || v === 'en' ? v : null);
+
+/** Reads the locale cookie the session was created with. */
+function readCookieLocale(): Locale | null {
+  if (typeof document === 'undefined') return null;
+  return asLocale((document.cookie.match(/(?:^|; )itqan_locale=([^;]*)/) ?? [])[1]);
+}
+
+/**
+ * Resolution order, most specific first: a choice made in this app, then one
+ * made on the site, then the language the session was established in. Only if
+ * all three are silent does the Arabic default apply.
+ */
 function readStored(): Locale | null {
   try {
-    const v = localStorage.getItem(STORAGE_KEY);
-    return v === 'ar' || v === 'en' ? v : null;
+    return asLocale(localStorage.getItem(STORAGE_KEY))
+      ?? asLocale(localStorage.getItem(SITE_STORAGE_KEY))
+      ?? readCookieLocale();
   } catch {
-    return null;
+    return readCookieLocale();
+  }
+}
+
+/**
+ * Whether the user has actually chosen a language, on either half of the
+ * product. Distinct from `readStored`, which also falls back to the session
+ * cookie: the cookie records how the account was created, not a preference.
+ */
+export function hasStoredLocale(): boolean {
+  try {
+    return asLocale(localStorage.getItem(STORAGE_KEY)) !== null
+      || asLocale(localStorage.getItem(SITE_STORAGE_KEY)) !== null;
+  } catch {
+    return false;
   }
 }
 
@@ -90,7 +130,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const setLocale = useCallback((l: Locale) => {
     setLocaleState(l);
     try {
+      // Both keys, so returning to the marketing site keeps the same language.
       localStorage.setItem(STORAGE_KEY, l);
+      localStorage.setItem(SITE_STORAGE_KEY, l);
     } catch {
       /* storage unavailable (private mode) — the choice just will not persist */
     }

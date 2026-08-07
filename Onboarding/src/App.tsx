@@ -17,7 +17,7 @@
  */
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useEffect, type ReactNode } from 'react';
-import { I18nProvider, useI18n } from './i18n';
+import { I18nProvider, useI18n, hasStoredLocale } from './i18n';
 import { ThemeProvider } from './lib/theme';
 import { ApiProvider, useApi } from './state/api';
 import { AuthProvider, useAuth } from './state/auth';
@@ -33,6 +33,8 @@ import { AppLayout } from './app/AppLayout';
 import { Dashboard } from './app/Dashboard';
 import { Jobs } from './app/Jobs';
 import { Courses } from './app/Courses';
+import { Documents } from './app/Documents';
+import { Profile } from './app/Profile';
 
 /** Full-page hold while the session is read. Deliberately quiet. */
 function Booting() {
@@ -66,6 +68,25 @@ function RequireOnboarding({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+/**
+ * The confirm step, which two different users can legitimately reach: someone
+ * finishing onboarding, and someone who has already finished and is re-reading
+ * replaced documents from /documents.
+ *
+ * The plain onboarding guard cannot express that — it sends every finished user
+ * to the dashboard, which would make the re-upload button a dead end. The extra
+ * door only opens while a re-read is actually in flight, so a finished user
+ * still cannot wander back into the flow by typing the URL.
+ */
+function RequireConfirmable({ children }: { children: ReactNode }) {
+  const { user, booting } = useAuth();
+  const { reuploading } = useOnboarding();
+  if (booting) return <Booting />;
+  if (!user) return <ToSiteLogin />;
+  if (user.onboarded && !reuploading) return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+}
+
 /** Signed in, and finished. */
 function RequireApp({ children }: { children: ReactNode }) {
   const { user, booting } = useAuth();
@@ -90,11 +111,15 @@ function RequireApp({ children }: { children: ReactNode }) {
  */
 function RequireFlow({ children }: { children: ReactNode }) {
   const { entry, documents, analysis, resumable, checking } = useOnboarding();
+  const { user } = useAuth();
   const started = entry === 'manual' || documents.length > 0 || !!analysis;
   if (started) return <>{children}</>;
   if (checking) return <Booting />;
   if (resumable) return <ResumeGate />;
-  return <Navigate to="/upload" replace />;
+  // Step one differs by user: onboarding starts at /upload, but a finished user
+  // who lost their re-read state belongs on /documents. Sending them to /upload
+  // would bounce them to the dashboard and lose the action they just took.
+  return <Navigate to={user?.onboarded ? '/documents' : '/upload'} replace />;
 }
 
 /**
@@ -133,7 +158,20 @@ function FollowSessionLocale() {
   const { sessionLocale } = useAuth();
   const { locale, setLocale } = useI18n();
   useEffect(() => {
-    if (sessionLocale && sessionLocale !== locale) setLocale(sessionLocale);
+    /*
+     * The session's language is a FALLBACK, not an instruction.
+     *
+     * It used to be applied unconditionally, which is why the language could
+     * change part way through onboarding: the session carries whichever locale
+     * the account was created in, so a user who signed up on the Arabic site
+     * and then switched to English had their choice overwritten the moment
+     * /auth/session answered. A stored preference is the more recent and more
+     * deliberate signal, so it wins; the session only speaks when nothing has
+     * been chosen on either half of the product.
+     */
+    if (!sessionLocale || sessionLocale === locale) return;
+    if (hasStoredLocale()) return;
+    setLocale(sessionLocale);
     // Runs only when the session first reports a language.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionLocale]);
@@ -161,12 +199,14 @@ export default function App() {
                   <Routes>
                     <Route path="/upload" element={<RequireOnboarding><Upload /></RequireOnboarding>} />
                     <Route path="/questions" element={<RequireOnboarding><RequireFlow><Questions /></RequireFlow></RequireOnboarding>} />
-                    <Route path="/confirm" element={<RequireOnboarding><RequireFlow><Confirm /></RequireFlow></RequireOnboarding>} />
+                    <Route path="/confirm" element={<RequireConfirmable><RequireFlow><Confirm /></RequireFlow></RequireConfirmable>} />
 
                     <Route element={<RequireApp><AppLayout /></RequireApp>}>
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/jobs" element={<Jobs />} />
                       <Route path="/courses" element={<Courses />} />
+                      <Route path="/documents" element={<Documents />} />
+                      <Route path="/profile" element={<Profile />} />
                     </Route>
 
                     {/* Entry point: the guards decide where this actually lands. */}

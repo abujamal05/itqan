@@ -4,6 +4,13 @@ Every animation on the site, what triggers it, and its token. All durations/easi
 `src/styles/tokens.css`. The rule everywhere: **only `transform` and `opacity` animate**, directional
 motion is RTL-aware, and **reduced motion** removes movement while keeping opacity/colour fades.
 
+> **Status: this catalogue describes the site as built, before the 2026-08-03 motion revision.** The
+> `itqan-motion` skill now defines two registers (product vs expressive), licenses `--ease-overshoot` on
+> marketing and onboarding surfaces, requires the animated Hud wherever he is allowed, and **bans the
+> blanket `prefers-reduced-motion` kill switch** in favour of collapsing motion scalars. Applying that to
+> this app is separate, approved work that has not happened yet. Read the skill before adding motion; read
+> this file to know what is currently on the page.
+
 ## Global (`src/styles/global.css`)
 
 | # | Interaction | Trigger | What happens | Token |
@@ -95,3 +102,19 @@ and all draw-strokes render fully drawn, the language thumb and threads do not s
 are disabled, and the Hud mascot renders its poster only. Hover-motion is additionally guarded behind
 `(hover: hover) and (pointer: fine)` so a tap never fires a hover animation. The global safety net lives
 in `tokens.css`; per-component swaps live beside each interaction.
+
+**Known defect, to be fixed when the revision lands.** The safety net in this app's `tokens.css` is the
+blanket `animation-duration: 0.01ms !important; transition-duration: 0.01ms !important` on every element.
+That does not honour the preference — it deletes the interface's feedback, so a user who asked for less
+movement also loses colour fades, toast arrivals and skeleton resolution. The skill now bans it. The
+replacement collapses motion scalars (`--reveal-rise`, `--hover-lift`, `--motion-scale`) to zero and
+restricts transitions to non-moving properties at full duration; components read the scalars instead of
+checking the media query themselves. See `itqan-motion` §Accessibility and recipes §1b and §6.
+
+## Pending: the animated mascot
+
+Hud already renders his `.webm` where one exists, with the poster as fallback — that behaviour is correct
+and matches the new rule. What the skill now additionally requires, and this site does not all do yet:
+prefer a play-once pose handing over to a loop (`flying-in` → `idle`) over a bare loop, and match the pose
+to the moment rather than the layout. The fence is unchanged: he stays off `/proof`, the worked-example
+blocks, and anything that looks like a result.

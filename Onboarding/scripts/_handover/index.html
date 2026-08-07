@@ -1,0 +1,452 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><title>Itqan frontend handover</title><style>
+@font-face{font-family:'Rubik';src:url('rubik.woff2') format('woff2-variations');
+  font-weight:300 800;font-style:normal;font-display:block}
+
+:root{
+  --paper:#FAF8F3; --navy:#071055; --navy-700:#14205C; --navy-300:#6B72A6;
+  --gold:#F39F1C; --gold-700:#C57A14; --gold-50:#FEF6E9;
+  --ink:#101534; --muted:#5A6180; --line:#E3E0D6; --maroon:#820000;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Rubik',system-ui,sans-serif;color:var(--ink);background:#fff;
+  font-size:10.2pt;line-height:1.62;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+
+@page{size:A4;margin:18mm 16mm 20mm}
+@page:first{margin:0}
+
+/* ---- cover ---- */
+.cover{
+  position:relative;width:210mm;height:297mm;padding:26mm 20mm;
+  display:flex;flex-direction:column;justify-content:center;
+  color:var(--paper);break-after:page;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(255,255,255,.06) 1px, transparent 0),
+    radial-gradient(60% 40% at 82% 12%, rgba(243,159,28,.16) 0%, rgba(243,159,28,0) 68%),
+    linear-gradient(165deg,#0A1338 0%,#060C2B 48%,#04070F 100%);
+  background-size:24px 24px,auto,auto;
+}
+/* align-self and width:auto both matter: the cover is a column flex container,
+   so a bare <img> is stretched to the full column width and the lockup comes
+   out smeared across the page. */
+.cover__mark{height:14mm;width:auto;align-self:flex-start;margin-bottom:16mm}
+.cover h1{font-size:30pt;line-height:1.1;font-weight:700;letter-spacing:-.02em;color:#fff}
+.cover h1 span{display:block;color:var(--gold)}
+.cover__sub{margin-top:8mm;font-size:12pt;font-weight:300;color:#A9AEC9;max-width:120mm}
+.cover__rule{width:40mm;height:2px;background:var(--gold);margin:10mm 0;border-radius:2px}
+.cover__meta{font-size:9pt;color:#8B92B8;line-height:1.9}
+.cover__meta b{color:var(--paper);font-weight:500}
+.cover__foot{position:absolute;left:20mm;right:20mm;bottom:18mm;
+  font-size:8.5pt;color:#6B72A6;border-top:1px solid rgba(255,255,255,.12);padding-top:5mm}
+
+/* ---- document flow ---- */
+h2{font-size:16pt;font-weight:700;color:var(--navy);letter-spacing:-.01em;
+  margin:11mm 0 4mm;padding-bottom:2.5mm;border-bottom:2px solid var(--gold);
+  break-after:avoid;break-inside:avoid}
+h2:first-of-type{margin-top:0}
+h3{font-size:11.5pt;font-weight:600;color:var(--navy-700);margin:7mm 0 2.5mm;break-after:avoid}
+p{margin:0 0 3.2mm}
+strong{font-weight:600;color:var(--navy)}
+em{font-style:italic}
+a{color:var(--gold-700);text-decoration:none;word-break:break-word}
+
+ul,ol{margin:0 0 3.6mm;padding-inline-start:5.5mm}
+li{margin-bottom:1.6mm}
+li::marker{color:var(--gold)}
+ul ul,ol ol,ul ol,ol ul{margin:1.6mm 0 0}
+
+code{font-family:'Consolas','SF Mono',ui-monospace,monospace;font-size:8.6pt;
+  background:var(--gold-50);color:var(--navy);padding:.4mm 1.2mm;border-radius:1mm;
+  border:1px solid #F0E4CC}
+pre{background:#0B1440;color:#D7DAEC;padding:4mm 5mm;border-radius:2mm;
+  margin:0 0 4mm;overflow:hidden;break-inside:avoid;border-inline-start:2.5mm solid var(--gold)}
+pre code{background:none;border:0;color:inherit;font-size:8.2pt;line-height:1.55;padding:0;
+  white-space:pre-wrap;word-break:break-word}
+
+table{width:100%;border-collapse:collapse;margin:0 0 4.5mm;font-size:9pt;break-inside:avoid}
+th,td{text-align:start;padding:2.2mm 3mm;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{background:var(--navy);color:#fff;font-weight:600;font-size:8.6pt;
+  letter-spacing:.03em;border-bottom:0}
+thead th:first-child{border-start-start-radius:1.5mm}
+thead th:last-child{border-start-end-radius:1.5mm}
+tbody tr:nth-child(even){background:#FBFAF6}
+
+blockquote{margin:0 0 4.5mm;padding:3.5mm 5mm;background:var(--gold-50);
+  border-inline-start:2.5mm solid var(--gold);border-radius:0 2mm 2mm 0;break-inside:avoid}
+blockquote p{margin:0}
+blockquote strong{color:var(--gold-700)}
+
+hr{border:0;border-top:1px solid var(--line);margin:8mm 0}
+
+/* Keep a heading with what follows it. */
+h2,h3{page-break-after:avoid}
+table,pre,blockquote{page-break-inside:avoid}
+</style></head><body>
+<div class="cover">
+  <img class="cover__mark" src="lockup.webp" alt="Itqan">
+  <h1>Frontend<span>handover</span></h1>
+  <p class="cover__sub">The product app, the marketing site, and exactly how the two
+     are wired together. Written to be read once and answered from.</p>
+  <div class="cover__rule"></div>
+  <div class="cover__meta">
+    <b>Itqan</b> &middot; the signed in product app<br>
+    React, TypeScript and Vite &middot; Arabic first, RTL native, bilingual<br>
+    Generated from <b>Onboarding/README.md</b>
+  </div>
+  <div class="cover__foot">
+    Section 6 states plainly what is real and what is simulated. Read it before any demo.
+  </div>
+</div>
+<p>React + TypeScript + Vite. Arabic first, RTL native, bilingual, responsive, light and dark.</p>
+<p>This is the <strong>signed in half</strong> of Itqan. The marketing site (<code>itqan-website</code>) is the other half and owns
+the front door: the landing pages, and log in and sign up. This app owns everything after that: the
+onboarding flow and the dashboard.</p>
+<blockquote>
+<p><strong>Read this before a demo.</strong> §6 says exactly what is real and what is simulated. It is the section a
+judge's questions will land on, and being straight about it is the whole brand.</p>
+</blockquote>
+<hr />
+<h2>1. Running it</h2>
+<pre><code class="language-bash">cd itqan-website &amp;&amp; npm run build     # once, and after any site change
+cd ../Onboarding  &amp;&amp; npm install &amp;&amp; npm run dev -- --port 4333
+</code></pre>
+<p>Open <strong>http://localhost:4333/</strong> — that is the marketing site. Log in there and you land in the app.
+Opening <code>/app/</code> directly is fine too; with no session it sends you to the site's login page.</p>
+<p>In development a Vite plugin (<code>dev/site-plugin.ts</code>) serves <strong>both halves on one origin</strong> and implements
+the API. That is why you build the site first: the plugin serves its built output.</p>
+<h3>Test accounts</h3>
+<p>Password for both: <code>itqan1234</code></p>
+<table>
+<thead>
+<tr>
+<th>Email</th>
+<th>What it exercises</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>maryam@itqan.test</code></td>
+<td>Fresh account. Goes through the whole onboarding flow.</td>
+</tr>
+<tr>
+<td><code>nasser@itqan.test</code></td>
+<td>Already onboarded. Lands straight on the dashboard.</td>
+</tr>
+</tbody>
+</table>
+<p>These live server side only and are never rendered into any page. Signing up through the site's own
+form also works and creates a real session.</p>
+<h3>Two handles for awkward paths</h3>
+<ul>
+<li>Name a file <code>unreadable-x.pdf</code> to make the pipeline fail, so you can show the error state on purpose.</li>
+<li>Reload mid onboarding to see the "pick up where you left off" offer.</li>
+</ul>
+<hr />
+<h2>2. The journey, screen by screen</h2>
+<p>The order is the product argument, not just a flow.</p>
+<ol>
+<li><strong>Upload</strong> (<code>/upload</code>) — one drop area, not one slot per document type. Files arrive however they
+      arrive and each lands as a row saying what Itqan thinks it is, correctable in one tap. The kind is
+      guessed from the filename, because people name these files predictably. <strong>The CV is the one required
+      document</strong>; everything else adds evidence. Hud is present here in his <code>analyzing</code> pose.</li>
+<li><strong>Questions</strong> (<code>/questions</code>) — asked <em>during</em> the pipeline wait, one at a time, so the wait does
+      work instead of being dead time. Four questions: course pricing, work arrangement, preferred role,
+      and whether to show adjacent roles. Every answer is optional; they only re-rank results, so refusing
+      to answer never blocks anyone from their own transcript.</li>
+<li><strong>Confirm</strong> (<code>/confirm</code>) — the extracted details, editable. <strong>Nothing downstream runs until the user
+      confirms.</strong> This is the first trust moment and the consent checkpoint. Anything the extraction was
+      unsure about is labelled "Suggested — confirm" rather than stated as fact.</li>
+<li><strong>Dashboard</strong> (<code>/dashboard</code>) — where you stand, your highest yield skills, skills to unlock, then job
+      postings. The readiness number never appears alone; it carries a sentence and a "how this is worked
+      out" disclosure.</li>
+<li><strong>Courses</strong> (<code>/courses</code>) and <strong>Job postings</strong> (<code>/jobs</code>) — browsable, filterable, each item carrying
+      its evidence and a real source link.</li>
+</ol>
+<p>Routing guards, in <code>App.tsx</code>, encode two rules: onboarding is a gate a signed in user cannot skip by
+typing a URL, and it is a gate you pass <strong>once</strong> — someone who has finished can never be dropped back
+into it.</p>
+<hr />
+<h2>3. How the two halves connect</h2>
+<p><strong>This app contains no login or signup screen, and never will.</strong> The site owns them. There is no
+<code>login()</code> or <code>signup()</code> in the API contract and no password anywhere in this codebase. A second sign in
+surface is a second thing to keep in step, and the first one to drift.</p>
+<p>There are <strong>three environments</strong>, and the difference between them is real rather than incidental. This
+is the single most confusing thing in the project, so it is worth reading once properly.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Who serves what</th>
+<th>How the session travels</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Dev</strong></td>
+<td>One origin. The Vite plugin serves the site at <code>/</code> and this app at <code>/app/</code>.</td>
+<td>An ordinary cookie. Same origin, so it just works.</td>
+</tr>
+<tr>
+<td><strong>Vercel</strong></td>
+<td><strong>Two separate projects on two domains.</strong></td>
+<td>A signed <strong>handoff token</strong> in the redirect URL. See below.</td>
+</tr>
+<tr>
+<td><strong>VPS</strong> (production)</td>
+<td>One Caddy serves both: site at <code>/</code>, app at <code>/app/</code>.</td>
+<td>An ordinary cookie again.</td>
+</tr>
+</tbody>
+</table>
+<p><code>src/lib/site.ts</code> is what knows the difference. <code>VITE_SITE_SAME_ORIGIN=1</code> (set by the deploy) makes
+links to the site relative; without it they are absolute, which is what Vercel needs.</p>
+<h3>The handoff token, and why it exists</h3>
+<p>On Vercel the site and the app are <strong>separate deployments on separate domains</strong>, and a cookie set on one
+domain cannot be read by the other. There is also no database, and serverless functions keep nothing
+between invocations, so the session cannot live on a server either.</p>
+<p>So the user travels <em>inside a signed token</em>:</p>
+<pre><code>1. User submits the site's login form        →  POST /api/placeholder/login
+2. Site validates, sets its own cookie       →  200
+3. Site's form script redirects to appUrl    →  /api/handoff   (same origin, so the cookie is sent)
+4. /api/handoff reads the session, signs a short lived token, and redirects:
+                                             →  https://app-…/?t=&lt;token&gt;
+5. The app boots, sees ?t=, and sends it with its very first request
+                                             →  GET /api/session?t=&lt;token&gt;
+6. That endpoint verifies the signature and sets a NORMAL session cookie on the app's own domain.
+7. The client strips ?t= from the address bar so a reload or a shared link cannot replay it.
+</code></pre>
+<p>The token is signed with HMAC SHA256 using a secret both projects share, lasts <strong>two minutes</strong>, and
+carries the user rather than a secret of its own. It cannot be forged without the secret, and once
+exchanged it is dead weight.</p>
+<p>Steps 5 and 6 are one request on purpose: the app asks "who am I" and hands over the token together, so
+there is no window in which the app is loaded but not yet signed in.</p>
+<h3>The only change made to the website</h3>
+<p><code>itqan-website/src/config.ts</code>, one value:</p>
+<pre><code class="language-js">export const appUrl = '/api/handoff';
+</code></pre>
+<p>Nothing else in the site was touched — no markup, no styles, no copy, no components. That file's own
+comment describes it as "the single place to point the forms at the real API later", which is exactly
+what this is.</p>
+<p>The site's existing form script already did:</p>
+<pre><code class="language-js">const response = await fetch(form.action, { method: 'POST', body: new FormData(form) });
+if (response.ok) window.location.assign(form.dataset.successUrl);
+</code></pre>
+<p>So a 200 plus a session cookie is the whole handshake. No new contract was invented.</p>
+<h3>What carries across</h3>
+<ul>
+<li><strong>Session</strong> — the cookie, however it got there.</li>
+<li><strong>Language</strong> — the site's locale is in its URL; the login endpoint records which one was used and the
+    app opens in it. Toggling language inside the app moves the same cookie, so the services answer in the
+    new language too.</li>
+<li><strong>Theme</strong> — the app reads and writes <code>itqan-theme</code>, the same key the site's toggle uses.</li>
+<li><strong>Assets</strong> — the real <code>.webp</code> logo lockups and <code>.webm</code> mascot clips, straight from the site.</li>
+</ul>
+<hr />
+<h2>4. The API contract</h2>
+<p><code>src/api/types.ts</code> is the seam between this UI and the agent services, and the only thing the screens
+depend on. <code>src/api/http.ts</code> is the client — one, always.</p>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /api/session</code></td>
+<td>Who am I. Also exchanges a <code>?t=</code> handoff token.</td>
+</tr>
+<tr>
+<td><code>POST /api/logout</code></td>
+<td>Ends the session.</td>
+</tr>
+<tr>
+<td><code>GET PUT DELETE /api/onboarding/progress</code></td>
+<td>Resumable onboarding.</td>
+</tr>
+<tr>
+<td><code>POST /api/documents</code></td>
+<td>Upload one document, returns its record.</td>
+</tr>
+<tr>
+<td><code>POST /api/analysis</code></td>
+<td>Start the pipeline, returns a job id.</td>
+</tr>
+<tr>
+<td><code>GET /api/analysis/:jobId</code></td>
+<td>Poll it.</td>
+</tr>
+<tr>
+<td><code>POST /api/profile</code></td>
+<td>Confirm the profile. This is what <em>starts</em> matching.</td>
+</tr>
+<tr>
+<td><code>GET /api/dashboard</code> · <code>/api/jobs</code> · <code>/api/courses</code></td>
+<td>The results.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Two trust rules are enforced by the types</strong>, rather than by each screen remembering them:</p>
+<ul>
+<li>every extracted field travels with its own <code>confidence</code>, because four sequential agents compound error
+    and a clean looking answer downstream would hide it;</li>
+<li>every recommendation carries <code>why</code> (the evidence chain) and a real <code>source</code> with a retrieval date,
+    because nothing fabricated is displayable.</li>
+</ul>
+<p><code>TRUST_THRESHOLD</code> is <code>0.85</code>. Below it, output is labelled "Suggested — confirm" and never stated as fact.</p>
+<p>The upload uses <code>XMLHttpRequest</code> rather than <code>fetch</code> for one reason: fetch still cannot report upload
+progress in any browser, and this is the one request where the user watches a bar.</p>
+<hr />
+<h2>5. Architecture</h2>
+<p>The agents are <strong>API based</strong>. This app never runs inference, never holds a model, and never does its own
+matching. It POSTs a document, polls a job, and GETs already ranked results. Swapping or re-hosting an
+agent changes nothing here as long as the shapes hold.</p>
+<pre><code>src/api/types.ts     the contract, and the only thing screens depend on
+src/api/http.ts      the client
+src/state/           auth, api, onboarding providers
+src/screens/         the onboarding flow: Upload, Questions, Confirm, ResumeGate
+src/app/             the signed in app: AppLayout, Dashboard, Jobs, Courses
+src/components/      shared pieces, including Hud and the pipeline progress
+src/i18n/            ar.json and en.json, kept at exact key parity
+api/                 serverless functions — the demo backend on Vercel
+dev/site-plugin.ts   the dev backend: serves the site and implements the same endpoints
+</code></pre>
+<p>There used to be a mock client chosen when no API URL was set. It is gone: dev now serves real
+endpoints, so there is one code path in every environment. That branch had already caused a bug — the
+mock's <code>session()</code> always returned null, so a user who had just logged in on the site was bounced
+straight back to it.</p>
+<hr />
+<h2>6. What is real, and what is simulated</h2>
+<p><strong>Read this before demoing.</strong> Being straight about it is the brand; a judge who catches an overclaim is
+the one user Itqan is built not to lose.</p>
+<h3>Real</h3>
+<ul>
+<li>The whole front end: every screen, state, language, theme, and the responsive and RTL behaviour.</li>
+<li>Authentication as a mechanism. The token is genuinely HMAC signed, genuinely verified, genuinely
+    expires, and the signature comparison is constant time.</li>
+<li>The session, the language handoff, the routing guards, and resumable onboarding.</li>
+<li>Upload progress. That bar is the real number of bytes sent.</li>
+</ul>
+<h3>Simulated, in this repo</h3>
+<ul>
+<li><strong>There is no database.</strong> Nothing persists anywhere. Everything that looks like storage is a cookie:<ul>
+<li>the session is a signed cookie;</li>
+<li>"this account has finished onboarding" is not a row — <code>POST /api/profile</code> re-issues a <strong>new session
+    cookie with the flag flipped</strong>;</li>
+<li>onboarding progress is a cookie on the app's domain.</li>
+</ul>
+</li>
+<li><strong>Uploaded bytes are discarded.</strong> <code>POST /api/documents</code> keeps the name, size and kind, and throws the
+    file away. There is no object store wired up, and pretending otherwise would hide that work rather
+    than do it.</li>
+<li><strong>The pipeline is on a timer.</strong> It runs for seven seconds and moves through reading → translating →
+    matching → done. Progress is computed from a timestamp encoded in the job id, so it stays correct
+    across cold starts and different serverless instances without any store.</li>
+<li><strong>The results are fixtures.</strong> Real shaped on purpose: Omani employers, mixed Arabic and English
+    strings, long names. And <strong>deliberately imperfect</strong> — the birth date comes back at 0.71 confidence and
+    two skills are shaky, so "Suggested — confirm" is a normal path in the demo rather than a rare one.</li>
+<li><strong>Sign ups are not stored.</strong> Anyone who signs up gets a valid session; their details ride in the signed
+    token. There is nowhere to store them.</li>
+</ul>
+<h3>The important nuance</h3>
+<p>On the <strong>VPS</strong>, the deploy ships only the built static files. The <code>api/</code> folder is <strong>not</strong> deployed
+there — Caddy routes <code>/api</code> to the real backend, which is a separate Docker stack in another repo. So
+<code>Onboarding/api/*</code> is the demo backend <strong>for Vercel</strong>, and the contract in <code>src/api/types.ts</code> is what the
+real backend must implement.</p>
+<hr />
+<h2>7. Deployment</h2>
+<p><code>.github/workflows/deploy.yml</code>, on push to <code>main</code>. It is gated on the full test suite because a single
+VPS has no per-PR preview URLs, so the tests are the safety net a CDN preview would otherwise be.</p>
+<ol>
+<li>Typecheck, then <strong>i18n parity</strong> — Arabic and English must have exactly equal keys, because a missing
+      key renders as a raw string like <code>dash.readinessUnknown</code> to a user.</li>
+<li>Playwright E2E across Chromium, Firefox and WebKit.</li>
+<li>Build both, with the deploy specific config:<ul>
+<li><code>ITQAN_SITE_URL</code> bakes into canonical URLs, hreflang and the sitemap, so it must be present at build
+      time;</li>
+<li><code>VITE_APP_BASE=/app/</code> mounts the app under <code>/app/</code> — both its asset URLs and its router basename.
+      Wrong here means every asset 404s and the page is blank;</li>
+<li><code>VITE_SITE_SAME_ORIGIN=1</code> makes links to the site relative, because one host serves both.</li>
+</ul>
+</li>
+<li>Assemble one tree: site at the root, app under <code>/app/</code>.</li>
+<li>Rsync to the VPS with <code>--delay-updates</code>, so no request is ever served a half copied site.</li>
+<li><strong>Smoke test</strong> <code>/</code>, <code>/app/</code> and <code>/api/health</code> — proving the deploy serves, rather than declaring
+      success because rsync exited 0.</li>
+</ol>
+<p>Set <code>ITQAN_AUTH_SECRET</code> on <strong>both</strong> projects to harden the token signing. The fallback keeps the demo
+working out of the box and is safe only because every account and record here is fake.</p>
+<p><code>api/_lib/auth.js</code> is <strong>duplicated verbatim</strong> in the site and the app. Two Vercel projects cannot import
+across their roots and a shared package would mean an install step. <strong>If you change one, change the
+other.</strong></p>
+<hr />
+<h2>8. Design decisions, and why</h2>
+<p><strong>Hud is absent from the confirmation screen, the dashboard, roles and courses.</strong> Locked brand rule: the
+mascot never appears beside a verdict, a score, a real match, or anything a user will act on, because a
+cartoon bird next to evidence reframes it as a guess. He belongs to the upload and reading screens, and
+his pose tracks the pipeline — <code>analyzing</code> while it runs, <code>error</code> if it fails, <code>celebrating</code> when it
+lands.</p>
+<p><strong>Instruction boxes are speech bubbles.</strong> A bubble reads as someone talking to you rather than a system
+notice. On wide screens he is large with the bubble beneath him, tail pointing up at his beak; on a
+phone it becomes a compact row with the tail pointing sideways, because vertical space is the scarce
+resource there. Every line he says also exists in the heading or body copy — he is <code>aria-hidden</code>, and a
+screen reader user must lose nothing.</p>
+<p><strong>One drop area, not one slot per document type.</strong> Six labelled dropzones would be a wall of empty boxes
+most users never fill. Only the CV is required, and the requirement is explained next to the button it
+blocks.</p>
+<p><strong>Dashboard order</strong>: where you stand → highest yield skills → skills to unlock → job postings. What is
+kept from the capability first argument is the framing rather than the sequence: the readiness number
+never appears alone, and gaps stay "to unlock" with a plus icon rather than a deficit in a danger hue.</p>
+<p><strong>The sidebar collapses to an icon rail</strong> (button, or <code>[</code>), and the choice is remembered — someone who
+wants the wide view wants it every time. Labels are removed from the flow rather than hidden, so a
+screen reader cannot read a label nobody can see.</p>
+<p><strong>Nav order is the journey</strong>: Dashboard, Courses, Job postings. Postings sit last because they are the
+destination, not the starting point.</p>
+<p><strong>There is no hamburger.</strong> A drawer hiding three destinations costs a tap to save nothing. The account
+menu <em>is</em> a dropdown, because it holds a destructive action; it closes on Escape, on outside click, on
+selection, and when focus leaves.</p>
+<p><strong>Course prices are large and near the top.</strong> Cost is the second thing anyone wants to know, and a
+product that refuses affiliate commissions has no reason to bury it. Free is stated as a word, not
+"0.000 OMR", which reads as an oversight.</p>
+<p><strong>Both browse pages carry filters and a "look for new" action.</strong> These lists come from sources that
+change on their own schedule, so a user waiting on a posting needs a way to ask rather than reload and
+hope. The result is always reported, including "nothing new" — the honest and most common answer, and
+the one a silent spinner leaves ambiguous.</p>
+<hr />
+<h2>9. Interrupted onboarding</h2>
+<p>Progress saves after every meaningful change, debounced. Because it goes through the API rather than to
+this browser's local storage, starting on a phone and finishing on a laptop works.</p>
+<p>Returning is <strong>offered</strong>, never forced. Landing on a later step with no in-memory state does not bounce
+the user to step one; it shows the offer on the step they were on, because a phone browser reloads a
+backgrounded tab and bouncing meant the screen "did not load" on exactly the devices that discard tabs.</p>
+<hr />
+<h2>10. Verified</h2>
+<p>Screenshots time out on this machine (the browser pane does not composite), so verification was done
+through DOM geometry and computed styles. That is stated rather than implied.</p>
+<ul>
+<li>Signed up and logged in <strong>through the site's own forms</strong>; both journeys walked end to end. Logout
+    returns to the site's login page in the right language and clears the session.</li>
+<li>Endpoints checked directly: 401 on bad password, 409 on duplicate email, 401 with no session.</li>
+<li><strong>Contrast:</strong> every text node on every route, light and dark, against composited backgrounds. Zero
+    failures. <strong>Targets:</strong> every non-inline control ≥ 44px.</li>
+<li><strong>RTL:</strong> direction flips, layout mirrors, the bubble tail mirrors, Arabic gets its larger size and 1.75
+    line height, no physical CSS properties, mixed strings isolated with <code>&lt;bdi&gt;</code>.</li>
+<li>No horizontal overflow at 375 / 585 / 1280. Both dictionaries at exact key parity, none unused.</li>
+</ul>
+<hr />
+<h2>11. Open items</h2>
+<ul>
+<li><strong><code>--color-text-muted</code> fails AA on two of three surfaces</strong> — 4.32:1 on paper, 3.70:1 on sand, against a
+    4.5 floor; it passes only on white. Tokens are locked, so muted is used only inside white cards here.
+    The design system needs a muted step that clears 4.5 on paper.</li>
+<li><code>components.md</code> specifies gold text for ghost buttons, contradicting the locked "gold is never body
+    text on light". The locked rule was followed; worth reconciling upstream.</li>
+<li><strong>The August 2026 palette revision has not been applied here.</strong> <code>src/styles/tokens.css</code> still carries
+    the retired gold <code>#D08C2F</code> and the old ramp. The final brand gold is <code>#F39F1C</code>.</li>
+<li><code>react-router-dom@7.18.1</code> carries a high advisory for <strong>RSC mode</strong>, which is not reachable in library
+    mode.</li>
+<li>Saved roles are component state; persisting them needs a real endpoint.</li>
+<li>Rubik loads from the Google Fonts CDN. Self host before production.</li>
+<li>In production the real API must implement the contract in <code>src/api/types.ts</code>. <code>dev/site-plugin.ts</code> does
+    not ship, and <code>api/</code> is Vercel only.</li>
+</ul></body></html>

@@ -24,7 +24,7 @@ import {
   AlertCircle, Check, FileText, Image as ImageIcon, Paperclip, RotateCw, Upload as UploadIcon, X,
 } from 'lucide-react';
 import { useI18n } from '../i18n';
-import { DOCUMENT_KINDS, REQUIRED_KIND } from '../api';
+import { DOCUMENT_KINDS, REQUIRED_KIND, normaliseKind } from '../api';
 import type { DocumentKind, UploadedDocument } from '../api';
 import { useApi } from '../state/api';
 
@@ -39,15 +39,17 @@ const OK_EXT = /\.(pdf|png|jpe?g|webp|docx?)$/i;
  * and an underscore is a word character, so \bcv\b would never fire on exactly
  * the names people actually use. The separator class is explicit instead.
  */
-const GUESSES: [RegExp, DocumentKind][] = [
-  [/transcript|kashf|كشف|درجات|marks|grades/i, 'transcript'],
-  [/(^|[^a-z])cv([^a-z]|$)|resume|résumé|سيرة/i, 'cv'],
-  [/recommend|reference|توصية/i, 'recommendation'],
-  [/certification|course|training|دورة/i, 'certification'],
-  [/certificate|شهادة|diploma|degree|تخرج/i, 'certificate'],
-];
+/**
+ * Only two kinds exist, so this is one question: is it a transcript?
+ * Anything else is treated as the CV, because that is the document the screen
+ * is asking for and the one the flow is blocked on — and the guess is shown
+ * in a dropdown the user can correct in one tap, so a wrong guess costs a tap
+ * rather than a failed run.
+ */
+const TRANSCRIPT_HINTS = /transcript|kashf|كشف|درجات|marks|grades|academic|record/i;
+
 const guessKind = (name: string): DocumentKind =>
-  GUESSES.find(([re]) => re.test(name))?.[1] ?? 'other';
+  (TRANSCRIPT_HINTS.test(name) ? 'transcript' : 'cv');
 
 /**
  * A row in the list. `file` is absent for documents restored from saved
@@ -76,7 +78,7 @@ export const itemsFromDocuments = (docs: UploadedDocument[]): Item[] =>
     localId: d.id,
     name: d.fileName,
     sizeBytes: d.sizeBytes,
-    kind: d.kind,
+    kind: normaliseKind(d.kind),
     progress: 1,
     status: 'done',
     uploaded: d,

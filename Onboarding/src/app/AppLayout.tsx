@@ -13,10 +13,10 @@
  * outside click, selection, and focus leaving — see Menu.tsx.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet } from 'react-router-dom';
 import {
   BookOpen, Briefcase, ExternalLink, LayoutDashboard, LogOut,
-  PanelLeftClose, User as UserIcon,
+  PanelLeftClose, RefreshCw, User as UserIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useI18n } from '../i18n';
@@ -36,6 +36,9 @@ const DESTS: { to: string; key: string; icon: LucideIcon }[] = [
   { to: '/dashboard', key: 'nav.dashboard', icon: LayoutDashboard },
   { to: '/courses', key: 'nav.courses', icon: BookOpen },
   { to: '/jobs', key: 'nav.jobs', icon: Briefcase },
+  // Last: it is a place you visit occasionally to correct something, not part
+  // of the daily loop the three above form.
+  { to: '/profile', key: 'nav.profile', icon: UserIcon },
 ];
 
 const COLLAPSE_KEY = 'itqan.sidebar.collapsed';
@@ -88,7 +91,10 @@ function AccountMenu() {
 }
 
 export function AppLayout() {
-  const { t, locale } = useI18n();
+  // `locale` is intentionally not read here: the mark now routes to /dashboard
+  // rather than to a locale-prefixed marketing URL. The account menu still uses
+  // it for the "visit the site" item, where leaving the product is deliberate.
+  const { t } = useI18n();
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     try { return localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { return false; }
   });
@@ -122,11 +128,15 @@ export function AppLayout() {
         data-collapsed={collapsed || undefined}
       >
         <div className="sidebar__head">
-          {/* A plain anchor, not a router link: the mark leads Home, and Home
-              is the marketing site — a different app on the same product. */}
-          <a href={siteHome(locale)} className="brand brand--side" aria-label={t('a11y.homeLink')}>
+          {/* A ROUTER link to the dashboard, not an anchor to the marketing site.
+              For a signed-in user "home" is the dashboard: they live in here, and
+              sending them out to the public landing page — then making them find
+              their way back in — is a detour from the one screen the mark should
+              return them to. The marketing site is still reachable from the
+              account menu, where leaving the product is an explicit choice. */}
+          <Link to="/dashboard" className="brand brand--side" aria-label={t('a11y.dashboardLink')}>
             <Logo variant={collapsed ? 'icon' : 'lockup'} />
-          </a>
+          </Link>
           <button
             type="button"
             className="sidebar__collapse"
@@ -152,6 +162,19 @@ export function AppLayout() {
               <span className="nav__label">{t(key)}</span>
             </NavLink>
           ))}
+          {/* Re-upload. Deliberately NOT one of the destinations above: it is an
+              action, and styling it as a fourth nav row would bury the thing the
+              user came looking for. Highlighted, and it keeps its label when the
+              sidebar collapses to icons via the same title/aria pattern. */}
+          <NavLink
+            to="/documents"
+            className="nav__item nav__item--action"
+            aria-label={collapsed ? t('nav.documents') : undefined}
+            title={collapsed ? t('nav.documents') : undefined}
+          >
+            <RefreshCw size={18} aria-hidden="true" />
+            <span className="nav__label">{t('nav.documents')}</span>
+          </NavLink>
         </div>
 
         <div className="spacer" />
@@ -168,9 +191,9 @@ export function AppLayout() {
       <div className="main">
         {/* Phones get the mark and the same controls in a compact header. */}
         <header className="topbar" data-mobile-header>
-          <a href={siteHome(locale)} className="brand" aria-label={t('a11y.homeLink')}>
+          <Link to="/dashboard" className="brand" aria-label={t('a11y.dashboardLink')}>
             <Logo variant="icon" />
-          </a>
+          </Link>
           <span className="spacer" />
           <LangToggle compact />
           <ThemeToggle compact />

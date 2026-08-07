@@ -39,7 +39,14 @@ const enHref = alternatePath(Astro.url.pathname, 'en');
   document.querySelectorAll<HTMLAnchorElement>('.lang-switch__opt').forEach((opt) => {
     opt.addEventListener('click', () => {
       try {
-        localStorage.setItem('itqan-lang', opt.dataset.lang ?? '');
+        var chosen = opt.dataset.lang ?? '';
+        localStorage.setItem('itqan-lang', chosen);
+        /* The app reads this key too, so a choice made here survives the
+           crossing into onboarding. */
+        localStorage.setItem('itqan.locale', chosen);
+        /* And the services answer in whatever the cookie says, so it has to
+           move with the toggle or the UI would flip while the data did not. */
+        document.cookie = 'itqan_locale=' + chosen + '; Path=/; Max-Age=31536000; SameSite=Lax';
       } catch (e) {
         /* private mode: navigation still works */
       }
