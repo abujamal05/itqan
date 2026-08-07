@@ -33,6 +33,7 @@ import { AppLayout } from './app/AppLayout';
 import { Dashboard } from './app/Dashboard';
 import { Jobs } from './app/Jobs';
 import { Courses } from './app/Courses';
+import { Documents } from './app/Documents';
 
 /** Full-page hold while the session is read. Deliberately quiet. */
 function Booting() {
@@ -66,6 +67,25 @@ function RequireOnboarding({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+/**
+ * The confirm step, which two different users can legitimately reach: someone
+ * finishing onboarding, and someone who has already finished and is re-reading
+ * replaced documents from /documents.
+ *
+ * The plain onboarding guard cannot express that — it sends every finished user
+ * to the dashboard, which would make the re-upload button a dead end. The extra
+ * door only opens while a re-read is actually in flight, so a finished user
+ * still cannot wander back into the flow by typing the URL.
+ */
+function RequireConfirmable({ children }: { children: ReactNode }) {
+  const { user, booting } = useAuth();
+  const { reuploading } = useOnboarding();
+  if (booting) return <Booting />;
+  if (!user) return <ToSiteLogin />;
+  if (user.onboarded && !reuploading) return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+}
+
 /** Signed in, and finished. */
 function RequireApp({ children }: { children: ReactNode }) {
   const { user, booting } = useAuth();
@@ -90,11 +110,15 @@ function RequireApp({ children }: { children: ReactNode }) {
  */
 function RequireFlow({ children }: { children: ReactNode }) {
   const { entry, documents, analysis, resumable, checking } = useOnboarding();
+  const { user } = useAuth();
   const started = entry === 'manual' || documents.length > 0 || !!analysis;
   if (started) return <>{children}</>;
   if (checking) return <Booting />;
   if (resumable) return <ResumeGate />;
-  return <Navigate to="/upload" replace />;
+  // Step one differs by user: onboarding starts at /upload, but a finished user
+  // who lost their re-read state belongs on /documents. Sending them to /upload
+  // would bounce them to the dashboard and lose the action they just took.
+  return <Navigate to={user?.onboarded ? '/documents' : '/upload'} replace />;
 }
 
 /**
@@ -174,12 +198,13 @@ export default function App() {
                   <Routes>
                     <Route path="/upload" element={<RequireOnboarding><Upload /></RequireOnboarding>} />
                     <Route path="/questions" element={<RequireOnboarding><RequireFlow><Questions /></RequireFlow></RequireOnboarding>} />
-                    <Route path="/confirm" element={<RequireOnboarding><RequireFlow><Confirm /></RequireFlow></RequireOnboarding>} />
+                    <Route path="/confirm" element={<RequireConfirmable><RequireFlow><Confirm /></RequireFlow></RequireConfirmable>} />
 
                     <Route element={<RequireApp><AppLayout /></RequireApp>}>
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/jobs" element={<Jobs />} />
                       <Route path="/courses" element={<Courses />} />
+                      <Route path="/documents" element={<Documents />} />
                     </Route>
 
                     {/* Entry point: the guards decide where this actually lands. */}

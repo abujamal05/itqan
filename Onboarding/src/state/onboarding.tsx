@@ -63,6 +63,16 @@ interface OnboardingValue {
   resume: () => void;
 
   begin: (documents: UploadedDocument[]) => Promise<void>;
+  /**
+   * Same as `begin`, for a user who has ALREADY finished onboarding and is
+   * replacing their documents from the dashboard. It is a separate entry point
+   * rather than a flag on `begin` because the two differ in what they may
+   * touch: this one must not write onboarding progress (that record belongs to
+   * a flow this user has completed) and must not move the step counter.
+   */
+  beginReupload: (documents: UploadedDocument[]) => Promise<void>;
+  /** True while a finished user is re-reading their documents. */
+  reuploading: boolean;
   startManual: () => void;
   /** Merges one answer; the rest are left alone. */
   setPreference: <K extends keyof Preferences>(key: K, value: Preferences[K]) => void;
@@ -89,6 +99,7 @@ export function OnboardingProvider({
   const [preferences, setPreferences] = useState<Preferences>(emptyPreferences);
   const [profile, setProfile] = useState<ConfirmedProfile | null>(null);
   const [resumable, setResumable] = useState<OnboardingProgress | null>(null);
+  const [reuploading, setReuploading] = useState(false);
   /**
    * Which value of `enabled` the saved-progress lookup has answered for, or
    * null before it has run at all.
@@ -229,6 +240,21 @@ export function OnboardingProvider({
     setJobId(id);
   }, [api]);
 
+  /**
+   * Re-read for a finished user. Deliberately does NOT set step.current: the
+   * step counter drives the onboarding progress record, and this user has no
+   * onboarding left to record. Everything else is the same pipeline, so the
+   * confirm screen and the poll behave exactly as they do first time round.
+   */
+  const beginReupload = useCallback(async (docs: UploadedDocument[]) => {
+    setReuploading(true);
+    setEntry('document');
+    setDocuments(docs);
+    setAnalysis(null);
+    const { jobId: id } = await api.startAnalysis(docs.map((d) => d.id));
+    setJobId(id);
+  }, [api]);
+
   const startManual = useCallback(() => {
     stopPolling();
     setEntry('manual');
@@ -286,10 +312,10 @@ export function OnboardingProvider({
     failed: !!failed,
     preferences, profile,
     resumable, checking, dismissResume, resume,
-    begin, startManual, setPreference,
+    begin, beginReupload, reuploading, startManual, setPreference,
     completeProfile, reset,
   }), [entry, documents, jobId, analysis, settled, ready, failed, preferences, profile,
-       resumable, checking, dismissResume, resume, begin, startManual, setPreference,
+       resumable, checking, dismissResume, resume, begin, beginReupload, reuploading, startManual, setPreference,
        completeProfile, reset]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

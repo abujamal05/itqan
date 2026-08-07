@@ -16,7 +16,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import {
   BookOpen, Briefcase, ExternalLink, LayoutDashboard, LogOut,
-  PanelLeftClose, User as UserIcon,
+  PanelLeftClose, RefreshCw, User as UserIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useI18n } from '../i18n';
@@ -159,6 +159,19 @@ export function AppLayout() {
               <span className="nav__label">{t(key)}</span>
             </NavLink>
           ))}
+          {/* Re-upload. Deliberately NOT one of the destinations above: it is an
+              action, and styling it as a fourth nav row would bury the thing the
+              user came looking for. Highlighted, and it keeps its label when the
+              sidebar collapses to icons via the same title/aria pattern. */}
+          <NavLink
+            to="/documents"
+            className="nav__item nav__item--action"
+            aria-label={collapsed ? t('nav.documents') : undefined}
+            title={collapsed ? t('nav.documents') : undefined}
+          >
+            <RefreshCw size={18} aria-hidden="true" />
+            <span className="nav__label">{t('nav.documents')}</span>
+          </NavLink>
         </div>
 
         <div className="spacer" />

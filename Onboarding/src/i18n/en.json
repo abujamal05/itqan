@@ -194,5 +194,13 @@
   "q.openToOtherRoles.optHelp.yes": "Related roles appear alongside the ones you asked for.",
   "q.openToOtherRoles.opt.no": "No, keep it close to what I said",
   "q.openToOtherRoles.optHelp.no": "Only roles near the title you gave.",
-  "a11y.dashboardLink": "Itqan, go to your dashboard"
+  "a11y.dashboardLink": "Itqan, go to your dashboard",
+  "nav.documents": "Update documents",
+  "documents.title": "Your documents",
+  "documents.sub": "Replace your CV or transcript and Itqan will read them again. Your gap, courses and job matches update with what it finds.",
+  "documents.privacy": "Your documents stay private to your account. You will review everything Itqan reads before anything changes.",
+  "documents.cta": "Read my documents again",
+  "documents.reviewNote": "Nothing changes until you confirm what Itqan read.",
+  "documents.failed": "Itqan could not start reading",
+  "documents.failedHelp": "The documents were uploaded. Try reading them again in a moment."
 }

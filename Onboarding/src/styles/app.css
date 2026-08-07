@@ -546,3 +546,20 @@
   /* A third column earns its place once there is genuinely room for it. */
   .grid--2 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+
+/* The sidebar's one ACTION, as opposed to its destinations.
+   Tinted and bordered so it reads as a button in a list of links, which is what
+   it is: the nav rows change where you are, this one changes your data. It sits
+   below them with a little air, so it is never mistaken for a fourth page. */
+.nav__item--action {
+  margin-block-start: var(--space-3);
+  background: var(--color-accent-tint);
+  border: 1px dashed var(--color-accent);
+  color: var(--color-text);
+  font-weight: var(--weight-medium);
+}
+.nav__item--action:hover { background: var(--color-accent-tint); border-style: solid; }
+/* Current-page styling would claim it is a destination; it keeps the accent
+   rail only, so "you are here" still reads while on the screen. */
+.nav__item--action[aria-current='page'] { box-shadow: inset 3px 0 0 var(--color-accent); }
+[dir='rtl'] .nav__item--action[aria-current='page'] { box-shadow: inset -3px 0 0 var(--color-accent); }
