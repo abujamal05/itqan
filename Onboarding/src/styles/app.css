@@ -563,3 +563,24 @@
    rail only, so "you are here" still reads while on the screen. */
 .nav__item--action[aria-current='page'] { box-shadow: inset 3px 0 0 var(--color-accent); }
 [dir='rtl'] .nav__item--action[aria-current='page'] { box-shadow: inset -3px 0 0 var(--color-accent); }
+
+/* ---------------------------------------------------------------- PROFILE -- */
+/* Label and value on one line while there is room, stacked when there is not.
+   A definition list layout in flexbox: the label keeps a predictable column so
+   the eye can run down it, and the value takes the rest. */
+.profile__row {
+  display: flex; flex-wrap: wrap; align-items: baseline;
+  gap: var(--space-2) var(--space-4);
+  padding-block: var(--space-2);
+  border-block-end: 1px solid var(--color-border);
+}
+.profile__row:last-child { border-block-end: 0; }
+.profile__label {
+  flex: 0 0 auto; min-inline-size: 10rem;
+  font-size: var(--text-sm); color: var(--color-text-muted);
+}
+.profile__value { flex: 1 1 12rem; min-inline-size: 0; overflow-wrap: anywhere; }
+/* Missing is stated, never blank: an empty row reads as a broken screen, and
+   the whole point of this one is to show what is still needed. */
+.profile__value--missing { color: var(--color-text-muted); font-style: italic; }
+.profile__icon { vertical-align: -3px; margin-inline-end: var(--space-2); color: var(--color-accent-hover); }

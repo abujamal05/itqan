@@ -44,6 +44,8 @@ const accounts: Account[] = [
 
 /** Progress and profile per account, so a reload does not restart onboarding. */
 const progress = new Map<string, unknown>();
+/** Confirmed profiles, so the profile screen can read one back. */
+const profiles = new Map<string, Record<string, unknown>>();
 
 /** How long the fake pipeline takes end to end, and the jobs in flight. */
 /**
@@ -329,8 +331,16 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
         // backend's behaviour: the answers in this payload are what shape the
         // matching, so the matching cannot have run before it arrives.
         if (url === '/api/profile' && req.method === 'POST') {
-          await body(req);
+          const submitted = parseBody(await body(req), req.headers['content-type'] ?? '');
           me.onboarded = true;
+          // Remember what was confirmed, and which documents it came from, so
+          // the profile screen has something to read back. Production reads
+          // these from its profiles table; the SHAPE is the contract.
+          profiles.set(me.id, {
+            ...(submitted as unknown as Record<string, unknown>),
+            documents: (progress.get(me.id) as { documents?: unknown[] } | undefined)?.documents ?? [],
+            updatedAt: Date.now(),
+          });
           progress.delete(me.id);
           const paused = [...jobs_.entries()].reverse()
             .find(([, j]) => !j.bad && j.confirmedAt === undefined
@@ -338,6 +348,26 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           if (!paused) return json(res, 200, { ok: true });
           paused[1].confirmedAt = Date.now();
           return json(res, 200, { ok: true, jobId: paused[0] });
+        }
+
+        if (url === '/api/profile' && req.method === 'GET') {
+          const stored = profiles.get(me.id);
+          if (!stored) return json(res, 404, { error: 'no_profile' });
+          return json(res, 200, { ...stored, email: me.email });
+        }
+
+        /* Edits from the profile screen. Distinct from POST: this one does NOT
+           start the pipeline, because correcting a birth date is not a reason to
+           re-run the matching. */
+        if (url === '/api/profile' && req.method === 'PUT') {
+          const edited = parseBody(await body(req), req.headers['content-type'] ?? '');
+          const prev = profiles.get(me.id) ?? {};
+          profiles.set(me.id, {
+            ...prev,
+            ...(edited as unknown as Record<string, unknown>),
+            updatedAt: Date.now(),
+          });
+          return json(res, 200, { ok: true });
         }
 
         return next();

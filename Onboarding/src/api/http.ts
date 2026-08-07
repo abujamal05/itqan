@@ -13,7 +13,7 @@
  */
 import type {
   AnalysisJob, ConfirmProfileResult, ConfirmedProfile, Course, DashboardData, ItqanApi,
-  JobMatch, OnboardingProgress, Session, UploadedDocument,
+  JobMatch, OnboardingProgress, Session, StoredProfile, UploadedDocument,
 } from './types';
 import { takeHandoffToken } from '../lib/site';
 
@@ -110,6 +110,14 @@ export function createHttpApi(): ItqanApi {
     },
     confirmProfile(profile: ConfirmedProfile, signal) {
       return req<ConfirmProfileResult>('/profile', { method: 'POST', body: JSON.stringify(profile), signal });
+    },
+    getProfile(signal) {
+      // A missing profile is a normal answer (nothing confirmed yet), not an
+      // error the screen should render as a failure.
+      return req<StoredProfile | null>('/profile', { signal }).catch(() => null);
+    },
+    updateProfile(profile: ConfirmedProfile, signal) {
+      return req<{ ok: true }>('/profile', { method: 'PUT', body: JSON.stringify(profile), signal });
     },
     getDashboard(signal) { return req<DashboardData>('/dashboard', { signal }); },
     getJobs(signal) { return req<JobMatch[]>('/jobs', { signal }); },

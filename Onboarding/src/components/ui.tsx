@@ -2,7 +2,7 @@
  * Shared primitives. Each one carries its full interaction-state set in
  * app.css; this file only decides structure and semantics.
  */
-import type { ButtonHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'react';
+import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'react';
 import { useId } from 'react';
 import { AlertCircle, Check, HelpCircle, Info, Plus, X } from 'lucide-react';
 import { useI18n } from '../i18n';
@@ -141,6 +141,37 @@ export function TextField({
       <textarea
         id={id}
         className="textarea"
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errId : undefined}
+        {...rest}
+      />
+      {hint && !error && <p className="field__hint">{hint}</p>}
+      {error && (
+        <p id={errId} className="field__error">
+          <AlertCircle size={14} aria-hidden="true" />
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Single line field. TextField is a textarea, which cannot carry a `type`, so
+ * anything dated or short belongs here instead. Same shell and same states, so
+ * the two are interchangeable to a reader of the markup.
+ */
+export function InputField({
+  label, hint, error, ...rest
+}: FieldShell & InputHTMLAttributes<HTMLInputElement>) {
+  const id = useId();
+  const errId = `${id}-err`;
+  return (
+    <div className="field">
+      <label className="field__label" htmlFor={id}>{label}</label>
+      <input
+        id={id}
+        className="input"
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? errId : undefined}
         {...rest}

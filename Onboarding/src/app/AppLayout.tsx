@@ -36,6 +36,9 @@ const DESTS: { to: string; key: string; icon: LucideIcon }[] = [
   { to: '/dashboard', key: 'nav.dashboard', icon: LayoutDashboard },
   { to: '/courses', key: 'nav.courses', icon: BookOpen },
   { to: '/jobs', key: 'nav.jobs', icon: Briefcase },
+  // Last: it is a place you visit occasionally to correct something, not part
+  // of the daily loop the three above form.
+  { to: '/profile', key: 'nav.profile', icon: UserIcon },
 ];
 
 const COLLAPSE_KEY = 'itqan.sidebar.collapsed';

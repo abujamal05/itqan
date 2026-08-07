@@ -172,6 +172,22 @@ export interface ConfirmProfileResult {
   jobId?: string;
 }
 
+/**
+ * The stored profile, as the profile screen reads it back.
+ *
+ * `ConfirmedProfile` is what the user SENDS at the end of onboarding; this is
+ * what comes back afterwards, and the two differ deliberately. The documents
+ * are included because the profile screen has to show what the answers were
+ * derived from, and `email` comes from the ACCOUNT rather than the extraction:
+ * it is the one field on the screen the pipeline must never be able to rewrite.
+ */
+export interface StoredProfile extends ConfirmedProfile {
+  email: string;
+  documents: UploadedDocument[];
+  /** When the profile was last confirmed. Null if it never has been. */
+  updatedAt: number | null;
+}
+
 /** Provenance attached to anything recommended. Never optional in practice. */
 export interface Source {
   name: string;
@@ -306,6 +322,10 @@ export interface ItqanApi {
   startAnalysis(documentIds: string[], signal?: AbortSignal): Promise<{ jobId: string }>;
   getAnalysis(jobId: string, signal?: AbortSignal): Promise<AnalysisJob>;
   confirmProfile(profile: ConfirmedProfile, signal?: AbortSignal): Promise<ConfirmProfileResult>;
+  /** Reads the stored profile back. Null when nothing has been confirmed yet. */
+  getProfile(signal?: AbortSignal): Promise<StoredProfile | null>;
+  /** Saves edits made from the profile screen, outside the onboarding flow. */
+  updateProfile(profile: ConfirmedProfile, signal?: AbortSignal): Promise<{ ok: true }>;
   getDashboard(signal?: AbortSignal): Promise<DashboardData>;
   getJobs(signal?: AbortSignal): Promise<JobMatch[]>;
   getCourses(signal?: AbortSignal): Promise<Course[]>;
