@@ -71,9 +71,9 @@ product, and it is licensed.
   eye knows what's coming. Subtle shimmer; static under reduced motion.
 - **Hud is welcome here** — the `analyzing` pose, animated, beside the stage list. He leaves the moment
   results appear; he must not be on screen next to a match.
-- **Let the gap moment land (Peak–End). [E]** When the correct transcript→skill translation appears — the
-  product's emotional peak — reveal it with `--duration-slower`, `--ease-out-expo`, and a brief hold, not a
-  throwaway fade. A single `--glow-gold` pulse on the revealed card is licensed here and nowhere else in the
+- **Let the gap moment land (Peak–End). [E]** When the distance to the target role resolves and the path
+  across it appears — the product's emotional peak — reveal it with `--duration-slower`,
+  `--ease-out-expo`, and a brief hold, not a throwaway fade. A single `--glow-gold` pulse on the revealed card is licensed here and nowhere else in the
   results view. The confidence number inside it still does not animate.
 - **Failure is a state, not a freeze.** On mid-pipeline error, animate back to the last good step with a
   retry affordance; never leave a dead spinner. (Mirrors the LangGraph checkpoint-resume in the backend.)

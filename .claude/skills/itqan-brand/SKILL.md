@@ -59,17 +59,31 @@ cannot be checked.
 
 ## 2. Positioning
 
-Itqan does not attack graduate unemployment in the aggregate. It attacks the **structural mismatch
-between what a transcript says and what a labour market rewards** — the gap where a graduate cannot
-translate "Database Systems II" into the word a recruiter searches for, "SQL".
+Itqan does not attack graduate unemployment in the aggregate. It attacks the **distance between where a
+graduate is and the role they actually want** — a distance nobody measures for them, so they discover
+it only after years of applying and being turned down.
+
+Itqan starts from **where the graduate wants to go**, not from a job listing. They name a target role,
+or Itqan suggests roles they are already close to. Then it does three things:
+
+1. **Measures the gap** against live Gulf demand, not a generic checklist of what a role supposedly needs.
+2. **Lays out the shortest path** across it, in real courses.
+3. **Matches the jobs that fit them now**, each with a plain reason.
+
+> **Reading the transcript and CV is how the measuring starts. It is not the product.**
+>
+> This sentence exists because the old positioning called Itqan "a translation engine", and that framing
+> keeps creeping back into copy written from this skill. Translating a course into a skill is one step
+> inside step one. **The product is the gap, the path, and the fit.** Any page, deck or headline that
+> makes decoding a transcript the story is reproducing a superseded pitch.
 
 **The thesis:** the commercial opportunity is not the unemployment rate — it is that Gulf nationalisation
-policy turns skills-translation into a mandatory, funded institutional workflow, and no one is automating
-it in Arabic.
+policy turns getting nationals into real roles into a mandatory, funded institutional workflow, and no
+one is doing it against live regional demand.
 
-**Scope boundary.** Itqan is a *translation* engine — not a job board, not a course shop. Anything that
-does not help a graduate read their own evidence more accurately is out of scope. Beachhead Oman;
-expansion Saudi Arabia.
+**Scope boundary.** Itqan is a *career navigator* — not a job board, not a course shop, not a CV parser.
+Anything that does not help a graduate see the distance to the role they want, or close it, is out of
+scope. Beachhead Oman; expansion Saudi Arabia.
 
 ## 3. Personality
 
