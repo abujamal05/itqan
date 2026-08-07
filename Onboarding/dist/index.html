@@ -6,7 +6,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#FAF8F3" />
     <title>Itqan — Onboarding</title>
-    <script type="module" crossorigin src="/assets/index-CLlehFA-.js"></script>
+
+    <script>
+      /*
+       * Theme and direction BEFORE first paint.
+       *
+       * React can only set these in an effect, which runs after the first
+       * paint — so a dark mode user crossing from the site into onboarding saw
+       * a white flash, and an Arabic user saw one frame laid out left to right.
+       * That is the "theme and language change during onboarding" report: the
+       * preference was never lost, it was just applied too late to be believed.
+       *
+       * Deliberately duplicated from the site's Base.astro rather than shared:
+       * it must be inline and synchronous in the document head, so it cannot be
+       * imported from anywhere. Keep the two in step.
+       *
+       * `itqan-theme` and `itqan-lang` are the keys the marketing site writes.
+       * One product, one preference, whichever half the user set it on.
+       */
+      (function () {
+        var read = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
+
+        var theme = read('itqan-theme');
+        if (theme !== 'light' && theme !== 'dark') {
+          theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+            ? 'dark' : 'light';
+        }
+        document.documentElement.dataset.theme = theme;
+
+        /* The app's own key wins (an explicit choice made in here), then the
+           site's, then the cookie the session was created with. */
+        var cookie = (document.cookie.match(/(?:^|; )itqan_locale=([^;]*)/) || [])[1];
+        var locale = read('itqan.locale') || read('itqan-lang') || cookie || 'ar';
+        if (locale !== 'ar' && locale !== 'en') locale = 'ar';
+        document.documentElement.lang = locale;
+        document.documentElement.dir = locale === 'ar' ? 'rtl' : 'ltr';
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-BMxmYFTx.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-BF87y8pA.css">
   </head>
   <body>

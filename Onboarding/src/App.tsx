@@ -17,7 +17,7 @@
  */
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useEffect, type ReactNode } from 'react';
-import { I18nProvider, useI18n } from './i18n';
+import { I18nProvider, useI18n, hasStoredLocale } from './i18n';
 import { ThemeProvider } from './lib/theme';
 import { ApiProvider, useApi } from './state/api';
 import { AuthProvider, useAuth } from './state/auth';
@@ -133,7 +133,20 @@ function FollowSessionLocale() {
   const { sessionLocale } = useAuth();
   const { locale, setLocale } = useI18n();
   useEffect(() => {
-    if (sessionLocale && sessionLocale !== locale) setLocale(sessionLocale);
+    /*
+     * The session's language is a FALLBACK, not an instruction.
+     *
+     * It used to be applied unconditionally, which is why the language could
+     * change part way through onboarding: the session carries whichever locale
+     * the account was created in, so a user who signed up on the Arabic site
+     * and then switched to English had their choice overwritten the moment
+     * /auth/session answered. A stored preference is the more recent and more
+     * deliberate signal, so it wins; the session only speaks when nothing has
+     * been chosen on either half of the product.
+     */
+    if (!sessionLocale || sessionLocale === locale) return;
+    if (hasStoredLocale()) return;
+    setLocale(sessionLocale);
     // Runs only when the session first reports a language.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionLocale]);
