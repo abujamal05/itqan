@@ -115,7 +115,7 @@ Drafts/
    ├─ src/api/types.ts           ★ THE CONTRACT — read this first
    ├─ src/api/http.ts            the only client
    ├─ src/screens/               Upload, Questions, Confirm
-   ├─ src/app/                   AppLayout, Dashboard, Jobs, Courses
+   ├─ src/app/                   AppLayout, Dashboard, Jobs, Courses, Documents, Profile
    ├─ src/components/            UI kit, Hud, Journey, MatchCard, CourseCard…
    ├─ src/state/                 api, auth, onboarding providers
    ├─ src/i18n/{ar,en}.json      every string, both languages, exact parity
@@ -135,7 +135,15 @@ Drafts/
 Marketing pages plus the account forms. Arabic and English are separate route trees (`/ar/…`,
 `/en/…`) with `hreflang` alternates. Its job ends at "create a free account".
 
-Pages: home, how it works, proof, privacy, terms, login, signup, forgot password, 404.
+Pages: home, how it works, proof, who we are, privacy, terms, login, signup, forgot password, 404.
+
+Two of those are **reachable only by typing the URL**, on purpose:
+
+- `/who-we-are/` — the team page. Unlinked until the backend exists, at the request of the owner.
+- `/forgot-password/` — built and working, but it cannot send an email yet. A recovery page that
+  silently does nothing is worse than no recovery page: the person using it has already lost access
+  and would wait for a message that never arrives. The link goes back into the login page the day
+  the two endpoints in 9.3 are live, and nothing else has to change.
 
 ### The app (`Onboarding`)
 
@@ -146,6 +154,8 @@ Pages: home, how it works, proof, privacy, terms, login, signup, forgot password
 /dashboard   where you stand
 /courses     courses that close gaps
 /jobs        job postings you match
+/documents   replace the CV or transcript, then re-read them
+/profile     see and correct everything held about you
 ```
 
 There is **no login or sign-up screen in the app, and there must never be one.** The site owns them.
@@ -367,6 +377,8 @@ Auth and the bridge live on the **site**; everything else on the **app**.
 | `POST /api/placeholder/login` | site | FormData `email`, `password` | `200` + session cookie, or `401` |
 | `POST /api/placeholder/signup` | site | FormData `name`, `email`, `password`, `consent` | `200` + cookie, `409` taken, `400` invalid |
 | `GET /api/handoff` | site | session cookie | `302` to app with `?t=<signed token>` |
+| `POST /api/auth/forgot-password` | site | FormData `email` | **always** `200`, **always** the same body |
+| `POST /api/auth/reset-password` | site | FormData `token`, `password` | `200`, or `400`/`410` for a dead token |
 | `GET /api/session[?t=…]` | app | cookie, or handoff token | `Session` or `401` |
 | `POST /api/logout` | app | — | `200`, clears cookie |
 | `GET/PUT/DELETE /api/onboarding/progress` | app | `OnboardingProgress` | resumable progress |
@@ -374,9 +386,18 @@ Auth and the bridge live on the **site**; everything else on the **app**.
 | `POST /api/analysis` | app | `{ documentIds: string[] }` | `{ jobId }` |
 | `GET /api/analysis/:jobId` | app | — | `AnalysisJob` (poll) |
 | `POST /api/profile` | app | `ConfirmedProfile` | `{ ok: true }`, marks onboarded |
+| `GET /api/profile` | app | — | `StoredProfile`, or `204` if nothing confirmed yet |
+| `PUT /api/profile` | app | `ConfirmedProfile` | `{ ok: true }`, a correction, does **not** re-onboard |
 | `GET /api/dashboard` | app | — | `DashboardData` |
 | `GET /api/jobs` | app | — | `JobMatch[]` |
 | `GET /api/courses` | app | — | `Course[]` |
+
+**The two recovery endpoints have a rule the others do not.** `POST /api/auth/forgot-password` must
+answer `200` with an identical body whether or not the address has an account, and must take the same
+time either way. Anything else turns the form into a way to discover who is registered. The page is
+already worded for it ("if that address has an account, a link is on its way"); the backend has to
+match. `POST /api/auth/reset-password` is the opposite: it must be **honest** about a dead token, and
+answer `400` or `410` so the page can say the link expired instead of pretending the reset worked.
 
 Language: the app sends an `itqan_locale` cookie (`ar`/`en`). **Services return already-localised
 strings** — job titles, "why this match", course names, journey labels, the readiness note. The UI
@@ -394,6 +415,8 @@ never translates service content; it only formats numbers and dates.
 | Analysis progress derived from a timestamp | `api/analysis/[jobId].js` | real job row + queue |
 | All results are static fixtures | `api/_lib/data.js` | the four agents |
 | Saved job postings held in component state | `src/app/Jobs.tsx` | `saved_jobs` table + an endpoint |
+| Confirmed profiles held in a `Map` in the dev plugin | `dev/site-plugin.ts` | the `profiles` table (9.5) |
+| Password recovery has no endpoints at all | — | the two rows added to 9.3; until then the page stays unlinked |
 
 ### 9.5 A schema that fits the contract
 
@@ -621,7 +644,11 @@ Recorded so the brief can absorb or overturn them.
 
 ### 11.5 Still open
 
-- **Forgot-password** is linked from the login page but the flow is not built.
+- **Forgot-password** is built and verified end to end against stubbed endpoints, and is **unlinked**
+  until the backend can send an email. See section 5 for why, and 9.3 for the two endpoints it needs.
+- **The Arabic on `/who-we-are/`** has not been read by a native speaker. Everything else on the site
+  has. It is written to avoid gendered second-person address, which is the thing most likely to be
+  wrong; have someone check it before the page is linked.
 - **Saved job postings** do not persist (see 9.4).
 - **Rubik loads from the Google Fonts CDN** on the app; the site self-hosts it. Self-host in both.
 - **`react-router-dom@7.18.1`** carries a high advisory for **RSC mode**, which this SPA does not
@@ -636,6 +663,17 @@ Recorded so the brief can absorb or overturn them.
 ## 12. Commit history
 
 ```
+(newest last read: this branch, design/palette-and-life-layer)
+
+54165c8  Add the dashboard profile section (task 6)
+ccf3e93  Re-upload CV or transcript from the sidebar (task 8)
+ebffb59  Keep the chosen theme and language through onboarding (task 5)
+b4be683  Add the "Who we are" page (task 3)
+42160a0  Four onboarding and auth fixes (tasks 9, 4, 1, 2)
+b31145c  Add VPS deploy workflow and wire the single-host build config
+
+(earlier, on main)
+
 c8f0753  Rework the hero, the onboarding questions and the mascot compositing
 912f85f  Address twelve review findings across the site and the app
 ff10feb  Fix two layouts that broke on narrow screens

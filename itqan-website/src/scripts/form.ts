@@ -25,7 +25,10 @@ function validate(field: HTMLElement): string | null {
     return field.dataset.msgFormat ?? null;
   }
   if (value && input.minLength > 0 && value.length < input.minLength) {
-    return field.dataset.msgMinlength ?? null;
+    // Falls back to the required message rather than to null. Returning null
+    // here means "valid", so a field that declares minlength but forgets the
+    // message would silently accept a value it is meant to reject.
+    return field.dataset.msgMinlength ?? field.dataset.msgRequired ?? null;
   }
   // Composition, checked only where a password is being SET. Login is left
   // alone deliberately: telling someone their own correct password is invalid
@@ -146,8 +149,15 @@ export function initForm(form: HTMLFormElement): void {
         method: 'POST',
         body: new FormData(form),
       });
+      /* Tell the page what happened before deciding anything. Some forms answer
+         in place rather than navigating (password recovery shows "check your
+         email" beside the address just typed), and a form with no
+         data-success-url is exactly that case. */
+      form.dispatchEvent(new CustomEvent('itqan:submitted', {
+        detail: { ok: response.ok, status: response.status },
+      }));
       if (response.ok) {
-        window.location.assign(form.dataset.successUrl || '/');
+        if (form.dataset.successUrl) window.location.assign(form.dataset.successUrl);
         return;
       }
       throw new Error(String(response.status));

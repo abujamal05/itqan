@@ -80,9 +80,11 @@ const base = `/${locale}`;
         <span class="form-submit__label">{s.login.submit}</span>
       </button>
 
-      <p class="auth__forgot">
-        <a href={`${base}/forgot-password/`}>{s.login.forgot}</a>
-      </p>
+      {/* The recovery flow is built and reachable at /forgot-password/, but it
+          is NOT linked here yet: the backend cannot send the email, and a
+          recovery link that silently does nothing is worse than none for
+          someone who has already lost access. Restore this the day the
+          endpoints in ForgotPage.astro exist. */}
     </form>
 
     <p class="auth__alt">

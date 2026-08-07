@@ -433,12 +433,13 @@ const stepIcons = [
   }
 
   .hero__kicker svg {
-    color: var(--color-accent-hover);
+    color: var(--color-accent-ink);
   }
 
+  /* Size is fluid and lives in global.css beside the other display headings, so
+     the hero and the interior page heads scale on one curve. */
   .hero__title {
     margin-block-start: var(--space-6);
-    font-size: var(--text-5xl);
     font-weight: var(--weight-bold);
     line-height: var(--leading-tight);
     max-inline-size: 20ch;
@@ -504,27 +505,12 @@ const stepIcons = [
       align-items: flex-start;
       gap: var(--space-8);
     }
-    .hero__title {
-      font-size: var(--text-4xl);
-    }
   }
 
-  /* ---- Sections ---- */
-  .section {
-    position: relative;
-    padding-block: var(--space-20);
-  }
-
-  .section--sunken {
-    background-color: var(--color-surface-sunken);
-  }
-
-  .section__heading {
-    font-size: var(--text-3xl);
-    font-weight: var(--weight-semibold);
-    line-height: var(--leading-tight);
-  }
-
+  /* ---- Sections ----
+     .section, .section--sunken, .section__heading and the whole closing block
+     now live in global.css: the about page uses every one of them and a scoped
+     rule here never reached it. */
   .section__link {
     margin-block-start: var(--space-10);
   }
@@ -542,7 +528,7 @@ const stepIcons = [
   }
 
   .link-arrow .button__arrow {
-    color: var(--color-accent-hover);
+    color: var(--color-accent-ink);
     transition: transform var(--duration-fast) var(--ease-out);
   }
 
@@ -577,7 +563,19 @@ const stepIcons = [
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
     padding: var(--space-6);
+  }
+
+  /* The `.reveal` in the selector is load-bearing, not decoration.
+     `html.reveal-ready .reveal` in global.css sets `transition: opacity,
+     transform` and outweighs a plain `.card` rule, so the hover lift inherited
+     the reveal's 300ms while box-shadow and border-color were not in the
+     property list at all and snapped. Matching on both classes takes the
+     specificity back and restores one coherent hover. */
+  .card.reveal {
     transition:
+      /* opacity is the reveal entrance's own; taking the declaration over means
+         carrying it, or the card fades in instantly and only slides. */
+      opacity var(--duration-slow) var(--ease-out),
       transform var(--duration-base) var(--ease-out),
       box-shadow var(--duration-base) var(--ease-out),
       border-color var(--duration-base) var(--ease-out);
@@ -777,7 +775,7 @@ const stepIcons = [
   }
 
   .tcard__why-label svg {
-    color: var(--color-accent-hover);
+    color: var(--color-accent-ink);
   }
 
   .tcard__why p {
@@ -796,16 +794,30 @@ const stepIcons = [
       justify-items: stretch;
       gap: var(--space-3);
     }
+    /* Square box, and the arrow rotated inside it.
+       The container used to be 40x12 (the svg's own ratio) while the rotated
+       arrow drew 12x40, so 14px of it hung out of the layout box top and bottom
+       and crossed into a 12px gap — the arrowhead sat on the panel below it.
+       A square cell is exactly as tall as the rotated art. */
     .tcard__connector {
       inline-size: 40px;
+      block-size: 40px;
       max-inline-size: none;
       justify-self: center;
+      display: grid;
+      place-items: center;
     }
     .tcard__connector svg {
+      inline-size: 40px;
       transform: rotate(90deg);
     }
+    /* Down the page in BOTH directions. `rotate(90deg) scaleX(-1)` applies the
+       flip first, so the Arabic arrow was rotated from pointing left and ended
+       up pointing UP — back at the course it had just come from. Vertical flow
+       has no reading direction to mirror; the plain rotation is correct for
+       both, and the dot stays at the top where the source is. */
     :global([dir='rtl']) .tcard__connector svg {
-      transform: rotate(90deg) scaleX(-1);
+      transform: rotate(90deg);
     }
   }
 
@@ -862,7 +874,14 @@ const stepIcons = [
     background-color: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
-    transition: border-color var(--duration-base) var(--ease-out);
+  }
+
+  /* See the note on .card.reveal above. */
+  .faq-item.reveal {
+    transition:
+      opacity var(--duration-slow) var(--ease-out),
+      transform var(--duration-slow) var(--ease-out),
+      border-color var(--duration-base) var(--ease-out);
   }
 
   .faq-item[open] {
@@ -888,7 +907,7 @@ const stepIcons = [
 
   .faq-item__chevron {
     flex: 0 0 auto;
-    color: var(--color-accent-hover);
+    color: var(--color-accent-ink);
     transition: transform var(--duration-base) var(--ease-out);
   }
 
@@ -902,46 +921,9 @@ const stepIcons = [
     line-height: 1.6;
   }
 
-  /* ---- Closing ---- */
-  .section--closing {
-    padding-block: var(--space-20);
-  }
+  /* On why the answer is not height-animated, see the disclosure note in
+     global.css. The chevron rotation above is the animated half. */
 
-  .closing {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: var(--space-6);
-    padding: var(--space-16) var(--space-6);
-    border-radius: var(--radius-lg);
-    background-color: var(--color-surface);
-    border: 1px solid var(--color-border);
-    overflow: hidden;
-  }
-
-  .closing__bg {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    background: radial-gradient(
-      circle at 50% 0%,
-      color-mix(in srgb, var(--color-accent) 16%, transparent),
-      transparent 60%
-    );
-  }
-
-  .closing > :not(.closing__bg) {
-    position: relative;
-    z-index: 1;
-  }
-
-  .closing h2 {
-    font-size: var(--text-4xl);
-    font-weight: var(--weight-bold);
-    line-height: var(--leading-tight);
-    max-inline-size: 18ch;
-  }
+  /* ---- Closing ----
+     Moved to global.css; shared with the about page. */
 </style>

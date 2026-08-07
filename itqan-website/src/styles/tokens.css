@@ -54,7 +54,13 @@
 
   /* Text (LOCKED RULE: body text is navy; gold is never body text on light) */
   --color-text:          var(--navy);    /* primary */
-  --color-text-muted:    var(--navy-300);/* secondary */
+  /* Secondary text. --navy-300 raw measures 4.32:1 on --paper and 3.9:1 on
+     --sand, so every muted paragraph, hint, label and inactive control on the
+     site sat under WCAG AA. Deepened toward the navy anchor rather than
+     replaced: it is still the same hue, still visibly quieter than
+     --color-text, and now clears 4.5:1 on all three light surfaces
+     (paper 5.6:1, sand 4.8:1, white 5.9:1). No new primitive invented. */
+  --color-text-muted:    color-mix(in srgb, var(--navy-300) 84%, var(--navy));
   --color-text-on-gold:  var(--navy);    /* text on a gold fill = navy, always */
   --color-text-on-navy:  var(--paper);   /* text on a navy fill */
   --color-text-inverse:  var(--paper);
@@ -63,6 +69,18 @@
   --color-accent:        var(--gold);
   --color-accent-hover:  #B87826;
   --color-accent-tint:   var(--gold-100);
+  /* Gold-flavoured EMPHASIS TEXT and small glyphs on light. This is the
+     --color-accent-ink the design system has pending sign-off; it is expressed
+     here as a mix of two locked primitives rather than a new hex, so adopting
+     the signed-off --gold-800 later is a one-line swap.
+     Why it exists: --color-accent-hover is a BUTTON FILL, and it was doing
+     double duty as the eyebrow, step-number and small-icon colour. As a fill it
+     is correct; as 14px text it measures 3.46:1 on paper and 3.1:1 on sand, and
+     the icons on --color-accent-tint measured 2.9:1 against the 3:1 graphic
+     floor. This clears 5.6:1 on paper, 4.8:1 on sand and 4.8:1 on tint.
+     The full-saturation gold still carries the brand next to it — the eyebrow
+     tick, the rules and the node fills are all untouched. */
+  --color-accent-ink:    color-mix(in srgb, var(--gold-600) 76%, var(--navy));
   --color-focus:         var(--navy);    /* focus ring, see components */
 
   --color-danger:        var(--red-500);
@@ -166,6 +184,9 @@
   --color-accent:        var(--gold-400); /* lifted for dark legibility */
   --color-accent-hover:  var(--gold-500);
   --color-accent-tint:   rgba(208,140,47,0.16);
+  /* On dark the problem inverts: gold needs LIFTING, not deepening. gold-400
+     reads 8.7:1 on the canvas and 7.9:1 on the sunken surface. */
+  --color-accent-ink:    var(--gold-400);
   --color-focus:         var(--gold-400); /* navy ring is invisible on dark */
 
   --color-danger:        var(--red-400);

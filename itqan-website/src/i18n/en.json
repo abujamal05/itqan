@@ -295,9 +295,30 @@
   "forgot": {
     "title": "Password reset",
     "metaDescription": "Reset your Itqan password.",
-    "heading": "Password reset",
-    "notice": "This page is a stub. Password reset starts working when the accounts system launches.",
-    "back": "Back to log in"
+    "heading": "Reset your password",
+    "sub": "Enter the address you signed up with and we will send you a link to set a new password.",
+    "submit": "Send me a link",
+    "back": "Back to log in",
+    "summaryHeading": "Check the form",
+    "serverError": "Something went wrong. Try again in a moment.",
+    "email": {
+      "label": "Email",
+      "errorRequired": "Enter your email address.",
+      "errorFormat": "That does not look like an email address."
+    },
+    "sentHeading": "Check your email",
+    "sentBody": "If that address has an Itqan account, a link to set a new password is on its way.",
+    "sentSpam": "It can take a minute. Look in your spam folder if it does not arrive.",
+    "resetHeading": "Set a new password",
+    "resetSub": "Choose a password you have not used here before.",
+    "resetSubmit": "Save my new password",
+    "newPassword": {
+      "label": "New password"
+    },
+    "expiredHeading": "That link has expired",
+    "expiredBody": "Reset links stop working after a short time, and after they have been used once. Ask for a new one and it will arrive in a moment.",
+    "expiredCta": "Send a new link",
+    "notice": "Password recovery is not switched on yet. This page is complete but the email is not being sent, so nothing will arrive."
   },
   "privacy": {
     "eyebrow": "Your data",

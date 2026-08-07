@@ -138,7 +138,7 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
       {
         whatItems.map((item, i) => (
           <li class="about-steps__item reveal">
-            <span class="about-steps__num num" aria-hidden="true">{i + 1}</span>
+            <span class="about-steps__num" aria-hidden="true">{i + 1}</span>
             <p class="about-steps__text">
               <strong>{item.title}</strong> {item.body}
             </p>
@@ -276,9 +276,13 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
     flex: 0 0 auto;
   }
 
+  /* Deliberately one step below the proof and how-it-works h1: this page opens
+     with a belief, not a claim, and it should not shout louder than they do.
+     Fluid on the same principle though, so it grows through the tablet range
+     instead of holding one size from 832px to a 27in monitor. */
   .about-why__heading {
     margin-block-start: var(--space-5);
-    font-size: var(--text-4xl);
+    font-size: clamp(var(--text-3xl), 1.8vw + 1.1rem, var(--text-4xl));
     font-weight: var(--weight-bold);
     line-height: var(--leading-tight);
     /* Long enough to carry weight, short enough to stay one thought per line. */
@@ -317,7 +321,6 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
   @media (max-width: 51.99rem) {
     .about-why__figure { display: none; }
     .about-why { padding-block: var(--space-10) var(--space-8); }
-    .about-why__heading { font-size: var(--text-3xl); }
   }
 
   /* ---- Mission and vision ---- */
@@ -372,7 +375,10 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
     block-size: 36px;
     border-radius: var(--radius-full);
     background-color: var(--color-accent-tint);
-    color: var(--color-accent-hover);
+    /* Gold on a gold tint is the tightest pairing on the site: at
+       --color-accent-hover it measured 2.9:1, under the 3:1 floor for a glyph
+       that is the only thing in the circle. */
+    color: var(--color-accent-ink);
   }
 
   .about-list__title {
@@ -395,7 +401,6 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
     flex-direction: column;
     gap: var(--space-5);
     max-inline-size: 46rem;
-    counter-reset: step;
   }
 
   .about-steps__item {
@@ -518,6 +523,25 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
     padding: var(--space-6) var(--space-4);
   }
 
+  /* Matches the lift the home page cards already had; these were the only cards
+     on the site that stayed inert under the pointer. Both classes in the
+     selector so it outweighs `html.reveal-ready .reveal` in global.css. */
+  .about-team__card.reveal {
+    transition:
+      opacity var(--duration-slow) var(--ease-out),
+      transform var(--duration-base) var(--ease-out),
+      box-shadow var(--duration-base) var(--ease-out),
+      border-color var(--duration-base) var(--ease-out);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .about-team__card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--color-border-strong);
+    }
+  }
+
   .about-team__photo {
     inline-size: 96px;
     block-size: 96px;
@@ -554,7 +578,7 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
   @media (hover: hover) and (pointer: fine) {
     .about-team__link:hover {
       background-color: var(--color-surface-sunken);
-      color: var(--color-accent-hover);
+      color: var(--color-accent-ink);
     }
   }
 </style>
