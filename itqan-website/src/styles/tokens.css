@@ -156,6 +156,13 @@
   --ease-hover: ease;                                  /* hover + colour transitions */
   --ease-in: cubic-bezier(0.4, 0, 1, 1);              /* AVOID for UI; special cases only */
 
+  /* ---- MOTION SCALAR ------------------------------------------------------
+     Every movement DISTANCE on the site is multiplied by this. At 1 it changes
+     nothing; reduced motion sets it to 0 and travel collapses while duration,
+     and therefore every fade and colour change, is left completely alone.
+     This is the mechanism that replaces the old blanket kill switch below. */
+  --motion-scale: 1;
+
   /* Spring (JS only — Framer Motion / motion.dev). CSS cannot express these.
      Recommended Apple-style config: { duration: 0.5, bounce: 0.2 }.
      Keep bounce 0.1–0.3; default to NO bounce for Itqan's trust-first tone. */
@@ -208,12 +215,33 @@
   }
 }
 
-/* Reduced motion: keep fades, drop movement. */
+/* ============================================================================
+   REDUCED MOTION — drop MOVEMENT, keep FEEDBACK.
+
+   This block used to be `animation-duration: 0.01ms !important;
+   transition-duration: 0.01ms !important` on every element, which is not what
+   the preference asks for. It deleted the interface's answers along with its
+   movement: a user who asked for less motion also lost colour fades, border and
+   shadow changes, the focus ring settling, the disclosure chevron turning, and
+   the resolution of every loading state. Its own comment said "keep fades, drop
+   movement" while the code dropped both. itqan-motion now bans the pattern.
+
+   The replacement collapses the travel scalar to zero and leaves duration
+   untouched, so everything still ANSWERS and nothing TRAVELS. Components whose
+   movement a scalar cannot express (the hero glow, the drawn strokes, the gold
+   marker) keep their own `reduce` override beside them, where the reasoning is
+   readable next to the animation it governs.
+
+   Deliberately NOT killed: the submit spinner, which is a genuine progress
+   indicator rather than decoration, and the hero light's opacity breathe, which
+   its own override reduces to a fade with no movement at all.
+   ============================================================================ */
 @media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-scale: 0;
+  }
+
   *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
 }

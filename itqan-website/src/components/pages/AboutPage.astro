@@ -546,7 +546,7 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
 
   @media (hover: hover) and (pointer: fine) {
     .about-team__card:hover {
-      transform: translateY(-3px);
+      transform: translateY(calc(-3px * var(--motion-scale)));
       box-shadow: var(--shadow-md);
       border-color: var(--color-border-strong);
     }

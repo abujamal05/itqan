@@ -173,7 +173,7 @@ export function Confirm() {
   return (
     <div className="ob">
       <SiteHeader step={2} />
-      <main className="ob__main" id="main">
+      <main className="ob__main" id="main" tabIndex={-1}>
         <div className="stage enter" style={{ maxWidth: '44rem', marginInline: 'auto', width: '100%' }}>
           <div className="stage__content">
             {/* Nothing was read on the manual and failed paths, so the screen

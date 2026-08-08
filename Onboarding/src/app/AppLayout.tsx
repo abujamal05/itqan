@@ -200,7 +200,11 @@ export function AppLayout() {
           <AccountMenu />
         </header>
 
-        <main className="main__inner" id="main">
+        {/* tabIndex -1: the skip link and the route-change focus move both
+            target this, and neither can land on an element that is not
+            focusable. Programmatic focus does not trigger :focus-visible, so
+            no ring appears. */}
+        <main className="main__inner" id="main" tabIndex={-1}>
           {/* Above the page, on every page.
               Confirming the profile is what starts Agent C and Agent E, so the
               user reaches the dashboard while those are still running. Without

@@ -16,7 +16,7 @@
  * the site while the session is still being read.
  */
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { I18nProvider, useI18n, hasStoredLocale } from './i18n';
 import { ThemeProvider } from './lib/theme';
 import { ApiProvider, useApi } from './state/api';
@@ -183,6 +183,43 @@ function SkipLink() {
   return <a href="#main" className="skip-link">{t('a11y.skipToContent')}</a>;
 }
 
+/**
+ * Move focus and scroll to the top of the new screen on every route change.
+ *
+ * A single page app gets none of this for free. The browser does it on a real
+ * navigation; React just swaps the subtree and changes the URL, so focus stays
+ * where it was — and after a "Continue" button that is an element which no
+ * longer exists, which drops focus to <body>. The practical effect was that
+ * someone advancing upload -> questions -> confirm on a screen reader was told
+ * nothing at each step and had to walk the document from the top to find out
+ * where they had landed. Every one of the ten routes had this.
+ *
+ * `#main` is the same landmark the skip link targets, and it is the right
+ * destination for both: it skips the chrome and starts at the screen's heading.
+ *
+ * Deliberately skipped on first paint. The initial load already starts at the
+ * top, and taking focus there would fight the skip link before the user has
+ * pressed anything.
+ *
+ * `preventScroll` because the scroll reset below owns vertical position;
+ * letting focus() also scroll makes the two fight on a short screen.
+ */
+function RouteFocus() {
+  const { pathname } = useLocation();
+  const firstPaint = useRef(true);
+
+  useEffect(() => {
+    if (firstPaint.current) {
+      firstPaint.current = false;
+      return;
+    }
+    document.getElementById('main')?.focus({ preventScroll: true });
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+}
+
 export default function App() {
   return (
     <ThemeProvider>
@@ -195,6 +232,7 @@ export default function App() {
               <FollowSessionLocale />
               <WithOnboarding>
                 <SkipLink />
+                <RouteFocus />
                 <ScreenBoundary>
                   <Routes>
                     <Route path="/upload" element={<RequireOnboarding><Upload /></RequireOnboarding>} />

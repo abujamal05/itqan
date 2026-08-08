@@ -34,7 +34,7 @@ export function ResumeGate() {
   return (
     <div className="ob">
       <SiteHeader />
-      <main className="ob__main" id="main">
+      <main className="ob__main" id="main" tabIndex={-1}>
         <div className="stage stage--split enter">
           <aside className="stage__aside">
             <HudGuide pose="thinking" says={t('resume.title')} eager />
