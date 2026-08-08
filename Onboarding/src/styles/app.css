@@ -326,6 +326,35 @@
   .meter > i.is-working { animation: none; }
 }
 
+/* ------------------------------------------------------------ AVATAR FIELD --
+   The photo and its controls. Initials rather than a stock silhouette when
+   there is no picture: an empty grey figure reads as a broken image, initials
+   read as an account. Logical properties throughout, so the controls sit after
+   the picture in both directions. */
+.avatarField {
+  display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;
+}
+
+.avatarField__img,
+.avatarField__initials {
+  inline-size: 96px; block-size: 96px; border-radius: var(--radius-full);
+  flex: 0 0 auto;
+}
+
+.avatarField__img {
+  object-fit: cover;
+  background: var(--color-surface-sunken);
+}
+
+.avatarField__initials {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--color-accent); color: var(--color-text-on-gold);
+  font-size: var(--text-2xl); font-weight: var(--weight-semibold);
+  /* Arabic initials sit differently in the circle; no letter-spacing, per the
+     locked typography rule. */
+  letter-spacing: 0;
+}
+
 /* Dismissing the finished run. Only rendered once the pipeline has settled, so
    it can never take away the explanation for a half-empty dashboard. Sized to
    the 44px touch floor with a negative margin so it does not make the banner

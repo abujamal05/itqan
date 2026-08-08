@@ -119,6 +119,38 @@ export function createHttpApi(): ItqanApi {
     updateProfile(profile: ConfirmedProfile, signal) {
       return req<{ ok: true }>('/profile', { method: 'PUT', body: JSON.stringify(profile), signal });
     },
+
+    /**
+     * XHR for the same reason uploadDocument uses it: fetch still cannot report
+     * upload progress, and a photo on a phone connection is not instant.
+     * See the contract note in types.ts — this endpoint is not built yet.
+     */
+    uploadAvatar({ file, onProgress }, signal) {
+      return new Promise<{ avatarUrl: string }>((resolve, reject) => {
+        const form = new FormData();
+        form.append('file', file);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `${BASE}/profile/avatar`);
+        xhr.withCredentials = true;
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) onProgress?.(e.loaded / e.total);
+        });
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try { resolve(JSON.parse(xhr.responseText) as { avatarUrl: string }); }
+            catch { reject(new HttpError(xhr.status, 'bad json')); }
+          } else reject(new HttpError(xhr.status, 'avatar upload failed'));
+        });
+        xhr.addEventListener('error', () => reject(new HttpError(0, 'network')));
+        xhr.addEventListener('abort', () => reject(new HttpError(0, 'aborted')));
+        signal?.addEventListener('abort', () => xhr.abort());
+        xhr.send(form);
+      });
+    },
+    async removeAvatar(signal) {
+      await req<void>('/profile/avatar', { method: 'DELETE', signal });
+    },
     getDashboard(signal) { return req<DashboardData>('/dashboard', { signal }); },
     getJobs(signal) { return req<JobMatch[]>('/jobs', { signal }); },
     getCourses(signal) { return req<Course[]>('/courses', { signal }); },

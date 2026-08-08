@@ -17,10 +17,11 @@
  * Hud is deliberately absent: the brand fences the mascot away from anything
  * that reads as a record of the user, and this is exactly that.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Check, FileText, GraduationCap, Pencil, Sparkles, User as UserIcon, X,
+  Camera, Check, FileText, GraduationCap, Pencil, Sparkles, Target,
+  User as UserIcon, X,
 } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useApi } from '../state/api';
@@ -33,6 +34,11 @@ import type { ConfirmedProfile, Preferences, StoredProfile } from '../api';
 import { emptyPreferences } from '../api';
 
 /* ------------------------------------------------------------------ parts -- */
+
+/** Same rule as the account menu's avatar, so one person reads as one person. */
+function initials(name: string) {
+  return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');
+}
 
 /**
  * A section that flips between reading and editing. The heading, the edit
@@ -88,6 +94,108 @@ function Section({
   );
 }
 
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+
+/**
+ * The photo, and the only part of this screen that saves the instant you act.
+ *
+ * Everything else here is edit-then-save, because a typed field is not finished
+ * until the person says it is. A picture is different: choosing the file IS the
+ * decision, and making someone pick an image and then press Save invents a step
+ * that has no meaning. So it uploads on choose, and removing asks nothing.
+ *
+ * It is also its own endpoint rather than a field on the profile save, which is
+ * what lets a rejected image fail on its own without discarding the graduation
+ * date someone typed next to it.
+ *
+ * Falls back to initials, never to a stock silhouette: an empty grey avatar
+ * reads as a broken image, whereas initials read as an account.
+ */
+function AvatarField({
+  name, url, onChanged,
+}: { name: string; url: string | null; onChanged: () => void }) {
+  const { t } = useI18n();
+  const api = useApi();
+  const input = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const pick = async (file: File | undefined) => {
+    if (!file) return;
+    setError(null);
+    if (!file.type.startsWith('image/')) { setError(t('profile.photoWrongType')); return; }
+    if (file.size > MAX_AVATAR_BYTES) { setError(t('profile.photoTooBig')); return; }
+    setBusy(true);
+    try {
+      await api.uploadAvatar({ file });
+      onChanged();
+    } catch {
+      setError(t('profile.photoFailed'));
+    } finally {
+      setBusy(false);
+      // Same file twice in a row must still fire a change event.
+      if (input.current) input.current.value = '';
+    }
+  };
+
+  const remove = async () => {
+    setError(null);
+    setBusy(true);
+    try {
+      await api.removeAvatar();
+      onChanged();
+    } catch {
+      setError(t('profile.photoFailed'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="stack stack--sm">
+      <div className="avatarField">
+        {url
+          ? <img className="avatarField__img" src={url} alt="" width={96} height={96} />
+          : <span className="avatarField__initials" aria-hidden="true">{initials(name)}</span>}
+
+        <div className="stack stack--sm">
+          <div className="row row--tight">
+            <button
+              type="button"
+              className="btn btn--secondary btn--sm"
+              onClick={() => input.current?.click()}
+              disabled={busy}
+            >
+              <Camera size={15} aria-hidden="true" />
+              {url ? t('profile.photoChange') : t('profile.photoAdd')}
+            </button>
+            {url && (
+              <button type="button" className="btn btn--ghost btn--sm" onClick={remove} disabled={busy}>
+                <X size={15} aria-hidden="true" />
+                {t('profile.photoRemove')}
+              </button>
+            )}
+          </div>
+          <p className="text-sm muted">{busy ? t('profile.photoUploading') : t('profile.photoHint')}</p>
+        </div>
+
+        {/* Hidden, driven by the labelled buttons above, so the control that is
+            announced is the one that says what it does. */}
+        <input
+          ref={input}
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          tabIndex={-1}
+          aria-hidden="true"
+          onChange={(e) => void pick(e.target.files?.[0])}
+        />
+      </div>
+      {error && <p className="text-sm" role="alert" style={{ color: 'var(--color-danger)' }}>{error}</p>}
+    </div>
+  );
+}
+
 /** One read only row. Missing values say so rather than rendering blank. */
 function Row({ label, value }: { label: string; value: string | null | undefined }) {
   const { t } = useI18n();
@@ -121,6 +229,7 @@ export function Profile() {
       fullName: p.fullName,
       birthDate: p.birthDate,
       graduationDate: p.graduationDate,
+      phone: p.phone ?? null,
       skills: p.skills,
       preferences: p.preferences ?? emptyPreferences(),
       documentId: p.documentId,
@@ -155,7 +264,12 @@ export function Profile() {
   const p = data;
   const prefs: Preferences = p.preferences ?? emptyPreferences();
 
-  /** What is still missing, named so the user can act on it. */
+  /**
+   * What is still missing, named so the user can act on it.
+   * Phone is deliberately absent from this list: it is optional, nothing reads
+   * it, and counting it would manufacture an incomplete profile out of a field
+   * the product does not need.
+   */
   const missing: string[] = [];
   if (!p.birthDate) missing.push(t('confirm.birth'));
   if (!p.graduationDate) missing.push(t('confirm.graduation'));
@@ -208,6 +322,10 @@ export function Profile() {
         onSave={() => draft && save(draft)}
         saving={saving}
       >
+        {/* The photo saves on its own, so it sits outside the edit/save cycle
+            and stays available whether or not the section is being edited. */}
+        <AvatarField name={p.fullName || user?.fullName || ''} url={p.avatarUrl ?? null} onChanged={reload} />
+
         {editing === 'details' && draft ? (
           <div className="stack">
             <InputField
@@ -215,6 +333,16 @@ export function Profile() {
               value={draft.fullName}
               onChange={(e) => setDraft({ ...draft, fullName: e.target.value })}
               autoComplete="name"
+            />
+            <InputField
+              label={t('profile.phone')}
+              hint={t('profile.phoneHint')}
+              type="tel"
+              inputMode="tel"
+              dir="ltr"
+              value={draft.phone ?? ''}
+              onChange={(e) => setDraft({ ...draft, phone: e.target.value || null })}
+              autoComplete="tel"
             />
             <InputField
               label={t('confirm.birth')}
@@ -233,9 +361,32 @@ export function Profile() {
           <div className="stack stack--sm">
             <Row label={t('confirm.name')} value={p.fullName} />
             <Row label={t('profile.email')} value={p.email ?? user?.email} />
+            <Row label={t('profile.phone')} value={p.phone} />
             <Row label={t('confirm.birth')} value={p.birthDate} />
           </div>
         )}
+      </Section>
+
+      {/* Roles: what you want, beside what the evidence says. Two separate
+          things that every other product in this category collapses into one
+          — and collapsing them is how a suggestion starts passing itself off
+          as the user's own goal. The suggestion carries its reasoning. */}
+      <Section title={t('profile.roles')} icon={Target} editing={false}>
+        <div className="stack stack--sm">
+          <Row label={t('profile.targetedRole')} value={prefs.preferredRole} />
+          <div className="profile__row">
+            <span className="profile__label">{t('profile.suggestedRole')}</span>
+            <span className={p.suggestedRole ? 'profile__value' : 'profile__value profile__value--missing'}>
+              {p.suggestedRole ? p.suggestedRole.title : t('profile.suggestedRoleNone')}
+            </span>
+          </div>
+          {p.suggestedRole?.why && (
+            <div className="why">
+              <p className="why__head">{t('profile.suggestedRoleWhy')}</p>
+              <p>{p.suggestedRole.why}</p>
+            </div>
+          )}
+        </div>
       </Section>
 
       {/* Education. Graduation is the only field the pipeline reads today, so
@@ -279,8 +430,13 @@ export function Profile() {
           ) : (
             <p className="text-sm muted">{t('profile.noDocuments')}</p>
           )}
+          {/* Says the consequence before the action, not after it. Replacing a
+              document re-runs the pipeline and rewrites the skills, courses and
+              matches this person may have spent time reading — that is worth
+              knowing before the click, not on the next screen. */}
+          <p className="text-sm muted">{t('profile.docsRereads')}</p>
           <div className="row">
-            <Link className="btn btn--secondary" to="/documents">{t('profile.updateDocs')}</Link>
+            <Link className="btn btn--secondary" to="/documents">{t('profile.docsReplace')}</Link>
           </div>
         </div>
       </Section>
