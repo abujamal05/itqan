@@ -326,6 +326,24 @@
   .meter > i.is-working { animation: none; }
 }
 
+/* Dismissing the finished run. Only rendered once the pipeline has settled, so
+   it can never take away the explanation for a half-empty dashboard. Sized to
+   the 44px touch floor with a negative margin so it does not make the banner
+   taller than the row of text beside it. */
+.row--tight { display: flex; align-items: center; gap: var(--space-2); }
+
+.progress__dismiss {
+  display: inline-flex; align-items: center; justify-content: center;
+  inline-size: 44px; block-size: 44px; margin-block: -14px;
+  margin-inline-end: calc(-1 * var(--space-2));
+  padding: 0; border: 0; border-radius: var(--radius-sm);
+  background: transparent; color: var(--color-text-muted); cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-hover),
+              color var(--duration-fast) var(--ease-hover);
+}
+.progress__dismiss:hover { background: var(--color-surface); color: var(--color-text); }
+.progress__dismiss:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+
 /* --------------------------------------------------------------- CALLOUT -- */
 .callout {
   display: flex; gap: var(--space-3); align-items: flex-start;

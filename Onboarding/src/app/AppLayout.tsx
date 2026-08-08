@@ -16,7 +16,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import {
   BookOpen, Briefcase, ExternalLink, LayoutDashboard, LogOut,
-  PanelLeftClose, RefreshCw, User as UserIcon,
+  PanelLeftClose, User as UserIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useI18n } from '../i18n';
@@ -36,10 +36,23 @@ const DESTS: { to: string; key: string; icon: LucideIcon }[] = [
   { to: '/dashboard', key: 'nav.dashboard', icon: LayoutDashboard },
   { to: '/courses', key: 'nav.courses', icon: BookOpen },
   { to: '/jobs', key: 'nav.jobs', icon: Briefcase },
-  // Last: it is a place you visit occasionally to correct something, not part
-  // of the daily loop the three above form.
-  { to: '/profile', key: 'nav.profile', icon: UserIcon },
 ];
+
+/*
+ * Profile and Documents are deliberately NOT destinations.
+ *
+ * The three above are the daily loop: where you stand, what to learn, what to
+ * apply for. Profile is your account, and every product this audience already
+ * uses puts the account behind the avatar — so it lives in the menu under your
+ * own name, which is also where people look for it first.
+ *
+ * Documents used to be a highlighted fourth row. It is gone from here because
+ * it was a second door into the same room: replacing a document is one thing
+ * you do to your profile, alongside correcting your phone number or your
+ * graduation date, and splitting it out made the sidebar advertise an action
+ * over the three places the user actually lives. The route still exists and
+ * Profile owns the entry point.
+ */
 
 const COLLAPSE_KEY = 'itqan.sidebar.collapsed';
 
@@ -68,6 +81,12 @@ function AccountMenu() {
             <p className="menu__headName"><bdi>{user.fullName}</bdi></p>
             <p className="menu__headMail"><bdi>{user.email}</bdi></p>
           </div>
+          {/* Your account, under your own name — where this audience looks for
+              it first, and no longer competing with the daily loop in the nav. */}
+          <Link className="menu__item" role="menuitem" to="/profile" onClick={close}>
+            <UserIcon size={16} aria-hidden="true" />
+            {t('nav.profile')}
+          </Link>
           {/* A real navigation, not a route: the site is the other half. */}
           <a className="menu__item" role="menuitem" href={siteHome(locale)} onClick={close}>
             <ExternalLink size={16} aria-hidden="true" />
@@ -162,19 +181,6 @@ export function AppLayout() {
               <span className="nav__label">{t(key)}</span>
             </NavLink>
           ))}
-          {/* Re-upload. Deliberately NOT one of the destinations above: it is an
-              action, and styling it as a fourth nav row would bury the thing the
-              user came looking for. Highlighted, and it keeps its label when the
-              sidebar collapses to icons via the same title/aria pattern. */}
-          <NavLink
-            to="/documents"
-            className="nav__item nav__item--action"
-            aria-label={collapsed ? t('nav.documents') : undefined}
-            title={collapsed ? t('nav.documents') : undefined}
-          >
-            <RefreshCw size={18} aria-hidden="true" />
-            <span className="nav__label">{t('nav.documents')}</span>
-          </NavLink>
         </div>
 
         <div className="spacer" />

@@ -16,16 +16,30 @@
  * actually completes. It is never interpolated on a timer: a bar that creeps to
  * 90% and stops makes a stalled run indistinguishable from a slow one.
  */
+import { useState } from 'react';
+import { X } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useOnboarding } from '../state/onboarding';
 
 export function PipelineProgress({ variant = 'card' }: { variant?: 'card' | 'bare' }) {
   const { t, formatNumber } = useI18n();
   const { analysis, entry, settled, failed } = useOnboarding();
+  /**
+   * Dismissed only once the run is over.
+   *
+   * A finished bar reading "Finished 100%" has said everything it will ever
+   * say, but it sat above every page permanently, pushing the actual content
+   * down on every route. While the run is still going the bar is the only
+   * thing explaining why the dashboard is half empty, so there is no close
+   * control then — hiding it would leave a working product looking broken with
+   * no way to find out otherwise.
+   */
+  const [dismissed, setDismissed] = useState(false);
 
   // Nothing to report: the manual route runs no agents, and neither does a
   // session that has not submitted anything.
   if (entry !== 'document' || !analysis || failed) return null;
+  if (settled && dismissed) return null;
 
   const pct = Math.round((analysis.progress ?? 0) * 100);
   const waitingOnUser = analysis.stage === 'awaiting_confirmation';
@@ -52,7 +66,20 @@ export function PipelineProgress({ variant = 'card' }: { variant?: 'card' | 'bar
     <div className="stack stack--sm">
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <span className="text-sm" style={{ fontWeight: 'var(--weight-medium)' }}>{label}</span>
-        <span className="text-sm num">{formatNumber(pct)}%</span>
+        <div className="row row--tight">
+          <span className="text-sm num">{formatNumber(pct)}%</span>
+          {settled && (
+            <button
+              type="button"
+              className="progress__dismiss"
+              onClick={() => setDismissed(true)}
+              aria-label={t('progress.dismiss')}
+              title={t('progress.dismiss')}
+            >
+              <X size={16} aria-hidden="true" />
+            </button>
+          )}
+        </div>
       </div>
       <div className="meter">
         <i className={working ? 'is-working' : undefined} style={{ inlineSize: `${pct}%` }} />

@@ -16,6 +16,35 @@
           document.documentElement.dataset.theme = e.matches ? 'dark' : 'light';
         });
       })();
+
+      /*
+       * Record the language THIS PAGE is in, on every page view.
+       *
+       * The language toggle wrote these keys, but only when it was clicked —
+       * so the preference existed only for people who switched. Someone who
+       * arrived on /en/ from a link, read the English site and signed up had
+       * nothing stored, and the app fell back to its Arabic default: the
+       * language changed under them at exactly the moment they crossed from
+       * the site into the product.
+       *
+       * The page's own locale is the honest signal. It is server rendered into
+       * <html lang>, so it is correct before this runs, and reading a page in a
+       * language is at least as deliberate as toggling to it.
+       *
+       * All three keys, because three different readers exist: the root
+       * redirect and the 404 read `itqan-lang`, the app reads `itqan.locale`
+       * first, and the services answer on the cookie.
+       */
+      (function () {
+        var lang = document.documentElement.lang;
+        if (lang !== 'ar' && lang !== 'en') return;
+        try {
+          localStorage.setItem('itqan-lang', lang);
+          localStorage.setItem('itqan.locale', lang);
+        } catch (e) {}
+        document.cookie =
+          'itqan_locale=' + lang + '; Path=/; Max-Age=31536000; SameSite=Lax';
+      })();
     </script><link rel="stylesheet" href="/_astro/index.RwNyqCjF.css">
 <style>.notice-box[data-astro-cid-edisqbwh]{display:flex;align-items:flex-start;gap:var(--space-3);background-color:var(--color-surface-sunken);border:1px dashed var(--color-border-strong);border-radius:var(--radius-md);padding:var(--space-4)}.notice-box[data-astro-cid-edisqbwh] svg[data-astro-cid-edisqbwh]{flex:0 0 auto;margin-block-start:2px;color:var(--color-text-muted)}.notice-box__body[data-astro-cid-edisqbwh]{font-weight:var(--weight-medium)}
 .legal[data-astro-cid-5gi3qzod]{max-inline-size:44rem;padding-block-end:var(--space-20)}.legal__body[data-astro-cid-5gi3qzod]{margin-block-start:var(--space-8);font-size:var(--text-lg)}

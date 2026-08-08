@@ -16,10 +16,39 @@
           document.documentElement.dataset.theme = e.matches ? 'dark' : 'light';
         });
       })();
+
+      /*
+       * Record the language THIS PAGE is in, on every page view.
+       *
+       * The language toggle wrote these keys, but only when it was clicked —
+       * so the preference existed only for people who switched. Someone who
+       * arrived on /en/ from a link, read the English site and signed up had
+       * nothing stored, and the app fell back to its Arabic default: the
+       * language changed under them at exactly the moment they crossed from
+       * the site into the product.
+       *
+       * The page's own locale is the honest signal. It is server rendered into
+       * <html lang>, so it is correct before this runs, and reading a page in a
+       * language is at least as deliberate as toggling to it.
+       *
+       * All three keys, because three different readers exist: the root
+       * redirect and the 404 read `itqan-lang`, the app reads `itqan.locale`
+       * first, and the services answer on the cookie.
+       */
+      (function () {
+        var lang = document.documentElement.lang;
+        if (lang !== 'ar' && lang !== 'en') return;
+        try {
+          localStorage.setItem('itqan-lang', lang);
+          localStorage.setItem('itqan.locale', lang);
+        } catch (e) {}
+        document.cookie =
+          'itqan_locale=' + lang + '; Path=/; Max-Age=31536000; SameSite=Lax';
+      })();
     </script><link rel="stylesheet" href="/_astro/index.RwNyqCjF.css">
 <style>.hud[data-astro-cid-l26umxyd]{position:relative;inline-size:var(--hud-width);min-inline-size:120px;aspect-ratio:400 / 386;display:flex;align-items:center;justify-content:center}.hud__video,.hud__poster{position:relative;z-index:1;inline-size:100%;block-size:100%;object-fit:contain;min-inline-size:0;min-block-size:0}.hud[data-astro-cid-l26umxyd]:before{content:"";position:absolute;z-index:0;inset-inline:8%;inset-block-end:2%;block-size:22%;border-radius:var(--radius-full);pointer-events:none;background:radial-gradient(50% 50% at 50% 50%,color-mix(in srgb,var(--navy) 24%,transparent),color-mix(in srgb,var(--navy) 13%,transparent) 45%,color-mix(in srgb,var(--navy) 4%,transparent) 74%,color-mix(in srgb,var(--navy) 0%,transparent));filter:blur(5px)}[data-theme=dark] .hud[data-astro-cid-l26umxyd]:before{background:radial-gradient(50% 50% at 50% 50%,color-mix(in srgb,var(--navy-950) 55%,transparent),color-mix(in srgb,var(--navy-950) 30%,transparent) 45%,color-mix(in srgb,var(--navy-950) 9%,transparent) 74%,color-mix(in srgb,var(--navy-950) 0%,transparent))}.hud__video,.hud__poster{filter:drop-shadow(0 0 3px var(--paper)) drop-shadow(0 0 3px var(--paper))}.hud--placeholder[data-astro-cid-l26umxyd]{flex-direction:column;gap:var(--space-1);background-color:var(--color-surface-sunken);border:1px dashed var(--color-border-strong);border-radius:var(--radius-lg);padding:var(--space-4);text-align:center}.hud__pose-name[data-astro-cid-l26umxyd]{font-weight:var(--weight-semibold);color:var(--color-text)}.hud__pose-file[data-astro-cid-l26umxyd]{font-weight:var(--weight-medium);color:var(--color-text-muted);font-size:var(--text-sm)}.hud__pose-hint[data-astro-cid-l26umxyd]{color:var(--color-text-muted);font-size:var(--text-xs);direction:ltr}
 </style>
-<link rel="stylesheet" href="/_astro/index.Vd0bNtjf.css">
+<link rel="stylesheet" href="/_astro/index.B0nx__uE.css">
 <link rel="stylesheet" href="/_astro/index.C30tcFgP.css">
 <style>.auth[data-astro-cid-hqgq2m2a]{display:flex;gap:var(--space-12);align-items:center;justify-content:center;padding-block:var(--space-16)}.auth__aside[data-astro-cid-hqgq2m2a]{order:-1}.auth__main[data-astro-cid-hqgq2m2a]{flex:0 1 30rem}.auth__main[data-astro-cid-hqgq2m2a] h1[data-astro-cid-hqgq2m2a]{margin-block:var(--space-3) var(--space-8);font-size:var(--text-4xl);font-weight:var(--weight-bold);line-height:var(--leading-tight)}.auth__forgot[data-astro-cid-hqgq2m2a]{margin:0}.auth__alt[data-astro-cid-hqgq2m2a]{margin-block-start:var(--space-6);color:var(--color-text-muted)}.auth__aside[data-astro-cid-hqgq2m2a]{flex:0 0 auto}@media(max-width:51.99rem){.auth[data-astro-cid-hqgq2m2a]{flex-direction:column;padding-block:var(--space-10);gap:var(--space-8)}.auth__main[data-astro-cid-hqgq2m2a]{flex-basis:auto;inline-size:100%}.auth__aside[data-astro-cid-hqgq2m2a]{order:0;align-self:center}}
 </style></head> <body> <a class="skip-link" href="#main">Skip to content</a> <header class="site-header" data-astro-cid-3ef6ksr2> <div class="container header-row" data-astro-cid-3ef6ksr2> <!-- Icon-only mark: compact, and it swaps for dark surfaces (brand rule). --> <a class="brand" href="/en/" aria-label="Itqan, home page" data-astro-cid-3ef6ksr2> <img class="brand-mark brand-mark--light" src="/logos/icon.webp" alt="" width="128" height="141" data-astro-cid-3ef6ksr2> <img class="brand-mark brand-mark--dark" src="/logos/icon-reversed.webp" alt="" width="128" height="141" data-astro-cid-3ef6ksr2> </a> <nav class="site-nav" id="site-nav" aria-label="Main navigation" data-open="false" data-astro-cid-3ef6ksr2> <ul class="site-nav__list" data-astro-cid-3ef6ksr2> <li data-astro-cid-3ef6ksr2> <a class="site-nav__link" href="/en/how-it-works/" data-astro-cid-3ef6ksr2> <span data-astro-cid-3ef6ksr2>How it works</span> </a> </li><li data-astro-cid-3ef6ksr2> <a class="site-nav__link" href="/en/proof/" data-astro-cid-3ef6ksr2> <span data-astro-cid-3ef6ksr2>Proof</span> </a> </li><li data-astro-cid-3ef6ksr2> <a class="site-nav__link" href="/en/about/" data-astro-cid-3ef6ksr2> <span data-astro-cid-3ef6ksr2>Who we are</span> </a> </li> <!-- Auth actions live in the menu on mobile; on desktop they move to the

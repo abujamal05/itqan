@@ -34,6 +34,27 @@
   position: relative;
 }
 
+/* THE FIELD FOLLOWS ITS INPUT'S DIRECTION, NOT THE PAGE'S.
+ *
+ * Email and password inputs carry `dir="ltr"`, because an address and a
+ * password are Latin strings and must not be reordered by an Arabic page. But
+ * the wrapper around them inherited the PAGE direction, and the two disagreed:
+ *
+ *   - the input resolved `padding-inline-end` against ltr, reserving space on
+ *     the RIGHT;
+ *   - the reveal button and the validation tick resolved `inset-inline-end`
+ *     against rtl, and sat on the LEFT.
+ *
+ * So in Arabic the eye landed exactly where the password's first characters
+ * start, on top of them, with an empty reserved gutter on the opposite side.
+ * Matching the wrapper to the input puts every part of the control in one
+ * coordinate system: text from the left, controls on the right, in both
+ * languages. Fields with `dir="auto"` (the name) are untouched and keep
+ * following the page. */
+.field__control:has(input[dir='ltr']) {
+  direction: ltr;
+}
+
 .field input:not([type='checkbox']) {
   inline-size: 100%;
   min-block-size: 44px;

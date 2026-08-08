@@ -204,6 +204,33 @@ function SkipLink() {
  * `preventScroll` because the scroll reset below owns vertical position;
  * letting focus() also scroll makes the two fight on a short screen.
  */
+/**
+ * Keeps the browser tab's title honest.
+ *
+ * index.html can only ship one static string, and it said "Itqan — Onboarding"
+ * for the life of the session: still there on the dashboard, on jobs, on
+ * courses, months after onboarding was finished. Onboarding is a phase, not the
+ * product, and a tab that keeps announcing it makes a finished account look
+ * unfinished — in a browser with a dozen tabs open, the title IS the product's
+ * name.
+ *
+ * Driven by `user.onboarded`, the server-owned flag, rather than by the route:
+ * an onboarded user glancing at /documents to re-upload is not onboarding
+ * again. Localised, because the title is the most visible piece of copy the
+ * product has and the Arabic side should not read English in the tab.
+ */
+function DocumentTitle() {
+  const { t, locale } = useI18n();
+  const { user } = useAuth();
+  const onboarded = !!user?.onboarded;
+
+  useEffect(() => {
+    document.title = onboarded ? t('doc.title.brand') : t('doc.title.onboarding');
+  }, [onboarded, t, locale]);
+
+  return null;
+}
+
 function RouteFocus() {
   const { pathname } = useLocation();
   const firstPaint = useRef(true);
@@ -232,6 +259,7 @@ export default function App() {
               <FollowSessionLocale />
               <WithOnboarding>
                 <SkipLink />
+                <DocumentTitle />
                 <RouteFocus />
                 <ScreenBoundary>
                   <Routes>

@@ -16,6 +16,35 @@
           document.documentElement.dataset.theme = e.matches ? 'dark' : 'light';
         });
       })();
+
+      /*
+       * Record the language THIS PAGE is in, on every page view.
+       *
+       * The language toggle wrote these keys, but only when it was clicked —
+       * so the preference existed only for people who switched. Someone who
+       * arrived on /en/ from a link, read the English site and signed up had
+       * nothing stored, and the app fell back to its Arabic default: the
+       * language changed under them at exactly the moment they crossed from
+       * the site into the product.
+       *
+       * The page's own locale is the honest signal. It is server rendered into
+       * <html lang>, so it is correct before this runs, and reading a page in a
+       * language is at least as deliberate as toggling to it.
+       *
+       * All three keys, because three different readers exist: the root
+       * redirect and the 404 read `itqan-lang`, the app reads `itqan.locale`
+       * first, and the services answer on the cookie.
+       */
+      (function () {
+        var lang = document.documentElement.lang;
+        if (lang !== 'ar' && lang !== 'en') return;
+        try {
+          localStorage.setItem('itqan-lang', lang);
+          localStorage.setItem('itqan.locale', lang);
+        } catch (e) {}
+        document.cookie =
+          'itqan_locale=' + lang + '; Path=/; Max-Age=31536000; SameSite=Lax';
+      })();
     </script><link rel="stylesheet" href="/_astro/index.RwNyqCjF.css">
 <link rel="stylesheet" href="/_astro/index.BjbIx1yy.css">
 <link rel="stylesheet" href="/_astro/index.C30tcFgP.css"></head> <body> <a class="skip-link" href="#main">Skip to content</a> <header class="site-header" data-astro-cid-3ef6ksr2> <div class="container header-row" data-astro-cid-3ef6ksr2> <!-- Icon-only mark: compact, and it swaps for dark surfaces (brand rule). --> <a class="brand" href="/en/" aria-label="Itqan, home page" data-astro-cid-3ef6ksr2> <img class="brand-mark brand-mark--light" src="/logos/icon.webp" alt="" width="128" height="141" data-astro-cid-3ef6ksr2> <img class="brand-mark brand-mark--dark" src="/logos/icon-reversed.webp" alt="" width="128" height="141" data-astro-cid-3ef6ksr2> </a> <nav class="site-nav" id="site-nav" aria-label="Main navigation" data-open="false" data-astro-cid-3ef6ksr2> <ul class="site-nav__list" data-astro-cid-3ef6ksr2> <li data-astro-cid-3ef6ksr2> <a class="site-nav__link" href="/en/how-it-works/" data-astro-cid-3ef6ksr2> <span data-astro-cid-3ef6ksr2>How it works</span> </a> </li><li data-astro-cid-3ef6ksr2> <a class="site-nav__link" href="/en/proof/" aria-current="page" data-astro-cid-3ef6ksr2> <span data-astro-cid-3ef6ksr2>Proof</span> </a> </li><li data-astro-cid-3ef6ksr2> <a class="site-nav__link" href="/en/about/" data-astro-cid-3ef6ksr2> <span data-astro-cid-3ef6ksr2>Who we are</span> </a> </li> <!-- Auth actions live in the menu on mobile; on desktop they move to the
