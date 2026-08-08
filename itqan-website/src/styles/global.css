@@ -228,13 +228,15 @@ main {
 
 .button--primary:hover {
   background-color: var(--color-accent-hover);
-  transform: translateY(-1px);
+  transform: translateY(calc(-1px * var(--motion-scale)));
   box-shadow: var(--shadow-sm);
 }
 
-/* Tactile press on every button: a small scale down, instant. */
+/* Tactile press on every button: a small scale down, instant.
+   Under reduced motion --motion-scale is 0, so this resolves to scale(1) and
+   the press stops moving — while the colour change still confirms the tap. */
 .button:active {
-  transform: scale(0.97);
+  transform: scale(calc(1 - 0.03 * var(--motion-scale)));
   transition-duration: var(--duration-instant);
 }
 
@@ -322,7 +324,9 @@ main {
    removed here so only the fade remains. */
 html.reveal-ready .reveal {
   opacity: 0;
-  transform: translateY(12px);
+  /* Collapses to translateY(0) under reduced motion, leaving the fade intact —
+     which is exactly what the preference asks for. */
+  transform: translateY(calc(12px * var(--motion-scale)));
   transition:
     opacity var(--duration-slow) var(--ease-out),
     transform var(--duration-slow) var(--ease-out);
@@ -346,11 +350,8 @@ html.reveal-ready .stagger > :nth-child(4) {
   transition-delay: 120ms;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html.reveal-ready .reveal {
-    transform: none;
-  }
-}
+/* The reveal's own reduce override is gone: --motion-scale already zeroes the
+   rise, and the fade it used to destroy is the part worth keeping. */
 
 /* ---- Smooth page transitions -------------------------------------------------
    Native cross-document view transitions: same-origin navigations (including the

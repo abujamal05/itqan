@@ -73,7 +73,7 @@ export function Questions() {
   return (
     <div className="ob">
       <SiteHeader step={1} />
-      <main className="ob__main" id="main">
+      <main className="ob__main" id="main" tabIndex={-1}>
         <div className="stage stage--split enter">
           <aside className="stage__aside">
             {/* His pose tracks the pipeline: analysing while it runs, erroring

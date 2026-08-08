@@ -54,7 +54,15 @@
 
   /* Text (LOCKED RULE: body text is navy; gold is never body text on light) */
   --color-text:          var(--navy);    /* primary */
-  --color-text-muted:    var(--navy-300);/* secondary */
+  /* Secondary text. --navy-300 raw measures 4.32:1 on --paper and 3.9:1 on
+     --sand, so every muted paragraph, hint, label and inactive control in the
+     app sat under WCAG AA. Deepened toward the navy anchor rather than
+     replaced: it is still the same hue, still visibly quieter than
+     --color-text, and now clears 4.5:1 on all three light surfaces
+     (paper 5.6:1, sand 4.8:1, white 5.9:1). No new primitive invented.
+     Kept identical to itqan-website/src/styles/tokens.css — these two files
+     are meant to be in lockstep and had silently drifted. */
+  --color-text-muted:    color-mix(in srgb, var(--navy-300) 84%, var(--navy));
   --color-text-on-gold:  var(--navy);    /* text on a gold fill = navy, always */
   --color-text-on-navy:  var(--paper);   /* text on a navy fill */
   --color-text-inverse:  var(--paper);
@@ -63,6 +71,15 @@
   --color-accent:        var(--gold);
   --color-accent-hover:  #B87826;
   --color-accent-tint:   var(--gold-100);
+  /* Gold-flavoured EMPHASIS TEXT and small glyphs on light. This is the
+     --color-accent-ink the design system has pending sign-off; it is expressed
+     here as a mix of two locked primitives rather than a new hex, so adopting
+     the signed-off --gold-800 later is a one-line swap.
+     Why it exists: --color-accent-hover is a BUTTON FILL, and it was doing
+     double duty as small-glyph and emphasis colour. As a fill it is correct; as
+     14px text it measures 3.44:1 on paper and 2.95:1 on sand. This clears
+     5.6:1 on paper, 4.8:1 on sand and 4.8:1 on tint. */
+  --color-accent-ink:    color-mix(in srgb, var(--gold-600) 76%, var(--navy));
   --color-focus:         var(--navy);    /* focus ring, see components */
 
   --color-danger:        var(--red-500);
@@ -138,6 +155,13 @@
   --ease-hover: ease;                                  /* hover + colour transitions */
   --ease-in: cubic-bezier(0.4, 0, 1, 1);              /* AVOID for UI; special cases only */
 
+  /* ---- MOTION SCALAR ------------------------------------------------------
+     Every movement DISTANCE in the app is multiplied by this. At 1 it changes
+     nothing; reduced motion sets it to 0 and travel collapses while duration,
+     and therefore every fade and colour change, is left completely alone.
+     This is the mechanism that replaces the old blanket kill switch below. */
+  --motion-scale: 1;
+
   /* Spring (JS only — Framer Motion / motion.dev). CSS cannot express these.
      Recommended Apple-style config: { duration: 0.5, bounce: 0.2 }.
      Keep bounce 0.1–0.3; default to NO bounce for Itqan's trust-first tone. */
@@ -166,6 +190,9 @@
   --color-accent:        var(--gold-400); /* lifted for dark legibility */
   --color-accent-hover:  var(--gold-500);
   --color-accent-tint:   rgba(208,140,47,0.16);
+  /* On dark the problem inverts: gold needs LIFTING, not deepening. gold-400
+     reads 8.7:1 on the canvas and 7.9:1 on the sunken surface. */
+  --color-accent-ink:    var(--gold-400);
   --color-focus:         var(--gold-400); /* navy ring is invisible on dark */
 
   --color-danger:        var(--red-400);
@@ -187,12 +214,33 @@
   }
 }
 
-/* Reduced motion: keep fades, drop movement. */
+/* ============================================================================
+   REDUCED MOTION — drop MOVEMENT, keep FEEDBACK.
+
+   This block used to be `animation-duration: 0.01ms !important;
+   transition-duration: 0.01ms !important` on every element, which is not what
+   the preference asks for. It deleted the interface's answers along with its
+   movement: a user who asked for less motion also lost colour fades, border and
+   shadow changes, the focus ring settling, and — in a product whose central
+   experience is waiting on an agent pipeline — the smooth resolution of every
+   loading state. itqan-motion now bans the pattern.
+
+   The replacement collapses the travel scalar to zero and leaves duration
+   untouched, so everything still ANSWERS and nothing TRAVELS. Components with
+   movement a scalar cannot express already carry their own `reduce` override
+   beside them: `.enter` swaps to an opacity-only keyframe, `.meter > i` stops
+   sweeping, and the guide bubble, doc, menu panel and form summary drop their
+   entrance animations. Those now run at their real duration instead of being
+   snapped to 0.01ms, which is the point.
+
+   Kept identical to itqan-website/src/styles/tokens.css.
+   ============================================================================ */
 @media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-scale: 0;
+  }
+
   *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
 }

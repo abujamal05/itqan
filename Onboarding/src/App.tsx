@@ -16,7 +16,7 @@
  * the site while the session is still being read.
  */
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { I18nProvider, useI18n, hasStoredLocale } from './i18n';
 import { ThemeProvider } from './lib/theme';
 import { ApiProvider, useApi } from './state/api';
@@ -183,6 +183,70 @@ function SkipLink() {
   return <a href="#main" className="skip-link">{t('a11y.skipToContent')}</a>;
 }
 
+/**
+ * Move focus and scroll to the top of the new screen on every route change.
+ *
+ * A single page app gets none of this for free. The browser does it on a real
+ * navigation; React just swaps the subtree and changes the URL, so focus stays
+ * where it was — and after a "Continue" button that is an element which no
+ * longer exists, which drops focus to <body>. The practical effect was that
+ * someone advancing upload -> questions -> confirm on a screen reader was told
+ * nothing at each step and had to walk the document from the top to find out
+ * where they had landed. Every one of the ten routes had this.
+ *
+ * `#main` is the same landmark the skip link targets, and it is the right
+ * destination for both: it skips the chrome and starts at the screen's heading.
+ *
+ * Deliberately skipped on first paint. The initial load already starts at the
+ * top, and taking focus there would fight the skip link before the user has
+ * pressed anything.
+ *
+ * `preventScroll` because the scroll reset below owns vertical position;
+ * letting focus() also scroll makes the two fight on a short screen.
+ */
+/**
+ * Keeps the browser tab's title honest.
+ *
+ * index.html can only ship one static string, and it said "Itqan — Onboarding"
+ * for the life of the session: still there on the dashboard, on jobs, on
+ * courses, months after onboarding was finished. Onboarding is a phase, not the
+ * product, and a tab that keeps announcing it makes a finished account look
+ * unfinished — in a browser with a dozen tabs open, the title IS the product's
+ * name.
+ *
+ * Driven by `user.onboarded`, the server-owned flag, rather than by the route:
+ * an onboarded user glancing at /documents to re-upload is not onboarding
+ * again. Localised, because the title is the most visible piece of copy the
+ * product has and the Arabic side should not read English in the tab.
+ */
+function DocumentTitle() {
+  const { t, locale } = useI18n();
+  const { user } = useAuth();
+  const onboarded = !!user?.onboarded;
+
+  useEffect(() => {
+    document.title = onboarded ? t('doc.title.brand') : t('doc.title.onboarding');
+  }, [onboarded, t, locale]);
+
+  return null;
+}
+
+function RouteFocus() {
+  const { pathname } = useLocation();
+  const firstPaint = useRef(true);
+
+  useEffect(() => {
+    if (firstPaint.current) {
+      firstPaint.current = false;
+      return;
+    }
+    document.getElementById('main')?.focus({ preventScroll: true });
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+}
+
 export default function App() {
   return (
     <ThemeProvider>
@@ -195,6 +259,8 @@ export default function App() {
               <FollowSessionLocale />
               <WithOnboarding>
                 <SkipLink />
+                <DocumentTitle />
+                <RouteFocus />
                 <ScreenBoundary>
                   <Routes>
                     <Route path="/upload" element={<RequireOnboarding><Upload /></RequireOnboarding>} />

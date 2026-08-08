@@ -583,7 +583,7 @@ const stepIcons = [
 
   @media (hover: hover) and (pointer: fine) {
     .card:hover {
-      transform: translateY(-4px);
+      transform: translateY(calc(-4px * var(--motion-scale)));
       box-shadow: var(--shadow-lg);
       border-color: var(--color-border-strong);
     }

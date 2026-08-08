@@ -16,11 +16,40 @@
           document.documentElement.dataset.theme = e.matches ? 'dark' : 'light';
         });
       })();
-    </script><link rel="stylesheet" href="/_astro/index.DxpssCrK.css">
+
+      /*
+       * Record the language THIS PAGE is in, on every page view.
+       *
+       * The language toggle wrote these keys, but only when it was clicked —
+       * so the preference existed only for people who switched. Someone who
+       * arrived on /en/ from a link, read the English site and signed up had
+       * nothing stored, and the app fell back to its Arabic default: the
+       * language changed under them at exactly the moment they crossed from
+       * the site into the product.
+       *
+       * The page's own locale is the honest signal. It is server rendered into
+       * <html lang>, so it is correct before this runs, and reading a page in a
+       * language is at least as deliberate as toggling to it.
+       *
+       * All three keys, because three different readers exist: the root
+       * redirect and the 404 read `itqan-lang`, the app reads `itqan.locale`
+       * first, and the services answer on the cookie.
+       */
+      (function () {
+        var lang = document.documentElement.lang;
+        if (lang !== 'ar' && lang !== 'en') return;
+        try {
+          localStorage.setItem('itqan-lang', lang);
+          localStorage.setItem('itqan.locale', lang);
+        } catch (e) {}
+        document.cookie =
+          'itqan_locale=' + lang + '; Path=/; Max-Age=31536000; SameSite=Lax';
+      })();
+    </script><link rel="stylesheet" href="/_astro/index.RwNyqCjF.css">
 <style>.notice-box[data-astro-cid-edisqbwh]{display:flex;align-items:flex-start;gap:var(--space-3);background-color:var(--color-surface-sunken);border:1px dashed var(--color-border-strong);border-radius:var(--radius-md);padding:var(--space-4)}.notice-box[data-astro-cid-edisqbwh] svg[data-astro-cid-edisqbwh]{flex:0 0 auto;margin-block-start:2px;color:var(--color-text-muted)}.notice-box__body[data-astro-cid-edisqbwh]{font-weight:var(--weight-medium)}
 .legal[data-astro-cid-c7uqi73i]{max-inline-size:44rem;padding-block-end:var(--space-16)}.legal-section[data-astro-cid-c7uqi73i]{margin-block-end:var(--space-10)}.legal-section[data-astro-cid-c7uqi73i] h2[data-astro-cid-c7uqi73i]{font-size:var(--text-xl);font-weight:var(--weight-semibold);margin-block-end:var(--space-4)}.legal-section[data-astro-cid-c7uqi73i] ul[data-astro-cid-c7uqi73i]{margin:var(--space-2) 0 0;padding-inline-start:var(--space-5);font-weight:var(--weight-regular);color:var(--color-text-muted);display:flex;flex-direction:column;gap:var(--space-1)}
 </style>
-<link rel="stylesheet" href="/_astro/index.CHxKq7Bd.css"></head> <body> <a class="skip-link" href="#main">انتقل إلى المحتوى</a> <header class="site-header" data-astro-cid-3ef6ksr2> <div class="container header-row" data-astro-cid-3ef6ksr2> <!-- Icon-only mark: compact, and it swaps for dark surfaces (brand rule). --> <a class="brand" href="/ar/" aria-label="إتقان، الصفحة الرئيسية" data-astro-cid-3ef6ksr2> <img class="brand-mark brand-mark--light" src="/logos/icon.webp" alt="" width="128" height="141" data-astro-cid-3ef6ksr2> <img class="brand-mark brand-mark--dark" src="/logos/icon-reversed.webp" alt="" width="128" height="141" data-astro-cid-3ef6ksr2> </a> <nav class="site-nav" id="site-nav" aria-label="التنقل الرئيسي" data-open="false" data-astro-cid-3ef6ksr2> <ul class="site-nav__list" data-astro-cid-3ef6ksr2> <li data-astro-cid-3ef6ksr2> <a class="site-nav__link" href="/ar/how-it-works/" data-astro-cid-3ef6ksr2> <span data-astro-cid-3ef6ksr2>كيف يعمل</span> </a> </li><li data-astro-cid-3ef6ksr2> <a class="site-nav__link" href="/ar/proof/" data-astro-cid-3ef6ksr2> <span data-astro-cid-3ef6ksr2>الدليل</span> </a> </li><li data-astro-cid-3ef6ksr2> <a class="site-nav__link" href="/ar/about/" data-astro-cid-3ef6ksr2> <span data-astro-cid-3ef6ksr2>من نحن</span> </a> </li> <!-- Auth actions live in the menu on mobile; on desktop they move to the
+<link rel="stylesheet" href="/_astro/index.C30tcFgP.css"></head> <body> <a class="skip-link" href="#main">انتقل إلى المحتوى</a> <header class="site-header" data-astro-cid-3ef6ksr2> <div class="container header-row" data-astro-cid-3ef6ksr2> <!-- Icon-only mark: compact, and it swaps for dark surfaces (brand rule). --> <a class="brand" href="/ar/" aria-label="إتقان، الصفحة الرئيسية" data-astro-cid-3ef6ksr2> <img class="brand-mark brand-mark--light" src="/logos/icon.webp" alt="" width="128" height="141" data-astro-cid-3ef6ksr2> <img class="brand-mark brand-mark--dark" src="/logos/icon-reversed.webp" alt="" width="128" height="141" data-astro-cid-3ef6ksr2> </a> <nav class="site-nav" id="site-nav" aria-label="التنقل الرئيسي" data-open="false" data-astro-cid-3ef6ksr2> <ul class="site-nav__list" data-astro-cid-3ef6ksr2> <li data-astro-cid-3ef6ksr2> <a class="site-nav__link" href="/ar/how-it-works/" data-astro-cid-3ef6ksr2> <span data-astro-cid-3ef6ksr2>كيف يعمل</span> </a> </li><li data-astro-cid-3ef6ksr2> <a class="site-nav__link" href="/ar/proof/" data-astro-cid-3ef6ksr2> <span data-astro-cid-3ef6ksr2>الدليل</span> </a> </li><li data-astro-cid-3ef6ksr2> <a class="site-nav__link" href="/ar/about/" data-astro-cid-3ef6ksr2> <span data-astro-cid-3ef6ksr2>من نحن</span> </a> </li> <!-- Auth actions live in the menu on mobile; on desktop they move to the
              tools cluster on the right (see .header-tools below). --> <li class="site-nav__auth" data-astro-cid-3ef6ksr2> <a class="button button--ghost" href="/ar/login/" data-astro-cid-3ef6ksr2>تسجيل الدخول</a> </li> <li class="site-nav__auth" data-astro-cid-3ef6ksr2> <a class="button button--primary button--arrow" href="/ar/signup/" data-astro-cid-3ef6ksr2> <span data-astro-cid-3ef6ksr2>سجّل</span> <svg class="button__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-3ef6ksr2> <path d="M5 12h14m-6-6 6 6-6 6" data-astro-cid-3ef6ksr2></path> </svg> </a> </li> </ul> </nav> <div class="header-tools" data-astro-cid-3ef6ksr2> <!-- Segmented control: both languages shown, active one highlighted. The thumb
      carries a view-transition-name so it glides between the two on navigation
      (in browsers with cross-document view transitions), which is what makes the

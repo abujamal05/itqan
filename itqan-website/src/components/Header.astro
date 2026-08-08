@@ -179,7 +179,7 @@ const isCurrent = (href: string) => path === href || path === href.replace(/\/$/
   }
 
   .brand:hover {
-    transform: translateY(-1px);
+    transform: translateY(calc(-1px * var(--motion-scale)));
   }
 
   .brand-mark {
@@ -332,7 +332,7 @@ const isCurrent = (href: string) => path === href || path === href.replace(/\/$/
       box-shadow: var(--shadow-md);
       display: none;
       opacity: 0;
-      transform: translateY(-8px);
+      transform: translateY(calc(-8px * var(--motion-scale)));
       transition:
         opacity var(--duration-fast) var(--ease-out),
         transform var(--duration-fast) var(--ease-out),
@@ -350,15 +350,11 @@ const isCurrent = (href: string) => path === href || path === href.replace(/\/$/
     @starting-style {
       .site-nav[data-open='true'] {
         opacity: 0;
-        transform: translateY(-8px);
+        transform: translateY(calc(-8px * var(--motion-scale)));
       }
     }
-
-    @media (prefers-reduced-motion: reduce) {
-      .site-nav {
-        transform: none;
-      }
-    }
+    /* No separate reduce override needed: the scalar zeroes the drop and the
+       panel simply fades in. */
 
     .site-nav__list {
       flex-direction: column;
