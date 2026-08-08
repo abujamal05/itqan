@@ -153,6 +153,10 @@ export function Confirm() {
       fullName: draft.name.trim(),
       birthDate: draft.birth || null,
       graduationDate: draft.graduation || null,
+      // Never asked for here. Nothing in the pipeline reads a phone number, so
+      // onboarding does not stop to collect one; it is offered later on the
+      // profile screen for anyone who wants their own record complete.
+      phone: null,
       skills: draft.skills.map((s) => s.name),
       preferences,
       documentId: documents[0]?.id ?? null,

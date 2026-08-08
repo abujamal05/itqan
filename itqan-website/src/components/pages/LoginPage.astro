@@ -80,11 +80,16 @@ const base = `/${locale}`;
         <span class="form-submit__label">{s.login.submit}</span>
       </button>
 
-      {/* The recovery flow is built and reachable at /forgot-password/, but it
-          is NOT linked here yet: the backend cannot send the email, and a
-          recovery link that silently does nothing is worse than none for
-          someone who has already lost access. Restore this the day the
-          endpoints in ForgotPage.astro exist. */}
+      {/* Linked on the team's instruction, with the endpoints now scheduled.
+          It sits after the submit button, not beside the password label: it is
+          the exit for a failed sign in, and putting it next to the field
+          invites people who could have remembered to give up and take the long
+          way round. The page it reaches still states plainly that the email
+          cannot be sent yet, so nobody is left waiting on a message that will
+          not arrive. */}
+      <p class="auth__forgot">
+        <a href={`${base}/forgot-password/`}>{s.login.forgot}</a>
+      </p>
     </form>
 
     <p class="auth__alt">
@@ -136,8 +141,21 @@ const base = `/${locale}`;
     line-height: var(--leading-tight);
   }
 
+  /* Centred under the submit button so it reads as the alternative to it,
+     and quiet: this is the path for the minority who need it, not a second
+     call to action competing with logging in. */
   .auth__forgot {
     margin: 0;
+    text-align: center;
+    font-size: var(--text-sm);
+  }
+
+  .auth__forgot a {
+    color: var(--color-text-muted);
+  }
+
+  .auth__forgot a:hover {
+    color: var(--color-text);
   }
 
   .auth__alt {

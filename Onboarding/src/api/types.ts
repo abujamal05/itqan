@@ -157,9 +157,38 @@ export interface ConfirmedProfile {
   fullName: string;
   birthDate: string | null;
   graduationDate: string | null;
+  /**
+   * OPTIONAL, and never asked for during onboarding.
+   *
+   * Nothing in the pipeline reads it: matching runs on skills and preferences,
+   * and an employer is not contacted by this product. It exists only so someone
+   * who wants their own record complete can complete it, which is why it is
+   * nullable, never validated beyond being a string, and never counted as
+   * "missing" on the profile screen. Asking a graduate for a phone number
+   * before showing them anything would be the most familiar dark pattern in
+   * recruitment, and this product does not have a reason to.
+   */
+  phone: string | null;
   skills: string[];
   preferences: Preferences;
   documentId: string | null;
+}
+
+/**
+ * A role the agents think fits, as opposed to `preferences.preferredRole`,
+ * which is the one the user named.
+ *
+ * Carries its evidence for the same reason every other recommendation does:
+ * this is the product telling someone what it thinks they could be, which is
+ * the single most consequential sentence it will say to them. A bare job title
+ * with no reasoning behind it is exactly the unfounded claim the trust rules
+ * exist to prevent.
+ */
+export interface SuggestedRole {
+  title: string;
+  confidence: Confidence;
+  /** The transcript -> skill -> role chain, in the user's language. */
+  why: string;
 }
 
 /**
@@ -184,6 +213,18 @@ export interface ConfirmProfileResult {
 export interface StoredProfile extends ConfirmedProfile {
   email: string;
   documents: UploadedDocument[];
+  /**
+   * Where the profile picture lives, or null when none was set. Server owned:
+   * it is written by uploadAvatar/removeAvatar, never by updateProfile, so a
+   * profile save can never blank someone's picture as a side effect.
+   */
+  avatarUrl: string | null;
+  /**
+   * READ ONLY. The agents' suggestion, not the user's choice — the user's
+   * choice is `preferences.preferredRole` and the two are shown side by side
+   * on purpose. Null until a run has produced one.
+   */
+  suggestedRole: SuggestedRole | null;
   /** When the profile was last confirmed. Null if it never has been. */
   updatedAt: number | null;
 }
@@ -326,6 +367,33 @@ export interface ItqanApi {
   getProfile(signal?: AbortSignal): Promise<StoredProfile | null>;
   /** Saves edits made from the profile screen, outside the onboarding flow. */
   updateProfile(profile: ConfirmedProfile, signal?: AbortSignal): Promise<{ ok: true }>;
+
+  /**
+   * PENDING BACKEND — `POST /api/profile/avatar`, multipart, field `file`.
+   * Responds `{ "avatarUrl": "<absolute or same-origin URL>" }`.
+   *
+   * Its own endpoint rather than a field on updateProfile because an image is
+   * bytes, not JSON, and because the two have different failure modes: a
+   * rejected picture must not also discard the graduation date typed beside it.
+   * Returns the URL rather than taking one, so the server owns storage and the
+   * client never guesses a path.
+   *
+   * `onProgress` for the same reason uploadDocument has it — this is a request
+   * where the user watches something happen.
+   *
+   * The server should enforce the real limits (type and size); the UI checks
+   * them too, but a client-side check is a courtesy, never a control.
+   */
+  uploadAvatar(
+    input: { file: File; onProgress?: (fraction: number) => void },
+    signal?: AbortSignal,
+  ): Promise<{ avatarUrl: string }>;
+
+  /**
+   * PENDING BACKEND — `DELETE /api/profile/avatar`. 204 on success.
+   * Separate from uploading an empty file, which is not a way to say "remove".
+   */
+  removeAvatar(signal?: AbortSignal): Promise<void>;
   getDashboard(signal?: AbortSignal): Promise<DashboardData>;
   getJobs(signal?: AbortSignal): Promise<JobMatch[]>;
   getCourses(signal?: AbortSignal): Promise<Course[]>;
