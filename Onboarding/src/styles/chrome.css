@@ -192,6 +192,12 @@
 .doc__progress { display: flex; flex-direction: column; gap: var(--space-1); }
 .doc__status { display: inline-flex; align-items: center; gap: var(--space-2); }
 .doc__status--bad { color: var(--color-danger); }
+/* The success half of the pair was referenced by DocumentUpload.tsx and never
+   defined, so a finished upload rendered in the same neutral ink as one still
+   in progress — the one state the user is waiting for looked like the one they
+   were already looking at. Colour is not carrying it alone: the markup pairs
+   this with a check icon. */
+.doc__status--ok { color: var(--color-success); }
 
 .select {
   min-block-size: 44px; padding-block: var(--space-2); padding-inline: var(--space-3);

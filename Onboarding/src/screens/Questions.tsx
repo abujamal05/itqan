@@ -150,7 +150,10 @@ export function Questions() {
               />
             )}
 
-            {!done && <p className="text-sm muted">{t('questions.waiting')}</p>}
+            {/* NOT `muted`. This is the only line telling the user the pipeline
+                is still alive while they answer; it is system status, not a
+                footnote. */}
+            {!done && <p className="text-sm">{t('questions.waiting')}</p>}
 
             <div className="row">
               <Button variant="secondary" onClick={goBack}>{t('action.back')}</Button>

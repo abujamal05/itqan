@@ -168,28 +168,55 @@
    promise, and two whole sections of the dashboard were making it and breaking
    it. Guarded behind a fine pointer too, so a tap never fires it. */
 @media (hover: hover) and (pointer: fine) {
-  .chip:not(.chip--capability):not(.chip--gap):hover { border-color: var(--color-border-strong); }
+  .chip:not(.chip--capability):not(.chip--gap):not(.chip--static):hover { border-color: var(--color-border-strong); }
 }
 
 /* Display chips are not targets, so they do not pay the 44px touch floor. Two
    word-lists were eating ~200px of the mobile fold — bought straight out of the
-   job matches below them. */
-.chip--capability, .chip--gap {
+   job matches below them.
+   `:not(:has(.chip__x))` is the correction: on Confirm these same classes are
+   put on a chip that CONTAINS a 32px remove button, and dropping the floor
+   there left the button bulging out of a 42px pill. A chip with a control in it
+   is a target whatever its variant says. */
+.chip--capability:not(:has(.chip__x)),
+.chip--gap:not(:has(.chip__x)),
+.chip--static {
   min-height: 0;
   padding-block: var(--space-1);
+  cursor: default;
 }
 /* Selected carries a check icon as well as fill — never colour alone. */
 .chip[aria-pressed="true"] { background: var(--color-accent-tint); border-color: var(--color-accent); font-weight: var(--weight-medium); }
 
 /* Capability = something the user already has (check, tinted).
    Gap = something to unlock (plus, sunken). Distinct icon AND shape. */
-.chip--capability { background: var(--color-accent-tint); border-color: transparent; cursor: default; }
-/* The dashed border was --color-border-strong at 1.33:1 against the page —
-   invisible. The two chip FILLS measure 1.01:1 apart, so with an unreadable
-   border the only thing separating "you have this" from "to unlock" was the
-   icon. Muted navy puts the outline at 5.4:1 and makes the shape distinction
-   the comment above already claims. */
-.chip--gap { background: var(--color-surface-sunken); border: 1px dashed var(--color-text-muted); cursor: default; }
+/* Separated by EDGE, because fill alone cannot do it: measured, the gold tint
+   and the sunken well are 1.06:1 apart — both are light warm neutrals and no
+   pairing of the five surfaces separates them. --color-border-accent is
+   --gold-700, the system's gold hairline that actually clears the 3:1 non-text
+   floor (the brand gold measures 2.0:1 and is explicitly barred from being a
+   meaningful border on light). So: capability is a SOLID gold edge on a warm
+   fill, gap is a DASHED neutral edge on a cool well. Four signals apart —
+   edge colour, edge style, fill, and the icon each already carries. */
+.chip--capability {
+  background: var(--color-accent-tint);
+  border: 1px solid var(--color-border-accent);
+  cursor: default;
+}
+/* Separated by FILL, not by a loud outline.
+   The two fills used to measure 1.01:1 apart with an invisible 1.33:1 dashed
+   border, so only the icon distinguished them. My first fix made the dash muted
+   navy at 5.4:1 — which read as noise, and inverted the meaning on Confirm,
+   where `chip--gap` marks a LOW-CONFIDENCE extraction: the least certain items
+   became the loudest things on the screen, against the trust rules.
+   The five-surface palette that just landed solves it properly: capability sits
+   on the warm gold tint, gap sits on the neutral sunken well. Different ground,
+   quiet edge, icon still carrying the meaning. */
+.chip--gap {
+  background: var(--color-surface-sunken);
+  border: 1px dashed var(--color-border-strong);
+  cursor: default;
+}
 
 /* Chips carry service-supplied skill names — the only strings on the dashboard
    that were neither <bdi>-isolated nor breakable. A flex item's automatic
@@ -527,6 +554,11 @@
   padding-inline: var(--space-5); padding-block: var(--space-8);
   padding-block-end: calc(var(--space-20) + env(safe-area-inset-bottom));
   display: flex; flex-direction: column; gap: var(--space-6);
+  /* The query container every grid inside the page measures itself against, so
+     a column count follows the space actually available rather than the
+     viewport, which the sidebar makes a lie of. `inline-size` only — a block
+     container would need a fixed height. */
+  container: main / inline-size;
 }
 @media (min-width: 900px) { .main__inner { padding-block-end: var(--space-12); } }
 
@@ -554,14 +586,28 @@
    column and it hung out of the grid on a narrow phone. The explicit zero
    minimum is what lets the card shrink and the title wrap instead. */
 .grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
-/* 1024, not 700. The sidebar mounts at 900px and takes 272px out of the
-   container, but this breakpoint is on the VIEWPORT, so a match card went from
-   421px wide at 899px to 286px at 900px — a third narrower the moment the
-   window got wider, which is the widest-looking layout producing the narrowest
-   column on the whole range. Two columns now start once there is room for two
-   columns WITH the sidebar. */
-@media (min-width: 1024px) { .grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (min-width: 1100px) { .grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+/* CONTAINER QUERIES, because the viewport was never the right question.
+   The sidebar mounts at 900px and takes 272px out of the content column, so a
+   viewport breakpoint made a match card go from 421px wide at 899px to 286px at
+   900px — a third narrower the moment the window got wider. Moving the
+   breakpoint to 1024px fixed that cliff and created a worse one: Jobs, which
+   uses the same grid and which I never opened, went to a SINGLE column at up to
+   859px, running its evidence paragraph past 110 characters a line.
+   A grid should respond to the space it actually has. `.main__inner` is the
+   container; the columns now change when the column changes, with or without a
+   sidebar, at any viewport. */
+@container main (min-width: 34rem) {
+  .grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container main (min-width: 52rem) {
+  .grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+/* Fallback for engines without container queries: the old viewport rules, set
+   wide enough that the sidebar cannot squeeze a column below a readable width. */
+@supports not (container-type: inline-size) {
+  @media (min-width: 900px) { .grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1200px) { .grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+}
 
 .section__head { display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; }
 .section__title { font-size: var(--text-xl); font-weight: var(--weight-semibold); }
@@ -764,7 +810,11 @@
 @media (min-width: 120rem) {
   .ob__bar, .ob__main, .topbar { max-width: 92rem; }
   .main__inner { max-width: 100rem; }
-  /* A third column earns its place once there is genuinely room for it. */
+}
+/* A third column earns its place once there is genuinely room for it — and
+   that is a fact about the container, not the window. As a viewport rule this
+   sat outside the container-query cascade above and would have fought it. */
+@container main (min-width: 78rem) {
   .grid--2 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
