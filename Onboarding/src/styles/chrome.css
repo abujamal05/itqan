@@ -359,6 +359,9 @@
   min-block-size: 44px;
   border-radius: var(--radius-sm);
 }
+/* Was the one hoverable text on the page with no transition, so it snapped
+   while every button beside it faded. */
+.disclosure { transition: color var(--duration-fast) var(--ease-hover); }
 .disclosure:hover { color: var(--color-accent-ink); }
 
 @media (prefers-reduced-motion: reduce) {
@@ -371,42 +374,80 @@
    about. State is never carried by colour alone: done has a check, current a
    filled ring plus aria-current, upcoming an open outline, and each states its
    condition in words. */
+/* THE STAGES ARE NOT EQUAL, SO THEY ARE NOT DRAWN EQUAL.
+   This was `repeat(auto-fit, minmax(10rem, 1fr))` — every stage the same width,
+   the same weight, the same centred treatment, whether it had already happened
+   or was the one thing to look at. That is a diagram of a process, not an answer
+   about a person, and it is what made the section read as fixed and rigid.
+   `auto` columns with the current stage on `1.4fr` let the one that matters take
+   the room, and the finished ones shrink to what they need. */
 .journey {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-  gap: var(--space-2);
+  position: relative;
+  display: flex; flex-wrap: wrap; align-items: stretch;
+  gap: var(--space-3);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-6) var(--space-5);
+  list-style: none; margin: 0;
 }
-.journey__stage {
-  position: relative;
-  display: flex; flex-direction: column; align-items: center;
-  gap: var(--space-2); text-align: center;
-  padding-inline: var(--space-2);
-}
-/* Drawn on the item rather than between items, so it mirrors with direction
-   automatically and never trails off the last stage. */
-.journey__line {
+
+/* ---- The thread ----------------------------------------------------------
+   One continuous track behind every stage instead of a segment per item, which
+   is the same drawn-line motif the marketing site uses for its three steps and
+   its how-it-works timeline. Tying the two halves of the product together with
+   one gesture is the point.
+   It fills by scaleX to --journey-reached, so it animates on the compositor,
+   and the origin is mirrored by hand because transform-origin has no logical
+   keywords. */
+.journey__track {
   position: absolute;
-  inset-block-start: 18px;
-  inset-inline-end: 50%;
-  inline-size: 100%;
+  inset-block-start: 42px;
+  inset-inline: calc(var(--space-5) + 18px);
   block-size: 2px;
+  border-radius: var(--radius-full);
   background: var(--color-border);
   z-index: 0;
 }
-.journey__stage[data-state='done'] .journey__line,
-.journey__stage[data-state='current'] .journey__line { background: var(--color-accent); }
+.journey__fill {
+  display: block; block-size: 100%; border-radius: inherit;
+  background: var(--color-accent);
+  transform: scaleX(var(--journey-reached, 0));
+  transform-origin: left center;
+  transition: transform var(--duration-slower) var(--ease-out);
+}
+[dir='rtl'] .journey__fill { transform-origin: right center; }
+@media (prefers-reduced-motion: reduce) { .journey__fill { transition: none; } }
+
+.journey__stage {
+  position: relative; z-index: 1;
+  flex: 1 1 8rem; min-inline-size: 0;
+  display: flex; flex-direction: column; align-items: center;
+  gap: var(--space-2); text-align: center;
+  padding: var(--space-3) var(--space-2);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  transition: background-color var(--duration-base) var(--ease-hover),
+              border-color var(--duration-base) var(--ease-hover);
+}
+
+/* The one stage that matters gets the room, the surface and the weight. */
+.journey__stage[data-state='current'] {
+  flex-grow: 1.4;
+  background: var(--color-accent-tint);
+  border-color: var(--color-accent);
+}
+/* Finished work recedes. It is context, not the answer. */
+.journey__stage[data-state='done'] { opacity: 0.85; }
+.journey__stage[data-state='upcoming'] { opacity: 0.7; }
 
 .journey__marker {
-  position: relative; z-index: 1;
   inline-size: 36px; block-size: 36px; border-radius: var(--radius-full);
   display: grid; place-items: center;
   background: var(--color-surface);
   border: 2px solid var(--color-border);
   color: var(--color-text);
+  flex: 0 0 auto;
 }
 .journey__dot {
   inline-size: 8px; block-size: 8px; border-radius: var(--radius-full);
@@ -422,25 +463,34 @@
 }
 .journey__stage[data-state='current'] .journey__dot { background: var(--color-accent); }
 
+.journey__body { display: flex; flex-direction: column; gap: var(--space-1); min-inline-size: 0; }
 .journey__label { font-size: var(--text-sm); font-weight: var(--weight-medium); }
 .journey__stage[data-state='upcoming'] .journey__label { font-weight: var(--weight-regular); }
-.journey__detail { font-size: var(--text-xs); }
+.journey__stage[data-state='current'] .journey__label { font-weight: var(--weight-semibold); }
+.journey__detail { font-size: var(--text-xs); color: var(--color-text-muted); }
+.journey__count { font-size: var(--text-sm); color: var(--color-text-muted); }
 
-/* Phones: one column, marker beside the label, the track running downward. */
+/* Phones: the track runs downward and the stages become rows. The thread has to
+   move with it — as a horizontal rule at 42px it would cut across the column. */
 @media (max-width: 40rem) {
-  .journey { grid-template-columns: 1fr; gap: var(--space-4); }
-  .journey__stage {
-    flex-direction: row; align-items: center; text-align: start;
-    gap: var(--space-3); padding-inline: 0;
-  }
-  .journey__line {
-    inset-block-start: auto;
-    inset-block-end: 50%;
+  .journey { flex-direction: column; gap: var(--space-2); }
+  .journey__track {
+    inset-block: calc(var(--space-6) + 18px);
+    inset-inline-start: calc(var(--space-5) + 17px);
     inset-inline-end: auto;
-    inset-inline-start: 17px;
-    inline-size: 2px;
-    block-size: var(--space-4);
+    inline-size: 2px; block-size: auto;
   }
-  .journey__label { flex: 1; }
-  .journey__detail { flex: 0 0 auto; }
+  .journey__fill {
+    inline-size: 100%;
+    transform: scaleY(var(--journey-reached, 0));
+    transform-origin: center top;
+  }
+  [dir='rtl'] .journey__fill { transform-origin: center top; }
+  .journey__stage {
+    flex: 0 0 auto;
+    flex-direction: row; align-items: center; text-align: start;
+    gap: var(--space-3);
+  }
+  .journey__stage[data-state='current'] { flex-grow: 0; }
+  .journey__body { flex: 1; }
 }
