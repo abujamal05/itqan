@@ -6,14 +6,18 @@
      3. COMPONENT  — per-component overrides, used sparingly.
    Dark mode is a SEMANTIC-LAYER SWAP: primitives never change, only the
    semantic references flip. This is why theming is a token swap, not a rewrite.
+
+   PALETTE REVISION 2026-08-03: brand gold is #F39F1C. The previous #D08C2F is
+   RETIRED — it must not appear anywhere. The whole gold ramp below is rederived
+   from F39F1C; do not mix tones from the old ramp into it.
    ============================================================================ */
 
 :root {
-  /* ---- TIER 1: PRIMITIVES (the five brand values + derived ramp) ---------- */
+  /* ---- TIER 1: PRIMITIVES (the five brand values + derived ramps) --------- */
   /* Brand five (LOCKED) */
   --paper:  #FAF8F3;   /* off-white */
   --sand:   #EEE6D8;   /* warm neutral */
-  --gold:   #D08C2F;   /* brand gold */
+  --gold:   #F39F1C;   /* brand gold — FINAL */
   --maroon: #820000;   /* deep red */
   --navy:   #071055;   /* brand ink */
 
@@ -28,16 +32,22 @@
   --navy-200: #A9AEC9;
   --navy-100: #D6D8E6;
 
-  /* Gold ramp (derived — states + dark-mode accent) */
-  --gold-600: #B07421;    /* pressed / darker gold */
-  --gold-500: #D08C2F;    /* = brand gold */
-  --gold-400: #E0A24A;    /* hover on dark / lift */
-  --gold-100: #F4E4CB;    /* tint fill on light */
+  /* Gold ramp (derived from #F39F1C — states, depth, dark-mode accent).
+     Measured contrast against --paper (#FAF8F3) is noted, because gold's
+     legibility ceiling is the single value people get wrong. */
+  --gold-800: #8F5A0E;   /* 5.4:1 on paper — accent INK, see --color-accent-ink */
+  --gold-700: #C57A14;   /* 3.2:1 on paper — the non-text floor: borders, icons, rules */
+  --gold-600: #D98A15;   /* pressed / darker fill */
+  --gold-500: #F39F1C;   /* = brand gold, the anchor */
+  --gold-400: #FFB443;   /* hover on dark / lift */
+  --gold-300: #FFC978;   /* soft accent, gradient stop */
+  --gold-100: #FDEBCB;   /* tint fill on light */
+  --gold-50:  #FEF6E9;   /* wash, barely-there warm ground */
 
   /* Functional state primitives (NOT brand — never decorative) */
   --red-500:   #820000;   /* danger = maroon */
   --red-400:   #B5322E;   /* danger, dark-mode legible */
-  --amber-500: #D08C2F;   /* warning = gold (reuse) */
+  --amber-500: #F39F1C;   /* warning = gold (reuse) */
   /* NOTE: no "success/valid" hue exists in the brand. --green-* below is a
      PROPOSAL pending your approval — functional only, never decorative.
      If you reject it, success states must rely on icon+label, not colour. */
@@ -45,41 +55,41 @@
   --green-500: #2E8A5F;
 
   /* ---- TIER 2: SEMANTIC (components reference ONLY these) ----------------- */
-  /* Surfaces */
-  --color-bg:            var(--paper);   /* app canvas */
-  --color-surface:       #FFFFFF;        /* raised cards on paper */
-  --color-surface-sunken:var(--sand);    /* wells, secondary panels */
-  --color-border:        #E4DDCF;        /* hairlines on light */
-  --color-border-strong: var(--navy-100);
+  /* Surfaces — five, not two. A system with one card colour reads flat. */
+  --color-bg:             var(--paper);   /* app canvas */
+  --color-surface:        #FFFFFF;        /* raised cards on paper */
+  --color-surface-sunken: var(--sand);    /* wells, secondary panels */
+  --color-surface-warm:   var(--gold-50); /* warm ground for accent sections */
+  --color-surface-inverse:var(--navy);    /* navy panels inside a light page */
+  --color-border:         #E4DDCF;        /* hairlines on light */
+  --color-border-strong:  var(--navy-100);
+  --color-border-accent:  var(--gold-700);/* a gold hairline that actually passes 3:1 */
 
-  /* Text (LOCKED RULE: body text is navy; gold is never body text on light) */
+  /* Text (LOCKED RULE: body text is navy; the brand gold is never body text) */
   --color-text:          var(--navy);    /* primary */
-  /* Secondary text. --navy-300 raw measures 4.32:1 on --paper and 3.9:1 on
-     --sand, so every muted paragraph, hint, label and inactive control in the
-     app sat under WCAG AA. Deepened toward the navy anchor rather than
-     replaced: it is still the same hue, still visibly quieter than
-     --color-text, and now clears 4.5:1 on all three light surfaces
-     (paper 5.6:1, sand 4.8:1, white 5.9:1). No new primitive invented.
-     Kept identical to itqan-website/src/styles/tokens.css — these two files
-     are meant to be in lockstep and had silently drifted. */
+  /* DEVIATION FROM THE SKILL, deliberate and measured.
+     The system ships raw `var(--navy-300)` here, which is #6B72A6 and measures
+     4.32:1 on --paper and 3.90:1 on --sand — below WCAG AA for the secondary
+     text that carries most of both apps. Deepened toward the navy anchor: same
+     hue, still visibly quieter than --color-text, and 5.46:1 on paper, 4.63:1
+     on sand, 5.79:1 on white. This is an upstream bug to fix in
+     itqan-design-system/references/tokens.css; until then this line is the one
+     place these two files are allowed to differ from the skill. */
   --color-text-muted:    color-mix(in srgb, var(--navy-300) 84%, var(--navy));
   --color-text-on-gold:  var(--navy);    /* text on a gold fill = navy, always */
   --color-text-on-navy:  var(--paper);   /* text on a navy fill */
   --color-text-inverse:  var(--paper);
+  /* Deep gold for EMPHASIS text and small headings on light — 5.4:1, passes AA.
+     This is a derived tone, NOT the brand gold, and it does NOT reopen the
+     locked rule: --gold / --color-accent still never carries text on light.
+     PENDING SIGN-OFF alongside --color-success. */
+  --color-accent-ink:    var(--gold-800);
 
   /* Brand / accent / state (gold = fill, accent, state — not text on light) */
   --color-accent:        var(--gold);
-  --color-accent-hover:  #B87826;
+  --color-accent-hover:  var(--gold-600);
   --color-accent-tint:   var(--gold-100);
-  /* Gold-flavoured EMPHASIS TEXT and small glyphs on light. This is the
-     --color-accent-ink the design system has pending sign-off; it is expressed
-     here as a mix of two locked primitives rather than a new hex, so adopting
-     the signed-off --gold-800 later is a one-line swap.
-     Why it exists: --color-accent-hover is a BUTTON FILL, and it was doing
-     double duty as small-glyph and emphasis colour. As a fill it is correct; as
-     14px text it measures 3.44:1 on paper and 2.95:1 on sand. This clears
-     5.6:1 on paper, 4.8:1 on sand and 4.8:1 on tint. */
-  --color-accent-ink:    color-mix(in srgb, var(--gold-600) 76%, var(--navy));
+  --color-accent-wash:   var(--gold-50);
   --color-focus:         var(--navy);    /* focus ring, see components */
 
   --color-danger:        var(--red-500);
@@ -101,6 +111,8 @@
   --space-12: 48px;
   --space-16: 64px;
   --space-20: 80px;
+  --space-24: 96px;
+  --space-32: 128px;   /* section rhythm — big gaps are what make a page breathe */
 
   /* ---- TYPOGRAPHY --------------------------------------------------------- */
   --font-family: 'Rubik', system-ui, sans-serif;   /* Arabic + Latin, sole family */
@@ -118,6 +130,16 @@
   --text-3xl: 1.875rem;  /* 30 */
   --text-4xl: 2.25rem;   /* 36 */
   --text-5xl: 3rem;      /* 48 */
+  /* Display sizes. Scale contrast is the cheapest source of visual life a
+     system has; a page whose largest text is 36px reads like a form. Fluid so
+     the jump survives a phone. */
+  --text-6xl: clamp(3rem, 6vw, 4rem);          /* 48 → 64 */
+  --text-7xl: clamp(3.75rem, 8vw, 5.5rem);     /* 60 → 88 */
+
+  /* Latin-only tracking. NEVER apply any of these to Arabic — letter-spacing
+     breaks the cursive joins. Guard every use with :lang(en) / [dir="ltr"]. */
+  --tracking-tight-latin: -0.02em;   /* display sizes; large type sets loose by default */
+  --tracking-wide-latin:  0.08em;    /* small caps, kickers, eyebrow labels */
 
   /* Line-height: Arabic needs more vertical room than Latin (diacritics). */
   --leading-tight: 1.2;     /* display / headings */
@@ -127,44 +149,113 @@
   /* Arabic renders ~10–15% smaller at equal px. Bump base size in Arabic. */
   --font-scale-arabic: 1.08;
 
+  /* Measure. Unbounded line length is the most common "AI slop" tell. */
+  --measure: 68ch;
+  --measure-narrow: 48ch;
+
   /* ---- RADIUS (brand reads soft/rounded, per the logo lockup) ------------ */
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 20px;
+  --radius-xl: 28px;      /* hero panels, large feature surfaces */
   --radius-full: 9999px;
 
-  /* ---- ELEVATION (navy-tinted, never pure black) ------------------------- */
-  --shadow-sm: 0 1px 2px rgba(7,16,85,0.06);
-  --shadow-md: 0 4px 12px rgba(7,16,85,0.08);
-  --shadow-lg: 0 12px 32px rgba(7,16,85,0.12);
+  /* ---- ELEVATION ---------------------------------------------------------
+     Two-part shadows: a tight KEY shadow for the contact edge plus a wide,
+     soft AMBIENT shadow for the room the object sits in. A single blur is what
+     makes a card look pasted on. Navy-tinted, never pure black — a neutral
+     grey shadow on warm paper is the thing that reads "default template". */
+  --shadow-xs: 0 1px 1px rgba(7,16,85,0.04);
+  --shadow-sm: 0 1px 2px rgba(7,16,85,0.06),
+               0 2px 6px rgba(7,16,85,0.04);
+  --shadow-md: 0 2px 4px rgba(7,16,85,0.06),
+               0 8px 20px rgba(7,16,85,0.07);
+  --shadow-lg: 0 4px 8px rgba(7,16,85,0.07),
+               0 16px 40px rgba(7,16,85,0.10);
+  --shadow-xl: 0 8px 16px rgba(7,16,85,0.08),
+               0 32px 72px rgba(7,16,85,0.14);
 
-  /* ---- MOTION (durations + easing) --------------------------------------- */
-  /* Durations. Product motion stays <300ms; exits run ~20% faster than entrances. */
+  /* Rim light: a 1px inner highlight along the top edge. This is the single
+     cheapest trick for making a surface read as a physical object rather than
+     a coloured rectangle. Compose it with a shadow, don't use it alone. */
+  --rim-light: inset 0 1px 0 rgba(255,255,255,0.7);
+  --rim-light-dark: inset 0 1px 0 rgba(255,255,255,0.06);
+
+  /* Accent glow — for gold surfaces and the licensed emotional peaks only.
+     Not a hover effect for every card. */
+  --glow-gold: 0 4px 16px rgba(243,159,28,0.28);
+  --glow-gold-strong: 0 8px 32px rgba(243,159,28,0.40);
+
+  /* ---- MATERIAL: gradients, sheen, texture -------------------------------
+     Flat fills everywhere is the primary reason a competent design reads
+     lifeless. These are the sanctioned ways to add dimension. Use them on
+     large surfaces (heroes, panels, CTAs), never on body copy backgrounds. */
+  --gradient-gold:      linear-gradient(135deg, var(--gold-400) 0%, var(--gold-500) 45%, var(--gold-600) 100%);
+  --gradient-gold-soft: linear-gradient(180deg, var(--gold-50) 0%, var(--gold-100) 100%);
+  --gradient-navy:      linear-gradient(160deg, var(--navy-700) 0%, var(--navy) 55%, var(--navy-900) 100%);
+  --gradient-paper:     linear-gradient(180deg, #FFFFFF 0%, var(--paper) 100%);
+  /* Sheen: a low-angle highlight swept across a dark or gold panel. */
+  --gradient-sheen:     linear-gradient(105deg, rgba(255,255,255,0) 35%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0) 65%);
+  /* Radial glows for hero/CTA grounds. Position them off-centre; a glow
+     centred behind a headline reads as a stock template. */
+  --glow-field-gold:    radial-gradient(60% 50% at 70% 20%, rgba(243,159,28,0.16) 0%, rgba(243,159,28,0) 70%);
+  --glow-field-navy:    radial-gradient(55% 45% at 25% 15%, rgba(32,44,116,0.20) 0%, rgba(32,44,116,0) 70%);
+
+  /* Texture. A canvas with a whisper of structure never reads as an empty div. */
+  --texture-dot-size: 22px;
+  --texture-dot: radial-gradient(circle at 1px 1px, rgba(7,16,85,0.055) 1px, transparent 0);
+  --texture-dot-dark: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0);
+  --texture-hairline: repeating-linear-gradient(180deg, rgba(7,16,85,0.035) 0 1px, transparent 1px 6px);
+
+  /* Glass / translucency — for sticky headers and overlays. Always pair a
+     backdrop-filter with a real background colour; a filter alone collapses to
+     nothing where backdrop-filter is unsupported. */
+  --glass-blur: 12px;
+  --glass-bg: rgba(250,248,243,0.78);
+  --glass-border: rgba(7,16,85,0.08);
+
+  /* ---- MOTION (durations + easing) ---------------------------------------
+     Product surfaces stay fast. Marketing, onboarding, empty states and the
+     licensed emotional peaks are allowed to breathe — see the itqan-motion
+     skill for which register applies where. Exits run ~20% faster than
+     entrances everywhere. */
   --duration-instant: 100ms;  /* focus, tiny taps */
-  --duration-fast: 150ms;     /* micro-interactions: hover, press */
-  --duration-base: 200ms;     /* standard transition (Material reference) */
+  --duration-quick: 130ms;    /* button press feedback */
+  --duration-fast: 160ms;     /* micro-interactions: hover, press */
+  --duration-base: 200ms;     /* standard transition */
   --duration-slow: 300ms;     /* toasts, drawers, screen-level */
-  --duration-slower: 500ms;   /* rare; large orchestrated moves only */
+  --duration-slower: 500ms;   /* large orchestrated moves, gap-moment reveal */
+  --duration-story: 700ms;    /* MARKETING ONLY — hero choreography, draw-ons */
 
-  /* Easing. Curves from the Emil Kowalski / animations.dev canon.
-     Rule: entering/exiting -> ease-out; on-screen morph -> ease-in-out;
-     hover/colour -> ease; constant motion -> linear. Avoid ease-in for UI. */
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);          /* signature entrance, settles */
+  /* Easing. Strong custom curves, per Emil Kowalski / animations.dev. The
+     built-in CSS keywords are too weak to read as intentional. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);         /* default: entrances, exits */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);     /* more dramatic settle, hero moments */
   --ease-out-soft: cubic-bezier(0.25, 0.46, 0.45, 0.94); /* gentler entrance */
-  --ease-in-out: cubic-bezier(0.65, 0.05, 0.36, 1);   /* movement/morph on screen */
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);     /* movement/morph on screen */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);      /* iOS-like drawer/sheet (Ionic) */
   --ease-hover: ease;                                  /* hover + colour transitions */
+  /* Overshoot. LICENSED, not banned: onboarding, empty states, success
+     milestones, Hud, and the gap moment. Never on a verdict, score, match,
+     table or anything a user acts on. */
+  --ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);              /* AVOID for UI; special cases only */
 
-  /* ---- MOTION SCALAR ------------------------------------------------------
-     Every movement DISTANCE in the app is multiplied by this. At 1 it changes
-     nothing; reduced motion sets it to 0 and travel collapses while duration,
-     and therefore every fade and colour change, is left completely alone.
-     This is the mechanism that replaces the old blanket kill switch below. */
-  --motion-scale: 1;
+  /* Spring (JS only — Motion / motion.dev). CSS cannot express these.
+     Two sanctioned profiles:
+       product    { duration: 0.4, bounce: 0    }  — verdicts, forms, navigation
+       expressive { duration: 0.5, bounce: 0.25 }  — Hud, onboarding, celebration
+     Never exceed bounce 0.3. */
 
-  /* Spring (JS only — Framer Motion / motion.dev). CSS cannot express these.
-     Recommended Apple-style config: { duration: 0.5, bounce: 0.2 }.
-     Keep bounce 0.1–0.3; default to NO bounce for Itqan's trust-first tone. */
+  /* ---- MOTION SCALARS — the reduced-motion mechanism ----------------------
+     Components read these instead of hard-coding travel. When the user asks
+     for reduced motion the distances collapse to zero and the OPACITY and
+     COLOUR transitions keep running at full duration. That is the whole
+     design: reduced motion means less movement, not a dead interface. */
+  --reveal-rise: 12px;        /* scroll-reveal travel */
+  --reveal-scale-from: 0.97;  /* entrance scale floor — never 0, see itqan-motion */
+  --hover-lift: -2px;         /* card/button hover translate */
+  --motion-scale: 1;          /* 1 = full movement, 0 = movement off */
 
   /* ---- Z-INDEX ----------------------------------------------------------- */
   --z-base: 0; --z-dropdown: 100; --z-sticky: 200; --z-overlay: 300;
@@ -175,24 +266,26 @@
    DARK MODE  —  semantic remap only. Primitives above are untouched.
    ============================================================================ */
 [data-theme="dark"] {
-  --color-bg:            var(--navy-950);
-  --color-surface:       var(--navy-900);
-  --color-surface-sunken:var(--navy-800);
-  --color-border:        #1E2A5A;
-  --color-border-strong: var(--navy-600);
+  --color-bg:             var(--navy-950);
+  --color-surface:        var(--navy-900);
+  --color-surface-sunken: var(--navy-800);
+  --color-surface-warm:   rgba(243,159,28,0.07);
+  --color-surface-inverse:var(--paper);
+  --color-border:         #1E2A5A;
+  --color-border-strong:  var(--navy-600);
+  --color-border-accent:  var(--gold-400);
 
   --color-text:          var(--paper);
   --color-text-muted:    var(--navy-200);
   --color-text-on-gold:  var(--navy);     /* unchanged: navy on gold always */
   --color-text-on-navy:  var(--paper);
   --color-text-inverse:  var(--navy);
+  --color-accent-ink:    var(--gold-300); /* the deep tone is invisible on navy */
 
   --color-accent:        var(--gold-400); /* lifted for dark legibility */
-  --color-accent-hover:  var(--gold-500);
-  --color-accent-tint:   rgba(208,140,47,0.16);
-  /* On dark the problem inverts: gold needs LIFTING, not deepening. gold-400
-     reads 8.7:1 on the canvas and 7.9:1 on the sunken surface. */
-  --color-accent-ink:    var(--gold-400);
+  --color-accent-hover:  var(--gold-300);
+  --color-accent-tint:   rgba(243,159,28,0.16);
+  --color-accent-wash:   rgba(243,159,28,0.07);
   --color-focus:         var(--gold-400); /* navy ring is invisible on dark */
 
   --color-danger:        var(--red-400);
@@ -201,9 +294,24 @@
   --color-success:       #46A97A;
   --color-info:          var(--navy-300);
 
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.45);
-  --shadow-lg: 0 12px 32px rgba(0,0,0,0.55);
+  /* Depth inverts: on dark, elevation reads through a lighter surface and a
+     rim light, not through a bigger shadow. Keep shadows for the contact edge
+     but let the rim do the lifting. */
+  --shadow-xs: 0 1px 1px rgba(0,0,0,0.30);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.40), 0 2px 6px rgba(0,0,0,0.24);
+  --shadow-md: 0 2px 4px rgba(0,0,0,0.45), 0 8px 20px rgba(0,0,0,0.30);
+  --shadow-lg: 0 4px 8px rgba(0,0,0,0.50), 0 16px 40px rgba(0,0,0,0.38);
+  --shadow-xl: 0 8px 16px rgba(0,0,0,0.55), 0 32px 72px rgba(0,0,0,0.48);
+  --rim-light: var(--rim-light-dark);
+
+  --gradient-paper: linear-gradient(180deg, var(--navy-800) 0%, var(--navy-900) 100%);
+  --glow-field-gold: radial-gradient(60% 50% at 70% 20%, rgba(243,159,28,0.14) 0%, rgba(243,159,28,0) 70%);
+  --glow-field-navy: radial-gradient(55% 45% at 25% 15%, rgba(32,44,116,0.45) 0%, rgba(32,44,116,0) 70%);
+  --texture-dot: var(--texture-dot-dark);
+  --texture-hairline: repeating-linear-gradient(180deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 6px);
+
+  --glass-bg: rgba(6,12,43,0.72);
+  --glass-border: rgba(255,255,255,0.08);
 }
 
 /* Respect the OS setting when no explicit [data-theme] is set. */
@@ -215,32 +323,47 @@
 }
 
 /* ============================================================================
-   REDUCED MOTION — drop MOVEMENT, keep FEEDBACK.
+   REDUCED MOTION  —  less movement, NOT a dead interface.
 
-   This block used to be `animation-duration: 0.01ms !important;
-   transition-duration: 0.01ms !important` on every element, which is not what
-   the preference asks for. It deleted the interface's answers along with its
-   movement: a user who asked for less motion also lost colour fades, border and
-   shadow changes, the focus ring settling, and — in a product whose central
-   experience is waiting on an agent pipeline — the smooth resolution of every
-   loading state. itqan-motion now bans the pattern.
+   The old blanket `animation-duration: 0.01ms !important` on every element is
+   BANNED. It does not respect the preference, it deletes the interface's
+   feedback: a user who asked for less movement still gets a button that looks
+   broken because its colour snaps, a toast that teleports, and a skeleton that
+   never resolves. WCAG asks for movement to be removed, not for the product to
+   stop responding.
 
-   The replacement collapses the travel scalar to zero and leaves duration
-   untouched, so everything still ANSWERS and nothing TRAVELS. Components with
-   movement a scalar cannot express already carry their own `reduce` override
-   beside them: `.enter` swaps to an opacity-only keyframe, `.meter > i` stops
-   sweeping, and the guide bubble, doc, menu panel and form summary drop their
-   entrance animations. Those now run at their real duration instead of being
-   snapped to 0.01ms, which is the point.
-
-   Kept identical to itqan-website/src/styles/tokens.css.
+   The mechanism instead:
+     1. The scalars above collapse — every component that reads --reveal-rise,
+        --hover-lift or --motion-scale loses its travel automatically.
+     2. The safety net below restricts what may transition to the non-moving
+        properties, at full duration, so fades and colour changes survive.
+     3. Keyframe animations that move CANNOT be caught generically. Each one
+        ships its own reduced-motion swap beside it. That is a component
+        requirement, not an optional nicety.
    ============================================================================ */
 @media (prefers-reduced-motion: reduce) {
   :root {
+    --reveal-rise: 0px;
+    --reveal-scale-from: 1;
+    --hover-lift: 0px;
     --motion-scale: 0;
+    /* Movement is gone, so entrances no longer need to cover distance. */
+    --duration-story: var(--duration-slow);
   }
 
+  html { scroll-behavior: auto; }
+
+  /* Safety net: strip transitions of anything that moves, keep the rest
+     running normally. Components should still declare their own swap. */
   *, *::before, *::after {
-    scroll-behavior: auto !important;
+    transition-property: opacity, color, background-color, border-color,
+                         box-shadow, fill, stroke, filter !important;
+  }
+
+  /* Infinite decorative loops (shimmer, float, orbit) stop. Finite,
+     single-run animations are left alone — they are usually the thing that
+     tells the user something finished. */
+  *, *::before, *::after {
+    animation-iteration-count: 1 !important;
   }
 }

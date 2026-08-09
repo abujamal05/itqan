@@ -192,6 +192,12 @@
 .doc__progress { display: flex; flex-direction: column; gap: var(--space-1); }
 .doc__status { display: inline-flex; align-items: center; gap: var(--space-2); }
 .doc__status--bad { color: var(--color-danger); }
+/* The success half of the pair was referenced by DocumentUpload.tsx and never
+   defined, so a finished upload rendered in the same neutral ink as one still
+   in progress — the one state the user is waiting for looked like the one they
+   were already looking at. Colour is not carrying it alone: the markup pairs
+   this with a check icon. */
+.doc__status--ok { color: var(--color-success); }
 
 .select {
   min-block-size: 44px; padding-block: var(--space-2); padding-inline: var(--space-3);
@@ -359,6 +365,9 @@
   min-block-size: 44px;
   border-radius: var(--radius-sm);
 }
+/* Was the one hoverable text on the page with no transition, so it snapped
+   while every button beside it faded. */
+.disclosure { transition: color var(--duration-fast) var(--ease-hover); }
 .disclosure:hover { color: var(--color-accent-ink); }
 
 @media (prefers-reduced-motion: reduce) {
@@ -371,42 +380,91 @@
    about. State is never carried by colour alone: done has a check, current a
    filled ring plus aria-current, upcoming an open outline, and each states its
    condition in words. */
+/* THE STAGES ARE NOT EQUAL, SO THEY ARE NOT DRAWN EQUAL.
+   This was `repeat(auto-fit, minmax(10rem, 1fr))` — every stage the same width,
+   the same weight, the same centred treatment, whether it had already happened
+   or was the one thing to look at. That is a diagram of a process, not an answer
+   about a person, and it is what made the section read as fixed and rigid.
+   `auto` columns with the current stage on `1.4fr` let the one that matters take
+   the room, and the finished ones shrink to what they need. */
 .journey {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-  gap: var(--space-2);
+  position: relative;
+  display: flex; flex-wrap: wrap; align-items: stretch;
+  gap: var(--space-3);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-6) var(--space-5);
+  list-style: none; margin: 0;
 }
-.journey__stage {
-  position: relative;
-  display: flex; flex-direction: column; align-items: center;
-  gap: var(--space-2); text-align: center;
-  padding-inline: var(--space-2);
-}
-/* Drawn on the item rather than between items, so it mirrors with direction
-   automatically and never trails off the last stage. */
-.journey__line {
+
+/* ---- The thread ----------------------------------------------------------
+   ONE SHARED VALUE drives the whole geometry: where a marker's centre sits
+   inside its own stage. Everything else is derived from it, so nothing can
+   drift out of alignment when a padding changes.
+
+     --rail-y = stage padding-block-start + stage border + half the marker
+
+   The rail is drawn PER STAGE, spanning that stage's own width, which is why
+   it always passes through that stage's own marker no matter how wide the
+   stage is. A single track across the whole list cannot do this: the current
+   stage is deliberately wider than the others, so marker centres are not
+   evenly spaced and no constant inset lands on them. That is exactly how the
+   previous version failed — measured in the browser at 12px above the markers,
+   109px of bare line at each end, and a fill overshooting its marker by 45px.
+
+   Half-rails on the ends so the line starts and stops at a marker rather than
+   at the panel's padding. Colour carries progress: a stage that is done or
+   current has an accent rail behind it, upcoming stays a hairline. */
+.journey { --rail-y: calc(var(--space-3) + 1px + 18px); }
+
+.journey__rail {
   position: absolute;
-  inset-block-start: 18px;
-  inset-inline-end: 50%;
-  inline-size: 100%;
+  z-index: 0;
+  inset-block-start: calc(var(--rail-y) - 1px);
+  /* Reaches half the gap either side so consecutive segments meet cleanly. */
+  inset-inline: calc(var(--space-3) / -2);
   block-size: 2px;
   background: var(--color-border);
-  z-index: 0;
 }
-.journey__stage[data-state='done'] .journey__line,
-.journey__stage[data-state='current'] .journey__line { background: var(--color-accent); }
+.journey__stage:first-child .journey__rail { inset-inline-start: 50%; }
+.journey__stage:last-child  .journey__rail { inset-inline-end: 50%; }
+.journey__stage:only-child  .journey__rail { display: none; }
+
+.journey__stage[data-state='done'] .journey__rail,
+.journey__stage[data-state='current'] .journey__rail {
+  background: var(--color-border-accent);
+}
+
+.journey__stage {
+  position: relative; z-index: 1;
+  flex: 1 1 8rem; min-inline-size: 0;
+  display: flex; flex-direction: column; align-items: center;
+  gap: var(--space-2); text-align: center;
+  padding: var(--space-3) var(--space-2);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  transition: background-color var(--duration-base) var(--ease-hover),
+              border-color var(--duration-base) var(--ease-hover);
+}
+
+/* The one stage that matters gets the room, the surface and the weight. */
+.journey__stage[data-state='current'] {
+  flex-grow: 1.4;
+  background: var(--color-accent-tint);
+  border-color: var(--color-accent);
+}
+/* Finished work recedes. It is context, not the answer. */
+.journey__stage[data-state='done'] { opacity: 0.85; }
+.journey__stage[data-state='upcoming'] { opacity: 0.7; }
 
 .journey__marker {
-  position: relative; z-index: 1;
   inline-size: 36px; block-size: 36px; border-radius: var(--radius-full);
   display: grid; place-items: center;
   background: var(--color-surface);
   border: 2px solid var(--color-border);
   color: var(--color-text);
+  flex: 0 0 auto;
 }
 .journey__dot {
   inline-size: 8px; block-size: 8px; border-radius: var(--radius-full);
@@ -422,25 +480,63 @@
 }
 .journey__stage[data-state='current'] .journey__dot { background: var(--color-accent); }
 
+.journey__body { display: flex; flex-direction: column; gap: var(--space-1); min-inline-size: 0; }
 .journey__label { font-size: var(--text-sm); font-weight: var(--weight-medium); }
 .journey__stage[data-state='upcoming'] .journey__label { font-weight: var(--weight-regular); }
-.journey__detail { font-size: var(--text-xs); }
+.journey__stage[data-state='current'] .journey__label { font-weight: var(--weight-semibold); }
+.journey__detail { font-size: var(--text-xs); color: var(--color-text-muted); }
+.journey__count { font-size: var(--text-sm); color: var(--color-text-muted); }
 
-/* Phones: one column, marker beside the label, the track running downward. */
+/* The destination. A track with no endpoint is a progress bar; this is what
+   makes it a journey, and it names the same target the readiness score above
+   is measured against. */
+.journey__target {
+  display: flex; align-items: center; gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+.journey__target svg { color: var(--color-accent-ink); flex: 0 0 auto; }
+
+/* The same pairing in the readiness block, so the two read as one statement. */
+.target {
+  display: flex; align-items: center; gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+.target svg { color: var(--color-accent-ink); flex: 0 0 auto; }
+.target__hint { color: var(--color-text-muted); font-style: normal; }
+
+/* Phones: the track runs downward and the stages become rows. The thread has to
+   move with it — as a horizontal rule at 42px it would cut across the column. */
 @media (max-width: 40rem) {
-  .journey { grid-template-columns: 1fr; gap: var(--space-4); }
+  .journey { flex-direction: column; gap: var(--space-2); }
   .journey__stage {
+    flex: 0 0 auto;
     flex-direction: row; align-items: center; text-align: start;
-    gap: var(--space-3); padding-inline: 0;
+    gap: var(--space-3);
   }
-  .journey__line {
-    inset-block-start: auto;
-    inset-block-end: 50%;
+  .journey__stage[data-state='current'] { flex-grow: 0; }
+  .journey__body { flex: 1; }
+
+  /* The rail turns vertical and runs down the marker column. Same principle:
+     it spans this stage's own block extent and passes through this stage's own
+     marker, so a row that grows because its label wrapped keeps its line
+     attached. --rail-x is the inline twin of --rail-y. */
+  .journey { --rail-x: calc(var(--space-2) + 1px + 18px); }
+  .journey__rail {
+    inset-block: calc(var(--space-2) / -2);
+    inset-inline: auto;
+    inset-inline-start: calc(var(--rail-x) - 1px);
+    inline-size: 2px; block-size: auto;
+  }
+  /* The inline reset is load-bearing. The desktop end-cap rules set
+     `inset-inline-start/end: 50%` at specificity (0,3,0), which outranks the
+     mobile `.journey__rail` rule at (0,1,0) — so without clearing them here the
+     first stage's rail sat at half the row's WIDTH instead of on the marker
+     column. Measured: 113px off at 375px, first stage only. */
+  .journey__stage:first-child .journey__rail,
+  .journey__stage:last-child  .journey__rail {
+    inset-inline-start: calc(var(--rail-x) - 1px);
     inset-inline-end: auto;
-    inset-inline-start: 17px;
-    inline-size: 2px;
-    block-size: var(--space-4);
   }
-  .journey__label { flex: 1; }
-  .journey__detail { flex: 0 0 auto; }
+  .journey__stage:first-child .journey__rail { inset-block-start: 50%; inset-block-end: calc(var(--space-2) / -2); }
+  .journey__stage:last-child  .journey__rail { inset-block-end: 50%; inset-block-start: calc(var(--space-2) / -2); }
 }

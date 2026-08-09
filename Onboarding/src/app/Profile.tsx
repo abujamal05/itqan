@@ -434,7 +434,11 @@ export function Profile() {
               document re-runs the pipeline and rewrites the skills, courses and
               matches this person may have spent time reading — that is worth
               knowing before the click, not on the next screen. */}
-          <p className="text-sm muted">{t('profile.docsRereads')}</p>
+          {/* NOT `muted`. This warns that an action will rewrite results the
+              user may have spent time reading; demoting it to the same weight
+              as an empty-state placeholder was a regression from a dashboard
+              change that never looked at this screen. */}
+          <p className="text-sm">{t('profile.docsRereads')}</p>
           <div className="row">
             <Link className="btn btn--secondary" to="/documents">{t('profile.docsReplace')}</Link>
           </div>

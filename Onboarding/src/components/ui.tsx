@@ -72,9 +72,31 @@ export function Badge({ children, tone = 'neutral' }: { children: ReactNode; ton
 
 /* -------------------------------------------------------------------- Chip */
 
+/**
+ * A chip. Interactive when it can do something, inert markup when it cannot.
+ *
+ * It used to render a `<button>` unconditionally, so Profile's "still missing"
+ * list and its read-only skills list — neither of which has an `onToggle` —
+ * were buttons that announced themselves as buttons, took focus, offered a
+ * hover state and did nothing when pressed. A hover state is a promise. That
+ * exact bug was fixed on the dashboard by rescoping the CSS while these two
+ * lists, which are the same bug in the same component, were left standing.
+ * Deciding the element from the props fixes both, and any future caller.
+ */
 export function Chip({
   children, selected, onToggle, ...rest
 }: { children: ReactNode; selected?: boolean; onToggle?: () => void } & ButtonHTMLAttributes<HTMLButtonElement>) {
+  const interactive = !!onToggle || !!rest.onClick;
+
+  if (!interactive) {
+    return (
+      <span className="chip chip--static">
+        {selected && <Check size={14} aria-hidden="true" />}
+        {children}
+      </span>
+    );
+  }
+
   return (
     <button type="button" className="chip" aria-pressed={selected} onClick={onToggle} {...rest}>
       {selected && <Check size={14} aria-hidden="true" />}
@@ -212,7 +234,11 @@ export function EmptyState({ title, body, action }: { title: string; body: strin
   return (
     <div className="empty">
       <div className="stack stack--sm">
-        <h3 className="section__title">{title}</h3>
+        {/* card__title, not section__title: this h3 sits INSIDE a section and
+            was rendering at the same 20px/600 as the h2 above it on Jobs,
+            Courses, Profile and the dashboard. Completing a fix that was only
+            half applied when .card__title was introduced. */}
+        <h3 className="card__title">{title}</h3>
         <p className="muted">{body}</p>
       </div>
       {action}
