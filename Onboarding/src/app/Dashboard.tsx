@@ -89,13 +89,43 @@ export function Dashboard() {
    * rendered as a crash. A refetch now keeps the page it already has and marks
    * it busy instead.
    */
-  if (loading && !data) return <DashboardSkeleton />;
+  /**
+   * Every branch below keeps the page heading.
+   *
+   * Three of the four used to drop it: the skeleton rendered no heading at all,
+   * and the in-flight and error branches went straight to EmptyState's h3, so a
+   * screen reader met a document whose first heading was level three and whose
+   * h1 did not exist. Which branch rendered is a data condition; it should not
+   * change the shape of the document outline.
+   */
+  const header = (
+    <header className="stack stack--sm">
+      <h1 className="headline">{t('dash.greeting', { name: firstName })}</h1>
+      <p className="subhead">{t('dash.sub')}</p>
+    </header>
+  );
+
+  if (loading && !data) return <DashboardSkeleton header={header} />;
   // The dashboard 404s until the pipeline's second half lands, and rendering an
   // error for that told a working product's users it was broken.
   if ((error || !data) && inFlight) {
-    return <Card><EmptyState title={t('state.workingTitle')} body={t('state.workingSub')} /></Card>;
+    return (
+      <div className="stack stack--page seq">
+        {header}
+        <Card><EmptyState title={t('state.workingTitle')} body={t('state.workingSub')} /></Card>
+      </div>
+    );
   }
-  if (error || !data) return <ErrorState onRetry={reload} />;
+  if (error || !data) {
+    return (
+      <div className="stack stack--page seq">
+        {header}
+        {/* Carded, like the in-flight branch beside it. One of these two was
+            bare and the other was not, for no reason either could state. */}
+        <Card><ErrorState onRetry={reload} /></Card>
+      </div>
+    );
+  }
 
   const standings = showAllSkills ? data.standings : data.standings.slice(0, SKILLS_SHOWN);
   const hiddenSkills = Math.max(0, data.standings.length - SKILLS_SHOWN);
@@ -107,10 +137,7 @@ export function Dashboard() {
     // the whole page. A page that arrives as one block tells the eye nothing
     // about where to begin; one that assembles top-down does.
     <div className="stack stack--page seq" aria-busy={loading || undefined}>
-      <header className="stack stack--sm">
-        <h1 className="headline">{t('dash.greeting', { name: firstName })}</h1>
-        <p className="subhead">{t('dash.sub')}</p>
-      </header>
+      {header}
 
       {/* 1. Where you stand. */}
       <section aria-labelledby="dash-readiness">
@@ -183,7 +210,9 @@ export function Dashboard() {
             most needs to be told what to do about it. */}
         {data.strengths.length > 0 ? (
           <div className="chips">
-            {data.strengths.map((s) => <CapabilityChip key={s}>{s}</CapabilityChip>)}
+            {/* <bdi>: an English skill name inside an Arabic page, same as
+                every other service string on this screen already does. */}
+            {data.strengths.map((s) => <CapabilityChip key={s}><bdi>{s}</bdi></CapabilityChip>)}
           </div>
         ) : (
           <p className="text-sm muted">{t('dash.noStrengths')}</p>
@@ -203,7 +232,7 @@ export function Dashboard() {
         <p className="section__note">{t('dash.gapsSub')}</p>
         {data.gaps.length > 0 ? (
           <div className="chips">
-            {data.gaps.map((g) => <GapChip key={g}>{g}</GapChip>)}
+            {data.gaps.map((g) => <GapChip key={g}><bdi>{g}</bdi></GapChip>)}
           </div>
         ) : (
           <p className="text-sm muted">{t('dash.noGaps')}</p>
@@ -276,9 +305,10 @@ export function Dashboard() {
  * grids. A skeleton's whole job is to tell the eye what is coming; one that
  * describes a different layout makes the arrival feel like a jump.
  */
-function DashboardSkeleton() {
+function DashboardSkeleton({ header }: { header: React.ReactNode }) {
   return (
-    <div className="stack stack--page" aria-hidden="true">
+    <div className="stack stack--page">
+      {header}
       <Card><LoadingBlock rows={4} /></Card>
       <div className="grid grid--2">
         <Card><LoadingBlock rows={3} /></Card>

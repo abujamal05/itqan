@@ -184,7 +184,18 @@
 /* Capability = something the user already has (check, tinted).
    Gap = something to unlock (plus, sunken). Distinct icon AND shape. */
 .chip--capability { background: var(--color-accent-tint); border-color: transparent; cursor: default; }
-.chip--gap { background: var(--color-surface-sunken); border: 1px dashed var(--color-border-strong); cursor: default; }
+/* The dashed border was --color-border-strong at 1.33:1 against the page —
+   invisible. The two chip FILLS measure 1.01:1 apart, so with an unreadable
+   border the only thing separating "you have this" from "to unlock" was the
+   icon. Muted navy puts the outline at 5.4:1 and makes the shape distinction
+   the comment above already claims. */
+.chip--gap { background: var(--color-surface-sunken); border: 1px dashed var(--color-text-muted); cursor: default; }
+
+/* Chips carry service-supplied skill names — the only strings on the dashboard
+   that were neither <bdi>-isolated nor breakable. A flex item's automatic
+   minimum is its min-content, so one long unbroken token pushed out of the
+   column on a phone. */
+.chip { max-inline-size: 100%; overflow-wrap: anywhere; }
 .chip--removable { padding-inline-end: var(--space-2); }
 .chip__x {
   display: inline-flex; align-items: center; justify-content: center;
@@ -334,6 +345,7 @@
    motion floor rules out. */
 .meter--level { block-size: 8px; background: var(--color-accent-tint); }
 .meter--level > i {
+  background: var(--color-meter-fill);   /* 3.15:1 on the track — see tokens */
   inline-size: 100%;
   /* PHYSICAL, mirrored by hand. `transform-origin` takes <position> only —
      `inline-start` is not a valid value, the declaration would be dropped, and
@@ -522,7 +534,13 @@
    column and it hung out of the grid on a narrow phone. The explicit zero
    minimum is what lets the card shrink and the title wrap instead. */
 .grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
-@media (min-width: 700px) { .grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* 1024, not 700. The sidebar mounts at 900px and takes 272px out of the
+   container, but this breakpoint is on the VIEWPORT, so a match card went from
+   421px wide at 899px to 286px at 900px — a third narrower the moment the
+   window got wider, which is the widest-looking layout producing the narrowest
+   column on the whole range. Two columns now start once there is room for two
+   columns WITH the sidebar. */
+@media (min-width: 1024px) { .grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (min-width: 1100px) { .grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
 .section__head { display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; }
@@ -693,6 +711,12 @@
 
 @media (prefers-reduced-motion: reduce) {
   .spinner, .skeleton { animation: none; }
+  /* The sidebar collapse is the largest movement in the app — 272px to 76px,
+     reflowing the whole main column — and it was the one that ignored the
+     preference completely. No scalar can help: the travel IS the width change,
+     so the honest reduced-motion answer is to arrive at the new width without
+     the journey. The chevron flip goes with it. */
+  .sidebar, .sidebar__collapse svg { transition: none; }
 }
 
 /* The mascot's own rules live in chrome.css, next to the bubble he speaks
