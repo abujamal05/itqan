@@ -333,8 +333,25 @@
 .steps__label { font-size: var(--text-sm); color: var(--color-text); white-space: nowrap; }
 
 /* Determinate work meter for the parse pipeline. */
-.meter { block-size: 6px; border-radius: var(--radius-full); background: var(--color-surface-sunken); overflow: hidden; }
-.meter > i { display: block; block-size: 100%; background: var(--color-accent); border-radius: var(--radius-full); transition: inline-size var(--duration-slower) var(--ease-out); }
+/* Track and fill are chosen together, because the pair has to clear 3:1 — this
+   bar is a meaningful graphic (the only signal the pipeline is alive, and the
+   only carrier of a skill's level), not decoration.
+   Measured on light: gold-700 fill on a gold-50 wash = 3.17:1. The same fill on
+   the old sand track was 2.75:1, and the brand gold on sand was 2.02:1.
+   The wash is only 1.07:1 against a white card, so the track would otherwise be
+   invisible and the bar would have no readable extent — hence the inset
+   hairline, which costs no layout because it is a shadow, not a border. */
+.meter {
+  block-size: 6px; border-radius: var(--radius-full);
+  background: var(--color-accent-wash);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  overflow: hidden;
+}
+/* --color-border-accent, not --color-accent. The brand gold measures 2.0:1
+   against the sunken track — below the 3:1 floor for a meaningful graphic, and
+   this bar is the ONLY signal that the pipeline is alive. It renders on every
+   signed-in route, so it was the more load-bearing of the two meters. */
+.meter > i { display: block; block-size: 100%; background: var(--color-border-accent); border-radius: var(--radius-full); transition: inline-size var(--duration-slower) var(--ease-out); }
 
 /* ---- Skill level, NOT pipeline progress ----------------------------------
    Same 6px gold bar previously meant "OCR is 40% done" in the status banner and
@@ -343,9 +360,12 @@
    on a tinted track, and fills by transform rather than by width: `inline-size`
    is a layout property and animating it re-runs layout every frame, which the
    motion floor rules out. */
-.meter--level { block-size: 8px; background: var(--color-accent-tint); }
+.meter--level { block-size: 8px; }
 .meter--level > i {
-  background: var(--color-meter-fill);   /* 3.15:1 on the track — see tokens */
+  /* --color-border-accent is --gold-700, the system's documented non-text floor
+     (3.2:1 on paper). Replaces a --color-meter-fill token I invented locally
+     because --gold-700 was not installed at the time; it now is. */
+  background: var(--color-border-accent);
   inline-size: 100%;
   /* PHYSICAL, mirrored by hand. `transform-origin` takes <position> only —
      `inline-start` is not a valid value, the declaration would be dropped, and
