@@ -735,6 +735,68 @@
   to   { opacity: 1; transform: none; }
 }
 
+/* ==========================================================================
+   DEPTH AND MATERIAL — the dashboard
+   Per itqan-design-system/references/depth-and-materials.md, which this app
+   could not follow until its tokens were installed. Registers were chosen
+   before any of this was written: the top of the page (where you stand + the
+   journey) is EXPRESSIVE, everything below it stays PRODUCT.
+   ========================================================================== */
+
+/* Texture on the canvas. "A canvas with a whisper of structure never reads as
+   an empty div." Fixed, so it does not scroll with content, and masked at the
+   edges so it never draws a hard rectangle. The app had no texture at all. */
+.shell::before {
+  content: ''; position: fixed; inset: 0; z-index: 0;
+  pointer-events: none;
+  background-image: var(--texture-dot);
+  background-size: var(--texture-dot-size) var(--texture-dot-size);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 10%, #000 90%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 10%, #000 90%, transparent);
+}
+[data-theme='dark'] .shell::before { background-image: var(--texture-dot-dark); }
+.shell > * { position: relative; z-index: 1; }
+
+/* THE ONE EXPRESSIVE SURFACE. The readiness block is the page's anchor: it
+   carries the score, the target and the skill standings. Gradient ground,
+   the large radius, a layered shadow composed with the rim light that makes a
+   surface read as an object rather than a coloured rectangle, and an
+   OFF-CENTRE glow — centred is "the single most recognisable stock-template
+   move", so this sits at 70%/20% per the doc. */
+.card--anchor {
+  position: relative;
+  overflow: hidden;
+  background: var(--gradient-paper);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg), var(--rim-light);
+}
+.card--anchor::before {
+  content: ''; position: absolute; inset: 0; z-index: 0;
+  pointer-events: none;
+  background: var(--glow-field-gold);
+}
+.card--anchor > * { position: relative; z-index: 1; }
+[data-theme='dark'] .card--anchor {
+  background: var(--gradient-navy);
+  box-shadow: var(--shadow-lg), var(--rim-light-dark);
+}
+
+/* The journey panel is the second half of the same expressive moment, so it
+   shares the ground rather than reverting to a flat white card. */
+.journey {
+  background: var(--color-surface-warm) !important;
+  box-shadow: var(--shadow-sm), var(--rim-light);
+}
+[data-theme='dark'] .journey { box-shadow: var(--shadow-sm), var(--rim-light-dark); }
+
+/* Display scale. The doc calls a page whose largest text is 36px "a page that
+   reads like a form" and asks for 3:1 headline-to-body minimum; this page was
+   at 2.25:1. The score is the thing worth enlarging — it is the reason the
+   screen exists — not the greeting, which carries no information. */
+.ring__val { font-size: var(--text-5xl); }
+:lang(en) .ring__val { letter-spacing: var(--tracking-tight-latin); }
+
 /* ---- Staged page arrival --------------------------------------------------
    The dashboard used to fade in as ONE block. A single entrance says "this
    thing arrived" — five sections arriving as one slab say nothing about what
@@ -773,7 +835,10 @@
    sunken card, so it is findable without spending another gold fill — the
    accent is already carrying the ring, the meters, the chips and four
    buttons, and scarcity is the only tool a single-accent palette has. */
-.card--accent { border-color: var(--color-accent); }
+/* --color-border-accent (gold-700, 3.2:1), never --color-accent. The brand gold
+   measures 2.02:1 on paper and depth-and-materials.md bars it outright from
+   being a meaningful edge on light. */
+.card--accent { border-color: var(--color-border-accent); }
 
 @media (prefers-reduced-motion: reduce) {
   .spinner, .skeleton { animation: none; }

@@ -157,7 +157,9 @@ export function Dashboard() {
 
       {/* 1. Where you stand. */}
       <section aria-labelledby="dash-readiness">
-        <Card>
+        {/* The page's one expressive surface — see the depth block in app.css.
+            Everything below this stays product register. */}
+        <Card className="card--anchor">
           <div className="readiness">
             <Ring value={data.readiness} />
             {/* `min(16rem, 100%)`, not a bare 16rem. The bare value is a hard
@@ -264,8 +266,10 @@ export function Dashboard() {
         )}
 
         {/* The single most important thing on the page: one named action. It is
-            the only primary button here, so the three "see all" links cannot
-            compete with it. */}
+            the only primary button here, so the two "browse all" links cannot
+            compete with it. Product register — a plain sunken well with a gold
+            hairline, not a second expressive surface. The gold anchor for this
+            viewport is spent on the readiness block above. */}
         <Card className="card--sunken card--accent">
           <div className="stack stack--sm">
             <span className="eyebrow">{t('dash.next')}</span>
