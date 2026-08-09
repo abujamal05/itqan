@@ -399,31 +399,42 @@
 }
 
 /* ---- The thread ----------------------------------------------------------
-   One continuous track behind every stage instead of a segment per item, which
-   is the same drawn-line motif the marketing site uses for its three steps and
-   its how-it-works timeline. Tying the two halves of the product together with
-   one gesture is the point.
-   It fills by scaleX to --journey-reached, so it animates on the compositor,
-   and the origin is mirrored by hand because transform-origin has no logical
-   keywords. */
-.journey__track {
+   ONE SHARED VALUE drives the whole geometry: where a marker's centre sits
+   inside its own stage. Everything else is derived from it, so nothing can
+   drift out of alignment when a padding changes.
+
+     --rail-y = stage padding-block-start + stage border + half the marker
+
+   The rail is drawn PER STAGE, spanning that stage's own width, which is why
+   it always passes through that stage's own marker no matter how wide the
+   stage is. A single track across the whole list cannot do this: the current
+   stage is deliberately wider than the others, so marker centres are not
+   evenly spaced and no constant inset lands on them. That is exactly how the
+   previous version failed — measured in the browser at 12px above the markers,
+   109px of bare line at each end, and a fill overshooting its marker by 45px.
+
+   Half-rails on the ends so the line starts and stops at a marker rather than
+   at the panel's padding. Colour carries progress: a stage that is done or
+   current has an accent rail behind it, upcoming stays a hairline. */
+.journey { --rail-y: calc(var(--space-3) + 1px + 18px); }
+
+.journey__rail {
   position: absolute;
-  inset-block-start: 42px;
-  inset-inline: calc(var(--space-5) + 18px);
-  block-size: 2px;
-  border-radius: var(--radius-full);
-  background: var(--color-border);
   z-index: 0;
+  inset-block-start: calc(var(--rail-y) - 1px);
+  /* Reaches half the gap either side so consecutive segments meet cleanly. */
+  inset-inline: calc(var(--space-3) / -2);
+  block-size: 2px;
+  background: var(--color-border);
 }
-.journey__fill {
-  display: block; block-size: 100%; border-radius: inherit;
-  background: var(--color-accent);
-  transform: scaleX(var(--journey-reached, 0));
-  transform-origin: left center;
-  transition: transform var(--duration-slower) var(--ease-out);
+.journey__stage:first-child .journey__rail { inset-inline-start: 50%; }
+.journey__stage:last-child  .journey__rail { inset-inline-end: 50%; }
+.journey__stage:only-child  .journey__rail { display: none; }
+
+.journey__stage[data-state='done'] .journey__rail,
+.journey__stage[data-state='current'] .journey__rail {
+  background: var(--color-border-accent);
 }
-[dir='rtl'] .journey__fill { transform-origin: right center; }
-@media (prefers-reduced-motion: reduce) { .journey__fill { transition: none; } }
 
 .journey__stage {
   position: relative; z-index: 1;
@@ -476,22 +487,27 @@
 .journey__detail { font-size: var(--text-xs); color: var(--color-text-muted); }
 .journey__count { font-size: var(--text-sm); color: var(--color-text-muted); }
 
+/* The destination. A track with no endpoint is a progress bar; this is what
+   makes it a journey, and it names the same target the readiness score above
+   is measured against. */
+.journey__target {
+  display: flex; align-items: center; gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+.journey__target svg { color: var(--color-accent-ink); flex: 0 0 auto; }
+
+/* The same pairing in the readiness block, so the two read as one statement. */
+.target {
+  display: flex; align-items: center; gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+.target svg { color: var(--color-accent-ink); flex: 0 0 auto; }
+.target__hint { color: var(--color-text-muted); font-style: normal; }
+
 /* Phones: the track runs downward and the stages become rows. The thread has to
    move with it — as a horizontal rule at 42px it would cut across the column. */
 @media (max-width: 40rem) {
   .journey { flex-direction: column; gap: var(--space-2); }
-  .journey__track {
-    inset-block: calc(var(--space-6) + 18px);
-    inset-inline-start: calc(var(--space-5) + 17px);
-    inset-inline-end: auto;
-    inline-size: 2px; block-size: auto;
-  }
-  .journey__fill {
-    inline-size: 100%;
-    transform: scaleY(var(--journey-reached, 0));
-    transform-origin: center top;
-  }
-  [dir='rtl'] .journey__fill { transform-origin: center top; }
   .journey__stage {
     flex: 0 0 auto;
     flex-direction: row; align-items: center; text-align: start;
@@ -499,4 +515,28 @@
   }
   .journey__stage[data-state='current'] { flex-grow: 0; }
   .journey__body { flex: 1; }
+
+  /* The rail turns vertical and runs down the marker column. Same principle:
+     it spans this stage's own block extent and passes through this stage's own
+     marker, so a row that grows because its label wrapped keeps its line
+     attached. --rail-x is the inline twin of --rail-y. */
+  .journey { --rail-x: calc(var(--space-2) + 1px + 18px); }
+  .journey__rail {
+    inset-block: calc(var(--space-2) / -2);
+    inset-inline: auto;
+    inset-inline-start: calc(var(--rail-x) - 1px);
+    inline-size: 2px; block-size: auto;
+  }
+  /* The inline reset is load-bearing. The desktop end-cap rules set
+     `inset-inline-start/end: 50%` at specificity (0,3,0), which outranks the
+     mobile `.journey__rail` rule at (0,1,0) — so without clearing them here the
+     first stage's rail sat at half the row's WIDTH instead of on the marker
+     column. Measured: 113px off at 375px, first stage only. */
+  .journey__stage:first-child .journey__rail,
+  .journey__stage:last-child  .journey__rail {
+    inset-inline-start: calc(var(--rail-x) - 1px);
+    inset-inline-end: auto;
+  }
+  .journey__stage:first-child .journey__rail { inset-block-start: 50%; inset-block-end: calc(var(--space-2) / -2); }
+  .journey__stage:last-child  .journey__rail { inset-block-end: 50%; inset-block-start: calc(var(--space-2) / -2); }
 }
