@@ -168,28 +168,55 @@
    promise, and two whole sections of the dashboard were making it and breaking
    it. Guarded behind a fine pointer too, so a tap never fires it. */
 @media (hover: hover) and (pointer: fine) {
-  .chip:not(.chip--capability):not(.chip--gap):hover { border-color: var(--color-border-strong); }
+  .chip:not(.chip--capability):not(.chip--gap):not(.chip--static):hover { border-color: var(--color-border-strong); }
 }
 
 /* Display chips are not targets, so they do not pay the 44px touch floor. Two
    word-lists were eating ~200px of the mobile fold — bought straight out of the
-   job matches below them. */
-.chip--capability, .chip--gap {
+   job matches below them.
+   `:not(:has(.chip__x))` is the correction: on Confirm these same classes are
+   put on a chip that CONTAINS a 32px remove button, and dropping the floor
+   there left the button bulging out of a 42px pill. A chip with a control in it
+   is a target whatever its variant says. */
+.chip--capability:not(:has(.chip__x)),
+.chip--gap:not(:has(.chip__x)),
+.chip--static {
   min-height: 0;
   padding-block: var(--space-1);
+  cursor: default;
 }
 /* Selected carries a check icon as well as fill — never colour alone. */
 .chip[aria-pressed="true"] { background: var(--color-accent-tint); border-color: var(--color-accent); font-weight: var(--weight-medium); }
 
 /* Capability = something the user already has (check, tinted).
    Gap = something to unlock (plus, sunken). Distinct icon AND shape. */
-.chip--capability { background: var(--color-accent-tint); border-color: transparent; cursor: default; }
-/* The dashed border was --color-border-strong at 1.33:1 against the page —
-   invisible. The two chip FILLS measure 1.01:1 apart, so with an unreadable
-   border the only thing separating "you have this" from "to unlock" was the
-   icon. Muted navy puts the outline at 5.4:1 and makes the shape distinction
-   the comment above already claims. */
-.chip--gap { background: var(--color-surface-sunken); border: 1px dashed var(--color-text-muted); cursor: default; }
+/* Separated by EDGE, because fill alone cannot do it: measured, the gold tint
+   and the sunken well are 1.06:1 apart — both are light warm neutrals and no
+   pairing of the five surfaces separates them. --color-border-accent is
+   --gold-700, the system's gold hairline that actually clears the 3:1 non-text
+   floor (the brand gold measures 2.0:1 and is explicitly barred from being a
+   meaningful border on light). So: capability is a SOLID gold edge on a warm
+   fill, gap is a DASHED neutral edge on a cool well. Four signals apart —
+   edge colour, edge style, fill, and the icon each already carries. */
+.chip--capability {
+  background: var(--color-accent-tint);
+  border: 1px solid var(--color-border-accent);
+  cursor: default;
+}
+/* Separated by FILL, not by a loud outline.
+   The two fills used to measure 1.01:1 apart with an invisible 1.33:1 dashed
+   border, so only the icon distinguished them. My first fix made the dash muted
+   navy at 5.4:1 — which read as noise, and inverted the meaning on Confirm,
+   where `chip--gap` marks a LOW-CONFIDENCE extraction: the least certain items
+   became the loudest things on the screen, against the trust rules.
+   The five-surface palette that just landed solves it properly: capability sits
+   on the warm gold tint, gap sits on the neutral sunken well. Different ground,
+   quiet edge, icon still carrying the meaning. */
+.chip--gap {
+  background: var(--color-surface-sunken);
+  border: 1px dashed var(--color-border-strong);
+  cursor: default;
+}
 
 /* Chips carry service-supplied skill names — the only strings on the dashboard
    that were neither <bdi>-isolated nor breakable. A flex item's automatic
@@ -333,8 +360,25 @@
 .steps__label { font-size: var(--text-sm); color: var(--color-text); white-space: nowrap; }
 
 /* Determinate work meter for the parse pipeline. */
-.meter { block-size: 6px; border-radius: var(--radius-full); background: var(--color-surface-sunken); overflow: hidden; }
-.meter > i { display: block; block-size: 100%; background: var(--color-accent); border-radius: var(--radius-full); transition: inline-size var(--duration-slower) var(--ease-out); }
+/* Track and fill are chosen together, because the pair has to clear 3:1 — this
+   bar is a meaningful graphic (the only signal the pipeline is alive, and the
+   only carrier of a skill's level), not decoration.
+   Measured on light: gold-700 fill on a gold-50 wash = 3.17:1. The same fill on
+   the old sand track was 2.75:1, and the brand gold on sand was 2.02:1.
+   The wash is only 1.07:1 against a white card, so the track would otherwise be
+   invisible and the bar would have no readable extent — hence the inset
+   hairline, which costs no layout because it is a shadow, not a border. */
+.meter {
+  block-size: 6px; border-radius: var(--radius-full);
+  background: var(--color-accent-wash);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  overflow: hidden;
+}
+/* --color-border-accent, not --color-accent. The brand gold measures 2.0:1
+   against the sunken track — below the 3:1 floor for a meaningful graphic, and
+   this bar is the ONLY signal that the pipeline is alive. It renders on every
+   signed-in route, so it was the more load-bearing of the two meters. */
+.meter > i { display: block; block-size: 100%; background: var(--color-border-accent); border-radius: var(--radius-full); transition: inline-size var(--duration-slower) var(--ease-out); }
 
 /* ---- Skill level, NOT pipeline progress ----------------------------------
    Same 6px gold bar previously meant "OCR is 40% done" in the status banner and
@@ -343,9 +387,12 @@
    on a tinted track, and fills by transform rather than by width: `inline-size`
    is a layout property and animating it re-runs layout every frame, which the
    motion floor rules out. */
-.meter--level { block-size: 8px; background: var(--color-accent-tint); }
+.meter--level { block-size: 8px; }
 .meter--level > i {
-  background: var(--color-meter-fill);   /* 3.15:1 on the track — see tokens */
+  /* --color-border-accent is --gold-700, the system's documented non-text floor
+     (3.2:1 on paper). Replaces a --color-meter-fill token I invented locally
+     because --gold-700 was not installed at the time; it now is. */
+  background: var(--color-border-accent);
   inline-size: 100%;
   /* PHYSICAL, mirrored by hand. `transform-origin` takes <position> only —
      `inline-start` is not a valid value, the declaration would be dropped, and
@@ -507,6 +554,11 @@
   padding-inline: var(--space-5); padding-block: var(--space-8);
   padding-block-end: calc(var(--space-20) + env(safe-area-inset-bottom));
   display: flex; flex-direction: column; gap: var(--space-6);
+  /* The query container every grid inside the page measures itself against, so
+     a column count follows the space actually available rather than the
+     viewport, which the sidebar makes a lie of. `inline-size` only — a block
+     container would need a fixed height. */
+  container: main / inline-size;
 }
 @media (min-width: 900px) { .main__inner { padding-block-end: var(--space-12); } }
 
@@ -534,14 +586,28 @@
    column and it hung out of the grid on a narrow phone. The explicit zero
    minimum is what lets the card shrink and the title wrap instead. */
 .grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
-/* 1024, not 700. The sidebar mounts at 900px and takes 272px out of the
-   container, but this breakpoint is on the VIEWPORT, so a match card went from
-   421px wide at 899px to 286px at 900px — a third narrower the moment the
-   window got wider, which is the widest-looking layout producing the narrowest
-   column on the whole range. Two columns now start once there is room for two
-   columns WITH the sidebar. */
-@media (min-width: 1024px) { .grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (min-width: 1100px) { .grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+/* CONTAINER QUERIES, because the viewport was never the right question.
+   The sidebar mounts at 900px and takes 272px out of the content column, so a
+   viewport breakpoint made a match card go from 421px wide at 899px to 286px at
+   900px — a third narrower the moment the window got wider. Moving the
+   breakpoint to 1024px fixed that cliff and created a worse one: Jobs, which
+   uses the same grid and which I never opened, went to a SINGLE column at up to
+   859px, running its evidence paragraph past 110 characters a line.
+   A grid should respond to the space it actually has. `.main__inner` is the
+   container; the columns now change when the column changes, with or without a
+   sidebar, at any viewport. */
+@container main (min-width: 34rem) {
+  .grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container main (min-width: 52rem) {
+  .grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+/* Fallback for engines without container queries: the old viewport rules, set
+   wide enough that the sidebar cannot squeeze a column below a readable width. */
+@supports not (container-type: inline-size) {
+  @media (min-width: 900px) { .grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1200px) { .grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+}
 
 .section__head { display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; }
 .section__title { font-size: var(--text-xl); font-weight: var(--weight-semibold); }
@@ -601,18 +667,56 @@
   font-size: var(--text-4xl); font-weight: var(--weight-semibold);
   line-height: 1;
 }
-/* The denominator. Without it "62" has no scale and the explanation underneath
-   never supplies one. Quiet enough that the figure still reads as one number. */
+/* Ring plus its caption. The caption is a sibling of the disc, not a child of
+   the numeral — see the note in Dashboard.tsx. */
+.ringBlock {
+  display: flex; flex-direction: column; align-items: center;
+  gap: var(--space-1); flex-shrink: 0;
+}
 .ring__of {
-  display: block; text-align: center;
   font-size: var(--text-xs); font-weight: var(--weight-regular);
-  color: var(--color-text-muted);
+  color: var(--color-text-muted); white-space: nowrap;
 }
 
 /* Skill rows: capability and gap read differently by icon+label, not by hue. */
-.skill { display: flex; flex-direction: column; gap: var(--space-2); }
-.skill__head { display: flex; align-items: center; gap: var(--space-3); }
-.skill__name { flex: 1; font-weight: var(--weight-medium); font-size: var(--text-sm); }
+/* ONE ROW PER SKILL, and the meter is SHORT.
+   Seen rendered, the previous layout was the worst thing on the page: name and
+   state on one line, then a full-width bar under it. At 1000px wide, four
+   stacked bars at 90-95% read as four identical gold rules — the eye gets no
+   comparison out of them and they dominated the card they sit in. A meter a
+   thousand pixels long to express "90%" spends enormous visual weight on
+   precision nobody can read.
+   Capped at 12rem and pulled onto the same line as its label: the bars now sit
+   in one column where their differing lengths are actually comparable, and the
+   gold drops from four full-width rules to four small marks. */
+.skill {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(5rem, 12rem) auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+/* `display: contents` lifts the name and state out of their wrapper and into
+   the grid — but that makes them children 1 and 2, which pushed the meter into
+   the third column and collapsed it to nothing. Columns are assigned by hand
+   so DOM order and visual order can differ. */
+/* Rows pinned as well as columns. DOM order is name, state, meter — and grid's
+   default sparse packing never moves the cursor backwards, so once the state
+   was placed in column 3 the meter could not take column 2 of the same row and
+   dropped to a second one. Explicit `grid-row: 1` on all three lets the visual
+   order differ from the source order, which is the point of using grid here. */
+.skill__head { display: contents; }
+.skill__name { grid-column: 1; grid-row: 1; font-weight: var(--weight-medium); font-size: var(--text-sm); }
+.skill .meter { grid-column: 2; grid-row: 1; }
+.skill__state { grid-column: 3; grid-row: 1; justify-self: end; }
+
+/* Phones cannot hold three columns; the meter drops to its own full-width row
+   under the name, and the state stays on the name's line. */
+@media (max-width: 40rem) {
+  .skill { grid-template-columns: minmax(0, 1fr) auto; row-gap: var(--space-2); }
+  .skill__name { grid-column: 1; grid-row: 1; }
+  .skill__state { grid-column: 2; grid-row: 1; }
+  .skill .meter { grid-column: 1 / -1; grid-row: 2; }
+}
 .skill__state { font-size: var(--text-sm); color: var(--color-text-muted); display: inline-flex; align-items: center; gap: var(--space-2); }
 
 /* ------------------------------------------------------------ SKELETON --- */
@@ -669,6 +773,68 @@
   to   { opacity: 1; transform: none; }
 }
 
+/* ==========================================================================
+   DEPTH AND MATERIAL — the dashboard
+   Per itqan-design-system/references/depth-and-materials.md, which this app
+   could not follow until its tokens were installed. Registers were chosen
+   before any of this was written: the top of the page (where you stand + the
+   journey) is EXPRESSIVE, everything below it stays PRODUCT.
+   ========================================================================== */
+
+/* Texture on the canvas. "A canvas with a whisper of structure never reads as
+   an empty div." Fixed, so it does not scroll with content, and masked at the
+   edges so it never draws a hard rectangle. The app had no texture at all. */
+.shell::before {
+  content: ''; position: fixed; inset: 0; z-index: 0;
+  pointer-events: none;
+  background-image: var(--texture-dot);
+  background-size: var(--texture-dot-size) var(--texture-dot-size);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 10%, #000 90%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 10%, #000 90%, transparent);
+}
+[data-theme='dark'] .shell::before { background-image: var(--texture-dot-dark); }
+.shell > * { position: relative; z-index: 1; }
+
+/* THE ONE EXPRESSIVE SURFACE. The readiness block is the page's anchor: it
+   carries the score, the target and the skill standings. Gradient ground,
+   the large radius, a layered shadow composed with the rim light that makes a
+   surface read as an object rather than a coloured rectangle, and an
+   OFF-CENTRE glow — centred is "the single most recognisable stock-template
+   move", so this sits at 70%/20% per the doc. */
+.card--anchor {
+  position: relative;
+  overflow: hidden;
+  background: var(--gradient-paper);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg), var(--rim-light);
+}
+.card--anchor::before {
+  content: ''; position: absolute; inset: 0; z-index: 0;
+  pointer-events: none;
+  background: var(--glow-field-gold);
+}
+.card--anchor > * { position: relative; z-index: 1; }
+[data-theme='dark'] .card--anchor {
+  background: var(--gradient-navy);
+  box-shadow: var(--shadow-lg), var(--rim-light-dark);
+}
+
+/* The journey panel is the second half of the same expressive moment, so it
+   shares the ground rather than reverting to a flat white card. */
+.journey {
+  background: var(--color-surface-warm) !important;
+  box-shadow: var(--shadow-sm), var(--rim-light);
+}
+[data-theme='dark'] .journey { box-shadow: var(--shadow-sm), var(--rim-light-dark); }
+
+/* Display scale. The doc calls a page whose largest text is 36px "a page that
+   reads like a form" and asks for 3:1 headline-to-body minimum; this page was
+   at 2.25:1. The score is the thing worth enlarging — it is the reason the
+   screen exists — not the greeting, which carries no information. */
+.ring__val { font-size: var(--text-5xl); }
+:lang(en) .ring__val { letter-spacing: var(--tracking-tight-latin); }
+
 /* ---- Staged page arrival --------------------------------------------------
    The dashboard used to fade in as ONE block. A single entrance says "this
    thing arrived" — five sections arriving as one slab say nothing about what
@@ -707,7 +873,10 @@
    sunken card, so it is findable without spending another gold fill — the
    accent is already carrying the ring, the meters, the chips and four
    buttons, and scarcity is the only tool a single-accent palette has. */
-.card--accent { border-color: var(--color-accent); }
+/* --color-border-accent (gold-700, 3.2:1), never --color-accent. The brand gold
+   measures 2.02:1 on paper and depth-and-materials.md bars it outright from
+   being a meaningful edge on light. */
+.card--accent { border-color: var(--color-border-accent); }
 
 @media (prefers-reduced-motion: reduce) {
   .spinner, .skeleton { animation: none; }
@@ -744,7 +913,11 @@
 @media (min-width: 120rem) {
   .ob__bar, .ob__main, .topbar { max-width: 92rem; }
   .main__inner { max-width: 100rem; }
-  /* A third column earns its place once there is genuinely room for it. */
+}
+/* A third column earns its place once there is genuinely room for it — and
+   that is a fact about the container, not the window. As a viewport rule this
+   sat outside the container-query cascade above and would have fought it. */
+@container main (min-width: 78rem) {
   .grid--2 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 

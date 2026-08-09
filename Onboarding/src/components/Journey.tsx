@@ -27,11 +27,11 @@
  * here than usual, because a progress track drawn only in gold and grey is
  * exactly the kind of thing that vanishes for a colour-blind reader.
  */
-import { Check } from 'lucide-react';
+import { Check, Flag } from 'lucide-react';
 import { useI18n } from '../i18n';
 import type { JourneyStage } from '../api';
 
-export function Journey({ stages }: { stages: JourneyStage[] }) {
+export function Journey({ stages, target }: { stages: JourneyStage[]; target?: string }) {
   const { t, formatNumber } = useI18n();
   if (stages.length === 0) return null;
 
@@ -40,11 +40,16 @@ export function Journey({ stages }: { stages: JourneyStage[] }) {
   const complete = currentIndex === -1 && done === stages.length;
 
   /**
-   * How far the thread is drawn, 0..1.
+   * How far the thread is drawn, 0..1 — as a fraction of the MARKER-TO-MARKER
+   * span, which is what the CSS now scales.
    *
-   * Measured to the CURRENT stage rather than to the count of finished ones, so
-   * the line reaches the marker the user is standing on instead of stopping
-   * short of it. A single-stage journey has nothing to span, hence the guard.
+   * The previous version computed the same fraction but the CSS stretched the
+   * track across the full padding box, roughly 200px wider than the span
+   * between the first and last marker. Measured in the browser: the fill
+   * overshot its own marker by 45px, with 109px of bare track hanging off each
+   * end. The fix is not an offset — stage widths differ, so no constant
+   * corrects it — it is making the track BE the marker-to-marker span. See the
+   * geometry note in chrome.css.
    */
   const reached = complete
     ? 1
@@ -65,19 +70,7 @@ export function Journey({ stages }: { stages: JourneyStage[] }) {
         </span>
       </div>
 
-      <ol
-        className="journey"
-        /* The fill is a scale factor on a single drawn line rather than a width,
-           so it animates on the compositor and mirrors for free in Arabic. */
-        style={{ '--journey-reached': reached } as React.CSSProperties}
-      >
-        {/* One continuous track behind every stage, not a segment per item. The
-            old per-item connector had to be suppressed on the first child and
-            still left the line stopping at each marker's edge. */}
-        <span className="journey__track" aria-hidden="true">
-          <span className="journey__fill" />
-        </span>
-
+      <ol className="journey" data-reached={reached}>
         {stages.map((s) => (
           <li
             key={s.id}
@@ -86,6 +79,15 @@ export function Journey({ stages }: { stages: JourneyStage[] }) {
             /* The one stage a screen reader should land on as "you are here". */
             aria-current={s.state === 'current' ? 'step' : undefined}
           >
+            {/* The rail runs through THIS stage's own marker, so it is correct
+                whatever width the stage takes. A single absolutely positioned
+                track across the whole list cannot be: the current stage is
+                wider than the others, so the marker centres are not evenly
+                spaced and no constant inset lands on them. Measured on the
+                previous version: 12px above the markers, 109px of bare line at
+                each end, fill overshooting its marker by 45px. */}
+            <span className="journey__rail" aria-hidden="true" />
+
             <span className="journey__marker">
               {s.state === 'done'
                 ? <Check size={16} aria-hidden="true" />
@@ -105,6 +107,16 @@ export function Journey({ stages }: { stages: JourneyStage[] }) {
           </li>
         ))}
       </ol>
+
+      {/* Where the road goes. A progress track with no destination is a
+          progress bar; naming the target is what makes it a journey, and it is
+          the same target the readiness score above is measured against. */}
+      {target && (
+        <p className="journey__target">
+          <Flag size={15} aria-hidden="true" />
+          <span>{t('journey.towards')} <strong><bdi>{target}</bdi></strong></span>
+        </p>
+      )}
 
       {complete && <p className="text-sm">{t('journey.complete')}</p>}
     </section>

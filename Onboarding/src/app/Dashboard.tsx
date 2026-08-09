@@ -35,13 +35,13 @@
  */
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check, ChevronDown, Plus } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, Plus, Target } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useApi } from '../state/api';
 import { useAsync } from '../lib/useAsync';
 import { useOnboarding } from '../state/onboarding';
 import { useAuth } from '../state/auth';
-import { Card, CapabilityChip, EmptyState, ErrorState, GapChip, LoadingBlock } from '../components/ui';
+import { Card, EmptyState, ErrorState, GapChip, LoadingBlock } from '../components/ui';
 import { MatchCard } from '../components/MatchCard';
 import { CourseCard } from '../components/CourseCard';
 import { Journey } from '../components/Journey';
@@ -70,6 +70,16 @@ export function Dashboard() {
    * rather than taking the readiness score down with it.
    */
   const { data: courses } = useAsync((s) => api.getCourses(s), [api, locale, settled]);
+  /**
+   * The target role. Not in `DashboardData` — readiness is measured against a
+   * target the payload never names, which is why the score had nothing to be a
+   * score OF. Read from the stored profile: `preferences.preferredRole` is what
+   * the user said they want, `suggestedRole` is what the agents infer. Shown as
+   * the user's own where they gave one, the suggestion only as a fallback, and
+   * never merged — see the note in api/types.ts.
+   * Same fire-and-forget pattern as the courses fetch: no target, no banner.
+   */
+  const { data: stored } = useAsync((s) => api.getProfile(s), [api, locale, settled]);
 
   const [showAllSkills, setShowAllSkills] = useState(false);
 
@@ -132,6 +142,12 @@ export function Dashboard() {
   const topCourses = (courses ?? []).slice(0, CARDS_SHOWN);
   const topMatches = data.topMatches.slice(0, CARDS_SHOWN);
 
+  // What the user named beats what the agents guessed; the suggestion is only
+  // ever a fallback, and it is labelled as a suggestion when it is used.
+  const namedTarget = stored?.preferences?.preferredRole?.trim() || '';
+  const target = namedTarget || stored?.suggestedRole?.title || '';
+  const targetIsSuggested = !namedTarget && !!stored?.suggestedRole?.title;
+
   return (
     // `seq` staggers the direct children in, rather than the old single fade on
     // the whole page. A page that arrives as one block tells the eye nothing
@@ -141,7 +157,9 @@ export function Dashboard() {
 
       {/* 1. Where you stand. */}
       <section aria-labelledby="dash-readiness">
-        <Card>
+        {/* The page's one expressive surface — see the depth block in app.css.
+            Everything below this stays product register. */}
+        <Card className="card--anchor">
           <div className="readiness">
             <Ring value={data.readiness} />
             {/* `min(16rem, 100%)`, not a bare 16rem. The bare value is a hard
@@ -150,6 +168,19 @@ export function Dashboard() {
                 first thing on the first screen — hung 16px outside the card. */}
             <div className="stack stack--sm" style={{ flex: 1, minWidth: 'min(16rem, 100%)' }}>
               <h2 className="section__title" id="dash-readiness">{t('dash.readiness')}</h2>
+              {/* The score is a distance to something. Naming the target is what
+                  turns "62 out of 100" from a grade into a position on a route,
+                  and it is the same destination the journey below ends at. */}
+              {target && (
+                <p className="target">
+                  <Target size={15} aria-hidden="true" />
+                  <span>
+                    {t('dash.targetLabel')}{' '}
+                    <strong><bdi>{target}</bdi></strong>
+                    {targetIsSuggested && <em className="target__hint"> {t('dash.targetSuggested')}</em>}
+                  </span>
+                </p>
+              )}
               <p>{data.readinessNote}</p>
               <details>
                 <summary className="disclosure">{t('dash.readinessHow')}</summary>
@@ -199,25 +230,15 @@ export function Dashboard() {
         </Card>
       </section>
 
-      {/* 2. The skills already carrying the most weight. */}
-      <section className="stack" aria-labelledby="dash-strengths">
-        <div className="section__head">
-          <h2 className="section__title" id="dash-strengths">{t('dash.strengths')}</h2>
-          <span className="section__note">{t('dash.strengthsSub')}</span>
-        </div>
-        {/* Guarded. An unguarded map renders an orphan heading over blank space
-            for the user whose transcript yielded little — precisely the user who
-            most needs to be told what to do about it. */}
-        {data.strengths.length > 0 ? (
-          <div className="chips">
-            {/* <bdi>: an English skill name inside an Arabic page, same as
-                every other service string on this screen already does. */}
-            {data.strengths.map((s) => <CapabilityChip key={s}><bdi>{s}</bdi></CapabilityChip>)}
-          </div>
-        ) : (
-          <p className="text-sm muted">{t('dash.noStrengths')}</p>
-        )}
-      </section>
+      {/* 2. How far along you are — the bridge from the score to the target. */}
+      <Journey stages={data.journey} target={target} />
+
+      {/* "Your highest yield skills" used to sit here. Removed: it restated the
+          `held` rows of the standings list ~200px above it, in a second visual
+          language, leaving the reader to perform the join. Capability still
+          leads the page — the readiness block and its "You have this" rows are
+          the first thing on it — so the capability-before-deficit rule is met
+          without the duplicate. */}
 
       {/* 3. What to learn next, then two real courses that close it. */}
       <section className="stack" aria-labelledby="dash-gaps">
@@ -245,8 +266,10 @@ export function Dashboard() {
         )}
 
         {/* The single most important thing on the page: one named action. It is
-            the only primary button here, so the three "see all" links cannot
-            compete with it. */}
+            the only primary button here, so the two "browse all" links cannot
+            compete with it. Product register — a plain sunken well with a gold
+            hairline, not a second expressive surface. The gold anchor for this
+            viewport is spent on the readiness block above. */}
         <Card className="card--sunken card--accent">
           <div className="stack stack--sm">
             <span className="eyebrow">{t('dash.next')}</span>
@@ -267,10 +290,7 @@ export function Dashboard() {
         </Card>
       </section>
 
-      {/* 4. How far along you are — the bridge to the destination below. */}
-      <Journey stages={data.journey} />
-
-      {/* 5. The destination, last: real postings, each checkable at its source. */}
+      {/* 4. The destination, last: real postings, each checkable at its source. */}
       <section className="stack" aria-labelledby="dash-matches">
         <div className="section__head">
           <h2 className="section__title" id="dash-matches">{t('dash.matches')}</h2>
@@ -374,8 +394,14 @@ function Ring({ value }: { value: number }) {
   }, []);
 
   return (
-    <div className="ring">
-      <svg width="108" height="108" viewBox="0 0 108 108" aria-hidden="true" focusable="false">
+    /* The denominator sits UNDER the ring, not inside it. A bare "72" gives the
+       reader no scale — the explanation never states the range either — but at
+       display size the caption measured ~59px wide against a disc that is only
+       ~51px across at that height, so inside the ring it printed over the arc.
+       Below it, the figure stays the hero and the scale is still stated. */
+    <div className="ringBlock">
+      <div className="ring">
+        <svg width="108" height="108" viewBox="0 0 108 108" aria-hidden="true" focusable="false">
         <circle cx="54" cy="54" r={r} fill="none" stroke="var(--color-surface-sunken)" strokeWidth="8" />
         <circle
           className="ring__arc"
@@ -384,15 +410,10 @@ function Ring({ value }: { value: number }) {
           strokeDasharray={c}
           strokeDashoffset={drawn ? c - target : c}
         />
-      </svg>
-      {/* The denominator is not decoration. Shown a bare "62", nobody can tell
-          whether that is good, and the explanation underneath never states the
-          range either. It is a separate, quieter span so the figure still reads
-          as one number rather than as a fraction. */}
-      <span className="ring__val num">
-        {formatNumber(value)}
-        <span className="ring__of">{t('dash.outOf100')}</span>
-      </span>
+        </svg>
+        <span className="ring__val num">{formatNumber(value)}</span>
+      </div>
+      <span className="ring__of">{t('dash.outOf100')}</span>
     </div>
   );
 }
