@@ -394,8 +394,14 @@ function Ring({ value }: { value: number }) {
   }, []);
 
   return (
-    <div className="ring">
-      <svg width="108" height="108" viewBox="0 0 108 108" aria-hidden="true" focusable="false">
+    /* The denominator sits UNDER the ring, not inside it. A bare "72" gives the
+       reader no scale — the explanation never states the range either — but at
+       display size the caption measured ~59px wide against a disc that is only
+       ~51px across at that height, so inside the ring it printed over the arc.
+       Below it, the figure stays the hero and the scale is still stated. */
+    <div className="ringBlock">
+      <div className="ring">
+        <svg width="108" height="108" viewBox="0 0 108 108" aria-hidden="true" focusable="false">
         <circle cx="54" cy="54" r={r} fill="none" stroke="var(--color-surface-sunken)" strokeWidth="8" />
         <circle
           className="ring__arc"
@@ -404,15 +410,10 @@ function Ring({ value }: { value: number }) {
           strokeDasharray={c}
           strokeDashoffset={drawn ? c - target : c}
         />
-      </svg>
-      {/* The denominator is not decoration. Shown a bare "62", nobody can tell
-          whether that is good, and the explanation underneath never states the
-          range either. It is a separate, quieter span so the figure still reads
-          as one number rather than as a fraction. */}
-      <span className="ring__val num">
-        {formatNumber(value)}
-        <span className="ring__of">{t('dash.outOf100')}</span>
-      </span>
+        </svg>
+        <span className="ring__val num">{formatNumber(value)}</span>
+      </div>
+      <span className="ring__of">{t('dash.outOf100')}</span>
     </div>
   );
 }

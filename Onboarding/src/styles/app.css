@@ -667,18 +667,56 @@
   font-size: var(--text-4xl); font-weight: var(--weight-semibold);
   line-height: 1;
 }
-/* The denominator. Without it "62" has no scale and the explanation underneath
-   never supplies one. Quiet enough that the figure still reads as one number. */
+/* Ring plus its caption. The caption is a sibling of the disc, not a child of
+   the numeral — see the note in Dashboard.tsx. */
+.ringBlock {
+  display: flex; flex-direction: column; align-items: center;
+  gap: var(--space-1); flex-shrink: 0;
+}
 .ring__of {
-  display: block; text-align: center;
   font-size: var(--text-xs); font-weight: var(--weight-regular);
-  color: var(--color-text-muted);
+  color: var(--color-text-muted); white-space: nowrap;
 }
 
 /* Skill rows: capability and gap read differently by icon+label, not by hue. */
-.skill { display: flex; flex-direction: column; gap: var(--space-2); }
-.skill__head { display: flex; align-items: center; gap: var(--space-3); }
-.skill__name { flex: 1; font-weight: var(--weight-medium); font-size: var(--text-sm); }
+/* ONE ROW PER SKILL, and the meter is SHORT.
+   Seen rendered, the previous layout was the worst thing on the page: name and
+   state on one line, then a full-width bar under it. At 1000px wide, four
+   stacked bars at 90-95% read as four identical gold rules — the eye gets no
+   comparison out of them and they dominated the card they sit in. A meter a
+   thousand pixels long to express "90%" spends enormous visual weight on
+   precision nobody can read.
+   Capped at 12rem and pulled onto the same line as its label: the bars now sit
+   in one column where their differing lengths are actually comparable, and the
+   gold drops from four full-width rules to four small marks. */
+.skill {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(5rem, 12rem) auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+/* `display: contents` lifts the name and state out of their wrapper and into
+   the grid — but that makes them children 1 and 2, which pushed the meter into
+   the third column and collapsed it to nothing. Columns are assigned by hand
+   so DOM order and visual order can differ. */
+/* Rows pinned as well as columns. DOM order is name, state, meter — and grid's
+   default sparse packing never moves the cursor backwards, so once the state
+   was placed in column 3 the meter could not take column 2 of the same row and
+   dropped to a second one. Explicit `grid-row: 1` on all three lets the visual
+   order differ from the source order, which is the point of using grid here. */
+.skill__head { display: contents; }
+.skill__name { grid-column: 1; grid-row: 1; font-weight: var(--weight-medium); font-size: var(--text-sm); }
+.skill .meter { grid-column: 2; grid-row: 1; }
+.skill__state { grid-column: 3; grid-row: 1; justify-self: end; }
+
+/* Phones cannot hold three columns; the meter drops to its own full-width row
+   under the name, and the state stays on the name's line. */
+@media (max-width: 40rem) {
+  .skill { grid-template-columns: minmax(0, 1fr) auto; row-gap: var(--space-2); }
+  .skill__name { grid-column: 1; grid-row: 1; }
+  .skill__state { grid-column: 2; grid-row: 1; }
+  .skill .meter { grid-column: 1 / -1; grid-row: 2; }
+}
 .skill__state { font-size: var(--text-sm); color: var(--color-text-muted); display: inline-flex; align-items: center; gap: var(--space-2); }
 
 /* ------------------------------------------------------------ SKELETON --- */
