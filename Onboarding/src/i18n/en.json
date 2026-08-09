@@ -245,5 +245,7 @@
   "profile.suggestedRoleWhy": "Why this",
   "profile.docsRereads": "Replacing a document starts a new reading, and your skills, courses and job matches update with what it finds.",
   "profile.docsReplace": "Replace or add documents",
-  "action.cancel": "Cancel"
+  "action.cancel": "Cancel",
+  "courses.paid": "Paid",
+  "courses.priceUnknown": "Price not listed"
 }

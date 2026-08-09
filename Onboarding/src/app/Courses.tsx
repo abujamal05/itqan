@@ -65,7 +65,10 @@ export function Courses() {
   const shown = useMemo(() => {
     const list = [...(data ?? [])];
     const filtered = list.filter((c) => {
-      if (filter === 'free') return c.price === 0;
+      // `priceLabel` too: a freeCodeCamp course states price 0, but the filter
+      // must not silently include the 2,001 courses whose price is merely
+      // UNKNOWN — null is not free, and this is where that would leak.
+      if (filter === 'free') return c.price === 0 || c.priceLabel === 'free';
       if (filter === 'short') return c.hours < 10;
       if (filter === 'recommended') return c.recommended;
       return true;

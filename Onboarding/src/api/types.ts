@@ -256,12 +256,28 @@ export interface Course {
   provider: string;
   hours: number;
   /**
-   * Cost in `currency`, or 0 for free. Kept as a number rather than a
-   * pre-formatted string so the UI can format it in the user's locale and
-   * filter on it; a service that returns "OMR 25" makes both impossible.
+   * Cost in `currency`, 0 for free, or **null when the provider publishes no
+   * price at all**. Kept as a number rather than a pre-formatted string so the
+   * UI can format it in the user's locale and filter on it; a service that
+   * returns "OMR 25" makes both impossible.
+   *
+   * Null is the COMMON case, not an edge case: 2,001 of 2,099 courses come from
+   * Coursera, which publishes none. Typing this as `number` is what produced a
+   * card reading `null 0` — `formatMoney(null, null)` throws on the currency and
+   * falls back to string interpolation. Had the currency been valid it would
+   * have rendered `OMR 0.000`, indistinguishable from genuinely free.
    */
-  price: number;
-  currency: string;
+  price: number | null;
+  currency: string | null;
+  /**
+   * What can honestly be SAID about the price when there is no number.
+   *
+   * A claim about the PLATFORM's catalogue, not a measurement of this course:
+   * Coursera sells its courses, so `paid`; freeCodeCamp gives them away, so
+   * `free`. Null for a platform we have no basis to characterise — which must
+   * read as "not listed", never as a guess in either direction.
+   */
+  priceLabel: 'free' | 'paid' | null;
   /** Skills this course unlocks — ties every course to a real gap. */
   unlocks: string[];
   recommended: boolean;

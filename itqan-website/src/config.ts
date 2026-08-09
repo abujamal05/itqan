@@ -1,10 +1,19 @@
 /**
- * Single place to point the forms at the real API later.
- * Both endpoints are placeholders; no backend exists yet.
+ * Where the sign up and log in forms post.
+ *
+ * These were `/api/placeholder/*` — the word "placeholder" in a production URL,
+ * from when no backend existed. The API now serves `/api/auth/*` and keeps the
+ * old paths as aliases, because this site is static: the HTML on the box posts
+ * to whatever path it was BUILT with, and it deploys from a different repo by a
+ * different job than the API does. Until this build is live, older HTML is still
+ * posting to the old paths.
+ *
+ * The aliases can be removed from the API once this has shipped and the old
+ * paths show no traffic.
  */
 export const formEndpoints = {
-  signup: '/api/placeholder/signup',
-  login: '/api/placeholder/login',
+  signup: '/api/auth/signup',
+  login: '/api/auth/login',
 } as const;
 
 /**

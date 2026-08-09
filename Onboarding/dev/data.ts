@@ -100,13 +100,25 @@ export const jobs = (l: Locale) => [
   },
 ];
 
+/**
+ * The three shapes a real course price actually comes in — kept honest on
+ * purpose, because the stub is what the UI is developed against.
+ *
+ * c1 is free with a real 0. c2 is the COMMON case: Coursera publishes no price
+ * at all (0 of 1,999 do), so `price` and `currency` are null and `priceLabel`
+ * carries what can honestly be said. c3 has no label either way.
+ *
+ * This fixture previously showed c2 at "18 OMR", a price production never
+ * produces — which is exactly how a card rendering `null 0` for every Coursera
+ * course went unnoticed locally.
+ */
 export const courses = (l: Locale) => [
   {
     id: 'c1',
     title: pick({ ar: 'Power BI من الأساس', en: 'Power BI from the ground up' }, l),
     provider: 'Microsoft Learn',
     hours: 8,
-    price: 0, currency: 'OMR',
+    price: 0, currency: 'OMR', priceLabel: 'free' as const,
     unlocks: ['Power BI', pick({ ar: 'لوحات المعلومات', en: 'Dashboards' }, l)],
     recommended: true,
     source: { name: 'Microsoft Learn', url: 'https://example.com/courses/c1', retrievedAt: '2026-07-24' },
@@ -116,7 +128,8 @@ export const courses = (l: Locale) => [
     title: pick({ ar: 'SQL للتحليل العملي', en: 'SQL for practical analysis' }, l),
     provider: 'Coursera / Google',
     hours: 12,
-    price: 18, currency: 'OMR',
+    // No price published, but the platform sells its catalogue: "Paid".
+    price: null, currency: null, priceLabel: 'paid' as const,
     unlocks: ['SQL', pick({ ar: 'نمذجة البيانات', en: 'Data modelling' }, l)],
     recommended: false,
     source: { name: 'Coursera', url: 'https://example.com/courses/c2', retrievedAt: '2026-07-24' },
@@ -126,7 +139,8 @@ export const courses = (l: Locale) => [
     title: pick({ ar: 'التواصل المهني في بيئة العمل', en: 'Professional communication at work' }, l),
     provider: pick({ ar: 'إدراك', en: 'Edraak' }, l),
     hours: 6,
-    price: 0, currency: 'OMR',
+    // Nothing known either way — the card must say "not listed", not guess.
+    price: null, currency: null, priceLabel: null,
     unlocks: [pick({ ar: 'التواصل المهني', en: 'Professional communication' }, l)],
     recommended: false,
     source: { name: 'Edraak', url: 'https://example.com/courses/c3', retrievedAt: '2026-07-20' },
