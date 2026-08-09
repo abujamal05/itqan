@@ -80,6 +80,13 @@
      14px text it measures 3.44:1 on paper and 2.95:1 on sand. This clears
      5.6:1 on paper, 4.8:1 on sand and 4.8:1 on tint. */
   --color-accent-ink:    color-mix(in srgb, var(--gold-600) 76%, var(--navy));
+  /* TIER 3, component. The skill meter's fill against its own track.
+     `--color-accent` on `--color-accent-tint` measures 2.27:1, and that bar is
+     the only visual carrier of how well a skill is evidenced — a meaningful
+     graphic under WCAG 1.4.11, which needs 3:1, not a decorative one. gold-600
+     against the same track measures 3.15:1 and keeps the bar unmistakably gold.
+     Dark mode does not have this problem and keeps the lifted accent. */
+  --color-meter-fill:    var(--gold-600);
   --color-focus:         var(--navy);    /* focus ring, see components */
 
   --color-danger:        var(--red-500);
@@ -193,6 +200,8 @@
   /* On dark the problem inverts: gold needs LIFTING, not deepening. gold-400
      reads 8.7:1 on the canvas and 7.9:1 on the sunken surface. */
   --color-accent-ink:    var(--gold-400);
+  /* On dark the fill already clears 7.9:1 against its track. */
+  --color-meter-fill:    var(--gold-400);
   --color-focus:         var(--gold-400); /* navy ring is invisible on dark */
 
   --color-danger:        var(--red-400);

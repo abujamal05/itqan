@@ -162,14 +162,40 @@
   transition: background var(--duration-fast) var(--ease-hover),
               border-color var(--duration-fast) var(--ease-hover);
 }
-.chip:hover { border-color: var(--color-border-strong); }
+/* Scoped away from the display-only variants. `.chip:hover` (0-2-0) beat
+   `.chip--capability { border-color: transparent }` (0-1-0), so hovering a
+   non-interactive <span> animated a border into existence — a hover state is a
+   promise, and two whole sections of the dashboard were making it and breaking
+   it. Guarded behind a fine pointer too, so a tap never fires it. */
+@media (hover: hover) and (pointer: fine) {
+  .chip:not(.chip--capability):not(.chip--gap):hover { border-color: var(--color-border-strong); }
+}
+
+/* Display chips are not targets, so they do not pay the 44px touch floor. Two
+   word-lists were eating ~200px of the mobile fold — bought straight out of the
+   job matches below them. */
+.chip--capability, .chip--gap {
+  min-height: 0;
+  padding-block: var(--space-1);
+}
 /* Selected carries a check icon as well as fill — never colour alone. */
 .chip[aria-pressed="true"] { background: var(--color-accent-tint); border-color: var(--color-accent); font-weight: var(--weight-medium); }
 
 /* Capability = something the user already has (check, tinted).
    Gap = something to unlock (plus, sunken). Distinct icon AND shape. */
 .chip--capability { background: var(--color-accent-tint); border-color: transparent; cursor: default; }
-.chip--gap { background: var(--color-surface-sunken); border: 1px dashed var(--color-border-strong); cursor: default; }
+/* The dashed border was --color-border-strong at 1.33:1 against the page —
+   invisible. The two chip FILLS measure 1.01:1 apart, so with an unreadable
+   border the only thing separating "you have this" from "to unlock" was the
+   icon. Muted navy puts the outline at 5.4:1 and makes the shape distinction
+   the comment above already claims. */
+.chip--gap { background: var(--color-surface-sunken); border: 1px dashed var(--color-text-muted); cursor: default; }
+
+/* Chips carry service-supplied skill names — the only strings on the dashboard
+   that were neither <bdi>-isolated nor breakable. A flex item's automatic
+   minimum is its min-content, so one long unbroken token pushed out of the
+   column on a phone. */
+.chip { max-inline-size: 100%; overflow-wrap: anywhere; }
 .chip--removable { padding-inline-end: var(--space-2); }
 .chip__x {
   display: inline-flex; align-items: center; justify-content: center;
@@ -309,6 +335,26 @@
 /* Determinate work meter for the parse pipeline. */
 .meter { block-size: 6px; border-radius: var(--radius-full); background: var(--color-surface-sunken); overflow: hidden; }
 .meter > i { display: block; block-size: 100%; background: var(--color-accent); border-radius: var(--radius-full); transition: inline-size var(--duration-slower) var(--ease-out); }
+
+/* ---- Skill level, NOT pipeline progress ----------------------------------
+   Same 6px gold bar previously meant "OCR is 40% done" in the status banner and
+   "you are 40% evidenced in SQL" in the standings list — one shape, two
+   unrelated meanings, on screen at the same time. This variant is taller, sits
+   on a tinted track, and fills by transform rather than by width: `inline-size`
+   is a layout property and animating it re-runs layout every frame, which the
+   motion floor rules out. */
+.meter--level { block-size: 8px; background: var(--color-accent-tint); }
+.meter--level > i {
+  background: var(--color-meter-fill);   /* 3.15:1 on the track — see tokens */
+  inline-size: 100%;
+  /* PHYSICAL, mirrored by hand. `transform-origin` takes <position> only —
+     `inline-start` is not a valid value, the declaration would be dropped, and
+     every bar would grow from its own centre in both languages. */
+  transform-origin: left center;
+  transition: transform var(--duration-slower) var(--ease-out);
+}
+[dir='rtl'] .meter--level > i { transform-origin: right center; }
+@media (prefers-reduced-motion: reduce) { .meter--level > i { transition: none; } }
 /* A step that is still running.
    The bar's WIDTH only ever moves when a real graph node finishes, so a long step
    — OCR on a scanned CV is around seventy seconds — legitimately holds one
@@ -488,12 +534,26 @@
    column and it hung out of the grid on a narrow phone. The explicit zero
    minimum is what lets the card shrink and the title wrap instead. */
 .grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
-@media (min-width: 700px) { .grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* 1024, not 700. The sidebar mounts at 900px and takes 272px out of the
+   container, but this breakpoint is on the VIEWPORT, so a match card went from
+   421px wide at 899px to 286px at 900px — a third narrower the moment the
+   window got wider, which is the widest-looking layout producing the narrowest
+   column on the whole range. Two columns now start once there is room for two
+   columns WITH the sidebar. */
+@media (min-width: 1024px) { .grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (min-width: 1100px) { .grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
 .section__head { display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; }
 .section__title { font-size: var(--text-xl); font-weight: var(--weight-semibold); }
-.section__note { font-size: var(--text-sm); color: var(--color-text); }
+/* A second heading tier. `.section__title` was rendering the section h2s, the
+   next-step h3 and EmptyState's h3 at one identical size and weight, so the DOM
+   had a hierarchy the eye could not see and a card's title impersonated a
+   section. */
+.card__title { font-size: var(--text-lg); font-weight: var(--weight-medium); }
+/* Muted, now that --color-text-muted clears AA on every light surface. At full
+   --color-text a sub-note carried the same weight as body copy and the head
+   read as two competing lines. */
+.section__note { font-size: var(--text-sm); color: var(--color-text-muted); }
 
 .match { display: flex; flex-direction: column; gap: var(--space-4); }
 /* Wraps. The title and the confidence badge sit side by side while both fit,
@@ -518,12 +578,35 @@
 .source a:hover { color: var(--color-text); }
 
 /* Readiness: a ring + the number + a sentence. The number never stands alone. */
-.readiness { display: flex; align-items: center; gap: var(--space-6); flex-wrap: wrap; }
+/* `flex-start`, not `center`. The ring is a fixed 108px; the text column beside
+   it runs 132-156px, so centring parked the ring's midpoint level with the note
+   and left the numeral sharing no alignment with its own heading. */
+.readiness { display: flex; align-items: flex-start; gap: var(--space-6); flex-wrap: wrap; }
 .ring { position: relative; inline-size: 108px; block-size: 108px; flex-shrink: 0; }
 .ring svg { transform: rotate(-90deg); }              /* start the arc at 12 o'clock */
+
+/* The arc draws once on arrival. `stroke-dashoffset` is neither transform nor
+   opacity, but it drives no layout and no paint outside the SVG, and it is the
+   same drawn-line technique the marketing site already uses for its threads.
+   The NUMBER inside deliberately does not count up: drawing the arc is
+   choreography, tweening the figure would be dressing a score to look more
+   impressive than it is. */
+.ring__arc { transition: stroke-dashoffset var(--duration-slower) var(--ease-out); }
+@media (prefers-reduced-motion: reduce) { .ring__arc { transition: none; } }
+
 .ring__val {
   position: absolute; inset: 0; display: grid; place-items: center;
-  font-size: var(--text-2xl); font-weight: var(--weight-semibold);
+  /* Raised from --text-2xl. This is the single most load-bearing figure in the
+     product and it was rendering smaller than a content-free greeting. */
+  font-size: var(--text-4xl); font-weight: var(--weight-semibold);
+  line-height: 1;
+}
+/* The denominator. Without it "62" has no scale and the explanation underneath
+   never supplies one. Quiet enough that the figure still reads as one number. */
+.ring__of {
+  display: block; text-align: center;
+  font-size: var(--text-xs); font-weight: var(--weight-regular);
+  color: var(--color-text-muted);
 }
 
 /* Skill rows: capability and gap read differently by icon+label, not by hue. */
@@ -546,13 +629,28 @@
 .stack { display: flex; flex-direction: column; gap: var(--space-4); }
 .stack--sm { gap: var(--space-2); }
 .stack--lg { gap: var(--space-6); }
+/* Page-level separation between top-level sections.
+   `--space-6` (24px) was doing this job, which is only 1.5x the 16px gap INSIDE
+   a section and exactly equal to a card's own padding — so the distance saying
+   "new section" was indistinguishable from the distance saying "next line", and
+   cards read as one continuous field with borders drawn on it. 48px is 3x the
+   internal rhythm, which is the ratio proximity actually needs to group. */
+.stack--page { gap: var(--space-12); }
+@media (max-width: 40rem) { .stack--page { gap: var(--space-8); } }
+
+/* Chip rows. Was an inline `style={{gap}}` on `.row` at three call sites, which
+   is why the rhythm drifted — spacing that is not in the stylesheet cannot be
+   tuned as a system. */
+.chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .row { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
 .row--end { justify-content: flex-end; }
 .spacer { flex: 1; }
-/* .muted is used on paper in several places, where the muted token fails AA
-   (see the note above), so it resolves to text colour and relies on the
-   smaller size for its secondary reading. */
-.muted { color: var(--color-text); }
+/* Genuinely muted again. This resolved to full --color-text as a workaround for
+   --color-text-muted measuring 4.32:1 on paper — a real failure at the time. The
+   token has since been deepened and now clears 5.4:1 on paper, 4.6:1 on sand and
+   5.7:1 on white, so the workaround was costing hierarchy for a problem that no
+   longer exists: every "secondary" line was rendering at primary weight. */
+.muted { color: var(--color-text-muted); }
 .text-sm { font-size: var(--text-sm); }
 .divider { block-size: 1px; background: var(--color-border); border: 0; }
 
@@ -561,11 +659,64 @@
 /* Entrance for step content. Fades only under reduced motion (tokens.css
    already collapses durations, and transform is dropped here explicitly). */
 .enter { animation: enter var(--duration-slow) var(--ease-out) both; }
-@keyframes enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+/* Travel rides --motion-scale like every other movement in the codebase. This
+   was the one animation still hardcoding its distance and handling reduced
+   motion with a duplicate keyframe; now the scalar collapses the rise to zero
+   and the FADE survives at full duration, which is what the preference asks
+   for. The duplicate `fade` keyframe below is gone with it. */
+@keyframes enter {
+  from { opacity: 0; transform: translateY(calc(8px * var(--motion-scale))); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---- Staged page arrival --------------------------------------------------
+   The dashboard used to fade in as ONE block. A single entrance says "this
+   thing arrived" — five sections arriving as one slab say nothing about what
+   the page contains or where to start, and actively assert that all five are
+   the same thing. Staggering the top-level children teaches the priority order
+   at no cognitive cost: header, then where you stand, then the rest.
+
+   60ms steps, capped at six children so a long page never feels like a
+   slideshow. Delays are NOT scaled away under reduced motion — the sequence is
+   information, and it still reads as a sequence of fades with no travel. */
+.seq > * { animation: enter var(--duration-slow) var(--ease-out) both; }
+.seq > *:nth-child(1) { animation-delay: 0ms; }
+.seq > *:nth-child(2) { animation-delay: 60ms; }
+.seq > *:nth-child(3) { animation-delay: 120ms; }
+.seq > *:nth-child(4) { animation-delay: 180ms; }
+.seq > *:nth-child(5) { animation-delay: 240ms; }
+.seq > *:nth-child(n+6) { animation-delay: 300ms; }
+
+/* ---- Small utilities used by the dashboard -------------------------------- */
+/* Forward arrow on a link. Nudges in the READING direction, so it mirrors. */
+.go { transition: transform var(--duration-fast) var(--ease-out); }
+[dir='rtl'] .go { transform: scaleX(-1); }
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover .go { transform: translateX(calc(3px * var(--motion-scale))); }
+  [dir='rtl'] .btn:hover .go { transform: scaleX(-1) translateX(calc(3px * var(--motion-scale))); }
+}
+
+/* Disclosure chevron on the collapsible skills control. */
+.chevron { transition: transform var(--duration-base) var(--ease-out); }
+.chevron[data-open] { transform: rotate(180deg); }
+
+/* Full-width control that closes a card, e.g. "show all 12 skills". */
+.btn--block { inline-size: 100%; justify-content: center; }
+
+/* The one recommendation on the page. A hairline of accent on an otherwise
+   sunken card, so it is findable without spending another gold fill — the
+   accent is already carrying the ring, the meters, the chips and four
+   buttons, and scarcity is the only tool a single-accent palette has. */
+.card--accent { border-color: var(--color-accent); }
+
 @media (prefers-reduced-motion: reduce) {
-  .enter { animation: fade var(--duration-slow) var(--ease-out) both; }
-  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
   .spinner, .skeleton { animation: none; }
+  /* The sidebar collapse is the largest movement in the app — 272px to 76px,
+     reflowing the whole main column — and it was the one that ignored the
+     preference completely. No scalar can help: the travel IS the width change,
+     so the honest reduced-motion answer is to arrive at the new width without
+     the journey. The chevron flip goes with it. */
+  .sidebar, .sidebar__collapse svg { transition: none; }
 }
 
 /* The mascot's own rules live in chrome.css, next to the bubble he speaks
