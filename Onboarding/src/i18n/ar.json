@@ -257,5 +257,7 @@
   "profile.suggestedRoleWhy": "لماذا هذا",
   "profile.docsRereads": "استبدال أي مستند يبدأ قراءة جديدة، وتتحدّث مهاراتك ودوراتك والوظائف المطابقة بما تجده.",
   "profile.docsReplace": "استبدل المستندات أو أضف غيرها",
-  "action.cancel": "إلغاء"
+  "action.cancel": "إلغاء",
+  "courses.paid": "مدفوع",
+  "courses.priceUnknown": "السعر غير مذكور"
 }
