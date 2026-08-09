@@ -38,14 +38,68 @@ interface Account { id: string; fullName: string; email: string; password: strin
  * into any page. Credentials belong in the project's notes, not in the UI.
  */
 const accounts: Account[] = [
-  { id: 'u_maryam', fullName: 'Maryam Al Balushi', email: 'maryam@itqan.test', password: 'itqan1234', onboarded: false },
+  /**
+   * The standing account. Onboarded, and seeded with a profile below, so a log
+   * in always lands on a populated dashboard — no re-running the flow after
+   * every dev-server restart.
+   *
+   * She used to be `onboarded: false` with no profile stored anywhere, which
+   * meant the only way to see the dashboard was to complete onboarding by hand,
+   * and the profile screen showed its empty state even afterwards because
+   * nothing seeded `profiles`.
+   */
+  { id: 'u_maryam', fullName: 'Maryam Al Balushi', email: 'maryam@itqan.test', password: 'itqan1234', onboarded: true },
   { id: 'u_nasser', fullName: 'Nasser Al Hinai', email: 'nasser@itqan.test', password: 'itqan1234', onboarded: true },
+  /** Kept deliberately un-onboarded, so the flow itself is still testable. */
+  { id: 'u_new', fullName: 'Salim Al Amri', email: 'new@itqan.test', password: 'itqan1234', onboarded: false },
 ];
 
 /** Progress and profile per account, so a reload does not restart onboarding. */
 const progress = new Map<string, unknown>();
 /** Confirmed profiles, so the profile screen can read one back. */
 const profiles = new Map<string, Record<string, unknown>>();
+
+/**
+ * Seed a profile for every already-onboarded account.
+ *
+ * Without this, `profiles` started empty and `GET /api/profile` answered 404 for
+ * an account whose own `onboarded` flag said it had finished — so the profile
+ * screen rendered its empty state on a user who demonstrably had data, and the
+ * dashboard had nothing to read. The two facts have to agree at startup or the
+ * seeded accounts are only half seeded.
+ *
+ * Shape is `StoredProfile` from src/api/types.ts. `avatarUrl` stays null because
+ * the upload endpoint is not built yet and the UI is meant to fall back to
+ * initials; `suggestedRole` carries its confidence and reasoning because the
+ * contract requires every recommendation to.
+ */
+const seedProfile = (a: Account) => ({
+  fullName: a.fullName,
+  birthDate: '2001-04-17',
+  graduationDate: '2024-06',
+  phone: null,
+  skills: ['SQL', 'Data cleaning', 'Statistics', 'Excel modelling', 'Report writing', 'Python'],
+  preferences: {
+    coursePricing: 'free',
+    workArrangement: 'hybrid',
+    preferredRole: 'Data Analyst',
+    openToOtherRoles: 'yes',
+  },
+  documentId: 'doc_seed_cv',
+  documents: [
+    { id: 'doc_seed_cv', fileName: 'cv.pdf', mimeType: 'application/pdf', sizeBytes: 184320, kind: 'cv' },
+    { id: 'doc_seed_tr', fileName: 'transcript.pdf', mimeType: 'application/pdf', sizeBytes: 262144, kind: 'transcript' },
+  ],
+  avatarUrl: null,
+  suggestedRole: {
+    title: 'Junior Data Analyst',
+    confidence: 0.82,
+    why: 'Your statistics and database coursework covers most of what these roles ask for, and your project work shows you have already cleaned and reported on real data.',
+  },
+  updatedAt: Date.now(),
+});
+
+accounts.filter((a) => a.onboarded).forEach((a) => profiles.set(a.id, seedProfile(a)));
 
 /** How long the fake pipeline takes end to end, and the jobs in flight. */
 /**
