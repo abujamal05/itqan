@@ -492,6 +492,13 @@
      note in global.css. Miss either and the panel stops mid page. */
   position: sticky; inset-block-start: 0;
   block-size: 100dvh; align-self: flex-start;
+  /* DO NOT put `overflow` on this element. It was tried, to stop a short window
+     clipping the footer cluster, and it broke the account menu instead: when
+     one axis is not `visible` the other computes from `visible` to `auto`, so
+     the sidebar starts clipping HORIZONTALLY — and the collapsed rail is 76px
+     wide while the menu panel that flies out over the content is 240px. The
+     panel simply disappeared. Any scroll region here has to go on an inner
+     wrapper that excludes the menu, or the menu has to move to a portal. */
   transition: inline-size var(--duration-base) var(--ease-out);
 }
 @media (min-width: 900px) { .sidebar { display: flex; } }
@@ -793,7 +800,15 @@
   mask-image: linear-gradient(to bottom, transparent, #000 10%, #000 90%, transparent);
 }
 [data-theme='dark'] .shell::before { background-image: var(--texture-dot-dark); }
-.shell > * { position: relative; z-index: 1; }
+
+/* Lift the shell's children over the texture — but NOT all to the same level.
+   `.shell > * { z-index: 1 }` made the sidebar a stacking context at level 1,
+   which trapped the account menu's z-index inside it; `.main` is also level 1
+   and comes later in the DOM, so the dashboard card painted straight over an
+   open menu. The sidebar holds a dropdown, so it outranks the content it
+   overlays, exactly like the tab bar already does. */
+.shell > .main { position: relative; z-index: 1; }
+.shell > .sidebar { z-index: var(--z-sticky); }
 
 /* THE ONE EXPRESSIVE SURFACE. The readiness block is the page's anchor: it
    carries the score, the target and the skill standings. Gradient ground,

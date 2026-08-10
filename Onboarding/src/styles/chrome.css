@@ -422,8 +422,11 @@
   position: absolute;
   z-index: 0;
   inset-block-start: calc(var(--rail-y) - 1px);
-  /* Reaches half the gap either side so consecutive segments meet cleanly. */
-  inset-inline: calc(var(--space-3) / -2);
+  /* Half the gap PLUS the stage's own border. Absolute insets resolve against
+     the padding box, so `gap / -2` alone stopped 1px short at each end and left
+     a visible 2px break in the middle of every join — clearly a dotted line
+     rather than a continuous one once rendered. */
+  inset-inline: calc((var(--space-3) / -2) - 1px);
   block-size: 2px;
   background: var(--color-border);
 }
@@ -448,12 +451,29 @@
               border-color var(--duration-base) var(--ease-hover);
 }
 
-/* The one stage that matters gets the room, the surface and the weight. */
+/* The one stage that matters gets the room, the surface and the weight.
+   Its surface is drawn on a pseudo-element rather than on the stage itself, so
+   it can sit ABOVE the rail. The rail is a child of the stage, so a background
+   on the stage paints underneath it — and the gold line ran straight across
+   the "you are here" card like a skewer. Now the card interrupts the path,
+   which is what standing on it should look like. */
 .journey__stage[data-state='current'] {
   flex-grow: 1.4;
-  background: var(--color-accent-tint);
-  border-color: var(--color-accent);
+  border-color: transparent;
 }
+.journey__stage[data-state='current']::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: var(--radius-md);
+  background: var(--color-accent-tint);
+  border: 1px solid var(--color-border-accent);
+}
+/* Content rides above the card it sits on. */
+.journey__stage > .journey__marker,
+.journey__stage > .journey__body,
+.journey__stage > .sr-only { position: relative; z-index: 2; }
 /* Finished work recedes. It is context, not the answer. */
 .journey__stage[data-state='done'] { opacity: 0.85; }
 .journey__stage[data-state='upcoming'] { opacity: 0.7; }
