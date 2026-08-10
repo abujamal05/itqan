@@ -4,12 +4,21 @@ Every animation on the site, what triggers it, and its token. All durations/easi
 `src/styles/tokens.css`. The rule everywhere: **only `transform` and `opacity` animate**, directional
 motion is RTL-aware, and **reduced motion** removes movement while keeping opacity/colour fades.
 
-> **Status: this catalogue describes the site as built, before the 2026-08-03 motion revision.** The
-> `itqan-motion` skill now defines two registers (product vs expressive), licenses `--ease-overshoot` on
-> marketing and onboarding surfaces, requires the animated Hud wherever he is allowed, and **bans the
-> blanket `prefers-reduced-motion` kill switch** in favour of collapsing motion scalars. Applying that to
-> this app is separate, approved work that has not happened yet. Read the skill before adding motion; read
-> this file to know what is currently on the page.
+> **Status: the 2026-08-03 revision has now LANDED.** `src/styles/tokens.css` is the design system's
+> `tokens.css` copied verbatim (one documented deviation, `--color-text-muted`, which fails AA upstream),
+> and `Onboarding/src/styles/tokens.css` is kept identical to it. Three consequences for everything
+> catalogued below, none of which changes what triggers what:
+>
+> - **The curves moved.** `--ease-out` is now `cubic-bezier(0.23, 1, 0.32, 1)`; the value this file was
+>   written against, `cubic-bezier(0.16, 1, 0.3, 1)`, is what the system now calls `--ease-out-expo`.
+>   `--ease-in-out` changed too, and `--duration-fast` went 150ms to 160ms.
+> - **Shadows are two-part** (a tight key plus a wide ambient) and compose with `--rim-light`.
+> - **The blanket reduced-motion kill switch is gone**, replaced by the scalar mechanism described at the
+>   bottom of this file. The "known defect" note that used to sit there has been resolved.
+>
+> Still not applied: `--ease-overshoot` is defined but unused and is fenced to the expressive register,
+> and the animated-Hud requirement in the next section remains open. Read the skill before adding motion;
+> read this file to know what is currently on the page.
 
 ## Global (`src/styles/global.css`)
 
@@ -103,13 +112,20 @@ are disabled, and the Hud mascot renders its poster only. Hover-motion is additi
 `(hover: hover) and (pointer: fine)` so a tap never fires a hover animation. The global safety net lives
 in `tokens.css`; per-component swaps live beside each interaction.
 
-**Known defect, to be fixed when the revision lands.** The safety net in this app's `tokens.css` is the
-blanket `animation-duration: 0.01ms !important; transition-duration: 0.01ms !important` on every element.
-That does not honour the preference — it deletes the interface's feedback, so a user who asked for less
-movement also loses colour fades, toast arrivals and skeleton resolution. The skill now bans it. The
-replacement collapses motion scalars (`--reveal-rise`, `--hover-lift`, `--motion-scale`) to zero and
-restricts transitions to non-moving properties at full duration; components read the scalars instead of
-checking the media query themselves. See `itqan-motion` §Accessibility and recipes §1b and §6.
+**RESOLVED.** This used to describe a defect: a blanket
+`animation-duration: 0.01ms !important; transition-duration: 0.01ms !important` on every element, which
+does not honour the preference so much as delete the interface's feedback — a user who asked for less
+movement also lost colour fades, toast arrivals and skeleton resolution.
+
+It is gone from both apps. `tokens.css` now collapses the scalars (`--reveal-rise`,
+`--reveal-scale-from`, `--hover-lift`, `--motion-scale`) to zero and restricts transitions to non-moving
+properties at full duration. Every movement in either codebase multiplies its distance by
+`--motion-scale`, so travel disappears and duration does not; keyframes that a scalar cannot express ship
+their own `prefers-reduced-motion` swap beside them. See `itqan-motion` §Accessibility and recipes §1b
+and §6.
+
+One case is deliberately NOT scaled and must stay that way: the skip link's `translateY(-200%)`. Collapsing
+that to zero would leave it permanently on screen.
 
 ## Pending: the animated mascot
 
