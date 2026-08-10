@@ -22,9 +22,30 @@ import { Badge, Card, GapChip } from './ui';
 
 export function CourseCard({ course }: { course: Course }) {
   const { t, formatDate, formatNumber, formatMoney } = useI18n();
-  const free = course.price === 0;
 
-  const price = free ? t('courses.free') : formatMoney(course.price, course.currency);
+  /**
+   * What to say about the price, in four cases rather than two.
+   *
+   * `price === 0` used to be the only branch, and everything else fell through
+   * to `formatMoney(price, currency)`. For the 2,001 Coursera courses that is
+   * `formatMoney(null, null)`: Intl throws on the null currency code and the
+   * fallback prints the literal string `null 0`. With a valid currency it would
+   * have printed `OMR 0.000` — identical to genuinely free, which is worse,
+   * because it is a false claim rather than an obvious bug.
+   *
+   * The order matters. A real number wins over a label; a label wins over
+   * nothing; and "nothing" says so rather than guessing in either direction.
+   */
+  const free = course.price === 0 || course.priceLabel === 'free';
+  const hasAmount = typeof course.price === 'number' && course.price > 0 && !!course.currency;
+
+  const price = free
+    ? t('courses.free')
+    : hasAmount
+      ? formatMoney(course.price as number, course.currency as string)
+      : course.priceLabel === 'paid'
+        ? t('courses.paid')
+        : t('courses.priceUnknown');
 
   return (
     <Card>
