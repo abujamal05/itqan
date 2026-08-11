@@ -84,9 +84,9 @@ const base = `/${locale}`;
           It sits after the submit button, not beside the password label: it is
           the exit for a failed sign in, and putting it next to the field
           invites people who could have remembered to give up and take the long
-          way round. The page it reaches still states plainly that the email
-          cannot be sent yet, so nobody is left waiting on a message that will
-          not arrive. */}
+          way round. The page it reaches is complete and integration-ready: the
+          moment /api/auth/forgot-password answers, the flow works end to end
+          with no change here. See BACKEND.md §1.1. */}
       <p class="auth__forgot">
         <a href={`${base}/forgot-password/`}>{s.login.forgot}</a>
       </p>

@@ -317,8 +317,7 @@
     },
     "expiredHeading": "That link has expired",
     "expiredBody": "Reset links stop working after a short time, and after they have been used once. Ask for a new one and it will arrive in a moment.",
-    "expiredCta": "Send a new link",
-    "notice": "Password recovery is not switched on yet. This page is complete but the email is not being sent, so nothing will arrive."
+    "expiredCta": "Send a new link"
   },
   "privacy": {
     "eyebrow": "Your data",

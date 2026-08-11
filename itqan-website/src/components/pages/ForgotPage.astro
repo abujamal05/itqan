@@ -25,8 +25,13 @@
  * always 200, always the same body, and the same timing.
  */
 import Hud from '../Hud.astro';
-import NoticeBox from '../NoticeBox.astro';
 import { t, type Locale } from '../../i18n';
+/* THE MISSING IMPORT. Login and signup both pull this in; this page never did,
+   so every `.form-card`, `.field` and `.field__check` rule it uses was inert.
+   The result was a bare browser-default input on the page background with no
+   card around it, and the validation tick — which is `display: none` until
+   `[data-state='valid']` — sitting permanently visible under the field. */
+import '../../styles/forms.css';
 
 interface Props {
   locale: Locale;
@@ -41,10 +46,21 @@ const base = `/${locale}`;
   {/* Request. Hidden immediately by the inline script when a token is present,
       so a person following the emailed link never sees it flash. */}
   <section class="auth__panel" data-panel="request">
-    <header class="page-head">
-      <h1>{s.forgot.heading}</h1>
-      <p class="auth__sub">{s.forgot.sub}</p>
-    </header>
+    {/* Hud sits at the inline start, exactly as he does on log in and sign up,
+        so the three pages of one flow share a composition instead of each
+        inventing its own. He is decoration and aria-hidden, so `order` moves
+        him ahead of the form visually while the form stays first in the DOM
+        for keyboard and screen reader users — and being logical, `order`
+        mirrors itself in Arabic. */}
+    <div class="auth__figure">
+      <Hud pose="waving" size="md" loop />
+    </div>
+
+    <div class="auth__body">
+      <header class="page-head">
+        <h1>{s.forgot.heading}</h1>
+        <p class="auth__sub">{s.forgot.sub}</p>
+      </header>
 
     <form
       class="form-card auth-form"
@@ -94,37 +110,50 @@ const base = `/${locale}`;
       </button>
     </form>
 
-    <p class="auth__alt">
-      <a href={`${base}/login/`}>{s.forgot.back}</a>
-    </p>
+      <p class="auth__alt">
+        <a href={`${base}/login/`}>{s.forgot.back}</a>
+      </p>
+    </div>
   </section>
 
   {/* Sent. Announced politely so a screen reader hears the outcome without
-      losing the place in the form. */}
+      losing the place in the form.
+      This is the one genuinely good moment in a recovery — something is on its
+      way — so it is the one panel that takes the warm ground the design system
+      reserves for reassurance, rather than the same white card as the form it
+      replaced. */}
   <section class="auth__panel" data-panel="sent" hidden>
-    <header class="page-head">
-      <h1>{s.forgot.sentHeading}</h1>
-    </header>
-    <div class="form-card" role="status" aria-live="polite">
-      <div class="auth__sent">
-        <Hud pose="waving" size="sm" />
+    <div class="auth__figure">
+      <Hud pose="waving" size="md" loop />
+    </div>
+
+    <div class="auth__body">
+      <header class="page-head">
+        <h1>{s.forgot.sentHeading}</h1>
+      </header>
+      <div class="form-card form-card--warm" role="status" aria-live="polite">
         <div class="stack">
           <p>{s.forgot.sentBody}</p>
           <p class="auth__hint">{s.forgot.sentSpam}</p>
         </div>
       </div>
+      <p class="auth__alt">
+        <a href={`${base}/login/`}>{s.forgot.back}</a>
+      </p>
     </div>
-    <p class="auth__alt">
-      <a href={`${base}/login/`}>{s.forgot.back}</a>
-    </p>
   </section>
 
-  {/* Reset. Reached only from the emailed link. */}
-  <section class="auth__panel" data-panel="reset" hidden>
-    <header class="page-head">
-      <h1>{s.forgot.resetHeading}</h1>
-      <p class="auth__sub">{s.forgot.resetSub}</p>
-    </header>
+  {/* Reset. Reached only from the emailed link.
+      NO mascot here, deliberately. This is the one panel where the user is
+      typing a credential, and the screen should hold their whole attention on
+      the field and its strength rule — a character waving beside it is a
+      distraction on the only security-critical step in the flow. */}
+  <section class="auth__panel auth__panel--solo" data-panel="reset" hidden>
+    <div class="auth__body">
+      <header class="page-head">
+        <h1>{s.forgot.resetHeading}</h1>
+        <p class="auth__sub">{s.forgot.resetSub}</p>
+      </header>
 
     <form
       class="form-card auth-form"
@@ -195,27 +224,37 @@ const base = `/${locale}`;
         <span class="form-submit__label">{s.forgot.resetSubmit}</span>
       </button>
     </form>
-  </section>
-
-  {/* Dead link. Its own panel because the recovery is genuinely over and the
-      only useful action is to start again, not to retype a password. */}
-  <section class="auth__panel" data-panel="expired" hidden>
-    <header class="page-head">
-      <h1>{s.forgot.expiredHeading}</h1>
-    </header>
-    <div class="form-card">
-      <div class="stack">
-        <p>{s.forgot.expiredBody}</p>
-        <p><a class="button button--primary" href={`${base}/forgot-password/`}>{s.forgot.expiredCta}</a></p>
-      </div>
     </div>
   </section>
 
-  {/* Stated plainly while the endpoints do not exist, so anyone who reaches
-      this page by typing the URL is not left waiting for an email. */}
-  <NoticeBox>
-    <p>{s.forgot.notice}</p>
-  </NoticeBox>
+  {/* Dead link. Its own panel because the recovery is genuinely over and the
+      only useful action is to start again, not to retype a password.
+      Hud takes the `error` pose here — the fence allows him on an error state,
+      and a link expiring is the product's fault to explain, not the user's
+      mistake to be scolded for. */}
+  <section class="auth__panel" data-panel="expired" hidden>
+    <div class="auth__figure">
+      <Hud pose="error" size="md" loop />
+    </div>
+
+    <div class="auth__body">
+      <header class="page-head">
+        <h1>{s.forgot.expiredHeading}</h1>
+      </header>
+      <div class="form-card">
+        <div class="stack">
+          <p>{s.forgot.expiredBody}</p>
+          <div class="row">
+            <a class="button button--primary" href={`${base}/forgot-password/`}>{s.forgot.expiredCta}</a>
+          </div>
+        </div>
+      </div>
+      <p class="auth__alt">
+        <a href={`${base}/login/`}>{s.forgot.back}</a>
+      </p>
+    </div>
+  </section>
+
 </div>
 
 <script>
@@ -281,9 +320,41 @@ const base = `/${locale}`;
 </script>
 
 <style>
+  /* The container no longer caps its own width — each PANEL does, so the
+     mascot column sits outside the reading measure instead of stealing from
+     it. Was a bare 32rem cap with the form left aligned inside it and the
+     "back to log in" link centred underneath, so nothing on the page agreed
+     on an edge. */
   .auth {
-    max-inline-size: 32rem;
     padding-block-end: var(--space-20);
+  }
+
+  /* One composition for every panel, and the same one log in and sign up use:
+     mascot at the inline start, content beside it, the pair centred. */
+  .auth__panel[data-panel] {
+    display: flex;
+    gap: var(--space-12);
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* `order`, not markup order: the form stays first in the DOM so keyboard and
+     screen reader users reach it immediately, while Hud — decoration, and
+     aria-hidden — renders ahead of it. Logical, so it mirrors in Arabic
+     without a second rule. */
+  .auth__figure {
+    order: -1;
+    flex: 0 0 auto;
+  }
+
+  .auth__body {
+    flex: 0 1 32rem;
+    inline-size: 100%;
+  }
+
+  /* The reset step has no mascot, so its column carries the page alone. */
+  .auth__panel--solo .auth__body {
+    flex-basis: 34rem;
   }
 
   .page-head {
@@ -302,9 +373,10 @@ const base = `/${locale}`;
     line-height: 1.6;
   }
 
+  /* Aligned with the card above it, not centred. The centred version was the
+     only element on the page not sharing the form's inline edge. */
   .auth__alt {
     margin-block-start: var(--space-6);
-    text-align: center;
   }
 
   .auth__hint {
@@ -312,17 +384,44 @@ const base = `/${locale}`;
     color: var(--color-text-muted);
   }
 
-  /* The mascot belongs beside a reassurance, not beside a result. This panel is
-     the former: nothing has been judged, something is on its way. */
-  .auth__sent {
-    display: flex;
-    align-items: center;
-    gap: var(--space-4);
+  /* The "on its way" card. The one reassuring moment in a recovery, so it
+     takes the warm ground the system reserves for exactly that rather than
+     repeating the white card of the form it just replaced. --gold-700 keeps
+     the edge readable; the brand gold measures 2:1 on paper and is barred from
+     carrying a meaningful border on light. */
+  .form-card--warm {
+    background-color: var(--color-surface-warm);
+    border-color: var(--color-border-accent);
   }
 
   .stack {
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
+  }
+
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  /* Phones: the mascot moves under the content rather than squeezing it, and
+     the vertical rhythm tightens. */
+  @media (max-width: 51.99rem) {
+    .auth__panel[data-panel] {
+      flex-direction: column;
+      align-items: stretch;
+      gap: var(--space-8);
+    }
+
+    .auth__figure {
+      order: 0;
+      align-self: center;
+    }
+
+    .page-head {
+      padding-block: var(--space-10) var(--space-5);
+    }
   }
 </style>
