@@ -87,9 +87,16 @@ Before calling any visual change finished:
    Composite alpha against what is actually behind an element before computing a contrast ratio.
 5. `node ../.claude/skills/impeccable/scripts/detect.mjs --json src/` — a floor, not a finish line.
 
-Known environment quirks: screenshots time out unless the Browser pane is displayed, so DOM geometry is
-the usual fallback. `getComputedStyle(el).transform` misreports on **SVG** elements here. Rapid edits can
-corrupt Vite HMR into `useI18n must be used inside <I18nProvider>` — hard-reload before believing it.
+**Screenshots work — a timeout means you are addressing a background tab.** The pane only composites the
+FRONTED tab, so capturing any other one fails with "the Browser pane is not displayed". Starting a second
+preview server (say the site alongside the app) creates a new tab and fronts it, orphaning the one you
+were using. Fix it with `tabs_context` to find the tab, `tabs_select <tabId>` to front it, then capture.
+Do not fall back to geometry-only and call it verified — that is how a page shipped with all four of its
+panels rendering at once while an assertion on the `hidden` property reported them hidden.
+
+Other known quirks: `getComputedStyle(el).transform` misreports on **SVG** elements here (a forced inline
+`rotate(180deg)` reads back as the identity matrix). Rapid edits can corrupt Vite HMR into
+`useI18n must be used inside <I18nProvider>` — hard-reload before believing it.
 
 ## Backend
 

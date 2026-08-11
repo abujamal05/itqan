@@ -87,8 +87,24 @@ rule:
 **This is a local stand-in** for the skill's own `audit.py`, which is not installed here. It is static
 text analysis and cannot see a rendered page. **Passing it is necessary, never sufficient** — always
 follow with the render check: both themes, both directions, narrowest and widest widths, keyboard only.
-On this project the browser-pane screenshot tool often times out; when it does, verify via DOM geometry
-and computed styles (`javascript_tool`) instead of pixels, and say so.
+**Screenshots work. If one times out, you are addressing a background tab.** The pane only composites
+frames for the FRONTED tab, so a capture of any other one fails with "the Browser pane is not displayed".
+Starting a second preview server creates a new tab and fronts it, which silently orphans the tab you were
+using — that is how this happens, and it is easy to mistake for a broken tool.
+
+The fix is two calls, not a workaround:
+
+```
+tabs_context            # find the tabId you want, and which one isActive
+tabs_select <tabId>     # front it
+computer screenshot     # now succeeds
+```
+
+DOM geometry via `javascript_tool` is a complement, not a substitute. It answers "is this element 12px
+out of alignment"; it cannot tell you a meter is ten times longer than it should be, a caption is
+overflowing its circle, or a plural is wrong. **Both** were needed to catch the real defects on this
+project. And when they disagree, trust the measurement over an eyeballed estimate from a scaled-down
+screenshot — a composition read as off-centre from an 0.625-scale capture measured as exactly centred.
 
 ## How to use the skills — READ THIS
 
