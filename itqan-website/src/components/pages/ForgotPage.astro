@@ -330,8 +330,15 @@ const base = `/${locale}`;
   }
 
   /* One composition for every panel, and the same one log in and sign up use:
-     mascot at the inline start, content beside it, the pair centred. */
-  .auth__panel[data-panel] {
+     mascot at the inline start, content beside it, the pair centred.
+
+     `:not([hidden])` is load-bearing, not tidiness. The `hidden` attribute
+     works through the UA rule `[hidden] { display: none }`, which carries
+     almost no specificity — so a bare `.auth__panel[data-panel]` display rule
+     (0,2,0) silently overrode it and rendered ALL FOUR panels stacked down the
+     page at once. Anything that sets `display` on an element that can be
+     `hidden` has to exclude it. */
+  .auth__panel[data-panel]:not([hidden]) {
     display: flex;
     gap: var(--space-12);
     align-items: center;
