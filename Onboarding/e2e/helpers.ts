@@ -10,8 +10,12 @@
 import { expect, type Page } from '@playwright/test';
 
 export const ACCOUNTS = {
-  /** Fresh account — walks the whole onboarding flow. */
-  fresh: 'maryam@itqan.test',
+  /** Fresh account — un-onboarded, walks the whole onboarding flow.
+   *  Was maryam@itqan.test until she was seeded onboarded for manual QA (a login
+   *  should always land on a populated app). That flipped /app/upload to redirect
+   *  to the dashboard and broke this suite; new@itqan.test is the dedicated
+   *  un-onboarded fixture and must stay onboarded:false in site-plugin.ts. */
+  fresh: 'new@itqan.test',
   /** Already onboarded — lands straight on the dashboard. */
   onboarded: 'nasser@itqan.test',
 } as const;

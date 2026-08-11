@@ -50,7 +50,13 @@ const accounts: Account[] = [
    */
   { id: 'u_maryam', fullName: 'Maryam Al Balushi', email: 'maryam@itqan.test', password: 'itqan1234', onboarded: true },
   { id: 'u_nasser', fullName: 'Nasser Al Hinai', email: 'nasser@itqan.test', password: 'itqan1234', onboarded: true },
-  /** Kept deliberately un-onboarded, so the flow itself is still testable. */
+  /**
+   * The un-onboarded fixture, and the E2E suite's `ACCOUNTS.fresh` — the
+   * onboarding.spec walk depends on this landing on /app/upload rather than the
+   * dashboard. MUST stay `onboarded: false`. Maryam is deliberately NOT this
+   * account any more: she is seeded onboarded for manual QA, and pointing the
+   * fresh-flow tests at her is exactly what turned CI red.
+   */
   { id: 'u_new', fullName: 'Salim Al Amri', email: 'new@itqan.test', password: 'itqan1234', onboarded: false },
 ];
 
