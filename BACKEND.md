@@ -25,10 +25,26 @@ Auth is a session **cookie** on the API origin. The app sends
 
 ### 1.1 Password recovery
 
-The pages exist and are wired. Nothing answers them. Until they do, the recovery
-page shows a notice saying so; delete that notice
-(`itqan-website/src/components/pages/ForgotPage.astro`, the `<NoticeBox>` at the
-bottom) on the day these land.
+**The front end is finished and integration-ready.** `ForgotPage.astro` is one
+route serving four panels, chosen by the URL and by what the server answers, and
+it is linked from the log in page. Nothing on it is stubbed and there is no
+placeholder notice left to remove — the moment these two endpoints answer, the
+flow works end to end with no front-end change.
+
+| Panel | Reached when | What it needs from you |
+|---|---|---|
+| `request` | default | `POST /api/auth/forgot-password` returns 2xx |
+| `sent` | the request succeeds | nothing — swapped in place, never navigates |
+| `reset` | URL has `?token=…` | `POST /api/auth/reset-password` |
+| `expired` | reset answers **400** or **410** | those exact statuses |
+
+Two behaviours to build against, both already implemented on the client:
+
+- The `sent` panel replaces the form **in place** rather than navigating, so the
+  address just typed is still on screen if it was mistyped.
+- The token is read from the URL and then **stripped via `history.replaceState`**,
+  so it never reaches browser history, a shared link, or a `Referer` header on
+  any later request from that page.
 
 ```
 POST /api/auth/forgot-password
@@ -60,7 +76,20 @@ Body: form data, fields `token`, `password`.
 | any other non-2xx | shows the generic "could not do that just now" message |
 
 Password rule must match sign up: 8+ characters with a lower case, an upper case,
-a digit and a symbol.
+a digit and a symbol. The client enforces the same rule before it posts, so a
+400 here means the two rules have drifted apart, not that a user slipped through.
+
+**Email template requirements.** The link must be
+`https://<site>/<ar|en>/forgot-password/?token=<token>` — the locale segment is
+not optional, because it decides which language the reset screen renders in, and
+a recovery mail that arrives in the wrong language is the one message a user
+cannot afford to misread. Send it in the language of the `itqan_locale` cookie on
+the request. Token short-lived and single use; spending it must start returning
+410 so the `expired` panel is reachable.
+
+**Rate limiting** belongs on the server, per address and per IP. The form has no
+throttle of its own by design — a client-side limit on an anti-enumeration
+endpoint is trivially bypassed and would only lull you.
 
 ### 1.2 Profile photo
 
@@ -292,8 +321,8 @@ deployment avoids it entirely, and the front end is configured for both
 
 | Endpoint | Status |
 |---|---|
-| `POST /api/auth/forgot-password` | **missing** |
-| `POST /api/auth/reset-password` | **missing** |
+| `POST /api/auth/forgot-password` | **missing** — front end complete and waiting |
+| `POST /api/auth/reset-password` | **missing** — front end complete and waiting |
 | `POST /api/profile/avatar` | **missing** |
 | `DELETE /api/profile/avatar` | **missing** |
 | `avatarUrl` on `GET /api/profile` | **missing field** |
