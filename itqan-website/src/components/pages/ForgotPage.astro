@@ -278,13 +278,42 @@ const base = `/${locale}`;
     panels.forEach((p) => { p.hidden = p.dataset.panel !== name; });
   };
 
+  /* Where the token lives between the address bar and the form.
+   *
+   * It cannot stay in the URL (see below) and it cannot stay in the page,
+   * because switching language is a full navigation to the other route tree.
+   * Without somewhere to keep it, a person who arrives from the emailed link and
+   * then switches language lands on a page with no token and is sent back to
+   * "enter your email" — with a link they can only use once.
+   *
+   * sessionStorage is the right shape for it: same-origin, tab-scoped, gone when
+   * the tab closes, and — unlike the URL it replaces — absent from history, from
+   * anything pasted, and from the Referer. It grants nothing new either; script
+   * that could read it can already read the hidden field below. */
+  const STASH = 'itqan.reset-token';
+  const stash = {
+    get(): string | null {
+      try { return sessionStorage.getItem(STASH); } catch { return null; }
+    },
+    set(value: string) {
+      try { sessionStorage.setItem(STASH, value); } catch { /* private mode */ }
+    },
+    clear() {
+      try { sessionStorage.removeItem(STASH); } catch { /* private mode */ }
+    },
+  };
+
   const url = new URL(window.location.href);
-  const token = url.searchParams.get('token');
+  /* The URL first, so a freshly clicked link always wins over a stale stash —
+     someone who requests a second link and opens it in the same tab must reset
+     with the new token, not the one it replaced. */
+  const token = url.searchParams.get('token') ?? stash.get();
 
   if (token) {
     const field = document.getElementById('rp-token') as HTMLInputElement | null;
     if (field) field.value = token;
     show('reset');
+    stash.set(token);
     /* The token is a credential. Taking it out of the address bar keeps it out
        of the history, out of anything the user might paste, and out of the
        Referer header on any later request from this page. */
@@ -315,7 +344,19 @@ const base = `/${locale}`;
    */
   const reset = document.getElementById('reset-form') as HTMLFormElement | null;
   reset?.addEventListener('itqan:submitted', ((e: CustomEvent<{ ok: boolean; status: number }>) => {
-    if (!e.detail.ok && (e.detail.status === 400 || e.detail.status === 410)) show('expired');
+    if (e.detail.ok) {
+      /* Spent. Keeping it would leave a dead token in the tab, and a later visit
+         to this page would open the reset panel for a link that cannot work. */
+      stash.clear();
+      return;
+    }
+    if (e.detail.status === 400 || e.detail.status === 410) {
+      /* Rejected — expired, already used, or mangled. Same reasoning: the panel
+         that follows offers a fresh link, and a stale token must not survive to
+         pre-empt it. */
+      stash.clear();
+      show('expired');
+    }
   }) as EventListener);
 </script>
 

@@ -50,3 +50,58 @@ test('an unknown path serves the 404 page', async ({ page }) => {
   const res = await page.goto('/en/does-not-exist/');
   expect(res?.status()).toBe(404);
 });
+
+/**
+ * Password recovery: the emailed link must survive a language switch.
+ *
+ * The reported bug, and three correct behaviours colliding to produce it. The
+ * link arrives as /<lang>/forgot-password/?token=…; the page reads the token and
+ * strips it from the URL (deliberately — a credential does not belong in
+ * history, in a pasted link, or in a Referer); and the language toggle links to
+ * the pathname only. So the other language loaded with no token at all and sent
+ * the user back to "enter your email" — with a link they can only use once.
+ *
+ * The token now rides in sessionStorage, which survives a same-origin navigation
+ * and still keeps the URL clean.
+ */
+const TOKEN = 'e2e-test-token-value';
+
+for (const [from, to] of [['en', 'ar'], ['ar', 'en']] as const) {
+  test(`the reset panel survives switching ${from} -> ${to}`, async ({ page }) => {
+    await page.goto(`/${from}/forgot-password/?token=${TOKEN}`);
+
+    // Arrived on the reset panel, and the token is already out of the URL.
+    await expect(page.locator('[data-panel="reset"]')).toBeVisible();
+    await expect(page.locator('[data-panel="request"]')).toBeHidden();
+    expect(page.url()).not.toContain(TOKEN);
+
+    await page.locator(`.lang-switch__opt[hreflang="${to}"]`).click();
+    await expect(page).toHaveURL(new RegExp(`/${to}/forgot-password/`));
+
+    // THE assertion: still setting a password, not asked for an email again.
+    await expect(page.locator('[data-panel="reset"]')).toBeVisible();
+    await expect(page.locator('[data-panel="request"]')).toBeHidden();
+    // And the token came across, or the form would post an empty one.
+    await expect(page.locator('#rp-token')).toHaveValue(TOKEN);
+    // Carried in storage, NOT smuggled back into the address bar.
+    expect(page.url()).not.toContain(TOKEN);
+  });
+}
+
+test('someone who never followed a link still gets the email form', async ({ page }) => {
+  await page.goto('/en/forgot-password/');
+
+  await expect(page.locator('[data-panel="request"]')).toBeVisible();
+  await expect(page.locator('[data-panel="reset"]')).toBeHidden();
+});
+
+test('a fresh link replaces the one already stashed', async ({ page }) => {
+  /* Someone who requests a second link and opens it in the same tab must reset
+     with the new token, not the one it superseded. */
+  await page.goto(`/en/forgot-password/?token=${TOKEN}`);
+  await expect(page.locator('#rp-token')).toHaveValue(TOKEN);
+
+  await page.goto('/en/forgot-password/?token=second-token');
+
+  await expect(page.locator('#rp-token')).toHaveValue('second-token');
+});
