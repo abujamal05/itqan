@@ -33,7 +33,7 @@ test.describe('marketing site has no horizontal scroll', () => {
 });
 
 test.describe('signed-in app has no horizontal scroll', () => {
-  for (const path of ['/app/dashboard', '/app/jobs', '/app/courses']) {
+  for (const path of ['/app/chat', '/app/dashboard', '/app/jobs', '/app/courses']) {
     for (const width of [320, 360, 768, 1024]) {
       test(`${path} at ${width}px`, async ({ page }) => {
         await login(page, ACCOUNTS.onboarded);

@@ -62,6 +62,15 @@ Not optional, and in this order:
 - **Bilingual parity.** Every key exists in `ar.json` and `en.json`.
 - **The Hud fence.** Never beside a verdict, score, real match, data table, or the confirmation screen. He
   is absent from the dashboard entirely.
+  **One exception, added 2026-08-17: the chat surface** (`src/app/Chat.tsx` and its parts), where the
+  assistant is named after him. He is present there throughout, including on a junction that offers real
+  matches. This was decided with the conflict on the table; it is not drift, so do not revert it.
+  The boundary that keeps the fence's argument alive: **Hud speaks orientation, never a verdict.** He
+  opens a junction and names the directions; every actionable answer renders as its own card carrying
+  `why`, a real source and an honest confidence label. Where a fork resolves to a real job or course it
+  reuses `MatchCard` / `CourseCard` unchanged, so the trust rules are inherited rather than reimplemented.
+  Everywhere else the fence stands, and the "Hud is deliberately absent" comments in `Dashboard.tsx`,
+  `Profile.tsx` and `MatchCard.tsx` are still correct.
 - **Trust rules.** Every extracted value carries its confidence; every recommendation carries `why` and a
   real source. No invented statistics.
 - **Motion:** only `transform` and `opacity`. Movement distance multiplies by `--motion-scale`, which

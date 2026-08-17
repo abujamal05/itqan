@@ -99,6 +99,28 @@ motion is RTL-aware, and **reduced motion** removes movement while keeping opaci
 | 38 | Match rows | hover (fine pointer) | `--shadow-md` + border-strong |
 | 39 | CTA arrow | hover | nudge |
 
+## Hud's ask panel (`HudChat.astro`)
+
+| # | Interaction | Trigger | What happens |
+|---|---|---|---|
+| 40 | Launcher hover | hover (fine pointer only) | lifts `translateY(-2px)` and swaps `--shadow-lg` for `--shadow-xl` + `--glow-gold` (`--duration-fast`, `--ease-out`) |
+| 41 | Launcher press | `:active` | `scale(0.97)`, scaled by `--motion-scale` |
+| 42 | Panel open / close | launcher tap, Escape, close button, pointerdown outside | `opacity 0→1` + `translateY(8px)→0`, in over `--duration-base` and out over `--duration-fast`, with `display` on `allow-discrete` and an `@starting-style` entry pose. Same mechanism as the mobile menu (#14), for the same reason: shut means out of the layout **and** out of the tab order |
+| 43 | Question taken | fork tap, or a matched free-text question | the answer node is **moved** into the spine and scrolled to with `scrollIntoView`, `behavior: 'smooth'` unless reduced motion asks otherwise, then receives focus |
+| 44 | Fork hover | hover (fine pointer only) | border → `--color-border-strong`, ground → `--color-accent-tint`, lift `translateY(-1px)` (`--duration-fast`) |
+| 45 | Send press | `:active` | `scale(0.97)` |
+
+Two notes that are motion decisions, not omissions. The **launcher never animates on its own** — a
+looping mascot pinned to the corner of every page competes with the reading, so the still is the
+design here rather than a fallback. And the spine's **gold thread is drawn, not animated**: it is a
+painted `::before` rule, because the panel's answers arrive one at a time by a person's choice, and a
+line that redraws itself on every arrival would draw attention to the container instead of the answer.
+The full surface in the app is where that thread animates.
+
+Reduced motion needs no separate rule here: the entry offset and both lifts multiply by
+`--motion-scale`, so the panel and the forks fade in place, and `scrollIntoView` switches to `'auto'`
+by reading the media query directly.
+
 ## Static (not animated, but part of the visual system)
 
 - Dot-grid canvas texture (`body::before`), hero/closing radial glows, icon chips, step/limit marks,

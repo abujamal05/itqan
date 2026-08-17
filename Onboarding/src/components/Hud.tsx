@@ -16,6 +16,20 @@
  * screen. He belongs to onboarding, the pipeline wait, empty states, errors and
  * genuine milestones. Adding him to a results surface breaks the product's
  * whole argument, so do not.
+ *
+ * ONE EXCEPTION, 2026-08-17: the chat surface, src/app/Chat.tsx and its parts.
+ * The assistant is named after him, so he is present there throughout. That was
+ * decided deliberately with this conflict on the table — it is not drift, and
+ * reverting it would break a shipped feature.
+ *
+ * What keeps the fence's argument intact is the split, so hold it: Hud speaks
+ * ORIENTATION and never a verdict. He opens a junction and names the directions
+ * available; the directions themselves render as their own cards carrying why,
+ * a real source and an honest confidence label, and a fork that resolves to a
+ * real job or course renders MatchCard / CourseCard unchanged. If you ever find
+ * yourself putting a score, a match or a percentage inside Hud's own read, the
+ * exception has been misread and the fence is doing exactly what it was built
+ * to stop.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 

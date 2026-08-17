@@ -1,0 +1,759 @@
+---
+/**
+ * Hud, the assistant, in miniature.
+ *
+ * The junction spine as a corner panel: Hud greets, offers the questions a
+ * stranger actually asks, and every question taken MOVES into a spine above the
+ * remaining ones instead of replacing them. Nothing a visitor read scrolls away
+ * or disappears, which is the same argument the full surface in the app makes.
+ *
+ * WHAT THIS IS NOT: it is not a model, and it never pretends to be. Every answer
+ * below is authored, server rendered, and about Itqan itself — what it does,
+ * what it costs, what happens to your documents. A question about the visitor's
+ * own record gets an honest "I have to read it first" and the free account. That
+ * boundary is stated in the panel header before anything is typed, because a
+ * stranger who catches an assistant overreaching is the one user this product
+ * cannot afford to lose.
+ *
+ * THREE THINGS HOLD THE BUDGET. This site ships ~1KB of JS and the feature had
+ * to fit that scale rather than ignore it:
+ *   1. Every string is rendered into the markup here. The script never imports
+ *      the dictionary, exactly like ThemeToggle and form.ts.
+ *   2. Nothing is created in JS. Answers are pre-rendered hidden and MOVED into
+ *      the spine, so no element ever misses Astro's scoped-style hash and no
+ *      rule has to be written :global to reach it.
+ *   3. Matching is a token overlap against data-keywords already in the DOM.
+ *
+ * The launcher is Hud standing, not a speech bubble, and it is the one place a
+ * still Hud is a design choice rather than a fallback: a looping clip pinned to
+ * the corner of every page is the site shouting at someone trying to read it.
+ */
+import Hud from './Hud.astro';
+import { t, isLocale, defaultLocale, type Locale } from '../i18n';
+
+const locale: Locale = isLocale(Astro.currentLocale) ? Astro.currentLocale : defaultLocale;
+const strings = t(locale);
+const s = strings.chat;
+const base = `/${locale}`;
+---
+
+<div class="hudchat" data-open="false">
+  <!-- Panel first in source order so it sits ABOVE the launcher without any
+       positioning: the container is anchored to the corner and lays its two
+       children out in a column. -->
+  <div
+    class="hudchat__panel"
+    id="hudchat-panel"
+    role="dialog"
+    aria-labelledby="hudchat-title"
+  >
+    <div class="hudchat__head">
+      <div class="hudchat__headText">
+        <p class="hudchat__title" id="hudchat-title">{s.title}</p>
+        <!-- The limit is disclosed here, before a question is typed, rather
+             than after one is refused. -->
+        <p class="hudchat__limit">{s.limit}</p>
+      </div>
+      <button class="icon-button hudchat__close" type="button" aria-label={s.close}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div class="hudchat__body">
+      <div class="hudchat__greeting">
+        <Hud pose="waving" then="idle" size="sm" />
+        <p class="hudchat__read">{s.greeting}</p>
+      </div>
+
+      <!-- The spine. Taken questions land here, in order, and stay. -->
+      <ol class="hudchat__spine" aria-live="polite"></ol>
+
+      <div class="hudchat__forksWrap">
+        <p class="hudchat__forksLabel" data-label-more={s.forksMoreLabel}>{s.forksLabel}</p>
+        <ul class="hudchat__forks">
+          {
+            s.forks.map((fork) => (
+              <li class="hudchat__forkItem">
+                <button class="hudchat__fork" type="button" data-answer={`hudchat-a-${fork.id}`}>
+                  <span>{fork.q}</span>
+                  <svg class="hudchat__forkArrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M5 12h14m-6-6 6 6-6 6"></path>
+                  </svg>
+                </button>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </div>
+
+    <form class="hudchat__composer">
+      <!-- A visible label, not a placeholder standing in for one. -->
+      <label class="hudchat__askLabel" for="hudchat-input">{s.askLabel}</label>
+      <div class="hudchat__field">
+        <input
+          class="hudchat__input"
+          id="hudchat-input"
+          type="text"
+          name="q"
+          autocomplete="off"
+          placeholder={s.placeholder}
+        />
+        <button class="hudchat__send" type="submit" aria-label={s.send}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h14m-6-6 6 6-6 6"></path>
+          </svg>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <button
+    class="hudchat__launcher"
+    type="button"
+    aria-expanded="false"
+    aria-controls="hudchat-panel"
+    aria-label={s.launch}
+  >
+    <img class="hudchat__mark" src="/mascot/hud-standing.svg" alt="" width="44" height="44" decoding="async" />
+  </button>
+
+  <!-- Decorative: the launcher's own label already says this, so it is hidden
+       from assistive tech rather than repeated to it. Shown once per browser. -->
+  <p class="hudchat__nudge" aria-hidden="true" hidden>{s.nudge}</p>
+
+  <!-- Pre-rendered answers. Hidden as a group; each one is MOVED into the spine
+       when it is taken, which is why nothing here is cloned or rebuilt. An <ol>
+       rather than a <div> so the list items are valid where they start as well
+       as where they end up. -->
+  <ol class="hudchat__store" hidden>
+    {
+      s.forks.map((fork) => (
+        <li class="hudchat__node" id={`hudchat-a-${fork.id}`} tabindex="-1" data-keywords={fork.keywords} data-q={fork.q}>
+          <p class="hudchat__typed" hidden><span class="hudchat__typedLabel">{s.youAsked}</span> <bdi class="hudchat__typedText"></bdi></p>
+          <p class="hudchat__question">{fork.q}</p>
+          <p class="hudchat__read">{fork.a}</p>
+          <a class="hudchat__source" href={`${base}/${fork.slug}/`}>
+            <span>{fork.linkLabel}</span>
+            <svg class="hudchat__forkArrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 12h14m-6-6 6 6-6 6"></path>
+            </svg>
+          </a>
+        </li>
+      ))
+    }
+    <li class="hudchat__node hudchat__node--none" id="hudchat-a-none" tabindex="-1">
+      <p class="hudchat__typed" hidden><span class="hudchat__typedLabel">{s.youAsked}</span> <bdi class="hudchat__typedText"></bdi></p>
+      <p class="hudchat__question">{s.noMatchTitle}</p>
+      <p class="hudchat__read">{s.noMatchBody}</p>
+      <a class="button button--primary button--arrow hudchat__signup" href={`${base}/signup/`}>
+        <span>{strings.actions.signup}</span>
+        <svg class="button__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12h14m-6-6 6 6-6 6"></path>
+        </svg>
+      </a>
+    </li>
+  </ol>
+</div>
+
+<script>
+  const root = document.querySelector<HTMLElement>('.hudchat');
+
+  if (root) {
+    const launcher = root.querySelector<HTMLButtonElement>('.hudchat__launcher')!;
+    const panel = root.querySelector<HTMLElement>('.hudchat__panel')!;
+    const spine = root.querySelector<HTMLOListElement>('.hudchat__spine')!;
+    const forkList = root.querySelector<HTMLElement>('.hudchat__forks')!;
+    const forksWrap = root.querySelector<HTMLElement>('.hudchat__forksWrap')!;
+    const forksLabel = root.querySelector<HTMLElement>('.hudchat__forksLabel')!;
+    const form = root.querySelector<HTMLFormElement>('.hudchat__composer')!;
+    const input = root.querySelector<HTMLInputElement>('.hudchat__input')!;
+    const nudge = root.querySelector<HTMLElement>('.hudchat__nudge')!;
+    const nodes = Array.from(root.querySelectorAll<HTMLElement>('.hudchat__node'));
+    const noMatch = root.querySelector<HTMLElement>('#hudchat-a-none')!;
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const NUDGE_KEY = 'itqan-hudchat-seen';
+
+    /* ------------------------------------------------------------ open -- */
+
+    const setOpen = (open: boolean) => {
+      root.dataset.open = String(open);
+      launcher.setAttribute('aria-expanded', String(open));
+      if (open) {
+        hideNudge();
+        // Focus the field rather than the panel: someone who opened an ask box
+        // wants to ask, and the heading is read by the dialog label anyway.
+        input.focus();
+      }
+    };
+
+    const hideNudge = () => {
+      if (nudge.hidden) return;
+      nudge.hidden = true;
+      try {
+        localStorage.setItem(NUDGE_KEY, '1');
+      } catch (e) {
+        /* private mode: it simply shows again next visit */
+      }
+    };
+
+    launcher.addEventListener('click', () => {
+      setOpen(root.dataset.open !== 'true');
+    });
+
+    root.querySelector<HTMLButtonElement>('.hudchat__close')?.addEventListener('click', () => {
+      setOpen(false);
+      launcher.focus();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && root.dataset.open === 'true') {
+        setOpen(false);
+        launcher.focus();
+      }
+    });
+
+    /* The panel is not modal — the page behind it stays usable — so a pointer
+       down outside closes it the same way the header menu does. Focus is NOT
+       restored here: the visitor is already reaching somewhere else, and moving
+       their focus back to the corner would fight them for it. */
+    document.addEventListener('pointerdown', (e) => {
+      if (root.dataset.open !== 'true') return;
+      if (!root.contains(e.target as Node)) setOpen(false);
+    });
+
+    /* ------------------------------------------------------------ take -- */
+
+    /**
+     * Move an answer into the spine. Moving, not copying: the node keeps its
+     * scoped-style hash and its identity, so asking the same thing twice
+     * returns to the answer already on the spine rather than stacking a
+     * duplicate under it.
+     */
+    const take = (node: HTMLElement, typed?: string) => {
+      const already = node.parentElement === spine;
+
+      if (typed) {
+        const line = node.querySelector<HTMLElement>('.hudchat__typed');
+        const text = node.querySelector<HTMLElement>('.hudchat__typedText');
+        if (line && text) {
+          text.textContent = typed;
+          line.hidden = false;
+        }
+      }
+
+      if (!already) {
+        spine.appendChild(node);
+        // Retire the fork that led here; the ones not taken stay listed.
+        const fork = forkList.querySelector(`[data-answer="${node.id}"]`);
+        fork?.closest('.hudchat__forkItem')?.remove();
+        if (!forkList.children.length) {
+          forksWrap.hidden = true;
+        } else {
+          const more = forksLabel.dataset.labelMore;
+          if (more) forksLabel.textContent = more;
+        }
+      }
+
+      node.scrollIntoView({ block: 'nearest', behavior: reduced.matches ? 'auto' : 'smooth' });
+      node.focus();
+    };
+
+    forkList.addEventListener('click', (e) => {
+      const fork = (e.target as HTMLElement).closest<HTMLElement>('.hudchat__fork');
+      if (!fork) return;
+      const node = document.getElementById(fork.dataset.answer ?? '');
+      if (node) take(node);
+    });
+
+    /* ----------------------------------------------------------- match -- */
+
+    /**
+     * Overlap scoring, deliberately dumb and deliberately strict.
+     *
+     * A word of the question that also appears in an answer's keywords or its
+     * own title scores. Two hits are required before anything is claimed as a
+     * match, because one shared word is how a keyword matcher ends up
+     * confidently answering a question nobody asked — and on this product a
+     * confident wrong answer costs more than an honest "I cannot".
+     */
+    const words = (value: string) =>
+      value
+        .toLowerCase()
+        .split(/[^\p{L}\p{N}]+/u)
+        .filter((w) => w.length > 2);
+
+    const best = (question: string): HTMLElement | null => {
+      const asked = words(question);
+      if (!asked.length) return null;
+
+      /* Scored into an array and reduced, rather than tracking a running winner
+         in a closure: TypeScript stops narrowing a variable that a callback
+         assigns to, so the running-best version reports the result as `null`
+         and refuses to compile. */
+      const scored = nodes
+        .filter((node) => node.dataset.keywords)
+        .map((node) => {
+          const hay = words(`${node.dataset.keywords} ${node.dataset.q ?? ''}`);
+          return { node, score: asked.reduce((n, w) => n + (hay.includes(w) ? 1 : 0), 0) };
+        });
+
+      const winner = scored.reduce((a, b) => (b.score > a.score ? b : a), { node: nodes[0], score: 0 });
+      return winner.score >= 2 ? winner.node : null;
+    };
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const question = input.value.trim();
+      if (!question) return;
+      take(best(question) ?? noMatch, question);
+      input.value = '';
+    });
+
+    /* ----------------------------------------------------------- nudge -- */
+
+    let seen = true;
+    try {
+      seen = localStorage.getItem(NUDGE_KEY) === '1';
+    } catch (e) {
+      /* private mode: treat it as seen rather than nagging every page view */
+    }
+    if (!seen) {
+      nudge.hidden = false;
+      // Any deliberate act anywhere on the page retires it. It gets one moment
+      // of attention and never asks for a second.
+      document.addEventListener('pointerdown', hideNudge, { once: true });
+      document.addEventListener('keydown', hideNudge, { once: true });
+    }
+  }
+</script>
+
+<style>
+  .hudchat {
+    position: fixed;
+    inset-block-end: var(--space-6);
+    inset-inline-end: var(--space-6);
+    /* Above the sticky header (200) and the mobile menu (100), below the skip
+       link (500) so the first tab stop of the page is still the skip link. */
+    z-index: var(--z-overlay);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-3);
+  }
+
+  /* ---------------------------------------------------------- launcher -- */
+
+  .hudchat__launcher {
+    display: grid;
+    place-items: center;
+    inline-size: 56px;
+    block-size: 56px;
+    padding: 0;
+    border: 1px solid var(--color-border-accent);
+    border-radius: var(--radius-full);
+    background-color: var(--color-surface);
+    background-image: var(--gradient-paper);
+    box-shadow: var(--shadow-lg), var(--rim-light);
+    cursor: pointer;
+    transition:
+      transform var(--duration-fast) var(--ease-out),
+      box-shadow var(--duration-fast) var(--ease-out),
+      opacity var(--duration-fast) var(--ease-out);
+  }
+
+  .hudchat__mark {
+    inline-size: 44px;
+    block-size: 44px;
+    object-fit: contain;
+    /* Same two-pass paper shadow Hud.astro uses: the artwork has transparent
+       holes punched at the eyes, and on the dark canvas they would otherwise
+       read as black. It doubles as the keyline that keeps his navy off a navy
+       surface. */
+    filter: drop-shadow(0 0 3px var(--paper)) drop-shadow(0 0 3px var(--paper));
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .hudchat__launcher:hover {
+      transform: translateY(calc(-2px * var(--motion-scale)));
+      box-shadow: var(--shadow-xl), var(--glow-gold);
+    }
+  }
+
+  .hudchat__launcher:active {
+    transform: scale(calc(1 - 0.03 * var(--motion-scale)));
+  }
+
+  /* ------------------------------------------------------------- nudge -- */
+
+  .hudchat__nudge {
+    order: -1;
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background-color: var(--color-surface);
+    box-shadow: var(--shadow-sm);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+
+  .hudchat[data-open='true'] .hudchat__nudge {
+    display: none;
+  }
+
+  /* ------------------------------------------------------------- panel -- */
+
+  .hudchat__panel {
+    inline-size: min(23rem, calc(100vw - var(--space-8)));
+    max-block-size: min(70vh, 34rem);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background-color: var(--color-surface);
+    box-shadow: var(--shadow-xl), var(--rim-light);
+    opacity: 0;
+    transform: translateY(calc(8px * var(--motion-scale)));
+    /* `display` rides the transition with allow-discrete so the panel is out of
+       the layout AND the tab order when shut. A visibility-only hide leaves
+       every control inside it keyboard reachable behind a closed panel. */
+    transition:
+      opacity var(--duration-fast) var(--ease-out),
+      transform var(--duration-fast) var(--ease-out),
+      display var(--duration-fast) allow-discrete;
+  }
+
+  .hudchat[data-open='true'] .hudchat__panel {
+    display: flex;
+    opacity: 1;
+    transform: none;
+    transition-duration: var(--duration-base);
+  }
+
+  @starting-style {
+    .hudchat[data-open='true'] .hudchat__panel {
+      opacity: 0;
+      transform: translateY(calc(8px * var(--motion-scale)));
+    }
+  }
+
+  .hudchat__head {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    border-block-end: 1px solid var(--color-border);
+    background-color: var(--color-surface-warm);
+  }
+
+  .hudchat__headText {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+  }
+
+  .hudchat__title {
+    margin: 0;
+    font-weight: var(--weight-semibold);
+    color: var(--color-text);
+  }
+
+  .hudchat__limit {
+    margin: 0;
+    margin-block-start: var(--space-1);
+    font-size: var(--text-xs);
+    line-height: var(--leading-latin);
+    color: var(--color-text-muted);
+  }
+
+  .hudchat__close {
+    flex: 0 0 auto;
+    margin-block-start: calc(-1 * var(--space-2));
+    margin-inline-end: calc(-1 * var(--space-2));
+  }
+
+  .hudchat__body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+  }
+
+  .hudchat__greeting {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    text-align: center;
+  }
+
+  .hudchat__read {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: var(--leading-latin);
+    color: var(--color-text);
+  }
+
+  :global([dir='rtl']) .hudchat__read {
+    line-height: var(--leading-arabic);
+  }
+
+  /* -------------------------------------------------------------- spine -- */
+
+  .hudchat__spine {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+  }
+
+  .hudchat__spine:empty {
+    display: none;
+  }
+
+  .hudchat__node {
+    position: relative;
+    padding-inline-start: var(--space-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  /* The thread. The same gold line the home and how-it-works pages draw through
+     their steps, standing on end: it is what makes a stack of answers read as
+     one path rather than a transcript. */
+  .hudchat__node::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: 0;
+    inset-block: var(--space-1);
+    inline-size: 2px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-border-accent);
+  }
+
+  .hudchat__node::after {
+    content: '';
+    position: absolute;
+    inset-inline-start: -3px;
+    inset-block-start: var(--space-1);
+    inline-size: 8px;
+    block-size: 8px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-accent);
+  }
+
+  .hudchat__node:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 4px;
+    border-radius: var(--radius-sm);
+  }
+
+  .hudchat__typed,
+  .hudchat__question {
+    margin: 0;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    color: var(--color-text);
+  }
+
+  .hudchat__typed {
+    font-weight: var(--weight-regular);
+    color: var(--color-text-muted);
+  }
+
+  .hudchat__typedLabel {
+    color: var(--color-text-muted);
+  }
+
+  .hudchat__source {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    align-self: flex-start;
+    min-block-size: 44px;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    color: var(--color-accent-ink);
+  }
+
+  .hudchat__signup {
+    align-self: flex-start;
+  }
+
+  /* -------------------------------------------------------------- forks -- */
+
+  .hudchat__forksLabel {
+    margin: 0;
+    margin-block-end: var(--space-2);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-medium);
+    color: var(--color-text-muted);
+  }
+
+  .hudchat__forks {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .hudchat__fork {
+    inline-size: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    min-block-size: 44px;
+    padding: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background-color: var(--color-bg);
+    font-family: inherit;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    color: var(--color-text);
+    text-align: start;
+    cursor: pointer;
+    transition:
+      transform var(--duration-fast) var(--ease-out),
+      border-color var(--duration-fast) var(--ease-out),
+      background-color var(--duration-fast) var(--ease-out);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .hudchat__fork:hover {
+      border-color: var(--color-border-strong);
+      background-color: var(--color-accent-tint);
+      transform: translateY(calc(-1px * var(--motion-scale)));
+    }
+  }
+
+  .hudchat__forkArrow {
+    flex: 0 0 auto;
+    color: var(--color-accent-ink);
+  }
+
+  /* The arrow points along the reading direction, so it turns in Arabic. */
+  :global([dir='rtl']) .hudchat__forkArrow {
+    transform: scaleX(-1);
+  }
+
+  /* ----------------------------------------------------------- composer -- */
+
+  .hudchat__composer {
+    flex: 0 0 auto;
+    padding: var(--space-4);
+    border-block-start: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+  }
+
+  .hudchat__askLabel {
+    display: block;
+    margin-block-end: var(--space-2);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-medium);
+    color: var(--color-text-muted);
+  }
+
+  .hudchat__field {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .hudchat__input {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    min-block-size: 44px;
+    padding-inline: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background-color: var(--color-bg);
+    font-family: inherit;
+    font-size: var(--text-sm);
+    color: var(--color-text);
+    transition: border-color var(--duration-fast) var(--ease-out);
+  }
+
+  .hudchat__input:hover {
+    border-color: var(--color-border-strong);
+  }
+
+  .hudchat__send {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    inline-size: 44px;
+    block-size: 44px;
+    border: none;
+    border-radius: var(--radius-md);
+    background-color: var(--color-accent);
+    color: var(--color-text-on-gold);
+    cursor: pointer;
+    transition:
+      background-color var(--duration-fast) var(--ease-out),
+      transform var(--duration-instant) var(--ease-out);
+  }
+
+  .hudchat__send:hover {
+    background-color: var(--color-accent-hover);
+  }
+
+  .hudchat__send:active {
+    transform: scale(calc(1 - 0.03 * var(--motion-scale)));
+  }
+
+  :global([dir='rtl']) .hudchat__send svg {
+    transform: scaleX(-1);
+  }
+
+  /* ------------------------------------------------------------- phones -- */
+
+  /* A corner panel on a 375px screen is a corner panel covering the screen with
+     a gap around it, so below the header's own breakpoint it becomes what it
+     already effectively is: a sheet on the block-end edge. */
+  @media (max-width: 51.99rem) {
+    .hudchat {
+      inset-block-end: var(--space-4);
+      inset-inline-end: var(--space-4);
+    }
+
+    .hudchat__panel {
+      position: fixed;
+      inset-inline: 0;
+      inset-block-end: 0;
+      inline-size: auto;
+      max-block-size: 82vh;
+      border-inline: none;
+      border-block-end: none;
+      border-start-start-radius: var(--radius-lg);
+      border-start-end-radius: var(--radius-lg);
+      border-end-start-radius: 0;
+      border-end-end-radius: 0;
+    }
+
+    .hudchat__composer {
+      /* Clear of the iOS home indicator. */
+      padding-block-end: max(var(--space-4), env(safe-area-inset-bottom));
+    }
+
+    /* The sheet covers the corner, so the launcher underneath it would only be
+       something to hit by accident. The head's close button is the way out. */
+    .hudchat[data-open='true'] .hudchat__launcher {
+      opacity: 0;
+      pointer-events: none;
+    }
+  }
+</style>

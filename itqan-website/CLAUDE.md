@@ -17,7 +17,18 @@ product work, stop and ask.
 
 - **Astro** + TypeScript, static output. Plain CSS with design tokens. No Tailwind, no UI framework, no
   component library. Client JS only where it earns its place (toggles, mobile menu, form validation,
-  mascot player, scroll reveal). Total shipped JS is ~1KB compressed — keep it that way.
+  mascot player, scroll reveal, Hud's ask panel).
+
+  **The JS budget, measured 2026-08-17 rather than remembered.** Astro inlines these scripts into each
+  page instead of emitting a shared bundle, so the cost is per page view and is not cached across
+  navigations. On a content page: **2,857 bytes gzipped**, of which Hud's ask panel is **752**. The
+  three form pages carry 2,106 bytes plus `form.js` at 1,344. This file claimed "~1KB total" for a
+  long time; that was never true of the built output, and the number above is what the build actually
+  produces. Measure after any change to a `<script>` rather than quoting this line:
+
+  ```bash
+  node -e "const f=require('fs'),z=require('zlib');const h=f.readFileSync('dist/en/index.html','utf8');const s=[...h.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map(m=>m[1]);console.log(z.gzipSync(Buffer.from(s.join('\n')),{level:9}).length)"
+  ```
 - Dev server config is in `.claude/launch.json` (name `itqan-website`, port 4321).
 
 ```bash
@@ -53,7 +64,10 @@ python scripts/audit.py src/    # the phase-gate audit (see below)
 - **RTL is the base architecture.** Logical properties only: `margin-inline-start`, `inset-inline-end`,
   `text-align: start`, `padding-block`, never physical `left`/`right`/`margin-left`/`text-align: left`.
   Arabic is the default locale and default design direction.
-- **Bilingual parity.** Every string exists in `ar.json` and `en.json` (126 keys, kept in lockstep).
+- **Bilingual parity.** Every string exists in `ar.json` and `en.json` (18 groups, 316 leaves counting
+  array entries, kept in exact lockstep — count it, do not trust this number after an edit).
+  `ar.json` types the dictionary, so author Arabic first: a key added only to `en.json` is a TS error
+  at every use site, while one added only to `ar.json` type-checks and then crashes English at render.
   Wrap inline Latin/mixed runs in `<bdi>`. Arabic body is weight 400, more line-height, never
   letter-spacing.
 - **No dashes in prose.** No em or en dashes, no hyphenated compounds where a rewrite works ("sign up",
@@ -69,6 +83,11 @@ python scripts/audit.py src/    # the phase-gate audit (see below)
   beside anything that looks like a result** — he is absent from the worked-example blocks and the entire
   `/proof` page. Never the logo/favicon. All appearances go through `Hud.astro`; poses are assigned in
   the brief §9 table, nowhere else.
+  **One exception, 2026-08-17: the Hud chat panel** (`HudChat.astro`), where the assistant is named
+  after him. He greets and orients there; he still never states a verdict. See the amended fence in the
+  workspace `PRODUCT.md` for the reasoning and the boundary. The static launcher figure is the one
+  place a still Hud is a design choice rather than a fallback, because a looping clip pinned to the
+  corner of every page would be the site shouting at the reader.
 - **No invented statistics, no accuracy figure, no legal text.** None has been measured or drafted;
   writing one would break the core promise. Privacy/terms are structured placeholders for a lawyer.
 
@@ -193,17 +212,24 @@ covers most of what it was installed for.
 - **Pending sign-off in the design system:** the functional green `--color-success`, and the new
   `--color-accent-ink` (`--gold-800`) for gold-flavoured emphasis text on light.
 
-## Palette revision — 2026-08-03 (NOT YET APPLIED TO THIS APP)
+## Palette revision — 2026-08-03 (APPLIED)
 
-The final brand gold is **`#F39F1C`**. `#D08C2F` is **retired**, which resolves the long-standing
+The final brand gold is **`#F39F1C`**. `#D08C2F` is **retired**, which resolved the long-standing
 contradiction between the brand checklist and `tokens.css` — the checklist was right and the token was
-stale. The skills have been updated; **this app has not.** `src/styles/tokens.css` still defines the old
-gold and its old ramp, as does `Onboarding/src/styles/tokens.css`. Applying it is a separate, approved
-piece of work — do not assume it has happened.
+stale.
 
-The same revision added a depth and material layer to the design system (layered shadows, rim light,
-gradients, off-centre glows, texture, five surfaces, display type) and replaced the blanket
-`prefers-reduced-motion` kill switch with motion scalars. None of that has reached this app's CSS either.
+**This has landed in both apps.** `src/styles/tokens.css` defines `--gold: #F39F1C` and carries the
+whole rederived ramp; `#D08C2F` appears nowhere in `src/`, and `audit.py` has a critical rule that
+would trip on it if it returned. `Onboarding/src/styles/tokens.css` is in lockstep.
+
+The same revision added a depth and material layer (layered two-part shadows, rim light, gradients,
+off-centre glows, texture, five surfaces, display type) and replaced the blanket
+`prefers-reduced-motion` kill switch with motion scalars. **Both have landed too.** `--motion-scale`
+is the live mechanism and components multiply their travel by it; `--reveal-rise` and `--hover-lift`
+are defined but currently unread, so treat them as reserved rather than as the pattern to follow.
+
+This section said the opposite until 2026-08-17. It had gone stale, and a session trusted it over the
+file it describes. Read `tokens.css` before believing any claim about what is in it.
 
 ## Everything still pending
 

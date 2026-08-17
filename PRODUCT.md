@@ -118,6 +118,19 @@ not have to re-derive them.
   genuine success milestones; **forbidden** beside any verdict, confidence score, real job match, data
   table, the OCR confirmation screen, or anything a user will act on. Where he is allowed, use the
   **animated** clip, not the still.
+
+  **Exception, added 2026-08-17: the Hud chat surface.** The assistant is named after him, so he is
+  present throughout it, including alongside recommendations. This was decided deliberately, with the
+  conflict on the table, and it is not a rule that drifted. Do not "correct" it back.
+
+  The exception is bounded, and the boundary is what keeps the fence's original argument intact. Hud
+  speaks orientation only — he opens a junction and names the directions available. He never states a
+  verdict, a score or a match himself. Every actionable answer renders as its own card carrying its own
+  evidence: `why this match`, a real source with its retrieval date, and an honest confidence label.
+  That separation is the point rather than a technicality: the hoopoe of An-Naml carried a report that
+  was verified before anyone acted on it, which is exactly the relationship this surface asks the user
+  to have with it. The fence is unchanged everywhere else — he stays off the dashboard, the profile
+  screen, the job match card in its own right, the OCR confirmation screen and `/proof`.
 - **The anti-cliché law.** No brains, circuit patterns, robot faces, glowing neural networks or synthetic
   futurism, ever. The work reads *considered*, not generated.
 - **Voice.** A knowledgeable person who refuses to oversell. Lead with capability; show the working; be

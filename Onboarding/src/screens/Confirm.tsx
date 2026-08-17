@@ -165,7 +165,17 @@ export function Confirm() {
       await api.confirmProfile(profile);
       completeProfile(profile);
       onDone();
-      navigate('/dashboard', { replace: true });
+      /**
+       * A first run lands in CHAT, not on the dashboard, and this is the only
+       * place that distinction can be made: here we know the pipeline has just
+       * been handed its answers, which is exactly the moment the dashboard has
+       * nothing to show yet. Hud does, and he can say what is happening.
+       *
+       * Everyone else keeps arriving at the dashboard, through the catch-all
+       * route in App.tsx. Someone returning is coming back to results, not to a
+       * conversation.
+       */
+      navigate('/chat', { replace: true });
     } catch {
       setBusy(false);
     }
