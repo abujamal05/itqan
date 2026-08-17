@@ -409,7 +409,12 @@ const base = `/${locale}`;
 
   .hudchat__panel {
     inline-size: min(23rem, calc(100vw - var(--space-8)));
-    max-block-size: min(70vh, 34rem);
+    /* Tall enough that the QUESTIONS are visible on opening, which is the whole
+       affordance. At the 34rem this started as, the body had 343px of a needed
+       516px and exactly one of the four questions showed above the fold: the
+       panel opened looking like a greeting with a scrollbar rather than like
+       something to pick from. */
+    max-block-size: min(80vh, 40rem);
     display: none;
     flex-direction: column;
     overflow: hidden;
@@ -483,15 +488,22 @@ const base = `/${locale}`;
     padding: var(--space-4);
     display: flex;
     flex-direction: column;
-    gap: var(--space-5);
+    gap: var(--space-4);
   }
 
+  /* Hud sits BESIDE his line rather than above it, which is the same trade
+     HudGuide makes on a narrow screen: vertical space is the scarce resource in
+     a 368px panel, and a stacked mascot pushes the questions out of view. He
+     stays at his 120px floor either way. */
   .hudchat__greeting {
     display: flex;
-    flex-direction: column;
     align-items: center;
     gap: var(--space-2);
-    text-align: center;
+  }
+
+  .hudchat__greeting .hudchat__read {
+    flex: 1 1 auto;
+    min-inline-size: 0;
   }
 
   .hudchat__read {

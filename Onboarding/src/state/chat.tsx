@@ -11,6 +11,14 @@
  * walked stay exactly where they were and stay re-enterable. Nothing on this
  * screen is ever removed, so `taken` is a record of choices rather than a
  * pointer to the only branch that survived.
+ *
+ * NOT A BUG: switching language does not re-translate junctions already on the
+ * spine. Every data screen in this app re-fetches on `locale` because a list of
+ * jobs is a view of current state, and the services answer in whatever the
+ * cookie says. A conversation is not state, it is history — re-fetching it
+ * would mean re-asking the questions, and quietly re-asking on a language
+ * toggle is worse than a spine that keeps each turn in the language it was
+ * spoken. Past turns stay as they were; the next one follows the new locale.
  */
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';

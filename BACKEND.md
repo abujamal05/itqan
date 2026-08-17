@@ -230,6 +230,16 @@ them apart from a failure.
 **Rate limiting belongs on the server**, per account. The composer has no
 throttle of its own.
 
+**A deployment constraint, learned the hard way.** All four of these routes are
+served by ONE file on Vercel, `api/chat/[...path].js`, not four. Vercel counts
+every file under `api/` as its own Serverless Function and the Hobby plan allows
+12 per deployment; this project sits at 11 with the catch-all and was at 13 with
+a file per route, which failed the `app-itqan` build while `itqan-site` passed.
+That failure carries no compile error, so it clears `tsc`, `vite build` and the
+Playwright suite and only shows up as a red check on the PR. **Adding endpoints
+here means adding a branch to that switch, not a new file** — and any new
+top-level `api/` route should be counted against the 12 first.
+
 ---
 
 ## 2. Already contracted — must exist in production
@@ -421,5 +431,6 @@ deployment avoids it entirely, and the front end is configured for both
 | `POST /api/chat/fork` | **missing** — front end complete, stubbed in dev |
 | `GET /api/chat/threads` | **missing** — needs storage; Vercel twin answers `[]` |
 | `GET /api/chat/threads/:id` | **missing** — needs storage |
+| all four chat routes | one Vercel function, `api/chat/[...path].js` — see the note in §1.4 |
 | `POST /api/placeholder/{signup,login}` | exists — **rename before launch** |
 | everything else in §2 | contracted, stubbed in dev, needs a real implementation |

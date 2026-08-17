@@ -42,7 +42,7 @@ export const chatOpening = (l: Locale) =>
     'j0',
     null,
     pick({
-      ar: 'أهلاً. أنا هد. أستطيع النظر في سجلك من ثلاث جهات، وكل واحدة تقودك إلى مكان مختلف. اختر ما يشبه سؤالك.',
+      ar: 'أهلاً. أنا هود. أستطيع النظر في سجلك من ثلاث جهات، وكل واحدة تقودك إلى مكان مختلف. اختر ما يشبه سؤالك.',
       en: 'Hello. I am Hud. I can look at your record from three directions, and each one leads somewhere different. Pick whichever is closest to what you are asking.',
     }, l),
     [
