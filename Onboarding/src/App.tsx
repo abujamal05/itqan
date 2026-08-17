@@ -181,8 +181,9 @@ function WithOnboarding({ children }: { children: ReactNode }) {
 
 /**
  * Chat state lives above the router so a thread survives a trip to Jobs and
- * back. It is deliberately NOT persisted further than that: a thread is a
- * conversation, and one resumed silently a week later reads as the product
+ * back, and so the sidebar can list saved ones from anywhere in the app. The
+ * open thread is deliberately NOT restored on a cold boot: a conversation
+ * resumed silently a week later reads as the product
  * having remembered something the user did not ask it to.
  */
 function WithChat({ children }: { children: ReactNode }) {
@@ -306,8 +307,11 @@ export default function App() {
                       <Route path="/confirm" element={<RequireConfirmable><RequireFlow><Confirm /></RequireFlow></RequireConfirmable>} />
 
                       <Route element={<RequireApp><AppLayout /></RequireApp>}>
-                        {/* Chat leads because it is now the way in to the rest. */}
+                        {/* Chat leads because it is now the way in to the rest.
+                            A saved conversation gets its own address so it
+                            survives a reload and can be linked. */}
                         <Route path="/chat" element={<Chat />} />
+                        <Route path="/chat/:threadId" element={<Chat />} />
                         <Route path="/dashboard" element={<Dashboard />} />
                         <Route path="/jobs" element={<Jobs />} />
                         <Route path="/courses" element={<Courses />} />

@@ -417,8 +417,28 @@ export interface ChatMessage {
    * branching structure.
    */
   suggestions?: string[];
+  /**
+   * Files the user attached to their own turn, echoed back so a thread read on
+   * another device still shows what was sent.
+   *
+   * Metadata only. The bytes are NOT the onboarding pipeline's input: a
+   * transcript dropped into a chat must not quietly become the document the
+   * matching runs on, because that path has a human confirmation screen and
+   * this one does not. See BACKEND.md §1.4.
+   */
+  attachments?: ChatAttachment[];
   createdAt: number;
 }
+
+export interface ChatAttachment {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+}
+
+/** Which way a user rated an answer. Nothing else is inferred from it. */
+export type ChatVerdict = 'up' | 'down';
 
 export interface ChatThread {
   id: string;
@@ -513,9 +533,19 @@ export interface ItqanApi {
    * very first thing a user does be a question.
    */
   ask(
-    input: { threadId: string | null; question: string },
+    input: { threadId: string | null; question: string; files?: File[] },
     signal?: AbortSignal,
   ): Promise<{ threadId: string; message: ChatMessage }>;
+  /**
+   * Rates an answer. Fire and forget by design — a thumb is a signal for whoever
+   * tunes the service, never something the user should have to wait on or see
+   * fail. The client keeps its own record of which way it went so the button can
+   * show a state; this call is the only place the rating leaves the browser.
+   */
+  rateMessage(
+    input: { threadId: string; messageId: string; verdict: ChatVerdict },
+    signal?: AbortSignal,
+  ): Promise<void>;
 }
 
 export const isStrong = (c: Confidence) => c >= TRUST_THRESHOLD;

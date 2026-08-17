@@ -119,6 +119,27 @@ const unsureAnswer = (l: Locale) =>
     { suggestions: chatSuggestions(l) },
   );
 
+/**
+ * What Hud says when a file arrives.
+ *
+ * Careful, and deliberately unimpressive. Reading a transcript is a pipeline run
+ * with a human confirmation screen in the middle of it — that is the product's
+ * first trust moment. A chat that quietly swallowed a file and started talking
+ * about its contents would be claiming to have done something it has not, and
+ * would route around the one screen that exists to be checked.
+ *
+ * So this acknowledges the file by name, says plainly what it is not, and points
+ * at the place that does read documents properly.
+ */
+export const chatAttachmentReply = (l: Locale, names: string[]) =>
+  message(
+    pick({
+      ar: `وصلني ${names.join('، ')}. لم أقرأه بعد: قراءة المستندات تجري في صفحة المستندات، وفيها شاشة تراجع فيها ما استُخرج قبل أن يُبنى عليه أي شيء، وهي خطوة لا أتجاوزها. أما هنا فاسألني عمّا تريد وسأجيب من سجلك كما هو الآن.`,
+      en: `Got ${names.join(', ')}. I have not read it yet: documents are read on the Documents page, where you check what was extracted before anything is built on it, and that is a step I do not skip. Here, ask me what you want and I will answer from your record as it stands.`,
+    }, l),
+    { suggestions: chatSuggestions(l) },
+  );
+
 const has = (q: string, words: string[]) => words.some((w) => q.includes(w));
 
 /** Routes a question to an answer. */
