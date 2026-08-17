@@ -199,6 +199,25 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     document.documentElement.lang = locale;
     document.documentElement.dir = dir;
+
+    /**
+     * Keep the SERVICES' language in step with the one on screen, on every
+     * render of this provider rather than only when the toggle is used.
+     *
+     * The invariant that matters: `itqan_locale` always says whatever the user
+     * is reading. Writing it only in setLocale left a gap with no way out — the
+     * cookie can arrive already wrong (the site's login derives it from the
+     * Referer, so signing in from a URL with no locale segment defaults it to
+     * Arabic) and `FollowSessionLocale` deliberately refuses to overwrite a
+     * stored UI preference, so nothing reconciled the two. An English UI then
+     * asked the services for Arabic and they correctly obliged.
+     *
+     * Every agent-authored string arrives pre-localised, so the symptom was
+     * Arabic content under English chrome across the dashboard, jobs and
+     * courses. Hud's chat is only where it became impossible to miss, because
+     * there the service's prose is the content.
+     */
+    document.cookie = `itqan_locale=${locale}; Path=/; Max-Age=31536000; SameSite=Lax`;
   }, [locale, dir]);
 
   const value = useMemo(

@@ -381,81 +381,49 @@ export interface OnboardingProgress {
 /**
  * Hud's chat surface. PENDING BACKEND — see BACKEND.md §1.4.
  *
- * The shape encodes the whole argument of that screen, so read this before
- * implementing the service. Hud does not answer a question; he opens a
- * JUNCTION. Every turn returns one junction carrying his short orientation
- * plus the two or three real directions available from where the user stands,
- * and the user walks one of them. Directions not taken are never discarded.
+ * A conversation: alternating turns, in order, the shape anyone who has used an
+ * assistant already expects. What is NOT ordinary is where the claims live.
  *
- * Which is why there is no `message` type here and no array of them. A chat
- * log would let a service return prose with a recommendation buried in it, and
- * prose cannot carry an evidence chain a skeptic can check.
- */
-export type ForkKind = 'role' | 'course' | 'job' | 'skill' | 'topic';
-
-/**
- * One direction out of a junction, and the only actionable object on the
- * screen.
+ * Hud's text is prose and prose cannot carry an evidence chain a skeptic can
+ * check. So anything the user might act on does not live in the text at all: a
+ * job arrives as a JobMatch and a course as a Course, in their own fields, and
+ * the screen renders them through the same MatchCard and CourseCard that Jobs
+ * and Courses use. That is the condition on which the mascot is allowed on this
+ * screen (workspace PRODUCT.md, 2026-08-17): he may talk, and the things he
+ * hands over carry their own why, source and confidence.
  *
- * The trust rules live HERE rather than in Hud's `read`, and that split is
- * deliberate: it is what lets the mascot stand on a surface the brand
- * otherwise fences him out of. Anything a user might act on carries its own
- * evidence and its own source, so the claim is auditable whoever delivered it.
+ * A service that describes a posting in `text` instead of attaching it has
+ * moved a claim somewhere unauditable, and has broken the rule rather than bent
+ * it.
  */
-export interface ChatFork {
+export interface ChatMessage {
   id: string;
-  kind: ForkKind;
-  /** The direction itself, phrased as somewhere to go. Already localised. */
-  label: string;
-  /** The distance: what is already held, and what this would unlock. */
-  detail: string;
+  role: 'user' | 'hud';
+  /** Already localised when the role is `hud`; verbatim when it is `user`. */
+  text: string;
   /**
-   * The evidence chain, in the product's fixed wording: "why this match".
-   * REQUIRED for `role`, `course` and `job` — a direction that would have a
-   * user apply, enrol or aim somewhere without saying why is exactly the
-   * unfounded claim the whole product exists to refuse. Optional only for
-   * `topic` and `skill`, which lead to another junction rather than an action.
+   * Real postings attached to this turn. Rendered as MatchCard, so `why` and
+   * `source` come along and the trust rules cannot drift from the Jobs screen.
    */
-  why?: string;
-  confidence?: Confidence;
-  /** Required wherever `why` is. Carries its own retrieval date. */
-  source?: Source;
+  jobs?: JobMatch[];
+  /** Real courses, rendered as CourseCard, for the same reason. */
+  courses?: Course[];
   /**
-   * When a fork resolves to something the app already renders, the service
-   * sends the whole object and the screen reuses `MatchCard` / `CourseCard`
-   * untouched. That is not a convenience: those components already enforce
-   * `why`, the source and the confidence badge, so reusing them means the
-   * trust rules cannot drift on this screen independently of the others.
-   */
-  job?: JobMatch;
-  course?: Course;
-}
-
-/** One node on the spine: what was asked, how Hud read it, where it leads. */
-export interface ChatJunction {
-  id: string;
-  /** What the user asked. Null for junction zero, which opens the thread. */
-  question: string | null;
-  /**
-   * Hud's orientation, one or two sentences, already localised.
+   * Follow-up questions to offer as one-tap chips.
    *
-   * NEVER a verdict, a score, a match or a percentage. He names what he is
-   * looking at and what the options are; the options carry their own claims.
-   * A service that puts "you are a 94% match for X" in here has moved a claim
-   * out of the structure that makes it checkable.
+   * The anchor user's opening line is "I do not know what job I want", which is
+   * someone who cannot yet phrase a question. Offering real next questions is
+   * what makes the surface usable for her; they are ordinary suggestions, not a
+   * branching structure.
    */
-  read: string;
-  forks: ChatFork[];
-  /** Set once the user walks one. The others stay on the junction, re-enterable. */
-  takenForkId: string | null;
-  parentId: string | null;
+  suggestions?: string[];
   createdAt: number;
 }
 
 export interface ChatThread {
   id: string;
   title: string;
-  junctions: ChatJunction[];
+  messages: ChatMessage[];
   updatedAt: number;
 }
 
@@ -527,33 +495,27 @@ export interface ItqanApi {
   /**
    * PENDING BACKEND — Hud's chat. See BACKEND.md §1.4 for the full contract.
    *
-   * Deliberately request/response rather than a token stream. Nothing in this
-   * codebase reads a stream today (`req<T>` ends in `res.json()`), and a
-   * junction is not usefully partial: half of a fork is a recommendation
-   * missing its evidence. When streaming does arrive it belongs INSIDE `ask`,
-   * which can start emitting `read` early and still resolve to the same
-   * junction, so none of these signatures have to change.
+   * Request/response rather than a token stream, for now. Nothing in this
+   * codebase reads a stream (`req<T>` ends in `res.json()`), and a half-arrived
+   * message is not useful here: the cards are the part worth waiting for, and a
+   * card without its source is a recommendation with its evidence missing.
+   *
+   * When streaming does arrive it belongs INSIDE `ask` — emit `text` in chunks,
+   * resolve to the same message with its cards attached — so none of these
+   * signatures have to change.
    */
   listThreads(signal?: AbortSignal): Promise<ChatThreadSummary[]>;
-  /** A thread with no junctions is a normal answer, not an error. */
+  /** A thread with no messages is a normal answer, not an error. */
   getThread(id: string, signal?: AbortSignal): Promise<ChatThread>;
-  /** `threadId: null` opens a new thread and returns the id it was given. */
+  /**
+   * One turn. `threadId: null` opens a thread and returns the id it was given,
+   * so the screen can render its greeting with no network call and still let the
+   * very first thing a user does be a question.
+   */
   ask(
     input: { threadId: string | null; question: string },
     signal?: AbortSignal,
-  ): Promise<{ threadId: string; junction: ChatJunction }>;
-  /**
-   * Walks a direction. Returns the junction it leads to.
-   *
-   * `threadId: null` for the same reason `ask` allows it: the opening junction
-   * is authored on the client so the screen renders instantly with no network
-   * call, which means the very first thing a user does can be walking one of
-   * its forks, before any thread exists.
-   */
-  takeFork(
-    input: { threadId: string | null; junctionId: string | null; forkId: string },
-    signal?: AbortSignal,
-  ): Promise<{ threadId: string; junction: ChatJunction }>;
+  ): Promise<{ threadId: string; message: ChatMessage }>;
 }
 
 export const isStrong = (c: Confidence) => c >= TRUST_THRESHOLD;

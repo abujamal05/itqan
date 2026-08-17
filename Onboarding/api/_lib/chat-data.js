@@ -4,205 +4,117 @@
  * A hand kept mirror of dev/chat-data.ts, the same way _lib/data.js mirrors
  * dev/data.ts. **If you change one, change the other.**
  *
- * The contract this must not lose, whichever half you are editing: every fork
- * of kind role, course or job carries a `why` and a real `source`, and `read`
- * is Hud's orientation only, never a verdict, a score or a match. That split is
- * what lets the mascot stand on this screen at all.
+ * The rule this must not lose, whichever half you are editing: Hud talks in
+ * `text`, but anything the user might act on is ATTACHED rather than described —
+ * a posting as a JobMatch, a course as a Course — so the screen renders them
+ * through MatchCard and CourseCard and they bring their own `why`, `source` and
+ * confidence. Writing a job title into the prose instead is what the separate
+ * fields exist to prevent.
  */
-import { courses, jobs } from './data.js';
+import { courses, dashboard, jobs } from './data.js';
 
 const pick = (b, l) => b[l];
-const RETRIEVED = '2026-07-24';
 
-const roleSource = (l) => ({
-  name: pick({ ar: 'إعلانات الوظائف المرصودة، يوليو 2026', en: 'Tracked job postings, July 2026' }, l),
-  url: 'https://example.com/postings?role=data-analyst',
-  retrievedAt: RETRIEVED,
+const message = (text, extra = {}) => ({
+  id: `m${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+  role: 'hud',
+  text,
+  ...extra,
+  createdAt: Date.now(),
 });
 
-const junction = (id, question, read, forks, parentId = null) =>
-  ({ id, question, read, forks, takenForkId: null, parentId, createdAt: Date.now() });
+export const chatSuggestions = (l) => [
+  pick({ ar: 'لا أعرف أي وظيفة أريد', en: 'I do not know what job I want' }, l),
+  pick({ ar: 'أحتاج مساعدة في مهاراتي', en: 'I need help with my skills' }, l),
+  pick({ ar: 'أي دورة آخذها بعد؟', en: 'Which course should I take next?' }, l),
+];
 
-export const chatOpening = (l) =>
-  junction('j0', null, pick({
-    ar: 'أهلاً. أنا هود. أستطيع النظر في سجلك من ثلاث جهات، وكل واحدة تقودك إلى مكان مختلف. اختر ما يشبه سؤالك.',
-    en: 'Hello. I am Hud. I can look at your record from three directions, and each one leads somewhere different. Pick whichever is closest to what you are asking.',
-  }, l), [
-    {
-      id: 'f-roles',
-      kind: 'topic',
-      label: pick({ ar: 'لا أعرف أي وظيفة أريد', en: 'I do not know what job I want' }, l),
-      detail: pick({
-        ar: 'أبدأ من مقرراتك، وأريك الأدوار التي تقف قريباً منها بالفعل.',
-        en: 'I start from your courses and show you the roles you are already standing near.',
-      }, l),
-    },
-    {
-      id: 'f-skills',
-      kind: 'topic',
-      label: pick({ ar: 'أحتاج مساعدة في مهاراتي', en: 'I need help with my skills' }, l),
-      detail: pick({
-        ar: 'ما يوثّقه كشف درجاتك، وما لم يوثّقه بعد.',
-        en: 'What your transcript evidences, and what it does not evidence yet.',
-      }, l),
-    },
-    {
-      id: 'f-courses',
-      kind: 'topic',
-      label: pick({ ar: 'أي دورة آخذها بعد؟', en: 'Which course should I take next?' }, l),
-      detail: pick({
-        ar: 'دورات حقيقية من كتالوج موثّق، مرتبة بما تفتحه لك.',
-        en: 'Real courses from a verified catalogue, ordered by what each one opens up.',
-      }, l),
-    },
-  ]);
-
-const rolesJunction = (l, question) =>
-  junction('j-roles', question, pick({
-    ar: 'هذه ثلاثة أدوار يشير إليها سجلك. لكلٍّ منها سبب مأخوذ من مقرراتك، لا من تخميني.',
-    en: 'Here are three roles your record points at. Each one carries its reason, taken from your courses rather than from my guessing.',
-  }, l), [
-    {
-      id: 'f-role-analyst', kind: 'role',
-      label: pick({ ar: 'محلل بيانات', en: 'Data analyst' }, l),
-      detail: pick({
-        ar: 'تملك SQL والتحليل الإحصائي. تبقى أدوات لوحات المعلومات.',
-        en: 'You already have SQL and statistical analysis. Dashboard tooling is what remains.',
-      }, l),
-      why: pick({
-        ar: 'نظم قواعد البيانات 2 يوثّق SQL، و إحصاء للمهندسين يوثّق التحليل الإحصائي. الاثنان مطلوبان في أغلب إعلانات هذا الدور في مسقط.',
-        en: 'Database Systems II evidences SQL and Statistics for Engineers evidences statistical analysis. Both are asked for in most postings for this role in Muscat.',
-      }, l),
-      confidence: 0.91, source: roleSource(l),
-    },
-    {
-      id: 'f-role-bi', kind: 'role',
-      label: pick({ ar: 'مطوّر تقارير أعمال', en: 'Business reporting developer' }, l),
-      detail: pick({
-        ar: 'أقرب إلى ما تملكه، غير أن الأدوات نفسها ما زالت فجوة.',
-        en: 'Closer to what you hold, though the same tooling is still a gap.',
-      }, l),
-      why: pick({
-        ar: 'الدور يقوم على SQL وعرض البيانات. الأول موثّق في كشف درجاتك، والثاني هو ما تفتحه دورة Power BI.',
-        en: 'The role rests on SQL and on presenting data. The first is evidenced in your transcript, and the second is what the Power BI course opens.',
-      }, l),
-      confidence: 0.78, source: roleSource(l),
-    },
-    {
-      id: 'f-role-db', kind: 'role',
-      label: pick({ ar: 'مساعد إدارة قواعد بيانات', en: 'Junior database administrator' }, l),
-      detail: pick({
-        ar: 'مسار أطول، لكنه مبني على أقوى ما لديك.',
-        en: 'A longer path, but built on your strongest evidence.',
-      }, l),
-      why: pick({
-        ar: 'أقوى ما في سجلك هو قواعد البيانات، وهذا الدور يبني عليه مباشرة. ويطلب خبرة تشغيلية لا يوثّقها كشف الدرجات بعد.',
-        en: 'Databases are the strongest thing in your record and this role builds directly on that. It also asks for operational experience the transcript does not evidence yet.',
-      }, l),
-      confidence: 0.64, source: roleSource(l),
-    },
-  ]);
-
-const skillsJunction = (l, question) =>
-  junction('j-skills', question, pick({
-    ar: 'أبدأ بما تملكه، لأنه النصف الأنفع. ثم ما لم يوثّقه سجلك بعد.',
-    en: 'I start with what you have, because it is the more useful half. Then what your record does not evidence yet.',
-  }, l), [
-    {
-      id: 'f-skill-held', kind: 'topic',
-      label: pick({ ar: 'ما تملكه بالفعل', en: 'What you already have' }, l),
-      detail: pick({
-        ar: 'SQL، والتحليل الإحصائي، وPython، كلها موثّقة بمقرر بعينه.',
-        en: 'SQL, statistical analysis and Python, each traced to a named course.',
-      }, l),
-    },
-    {
-      id: 'f-skill-powerbi', kind: 'course',
-      label: pick({ ar: 'افتح Power BI', en: 'Unlock Power BI' }, l),
-      detail: pick({
-        ar: 'أكبر فجوة واحدة أمام أدوار التحليل المعروضة عليك.',
-        en: 'The single largest gap in front of the analysis roles shown to you.',
-      }, l),
-      why: pick({
-        ar: 'ثلاثة من الأدوار المرصودة تطلب Power BI صراحةً، ولا يوثّقه أي مقرر في كشف درجاتك.',
-        en: 'Three of the tracked roles ask for Power BI by name, and no course in your transcript evidences it.',
-      }, l),
-      confidence: 0.88, source: roleSource(l), course: courses(l)[0],
-    },
-    {
-      id: 'f-skill-comm', kind: 'course',
-      label: pick({ ar: 'افتح التواصل المهني', en: 'Unlock professional communication' }, l),
-      detail: pick({
-        ar: 'مطلوب في الإعلانات أكثر مما تُظهره.',
-        en: 'Asked for more often than the postings let on.',
-      }, l),
-      why: pick({
-        ar: 'كتابة التقارير الفنية تظهر في سجلك بثقة منخفضة، وهي وحدها لا تغطي ما تطلبه الإعلانات هنا.',
-        en: 'Technical Report Writing appears in your record at low confidence, and on its own it does not cover what the postings ask for here.',
-      }, l),
-      confidence: 0.63, source: roleSource(l), course: courses(l)[2],
-    },
-  ]);
-
-const coursesJunction = (l, question) =>
-  junction('j-courses', question, pick({
-    ar: 'كل دورة هنا من كتالوج موثّق، ومربوطة بالفجوة التي تغلقها. لا أقترح ما لا أستطيع إحالتك إليه.',
-    en: 'Every course here comes from a verified catalogue and is tied to the gap it closes. I do not suggest anything I cannot link you to.',
-  }, l), courses(l).map((c, i) => ({
-    id: `f-course-${c.id}`, kind: 'course',
-    label: c.title,
-    detail: pick({ ar: `يفتح ${c.unlocks.join('، ')}`, en: `Unlocks ${c.unlocks.join(', ')}` }, l),
-    why: pick({
-      ar: `اخترته لأنه يغطي ${c.unlocks[0]}، وهو مطلوب في الأدوار المعروضة عليك وغير موثّق في كشف درجاتك.`,
-      en: `Picked because it covers ${c.unlocks[0]}, which the roles shown to you ask for and your transcript does not evidence.`,
+const rolesAnswer = (l) =>
+  message(
+    pick({
+      ar: 'بالنظر إلى مقرراتك، أقرب ثلاثة أدوار هي محلل بيانات، ومطوّر تقارير أعمال، ومساعد إدارة قواعد بيانات. أقربها محلل بيانات: نظم قواعد البيانات 2 يوثّق SQL، و إحصاء للمهندسين يوثّق التحليل الإحصائي، والاثنان مطلوبان في أغلب إعلانات هذا الدور في مسقط. ما يتبقى هو أدوات لوحات المعلومات. وهذه وظيفتان معروضتان الآن يغطيهما ما تملكه بالفعل.',
+      en: 'Reading your courses, the three closest roles are data analyst, business reporting developer and junior database administrator. Data analyst is the nearest: Database Systems II evidences SQL and Statistics for Engineers evidences statistical analysis, and both are asked for in most postings for that role in Muscat. What remains is dashboard tooling. Here are two openings live right now that what you already hold covers.',
     }, l),
-    confidence: [0.88, 0.74, 0.61][i] ?? 0.6,
-    source: c.source, course: c,
-  })));
+    {
+      jobs: jobs(l).slice(0, 2),
+      suggestions: [
+        pick({ ar: 'ما الذي ينقصني لأصل إلى محلل بيانات؟', en: 'What is between me and data analyst?' }, l),
+        pick({ ar: 'أي دورة آخذها بعد؟', en: 'Which course should I take next?' }, l),
+      ],
+    },
+  );
 
-const jobsJunction = (l, question) =>
-  junction('j-jobs', question, pick({
-    ar: 'هذه وظائف معروضة فعلاً، ولكلٍّ منها سببها ومصدرها بتاريخ رصده. افتح المصدر إن أردت التحقق بنفسك.',
-    en: 'These are genuinely live postings, each with its reason and its source carrying the date it was retrieved. Open the source if you want to check for yourself.',
-  }, l), jobs(l).slice(0, 2).map((j) => ({
-    id: `f-job-${j.id}`, kind: 'job',
-    label: j.title,
-    detail: `${j.employer} · ${j.location}`,
-    why: j.why, confidence: j.score, source: j.source, job: j,
-  })));
+const skillsAnswer = (l) => {
+  const d = dashboard(l);
+  return message(
+    pick({
+      ar: `أبدأ بما تملكه، لأنه النصف الأنفع: ${d.strengths.join('، ')}، وكل واحدة منها موثّقة بمقرر بعينه في كشف درجاتك. أما ما لم يوثّقه سجلك بعد فهو ${d.gaps.join(' و')}. وهاتان دورتان تغلقان الفجوتين.`,
+      en: `Starting with what you have, because it is the more useful half: ${d.strengths.join(', ')}, each traced to a named course in your transcript. What your record does not evidence yet is ${d.gaps.join(' and ')}. These two courses close those gaps.`,
+    }, l),
+    {
+      courses: [courses(l)[0], courses(l)[2]],
+      suggestions: [
+        pick({ ar: 'أي وظائف تناسبني اليوم؟', en: 'Which jobs fit me today?' }, l),
+        pick({ ar: 'لا أعرف أي وظيفة أريد', en: 'I do not know what job I want' }, l),
+      ],
+    },
+  );
+};
 
-const unsureJunction = (l, question) =>
-  junction('j-unsure', question, pick({
-    ar: 'لم أفهم هذا بما يكفي لأبني عليه. وبدل أن أخمّن، هذه الجهات الثلاث التي أستطيع النظر منها.',
-    en: 'I did not understand that well enough to build on it. Rather than guess, here are the three directions I can look from.',
-  }, l), chatOpening(l).forks);
+const coursesAnswer = (l) =>
+  message(
+    pick({
+      ar: 'أكبر فجوة واحدة أمامك هي Power BI: ثلاثة من الأدوار المرصودة تطلبه صراحةً، ولا يوثّقه أي مقرر في كشف درجاتك. لذلك أبدأ به. وكل دورة هنا من كتالوج موثّق ومربوطة بالفجوة التي تغلقها، ولا أقترح ما لا أستطيع إحالتك إليه.',
+      en: 'The single largest gap in front of you is Power BI: three of the tracked roles ask for it by name and no course in your transcript evidences it, so that is where I would start. Every course here comes from a verified catalogue and is tied to the gap it closes. I do not suggest anything I cannot link you to.',
+    }, l),
+    {
+      courses: courses(l),
+      suggestions: [
+        pick({ ar: 'أي وظائف تناسبني اليوم؟', en: 'Which jobs fit me today?' }, l),
+        pick({ ar: 'أحتاج مساعدة في مهاراتي', en: 'I need help with my skills' }, l),
+      ],
+    },
+  );
+
+const jobsAnswer = (l) =>
+  message(
+    pick({
+      ar: 'هذه وظائف معروضة فعلاً، ولكلٍّ منها سببها ومصدرها بتاريخ رصده. افتح المصدر إن أردت التحقق بنفسك، فأنا لا أطلب منك أن تأخذ كلامي مجرداً.',
+      en: 'These are genuinely live postings, each with its reason and its source carrying the date it was retrieved. Open the source if you want to check for yourself; I am not asking you to take my word for it.',
+    }, l),
+    {
+      jobs: jobs(l),
+      suggestions: [
+        pick({ ar: 'لماذا تناسبني هذه؟', en: 'Why do these fit me?' }, l),
+        pick({ ar: 'أي دورة آخذها بعد؟', en: 'Which course should I take next?' }, l),
+      ],
+    },
+  );
+
+const unsureAnswer = (l) =>
+  message(
+    pick({
+      ar: 'لم أفهم هذا بما يكفي لأبني عليه، ولا أريد أن أخمّن. أستطيع أن أنظر في سجلك من ثلاث جهات: الأدوار التي تقف قريباً منها، وما تملكه من مهارات وما ينقصه، والدورات التي تغلق الفجوة.',
+      en: 'I did not understand that well enough to build on it, and I would rather not guess. I can look at your record from three directions: the roles you are standing near, the skills you hold and the ones you do not, and the courses that close the gap.',
+    }, l),
+    { suggestions: chatSuggestions(l) },
+  );
 
 const has = (q, words) => words.some((w) => q.includes(w));
 
 export const chatAnswer = (l, question) => {
   const q = String(question || '').toLowerCase();
-  if (has(q, ['job', 'vacanc', 'apply', 'hiring', 'posting', 'وظيف', 'وظائف', 'تقديم', 'شاغر'])) {
-    return jobsJunction(l, question);
+  if (has(q, ['what job', 'which job', 'role', 'career', 'suit', 'fit me', 'أي وظيفة', 'دور', 'مهنة', 'مسار', 'يناسب'])) {
+    return rolesAnswer(l);
   }
   if (has(q, ['course', 'learn', 'study', 'training', 'دورة', 'دورات', 'أتعلم', 'تعلم', 'تدريب'])) {
-    return coursesJunction(l, question);
+    return coursesAnswer(l);
   }
-  if (has(q, ['skill', 'gap', 'strength', 'مهار', 'فجوة', 'نقاط'])) {
-    return skillsJunction(l, question);
+  if (has(q, ['skill', 'gap', 'strength', 'between me', 'مهار', 'فجوة', 'نقاط', 'ينقصني'])) {
+    return skillsAnswer(l);
   }
-  if (has(q, ['role', 'career', 'what job', 'suit', 'fit', 'دور', 'مهنة', 'مسار', 'يناسب'])) {
-    return rolesJunction(l, question);
+  if (has(q, ['job', 'vacanc', 'apply', 'hiring', 'posting', 'وظيف', 'وظائف', 'تقديم', 'شاغر'])) {
+    return jobsAnswer(l);
   }
-  return unsureJunction(l, question);
-};
-
-export const chatFork = (l, forkId) => {
-  const id = String(forkId || '');
-  if (id === 'f-roles') return rolesJunction(l, null);
-  if (id.startsWith('f-role-')) return jobsJunction(l, null);
-  if (id === 'f-skills' || id === 'f-skill-held') return skillsJunction(l, null);
-  if (id === 'f-courses' || id.startsWith('f-skill-')) return coursesJunction(l, null);
-  if (id.startsWith('f-course-')) return jobsJunction(l, null);
-  if (id.startsWith('f-job-')) return skillsJunction(l, null);
-  return chatOpening(l);
+  return unsureAnswer(l);
 };

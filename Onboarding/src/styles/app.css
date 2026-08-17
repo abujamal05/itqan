@@ -976,154 +976,111 @@
 .profile__icon { vertical-align: -3px; margin-inline-end: var(--space-2); color: var(--color-accent-ink); }
 
 /* ------------------------------------------------------------ CHAT / HUD -- */
-/* The junction spine. Every exchange is a node on a thread, and the directions
-   not taken stay on their node rather than scrolling away — so the visual job
-   here is to make a stack of answers read as ONE PATH, not as a transcript.
-   The thread is what does that, and it is the same gold line the marketing
-   site draws through its steps, stood on end. */
+/* A conversation. The one thing it does differently from every other assistant
+   is that nothing actionable lives in the prose: a job or a course is handed
+   over as the same card Jobs and Courses render, so it arrives with its own why,
+   source and confidence. Styling follows from that — Hud's turn is quiet and
+   typographic, and the cards are the weight on the page. */
 
 .chat { display: flex; flex-direction: column; gap: var(--space-6); }
 .chat__head {
   display: flex; align-items: flex-start; justify-content: space-between;
   gap: var(--space-4); flex-wrap: wrap;
 }
+.chat__headText { flex: 1 1 16rem; min-inline-size: 0; }
 
-.spine { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-8); }
+/* Hud's home once a thread has started. Out of the scroll, so he is present
+   without competing with the reading, and never below his 120px floor: under
+   34rem of content column he steps aside rather than shrinking. */
+.chat__hud { display: none; flex: 0 0 auto; }
+@container main (min-width: 34rem) { .chat__hud { display: block; } }
 
-.junction {
-  position: relative; padding-inline-start: var(--space-6);
-  display: flex; flex-direction: column; gap: var(--space-4);
+/* ------------------------------------------------------------- empty state */
+
+.greet {
+  display: flex; flex-direction: column; align-items: center;
+  gap: var(--space-4); text-align: center;
+  padding-block: var(--space-8);
+}
+.greet__line {
+  font-size: var(--text-lg); color: var(--color-text);
+  max-inline-size: var(--measure-narrow);
 }
 
-/* The thread, drawn from this node's dot down THROUGH the gap into the next
-   one, which is what makes the spine continuous rather than a column of
-   disconnected blocks. The last node has nothing below it to reach, so it
-   does not draw one — a line trailing into empty space reads as a step that
-   failed to load. */
-.junction::before {
-  content: ''; position: absolute; inset-inline-start: 4px;
-  inset-block-start: var(--space-4);
-  inset-block-end: calc(-1 * var(--space-8));
-  inline-size: 2px; border-radius: var(--radius-full);
-  background: var(--color-border-accent);
-  transform: scaleY(var(--motion-scale, 1));
-  transform-origin: top;   /* block axis: identical in both directions */
-  animation: spine-draw var(--duration-slower) var(--ease-out) both;
-}
-.junction:last-child::before { display: none; }
+/* ----------------------------------------------------------------- thread */
 
-.junction__dot {
-  position: absolute; inset-inline-start: 0; inset-block-start: var(--space-3);
-  inline-size: 10px; block-size: 10px; border-radius: var(--radius-full);
-  background: var(--color-accent);
-  /* A ring in the page ground, so the thread passes behind the node instead of
-     through it. */
-  box-shadow: 0 0 0 3px var(--color-bg);
-}
-/* The opening junction is the TRAILHEAD, not a node on the path.
-   It carried a dot and the inline offset like every other node, and on a fresh
-   screen — where it is also the last child, so no thread draws from it — that
-   left a single gold dot floating in the margin with nothing attached to it,
-   reading as a rendering artifact rather than as a marker. The spine now begins
-   at the first real exchange, which is also truer: Hud greeting you is not a
-   junction you walked to. */
-.junction[data-first] { padding-inline-start: 0; }
-.junction[data-first] .junction__dot { display: none; }
-.junction[data-first]::before { display: none; }
-
-@keyframes spine-draw { from { transform: scaleY(0); } to { transform: scaleY(1); } }
-@media (prefers-reduced-motion: reduce) {
-  .junction::before { animation: none; transform: none; }
+.thread {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: var(--space-6);
 }
 
-.junction__question { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; font-weight: var(--weight-medium); }
-.junction__asked { color: var(--color-text-muted); font-weight: var(--weight-regular); }
+.turn { display: flex; flex-direction: column; gap: var(--space-4); }
+.turn--mine { align-items: flex-end; }
 
-/* Hud's line. Deliberately NOT a card and NOT a bubble: it is orientation, and
-   giving it the same container as a fork would put his voice on the same
-   footing as the evidence-carrying claims below it. */
-.junction__read { display: flex; align-items: flex-start; gap: var(--space-3); }
-.junction__hud { flex: 0 0 auto; }
-.junction__line {
-  margin: 0; flex: 1 1 12rem; min-inline-size: 0;
-  align-self: center; color: var(--color-text);
-}
-.junction[data-first] .junction__read { flex-direction: column; align-items: center; text-align: center; }
-.junction[data-first] .junction__line { align-self: auto; font-size: var(--text-lg); max-inline-size: var(--measure-narrow); }
-
-.junction__walked {
-  margin: 0; font-size: var(--text-sm); color: var(--color-text-muted);
+/* The user's own turn: short, quoted, on the reading-end side. A filled bubble
+   suits it because it is a fragment rather than a passage. */
+.bubble {
+  max-inline-size: min(42ch, 100%);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  border-end-end-radius: var(--radius-sm);
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
 }
 
-.junction__forksLabel {
-  margin: 0 0 var(--space-3); font-size: var(--text-sm);
-  font-weight: var(--weight-medium); color: var(--color-text-muted);
+/* Hud's turn: NO bubble. Several sentences in a tinted balloon read worse than
+   the same sentences on the page, and the cards below need the page's weight
+   rather than a container competing with them. */
+.said {
+  max-inline-size: var(--measure);
+  color: var(--color-text);
+  white-space: pre-line;
 }
 
-/* The folded "directions you did not take". A disclosure, so the promise that
-   nothing is lost survives without the unchosen options blocking the answer. */
-.junction__forksSummary {
-  display: flex; align-items: center; gap: var(--space-2);
-  min-block-size: 44px; cursor: pointer;
+.turn__cardsLabel {
+  margin-block-end: var(--space-3);
   font-size: var(--text-sm); font-weight: var(--weight-medium);
   color: var(--color-text-muted);
-  list-style: none;
 }
-.junction__forksSummary::-webkit-details-marker { display: none; }
-/* An authored chevron rather than the UA triangle, so it matches the icon set
-   and can turn. It points along the block axis, so it needs no RTL mirror. */
-.junction__forksSummary::after {
-  content: ''; inline-size: 8px; block-size: 8px;
-  border-inline-end: 2px solid currentColor;
-  border-block-end: 2px solid currentColor;
-  transform: rotate(45deg);
-  transition: transform var(--duration-base) var(--ease-out);
+/* Two across when the column can hold them, measured against the content column
+   rather than the viewport, because the sidebar makes the viewport a lie. */
+.grid--cards { grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+@container main (min-width: 46rem) { .grid--cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ------------------------------------------------------------ suggestions */
+
+.suggests__label {
+  margin-block-end: var(--space-2);
+  font-size: var(--text-sm); color: var(--color-text-muted);
 }
-.junction__forks--folded[open] > .junction__forksSummary::after { transform: rotate(-135deg); }
-.junction__forksSummary:hover { color: var(--color-text); }
-.junction__forks--folded[open] > .junction__forkList { margin-block-start: var(--space-3); }
-.junction__forkList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-4); }
+.suggests__row { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.suggests__row--center { justify-content: center; }
 
-/* Directions not taken. Quieted by removing the card's WEIGHT, never by fading
-   the text: dropping opacity on a label is how a perfectly legible option
-   becomes a contrast failure, and these are still fully walkable. */
-.junction__forkList[data-quiet] > li > .card {
-  box-shadow: none; background: var(--color-bg);
+/* Real next questions, for a user who cannot yet phrase one. Pill shaped so they
+   read as things to say rather than as buttons that do something. */
+.suggest {
+  min-block-size: 44px;
+  padding-block: var(--space-2); padding-inline: var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  font: inherit; font-size: var(--text-sm); color: var(--color-text);
+  text-align: start; cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--ease-hover),
+    border-color var(--duration-fast) var(--ease-hover),
+    transform var(--duration-fast) var(--ease-out);
 }
-
-/* -------------------------------------------------------------------- fork */
-
-.fork { padding: 0; overflow: hidden; }
-.fork__take {
-  inline-size: 100%; display: flex; align-items: center; gap: var(--space-4);
-  padding: var(--space-4); background: none; border: 0; text-align: start;
-  font: inherit; color: inherit; cursor: pointer; min-block-size: 44px;
-  transition: background-color var(--duration-fast) var(--ease-out);
+.suggest:hover:not(:disabled) {
+  background: var(--color-accent-tint);
+  border-color: var(--color-border-accent);
+  transform: translateY(calc(-1px * var(--motion-scale)));
 }
-.fork__take:hover:not(:disabled) { background: var(--color-accent-tint); }
-.fork__take:disabled { cursor: default; opacity: 0.6; }
-.fork__body { flex: 1 1 auto; min-inline-size: 0; display: flex; flex-direction: column; gap: var(--space-2); }
-.fork__top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
-.fork__label { font-weight: var(--weight-semibold); min-inline-size: 0; overflow-wrap: anywhere; }
-.fork__detail { color: var(--color-text-muted); font-size: var(--text-sm); }
-.fork__arrow { flex: 0 0 auto; color: var(--color-accent-ink); }
-/* The arrow points along the reading direction, so it turns in Arabic. */
-[dir='rtl'] .fork__arrow { transform: scaleX(-1); }
-
-.fork .why, .fork .source { margin-inline: var(--space-4); }
-.fork .source { margin-block-end: var(--space-4); display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
-.fork .source a { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--color-accent-ink); min-block-size: 44px; }
-
-/* A fork that IS a job or a course: the card renders itself, and the walk
-   action sits under it rather than wrapping it, so the card keeps its own
-   primary action (the live source) unchallenged. */
-.fork--object { display: flex; flex-direction: column; gap: var(--space-2); }
-.fork__walk { align-self: flex-start; }
+.suggest:disabled { opacity: 0.5; cursor: default; }
 
 /* ---------------------------------------------------------------- pending */
 
-.thinking { display: flex; align-items: center; gap: var(--space-3); }
-.thinking__hud { flex: 0 0 auto; }
 .thinking__line { margin: 0; color: var(--color-text-muted); }
 .chat__status:empty { display: none; }
 
