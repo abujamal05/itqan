@@ -22,14 +22,16 @@
  * decided deliberately with this conflict on the table — it is not drift, and
  * reverting it would break a shipped feature.
  *
- * What keeps the fence's argument intact is the split, so hold it: Hud speaks
- * ORIENTATION and never a verdict. He opens a junction and names the directions
- * available; the directions themselves render as their own cards carrying why,
- * a real source and an honest confidence label, and a fork that resolves to a
- * real job or course renders MatchCard / CourseCard unchanged. If you ever find
- * yourself putting a score, a match or a percentage inside Hud's own read, the
- * exception has been misread and the fence is doing exactly what it was built
- * to stop.
+ * Two things keep the fence's argument intact, so hold both. Hud may TALK, but
+ * nothing actionable lives in his prose: a job or a course is attached to the
+ * message and rendered through MatchCard / CourseCard, which carry why, a real
+ * source and an honest confidence label. If you ever find yourself putting a
+ * score, a match or a percentage into his sentences, the exception has been
+ * misread and the fence is doing exactly what it was built to stop.
+ *
+ * And exactly ONE of him is on that screen at a time. Chat.tsx owns the single
+ * instance; Message.tsx renders no mascot at all, because one per message is how
+ * a mascot stops meaning anything.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 

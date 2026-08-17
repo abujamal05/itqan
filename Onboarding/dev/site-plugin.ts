@@ -23,7 +23,7 @@ import path from 'node:path';
 import type { Plugin, Connect } from 'vite';
 import type { ServerResponse } from 'node:http';
 import { analysisResult, courses, dashboard, jobs } from './data.js';
-import { chatAnswer, chatFork } from './chat-data.js';
+import { chatAnswer } from './chat-data.js';
 import type { Locale } from './data.js';
 
 const SITE_DIST = path.resolve(__dirname, '../../itqan-website/dist');
@@ -71,7 +71,7 @@ const profiles = new Map<string, Record<string, unknown>>();
 interface ChatThreadRow {
   id: string;
   title: string;
-  junctions: { id: string; takenForkId: string | null; [k: string]: unknown }[];
+  messages: { id: string; role: string; text: string; [k: string]: unknown }[];
   updatedAt: number;
 }
 const chatThreads = new Map<string, ChatThreadRow[]>();
@@ -89,10 +89,9 @@ const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve,
 /**
  * Finds the thread, or starts one.
  *
- * A new thread starts EMPTY. The junction that opens the conversation is
- * authored on the client so the screen renders with no network call, and
- * seeding a second copy here would give the same greeting two sources that
- * could drift apart.
+ * A new thread starts EMPTY. Hud's greeting is authored on the client so the
+ * screen renders with no network call, and seeding a second copy here would give
+ * the same sentence two sources that could drift apart.
  */
 function openThread(accountId: string, threadId: string, title: string): ChatThreadRow {
   const threads = chatThreads.get(accountId) ?? [];
@@ -101,7 +100,7 @@ function openThread(accountId: string, threadId: string, title: string): ChatThr
   const started: ChatThreadRow = {
     id: `t${Date.now().toString(36)}`,
     title: title.length > 48 ? `${title.slice(0, 48)}…` : title,
-    junctions: [],
+    messages: [],
     updatedAt: Date.now(),
   };
   threads.push(started);
@@ -526,34 +525,20 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           await pause(CHAT_TURN_MS);
 
           const thread = openThread(me.id, String(sent.threadId ?? ''), question);
-          const junction = { ...chatAnswer(locale, question), id: `j${Date.now().toString(36)}` };
-          thread.junctions.push(junction);
+          /* Both turns are stored, the user's included, because a thread read
+             back on another device has to contain the questions as well as the
+             answers. The client shows its own copy of the question immediately
+             and does not wait for this. */
+          thread.messages.push({
+            id: `m${Date.now().toString(36)}u`,
+            role: 'user',
+            text: question,
+            createdAt: Date.now(),
+          });
+          const message = chatAnswer(locale, question);
+          thread.messages.push(message);
           thread.updatedAt = Date.now();
-          return json(res, 200, { threadId: thread.id, junction });
-        }
-
-        if (url === '/api/chat/fork' && req.method === 'POST') {
-          const sent = parseBody(await body(req), req.headers['content-type'] ?? '');
-          const forkId = String(sent.forkId ?? '');
-          if (!forkId) return json(res, 400, { error: 'no_fork' });
-          await pause(CHAT_TURN_MS);
-
-          const thread = openThread(me.id, String(sent.threadId ?? ''), forkId);
-          // The fork is RECORDED as taken, never removed. The directions not
-          // walked stay on their junction and stay re-enterable, which is the
-          // whole argument of the surface — a production service that prunes
-          // them breaks the screen's promise, not just its layout.
-          const from = thread.junctions.find((j) => j.id === sent.junctionId);
-          if (from) from.takenForkId = forkId;
-
-          const junction = {
-            ...chatFork(locale, forkId),
-            id: `j${Date.now().toString(36)}`,
-            parentId: String(sent.junctionId ?? '') || null,
-          };
-          thread.junctions.push(junction);
-          thread.updatedAt = Date.now();
-          return json(res, 200, { threadId: thread.id, junction });
+          return json(res, 200, { threadId: thread.id, message });
         }
 
         if (url === '/api/onboarding/progress') {

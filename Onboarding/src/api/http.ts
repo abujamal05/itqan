@@ -12,7 +12,7 @@
  * `credentials: 'same-origin'` is what carries the cookie.
  */
 import type {
-  AnalysisJob, ChatJunction, ChatThread, ChatThreadSummary, ConfirmProfileResult,
+  AnalysisJob, ChatMessage, ChatThread, ChatThreadSummary, ConfirmProfileResult,
   ConfirmedProfile, Course, DashboardData, ItqanApi,
   JobMatch, OnboardingProgress, Session, StoredProfile, UploadedDocument,
 } from './types';
@@ -164,16 +164,9 @@ export function createHttpApi(): ItqanApi {
       return req<ChatThread>(`/chat/threads/${encodeURIComponent(id)}`, { signal });
     },
     ask({ threadId, question }, signal) {
-      return req<{ threadId: string; junction: ChatJunction }>('/chat/ask', {
+      return req<{ threadId: string; message: ChatMessage }>('/chat/ask', {
         method: 'POST',
         body: JSON.stringify({ threadId, question }),
-        signal,
-      });
-    },
-    takeFork({ threadId, junctionId, forkId }, signal) {
-      return req<{ threadId: string; junction: ChatJunction }>('/chat/fork', {
-        method: 'POST',
-        body: JSON.stringify({ threadId, junctionId, forkId }),
         signal,
       });
     },
