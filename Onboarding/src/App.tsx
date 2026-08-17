@@ -22,6 +22,7 @@ import { ThemeProvider } from './lib/theme';
 import { ApiProvider, useApi } from './state/api';
 import { AuthProvider, useAuth } from './state/auth';
 import { OnboardingProvider, useOnboarding } from './state/onboarding';
+import { ChatProvider } from './state/chat';
 import { siteLogin } from './lib/site';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -30,6 +31,7 @@ import { Questions } from './screens/Questions';
 import { Confirm } from './screens/Confirm';
 import { ResumeGate } from './screens/ResumeGate';
 import { AppLayout } from './app/AppLayout';
+import { Chat } from './app/Chat';
 import { Dashboard } from './app/Dashboard';
 import { Jobs } from './app/Jobs';
 import { Courses } from './app/Courses';
@@ -153,6 +155,17 @@ function WithOnboarding({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Chat state lives above the router so a thread survives a trip to Jobs and
+ * back. It is deliberately NOT persisted further than that: the spine is a
+ * conversation, and one resumed silently a week later reads as the product
+ * having remembered something the user did not ask it to.
+ */
+function WithChat({ children }: { children: ReactNode }) {
+  const api = useApi();
+  return <ChatProvider api={api}>{children}</ChatProvider>;
+}
+
 /** Adopts the language the user was already using on the site. */
 function FollowSessionLocale() {
   const { sessionLocale } = useAuth();
@@ -258,27 +271,35 @@ export default function App() {
             <AuthProvider>
               <FollowSessionLocale />
               <WithOnboarding>
-                <SkipLink />
-                <DocumentTitle />
-                <RouteFocus />
-                <ScreenBoundary>
-                  <Routes>
-                    <Route path="/upload" element={<RequireOnboarding><Upload /></RequireOnboarding>} />
-                    <Route path="/questions" element={<RequireOnboarding><RequireFlow><Questions /></RequireFlow></RequireOnboarding>} />
-                    <Route path="/confirm" element={<RequireConfirmable><RequireFlow><Confirm /></RequireFlow></RequireConfirmable>} />
+                <WithChat>
+                  <SkipLink />
+                  <DocumentTitle />
+                  <RouteFocus />
+                  <ScreenBoundary>
+                    <Routes>
+                      <Route path="/upload" element={<RequireOnboarding><Upload /></RequireOnboarding>} />
+                      <Route path="/questions" element={<RequireOnboarding><RequireFlow><Questions /></RequireFlow></RequireOnboarding>} />
+                      <Route path="/confirm" element={<RequireConfirmable><RequireFlow><Confirm /></RequireFlow></RequireConfirmable>} />
 
-                    <Route element={<RequireApp><AppLayout /></RequireApp>}>
-                      <Route path="/dashboard" element={<Dashboard />} />
-                      <Route path="/jobs" element={<Jobs />} />
-                      <Route path="/courses" element={<Courses />} />
-                      <Route path="/documents" element={<Documents />} />
-                      <Route path="/profile" element={<Profile />} />
-                    </Route>
+                      <Route element={<RequireApp><AppLayout /></RequireApp>}>
+                        {/* Chat leads because it is now the way in to the rest. */}
+                        <Route path="/chat" element={<Chat />} />
+                        <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/jobs" element={<Jobs />} />
+                        <Route path="/courses" element={<Courses />} />
+                        <Route path="/documents" element={<Documents />} />
+                        <Route path="/profile" element={<Profile />} />
+                      </Route>
 
-                    {/* Entry point: the guards decide where this actually lands. */}
-                    <Route path="*" element={<RequireApp><Navigate to="/dashboard" replace /></RequireApp>} />
-                  </Routes>
-                </ScreenBoundary>
+                      {/* Entry point: the guards decide where this actually lands.
+                          Still the dashboard, not chat: a returning user is coming
+                          back to their results. A FIRST run lands in chat instead,
+                          and that redirect lives at the end of Confirm, where the
+                          state that decides it actually exists. */}
+                      <Route path="*" element={<RequireApp><Navigate to="/dashboard" replace /></RequireApp>} />
+                    </Routes>
+                  </ScreenBoundary>
+                </WithChat>
               </WithOnboarding>
             </AuthProvider>
           </ApiProvider>

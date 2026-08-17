@@ -141,6 +141,95 @@ other agent-authored string.
 Both are optional on the wire: the screen degrades to initials and to "nothing
 suggested yet" when they are absent.
 
+### 1.4 Hud, the chat
+
+**The front end is finished.** `Onboarding/src/app/Chat.tsx` and its parts work
+today against `dev/site-plugin.ts`, and the Vercel handlers in `api/chat/`
+answer a stateless version of the same shapes. The authority is
+`Onboarding/src/api/types.ts`.
+
+Read this section before implementing it. The shape is not a chat log, and that
+is deliberate.
+
+**Hud does not answer a question. He returns a junction.**
+
+```
+POST /api/chat/ask     { "threadId": "…" | null, "question": "…" }
+                       -> { "threadId": "…", "junction": ChatJunction }
+
+POST /api/chat/fork    { "threadId": "…", "junctionId": "…", "forkId": "…" }
+                       -> { "junction": ChatJunction }
+
+GET  /api/chat/threads             -> ChatThreadSummary[]   (newest first)
+GET  /api/chat/threads/:id         -> ChatThread | 404
+```
+
+```jsonc
+ChatJunction {
+  "id": "…",
+  "question": "…" | null,     // null on the junction that opens a thread
+  "read": "…",                // Hud's orientation. NEVER a verdict. See below.
+  "forks": [ChatFork],        // two or three
+  "takenForkId": "…" | null,
+  "parentId": "…" | null,
+  "createdAt": 1717171717171
+}
+
+ChatFork {
+  "id": "…",
+  "kind": "role" | "course" | "job" | "skill" | "topic",
+  "label": "…",               // the direction, phrased as somewhere to go
+  "detail": "…",              // the distance: what is held, what it unlocks
+  "why": "…",                 // REQUIRED for role | course | job
+  "confidence": 0.91,         // 0..1, required wherever `why` is
+  "source": { "name": "…", "url": "…", "retrievedAt": "…" },
+  "job": JobMatch,            // when the fork IS a real posting
+  "course": Course            // when the fork IS a real course
+}
+```
+
+Five rules that are contract, not preference:
+
+1. **`read` carries no claim.** It is one or two sentences naming what Hud is
+   looking at and what the options are. A verdict, a score, a percentage or a
+   named match inside `read` is a contract violation, not a wording choice. The
+   mascot is allowed on this screen precisely because the claims live on the
+   forks, where they carry their own evidence; move one into his mouth and the
+   screen is making an unfounded claim in the product's friendliest voice.
+
+2. **Every fork of kind `role`, `course` or `job` carries `why` and a real
+   `source`.** Same rule as `/api/jobs` and `/api/courses`, for the same
+   reason. `skill` and `topic` may omit both, because they lead to another
+   junction rather than to an action.
+
+3. **Send the whole `job` or `course` object where a fork resolves to one.**
+   The screen renders those through the existing `MatchCard` and `CourseCard`,
+   so the trust rules cannot drift on this screen independently of the others.
+   A fork that describes a posting in prose instead loses the source link, the
+   retrieval date and the confidence badge in one move.
+
+4. **`fork` records the choice; it never prunes the alternatives.** Set
+   `takenForkId` on the junction that was walked from and leave its other forks
+   exactly where they are. The user can come back and walk a different one, and
+   the screen shows the ones they did not take. Pruning them breaks the
+   feature's promise, not just its layout.
+
+5. **Strings arrive localised**, per the `itqan_locale` cookie, like every other
+   agent authored string. `label`, `detail`, `read` and `why` all of them.
+
+**Streaming is not required and the seam does not need to change for it.** The
+client calls `ask` and waits, showing Hud thinking. When you can stream, stream
+inside `ask`: emit `read` early and resolve to the same junction. Do not add a
+second endpoint for it. A junction is not usefully partial, because half a fork
+is a recommendation with its evidence missing.
+
+**A thread with no junctions is a normal answer.** So is an empty
+`GET /api/chat/threads` on a new account. Neither is an error, and the UI tells
+them apart from a failure.
+
+**Rate limiting belongs on the server**, per account. The composer has no
+throttle of its own.
+
 ---
 
 ## 2. Already contracted — must exist in production
@@ -328,5 +417,9 @@ deployment avoids it entirely, and the front end is configured for both
 | `avatarUrl` on `GET /api/profile` | **missing field** |
 | `suggestedRole` on `GET /api/profile` | **missing field** |
 | `phone` through `POST`/`PUT`/`GET /api/profile` | **new field, must persist** |
+| `POST /api/chat/ask` | **missing** — front end complete, stubbed in dev |
+| `POST /api/chat/fork` | **missing** — front end complete, stubbed in dev |
+| `GET /api/chat/threads` | **missing** — needs storage; Vercel twin answers `[]` |
+| `GET /api/chat/threads/:id` | **missing** — needs storage |
 | `POST /api/placeholder/{signup,login}` | exists — **rename before launch** |
 | everything else in §2 | contracted, stubbed in dev, needs a real implementation |
