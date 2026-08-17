@@ -30,7 +30,8 @@ Password for both: `itqan1234`
 
 | Email | What it exercises |
 |---|---|
-| `maryam@itqan.test` | Fresh account. Goes through the whole onboarding flow. |
+| `new@itqan.test` | Fresh account. Goes through the whole onboarding flow, and lands in chat at the end of it. |
+| `maryam@itqan.test` | Already onboarded, with a seeded profile. Lands straight on the dashboard. |
 | `nasser@itqan.test` | Already onboarded. Lands straight on the dashboard. |
 
 These live server side only and are never rendered into any page. Signing up through the site's own
@@ -349,8 +350,10 @@ through DOM geometry and computed styles. That is stated rather than implied.
   The design system needs a muted step that clears 4.5 on paper.
 - `components.md` specifies gold text for ghost buttons, contradicting the locked "gold is never body
   text on light". The locked rule was followed; worth reconciling upstream.
-- **The August 2026 palette revision has not been applied here.** `src/styles/tokens.css` still carries
-  the retired gold `#D08C2F` and the old ramp. The final brand gold is `#F39F1C`.
+- ~~The August 2026 palette revision has not been applied here.~~ **It has.** `src/styles/tokens.css`
+  reads `--gold: #F39F1C` and carries the rederived ramp; the retired `#D08C2F` is nowhere in the
+  source. This line claimed the opposite until 2026-08-17, and it was wrong for long enough that a
+  session believed it over the file. Left visible rather than deleted so the correction is legible.
 - `react-router-dom@7.18.1` carries a high advisory for **RSC mode**, which is not reachable in library
   mode.
 - Saved roles are component state; persisting them needs a real endpoint.

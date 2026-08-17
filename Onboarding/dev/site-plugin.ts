@@ -23,6 +23,7 @@ import path from 'node:path';
 import type { Plugin, Connect } from 'vite';
 import type { ServerResponse } from 'node:http';
 import { analysisResult, courses, dashboard, jobs } from './data.js';
+import { chatAnswer, chatFork } from './chat-data.js';
 import type { Locale } from './data.js';
 
 const SITE_DIST = path.resolve(__dirname, '../../itqan-website/dist');
@@ -65,6 +66,48 @@ const accounts: Account[] = [
 const progress = new Map<string, unknown>();
 /** Confirmed profiles, so the profile screen can read one back. */
 const profiles = new Map<string, Record<string, unknown>>();
+
+/** Hud's threads per account. */
+interface ChatThreadRow {
+  id: string;
+  title: string;
+  junctions: { id: string; takenForkId: string | null; [k: string]: unknown }[];
+  updatedAt: number;
+}
+const chatThreads = new Map<string, ChatThreadRow[]>();
+
+/**
+ * How long a chat turn takes to come back.
+ *
+ * Deliberate, for the same reason PHASE_ONE_MS is: a turn that resolves in
+ * zero milliseconds lets the thinking state ship untested, and the thinking
+ * state is the one place Hud actually animates on that screen.
+ */
+const CHAT_TURN_MS = 900;
+const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Finds the thread, or starts one.
+ *
+ * A new thread starts EMPTY. The junction that opens the conversation is
+ * authored on the client so the screen renders with no network call, and
+ * seeding a second copy here would give the same greeting two sources that
+ * could drift apart.
+ */
+function openThread(accountId: string, threadId: string, title: string): ChatThreadRow {
+  const threads = chatThreads.get(accountId) ?? [];
+  const found = threads.find((t) => t.id === threadId);
+  if (found) return found;
+  const started: ChatThreadRow = {
+    id: `t${Date.now().toString(36)}`,
+    title: title.length > 48 ? `${title.slice(0, 48)}…` : title,
+    junctions: [],
+    updatedAt: Date.now(),
+  };
+  threads.push(started);
+  chatThreads.set(accountId, threads);
+  return started;
+}
 
 /**
  * Seed a profile for every already-onboarded account.
@@ -382,6 +425,63 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
         if (url === '/api/dashboard') return json(res, 200, dashboard(locale));
         if (url === '/api/jobs') return json(res, 200, jobs(locale));
         if (url === '/api/courses') return json(res, 200, courses(locale));
+
+        /* Hud's chat. Threads live in a Map keyed by account, like everything
+           else here, so they survive a reload and not a restart.
+
+           The deliberate delay is the same idea as PHASE_ONE_MS on the
+           pipeline: a turn that answers in zero milliseconds lets a thinking
+           state ship untested, and the thinking state is where Hud actually
+           appears. Short enough not to be tedious, long enough to be real. */
+        if (url === '/api/chat/threads' && req.method === 'GET') {
+          return json(res, 200, (chatThreads.get(me.id) ?? []).map(
+            ({ id, title, updatedAt }) => ({ id, title, updatedAt }),
+          ));
+        }
+
+        if (url.startsWith('/api/chat/threads/')) {
+          const id = decodeURIComponent(url.slice('/api/chat/threads/'.length));
+          const thread = (chatThreads.get(me.id) ?? []).find((t) => t.id === id);
+          if (!thread) return json(res, 404, { error: 'no_thread' });
+          return json(res, 200, thread);
+        }
+
+        if (url === '/api/chat/ask' && req.method === 'POST') {
+          const sent = parseBody(await body(req), req.headers['content-type'] ?? '');
+          const question = String(sent.question ?? '').trim();
+          if (!question) return json(res, 400, { error: 'empty_question' });
+          await pause(CHAT_TURN_MS);
+
+          const thread = openThread(me.id, String(sent.threadId ?? ''), question);
+          const junction = { ...chatAnswer(locale, question), id: `j${Date.now().toString(36)}` };
+          thread.junctions.push(junction);
+          thread.updatedAt = Date.now();
+          return json(res, 200, { threadId: thread.id, junction });
+        }
+
+        if (url === '/api/chat/fork' && req.method === 'POST') {
+          const sent = parseBody(await body(req), req.headers['content-type'] ?? '');
+          const forkId = String(sent.forkId ?? '');
+          if (!forkId) return json(res, 400, { error: 'no_fork' });
+          await pause(CHAT_TURN_MS);
+
+          const thread = openThread(me.id, String(sent.threadId ?? ''), forkId);
+          // The fork is RECORDED as taken, never removed. The directions not
+          // walked stay on their junction and stay re-enterable, which is the
+          // whole argument of the surface — a production service that prunes
+          // them breaks the screen's promise, not just its layout.
+          const from = thread.junctions.find((j) => j.id === sent.junctionId);
+          if (from) from.takenForkId = forkId;
+
+          const junction = {
+            ...chatFork(locale, forkId),
+            id: `j${Date.now().toString(36)}`,
+            parentId: String(sent.junctionId ?? '') || null,
+          };
+          thread.junctions.push(junction);
+          thread.updatedAt = Date.now();
+          return json(res, 200, { threadId: thread.id, junction });
+        }
 
         if (url === '/api/onboarding/progress') {
           if (req.method === 'PUT') {

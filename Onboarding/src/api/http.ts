@@ -12,7 +12,8 @@
  * `credentials: 'same-origin'` is what carries the cookie.
  */
 import type {
-  AnalysisJob, ConfirmProfileResult, ConfirmedProfile, Course, DashboardData, ItqanApi,
+  AnalysisJob, ChatJunction, ChatThread, ChatThreadSummary, ConfirmProfileResult,
+  ConfirmedProfile, Course, DashboardData, ItqanApi,
   JobMatch, OnboardingProgress, Session, StoredProfile, UploadedDocument,
 } from './types';
 import { takeHandoffToken } from '../lib/site';
@@ -154,5 +155,27 @@ export function createHttpApi(): ItqanApi {
     getDashboard(signal) { return req<DashboardData>('/dashboard', { signal }); },
     getJobs(signal) { return req<JobMatch[]>('/jobs', { signal }); },
     getCourses(signal) { return req<Course[]>('/courses', { signal }); },
+
+    listThreads(signal) {
+      // No threads yet is a normal state on a new account, not a failure.
+      return req<ChatThreadSummary[]>('/chat/threads', { signal }).catch(() => []);
+    },
+    getThread(id, signal) {
+      return req<ChatThread>(`/chat/threads/${encodeURIComponent(id)}`, { signal });
+    },
+    ask({ threadId, question }, signal) {
+      return req<{ threadId: string; junction: ChatJunction }>('/chat/ask', {
+        method: 'POST',
+        body: JSON.stringify({ threadId, question }),
+        signal,
+      });
+    },
+    takeFork({ threadId, junctionId, forkId }, signal) {
+      return req<{ threadId: string; junction: ChatJunction }>('/chat/fork', {
+        method: 'POST',
+        body: JSON.stringify({ threadId, junctionId, forkId }),
+        signal,
+      });
+    },
   };
 }

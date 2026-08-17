@@ -16,7 +16,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import {
   BookOpen, Briefcase, ExternalLink, LayoutDashboard, LogOut,
-  PanelLeftClose, User as UserIcon,
+  PanelLeftClose, User as UserIcon, Waypoints,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useI18n } from '../i18n';
@@ -31,8 +31,17 @@ import { siteHome, siteLogin } from '../lib/site';
  * Order is the user's journey, not the data model: see where you stand, then
  * what to learn, then what to apply for. Job postings sit last because they
  * are the destination, not the starting point.
+ *
+ * Chat leads, ahead of that sequence rather than inside it, because it is the
+ * way IN to all three: a graduate who does not yet know which of these they
+ * need is exactly who Hud is for, and every junction he opens ends up pointing
+ * at one of the rows below. The journey argument still governs those three.
+ *
+ * The icon is Waypoints, not a speech bubble. What the screen actually is, is a
+ * path with nodes on it; a message icon would promise a transcript.
  */
 const DESTS: { to: string; key: string; icon: LucideIcon }[] = [
+  { to: '/chat', key: 'nav.chat', icon: Waypoints },
   { to: '/dashboard', key: 'nav.dashboard', icon: LayoutDashboard },
   { to: '/courses', key: 'nav.courses', icon: BookOpen },
   { to: '/jobs', key: 'nav.jobs', icon: Briefcase },

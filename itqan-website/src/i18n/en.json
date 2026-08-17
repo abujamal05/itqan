@@ -35,6 +35,56 @@
     "strong": "Strong match",
     "suggested": "Suggested — confirm"
   },
+  "chat": {
+    "launch": "Ask Hud",
+    "close": "Close",
+    "title": "Hud",
+    "limit": "Answers about Itqan. Anything about your own record needs an account.",
+    "greeting": "Hello. I am Hud. Ask me about Itqan: what it does, what it does not do, and what happens to your documents.",
+    "nudge": "Ask me about Itqan",
+    "forksLabel": "Start here",
+    "forksMoreLabel": "Other questions",
+    "askLabel": "Ask Hud",
+    "placeholder": "Tell me what you need",
+    "send": "Send question",
+    "youAsked": "You asked",
+    "noMatchTitle": "That one needs your record.",
+    "noMatchBody": "I do not have a ready answer for that. I can answer questions about Itqan itself: what it does, what it costs, and what happens to your documents. Anything about you specifically I cannot answer until I have read your record, and that starts with a free account.",
+    "forks": [
+      {
+        "id": "what",
+        "q": "What does Itqan actually do?",
+        "keywords": "what does do how work works working product itqan",
+        "a": "You give it your record, your CV and your certificates. It reads them, checks what you have against openings that are genuinely live in the Gulf, then shows you the jobs you fit today and the reason behind each one. After that it lays out the shortest path to the role you want next, in real courses.",
+        "slug": "how-it-works",
+        "linkLabel": "The four steps"
+      },
+      {
+        "id": "free",
+        "q": "Is it really free?",
+        "keywords": "free cost costs price pay paid payment money subscription plan card charge trial",
+        "a": "Yes. The gap, the full path, the job matches and the advisor are free and stay free. Nobody pays to get hired. There is no card to enter and no plan to pick.",
+        "slug": "about",
+        "linkLabel": "What we refuse"
+      },
+      {
+        "id": "documents",
+        "q": "What happens to my transcript?",
+        "keywords": "transcript document documents upload privacy data record certificate store stored delete safe security",
+        "a": "It gets read so your courses can be matched to the skills they actually cover. Before anything moves on from there, the extracted list is put in front of you to check and correct. That screen is where the decision sits, and it is yours rather than ours.",
+        "slug": "privacy",
+        "linkLabel": "The privacy page"
+      },
+      {
+        "id": "outside",
+        "q": "My degree is not from Oman. Does that work?",
+        "keywords": "outside oman abroad foreign international degree university visa sponsor gulf english expat",
+        "a": "Yes. Itqan is built for Arabic and English equally, and it reads records from outside the Gulf. Where it is unsure about a course it says so and asks you to confirm, rather than guessing.",
+        "slug": "proof",
+        "linkLabel": "A worked example"
+      }
+    ]
+  },
   "footer": {
     "tagline": "An Arabic platform that helps graduates read their own skills clearly.",
     "privacy": "Privacy",

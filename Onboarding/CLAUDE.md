@@ -62,6 +62,15 @@ Not optional, and in this order:
 - **Bilingual parity.** Every key exists in `ar.json` and `en.json`.
 - **The Hud fence.** Never beside a verdict, score, real match, data table, or the confirmation screen. He
   is absent from the dashboard entirely.
+  **One exception, added 2026-08-17: the chat surface** (`src/app/Chat.tsx` and its parts), where the
+  assistant is named after him. He is present there throughout, including on a junction that offers real
+  matches. This was decided with the conflict on the table; it is not drift, so do not revert it.
+  The boundary that keeps the fence's argument alive: **Hud speaks orientation, never a verdict.** He
+  opens a junction and names the directions; every actionable answer renders as its own card carrying
+  `why`, a real source and an honest confidence label. Where a fork resolves to a real job or course it
+  reuses `MatchCard` / `CourseCard` unchanged, so the trust rules are inherited rather than reimplemented.
+  Everywhere else the fence stands, and the "Hud is deliberately absent" comments in `Dashboard.tsx`,
+  `Profile.tsx` and `MatchCard.tsx` are still correct.
 - **Trust rules.** Every extracted value carries its confidence; every recommendation carries `why` and a
   real source. No invented statistics.
 - **Motion:** only `transform` and `opacity`. Movement distance multiplies by `--motion-scale`, which
@@ -87,9 +96,16 @@ Before calling any visual change finished:
    Composite alpha against what is actually behind an element before computing a contrast ratio.
 5. `node ../.claude/skills/impeccable/scripts/detect.mjs --json src/` — a floor, not a finish line.
 
-Known environment quirks: screenshots time out unless the Browser pane is displayed, so DOM geometry is
-the usual fallback. `getComputedStyle(el).transform` misreports on **SVG** elements here. Rapid edits can
-corrupt Vite HMR into `useI18n must be used inside <I18nProvider>` — hard-reload before believing it.
+**Screenshots work — a timeout means you are addressing a background tab.** The pane only composites the
+FRONTED tab, so capturing any other one fails with "the Browser pane is not displayed". Starting a second
+preview server (say the site alongside the app) creates a new tab and fronts it, orphaning the one you
+were using. Fix it with `tabs_context` to find the tab, `tabs_select <tabId>` to front it, then capture.
+Do not fall back to geometry-only and call it verified — that is how a page shipped with all four of its
+panels rendering at once while an assertion on the `hidden` property reported them hidden.
+
+Other known quirks: `getComputedStyle(el).transform` misreports on **SVG** elements here (a forced inline
+`rotate(180deg)` reads back as the identity matrix). Rapid edits can corrupt Vite HMR into
+`useI18n must be used inside <I18nProvider>` — hard-reload before believing it.
 
 ## Backend
 

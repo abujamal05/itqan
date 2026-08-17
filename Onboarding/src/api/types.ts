@@ -376,6 +376,91 @@ export interface OnboardingProgress {
   updatedAt: number;
 }
 
+/* -------------------------------------------------------------- chat -- */
+
+/**
+ * Hud's chat surface. PENDING BACKEND — see BACKEND.md §1.4.
+ *
+ * The shape encodes the whole argument of that screen, so read this before
+ * implementing the service. Hud does not answer a question; he opens a
+ * JUNCTION. Every turn returns one junction carrying his short orientation
+ * plus the two or three real directions available from where the user stands,
+ * and the user walks one of them. Directions not taken are never discarded.
+ *
+ * Which is why there is no `message` type here and no array of them. A chat
+ * log would let a service return prose with a recommendation buried in it, and
+ * prose cannot carry an evidence chain a skeptic can check.
+ */
+export type ForkKind = 'role' | 'course' | 'job' | 'skill' | 'topic';
+
+/**
+ * One direction out of a junction, and the only actionable object on the
+ * screen.
+ *
+ * The trust rules live HERE rather than in Hud's `read`, and that split is
+ * deliberate: it is what lets the mascot stand on a surface the brand
+ * otherwise fences him out of. Anything a user might act on carries its own
+ * evidence and its own source, so the claim is auditable whoever delivered it.
+ */
+export interface ChatFork {
+  id: string;
+  kind: ForkKind;
+  /** The direction itself, phrased as somewhere to go. Already localised. */
+  label: string;
+  /** The distance: what is already held, and what this would unlock. */
+  detail: string;
+  /**
+   * The evidence chain, in the product's fixed wording: "why this match".
+   * REQUIRED for `role`, `course` and `job` — a direction that would have a
+   * user apply, enrol or aim somewhere without saying why is exactly the
+   * unfounded claim the whole product exists to refuse. Optional only for
+   * `topic` and `skill`, which lead to another junction rather than an action.
+   */
+  why?: string;
+  confidence?: Confidence;
+  /** Required wherever `why` is. Carries its own retrieval date. */
+  source?: Source;
+  /**
+   * When a fork resolves to something the app already renders, the service
+   * sends the whole object and the screen reuses `MatchCard` / `CourseCard`
+   * untouched. That is not a convenience: those components already enforce
+   * `why`, the source and the confidence badge, so reusing them means the
+   * trust rules cannot drift on this screen independently of the others.
+   */
+  job?: JobMatch;
+  course?: Course;
+}
+
+/** One node on the spine: what was asked, how Hud read it, where it leads. */
+export interface ChatJunction {
+  id: string;
+  /** What the user asked. Null for junction zero, which opens the thread. */
+  question: string | null;
+  /**
+   * Hud's orientation, one or two sentences, already localised.
+   *
+   * NEVER a verdict, a score, a match or a percentage. He names what he is
+   * looking at and what the options are; the options carry their own claims.
+   * A service that puts "you are a 94% match for X" in here has moved a claim
+   * out of the structure that makes it checkable.
+   */
+  read: string;
+  forks: ChatFork[];
+  /** Set once the user walks one. The others stay on the junction, re-enterable. */
+  takenForkId: string | null;
+  parentId: string | null;
+  createdAt: number;
+}
+
+export interface ChatThread {
+  id: string;
+  title: string;
+  junctions: ChatJunction[];
+  updatedAt: number;
+}
+
+export type ChatThreadSummary = Pick<ChatThread, 'id' | 'title' | 'updatedAt'>;
+
 /** The whole surface the UI depends on. Implemented by http.ts and mock.ts. */
 export interface ItqanApi {
   /**
@@ -438,6 +523,37 @@ export interface ItqanApi {
   getDashboard(signal?: AbortSignal): Promise<DashboardData>;
   getJobs(signal?: AbortSignal): Promise<JobMatch[]>;
   getCourses(signal?: AbortSignal): Promise<Course[]>;
+
+  /**
+   * PENDING BACKEND — Hud's chat. See BACKEND.md §1.4 for the full contract.
+   *
+   * Deliberately request/response rather than a token stream. Nothing in this
+   * codebase reads a stream today (`req<T>` ends in `res.json()`), and a
+   * junction is not usefully partial: half of a fork is a recommendation
+   * missing its evidence. When streaming does arrive it belongs INSIDE `ask`,
+   * which can start emitting `read` early and still resolve to the same
+   * junction, so none of these signatures have to change.
+   */
+  listThreads(signal?: AbortSignal): Promise<ChatThreadSummary[]>;
+  /** A thread with no junctions is a normal answer, not an error. */
+  getThread(id: string, signal?: AbortSignal): Promise<ChatThread>;
+  /** `threadId: null` opens a new thread and returns the id it was given. */
+  ask(
+    input: { threadId: string | null; question: string },
+    signal?: AbortSignal,
+  ): Promise<{ threadId: string; junction: ChatJunction }>;
+  /**
+   * Walks a direction. Returns the junction it leads to.
+   *
+   * `threadId: null` for the same reason `ask` allows it: the opening junction
+   * is authored on the client so the screen renders instantly with no network
+   * call, which means the very first thing a user does can be walking one of
+   * its forks, before any thread exists.
+   */
+  takeFork(
+    input: { threadId: string | null; junctionId: string | null; forkId: string },
+    signal?: AbortSignal,
+  ): Promise<{ threadId: string; junction: ChatJunction }>;
 }
 
 export const isStrong = (c: Confidence) => c >= TRUST_THRESHOLD;
