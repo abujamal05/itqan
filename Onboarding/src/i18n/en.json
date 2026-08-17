@@ -123,6 +123,8 @@
   "courses.sub": "Each one is tied to a skill that opens more roles for you. Itqan earns nothing from these.",
   "courses.unlocks": "Unlocks",
   "courses.hours": "{n} hours",
+  "courses.hour": "{n} hour",
+  "courses.hoursRange": "{min}–{max} hours",
   "courses.view": "Open the course",
   "courses.recommended": "Recommended next",
   "courses.empty": "No courses to show yet",

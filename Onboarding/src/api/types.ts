@@ -254,7 +254,24 @@ export interface Course {
   id: string;
   title: string;
   provider: string;
-  hours: number;
+  /**
+   * How long the provider says it takes, as a RANGE — because that is what they
+   * actually state. "4 weeks of study, 2-4 hours a week" is 8 to 16 hours, and
+   * reporting 12 would be a figure nobody published. Equal ends mean the
+   * provider stated ONE figure, not that a range was averaged.
+   *
+   * **Null is the common case and must render as SILENCE.** This replaced a
+   * single `hours: number` that the API had always sent as null — with a comment
+   * in `api/mapping.py` reading "not 0, which would render as '0 hours'" — and
+   * the card rendered exactly that, because this type asserted a number was
+   * always there. The identical mistake to the `null 0` price bug below, one
+   * field up.
+   */
+  hoursMin: number | null;
+  hoursMax: number | null;
+  /** The provider's own words, so a range can be checked against what it came
+   *  from and an unparseable-but-present duration is still worth showing. */
+  durationText: string | null;
   /**
    * Cost in `currency`, 0 for free, or **null when the provider publishes no
    * price at all**. Kept as a number rather than a pre-formatted string so the

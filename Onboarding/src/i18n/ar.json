@@ -123,6 +123,8 @@
   "courses.sub": "كل دورة مرتبطة بمهارة تفتح لك أدواراً أكثر. لا يكسب إتقان شيئاً منها.",
   "courses.unlocks": "تفتح",
   "courses.hours": "{n} ساعة",
+  "courses.hour": "{n} ساعة",
+  "courses.hoursRange": "{min}–{max} ساعة",
   "courses.view": "افتح الدورة",
   "courses.recommended": "المقترح التالي",
   "courses.empty": "لا دورات لعرضها بعد",

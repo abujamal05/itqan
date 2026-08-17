@@ -69,7 +69,17 @@ export function Courses() {
       // must not silently include the 2,001 courses whose price is merely
       // UNKNOWN — null is not free, and this is where that would leak.
       if (filter === 'free') return c.price === 0 || c.priceLabel === 'free';
-      if (filter === 'short') return c.hours < 10;
+      // The same trap as `free`, one field over, and it was live: this read
+      // `c.hours < 10` while `hours` was null for every course — and in JS
+      // `null < 10` is TRUE, so "short courses" silently matched everything
+      // whose duration was merely unknown.
+      //
+      // Judged on the LOWER bound: a course stated as 8-16 hours might well be
+      // short. A course with no stated duration is not KNOWN to be short, so it
+      // does not match — the same direction as refusing to invent a midpoint.
+      if (filter === 'short')
+        return typeof c.hoursMin === 'number' && Number.isFinite(c.hoursMin)
+          && c.hoursMin < 10;
       if (filter === 'recommended') return c.recommended;
       return true;
     });
