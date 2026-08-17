@@ -109,6 +109,25 @@ function openThread(accountId: string, threadId: string, title: string): ChatThr
   return started;
 }
 
+/* ---- email verification state ----
+ *
+ * A stub cannot send mail, so it accepts one fixed code. The rest is modelled
+ * for real, because this is what the verification screen is developed against:
+ * an issue TIME rather than a flag, so the countdown the page shows is computed
+ * the way production computes it. Hard-coding "600 seconds" here would let a
+ * timer bug through that only appears on a reload.
+ */
+const DEV_CODE = '123456';
+const VERIFY_CODE_MINUTES = 10;
+const VERIFY_MAX_ATTEMPTS = 5;
+const verifications = new Map<string, { expiresAt: number; attempts: number }>();
+
+function issueCode(accountId: string) {
+  const fresh = { expiresAt: Date.now() + VERIFY_CODE_MINUTES * 60_000, attempts: 0 };
+  verifications.set(accountId, fresh);
+  return fresh;
+}
+
 /**
  * Seed a profile for every already-onboarded account.
  *
@@ -301,7 +320,15 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
             emailVerified: false,
           };
           accounts.push(account);
-          return json(res, 200, { ok: true }, [
+          // Signup issues the code in production, and the countdown runs from
+          // THAT moment rather than from when the verify page loads. Issuing it
+          // here is what makes the stub reproduce that.
+          issueCode(account.id);
+          // The referer's language, not the `locale` further down — that one is
+          // declared after this block and reading it here is a temporal dead
+          // zone, i.e. a ReferenceError on every signup in dev.
+          return json(res, 200,
+                      { ok: true, verifyUrl: `/${localeFromReferer(req.headers.referer)}/verify-email/` }, [
             `${COOKIE}=${tokenFor(account.id)}; Path=/; SameSite=Lax`,
             setLocale,
           ]);
@@ -358,6 +385,52 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
         }
 
         if (!me) return json(res, 401, { error: 'no_session' });
+
+        /* ---- email verification ----
+         *
+         * The real flow mails a 6-digit code; a dev stub cannot, so it accepts a
+         * FIXED one. Everything else is modelled honestly, because the screen is
+         * developed against this: a wrong code counts down attempts, five
+         * failures kill the code, and the countdown is seconds the STUB
+         * computed from an issue time — not a constant — so a reload here
+         * behaves the way it does in production rather than restarting at ten
+         * minutes.
+         */
+        if (url === '/api/auth/verification') {
+          if (me.emailVerified) {
+            return json(res, 200, { verified: true, secondsRemaining: 0, attemptsRemaining: 0 });
+          }
+          const v = verifications.get(me.id) ?? issueCode(me.id);
+          const left = Math.max(0, Math.round((v.expiresAt - Date.now()) / 1000));
+          return json(res, 200, {
+            verified: false,
+            secondsRemaining: v.attempts >= VERIFY_MAX_ATTEMPTS ? 0 : left,
+            attemptsRemaining: Math.max(0, VERIFY_MAX_ATTEMPTS - v.attempts),
+          });
+        }
+
+        if (url === '/api/auth/verify-email' && req.method === 'POST') {
+          if (me.emailVerified) return json(res, 200, { ok: true, alreadyVerified: true });
+          const f = parseBody(await body(req), req.headers['content-type'] ?? '');
+          const v = verifications.get(me.id) ?? issueCode(me.id);
+          if (Date.now() > v.expiresAt || v.attempts >= VERIFY_MAX_ATTEMPTS) {
+            return json(res, 410, { error: 'code_expired' });
+          }
+          v.attempts += 1;
+          if ((f.code ?? '').trim() !== DEV_CODE) {
+            const remaining = VERIFY_MAX_ATTEMPTS - v.attempts;
+            if (remaining <= 0) return json(res, 410, { error: 'code_expired' });
+            return json(res, 422, { error: 'invalid_code', attemptsRemaining: remaining });
+          }
+          me.emailVerified = true;
+          verifications.delete(me.id);
+          return json(res, 200, { ok: true });
+        }
+
+        if (url === '/api/auth/resend-verification' && req.method === 'POST') {
+          if (!me.emailVerified) issueCode(me.id);
+          return json(res, 200, { ok: true });
+        }
 
         /* ---- the agent services ---- */
         const locale = (cookies[LOCALE_COOKIE] === 'en' ? 'en' : 'ar') as Locale;

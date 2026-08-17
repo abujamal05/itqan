@@ -115,6 +115,29 @@ const base = `/${locale}`;
         </button>
       </form>
 
+      {/* How long the code has left.
+          Seeded from the server, NOT from page load: the code was issued at
+          signup, so a browser-side clock starting now would restart at ten
+          minutes after every reload and count down over a code the server has
+          already killed.
+
+          `aria-hidden`, and the live region beside it announces only at
+          thresholds — a number changing every second inside aria-live would be
+          read aloud six hundred times, which is worse than silence. The static
+          hint below remains the description for anyone not watching it tick.
+
+          Hidden until the first value arrives, so nothing flashes a zero. */}
+      <p class="code-timer" hidden data-timer
+         data-template={s.verify.expiresIn}
+         data-soon={s.verify.expiresSoon}
+         data-expired={s.verify.expiredNow}>
+        <span class="code-timer__value" aria-hidden="true" dir="ltr"></span>
+      </p>
+      {/* `visually-hidden`, which is what global.css defines — the app calls the
+          same thing `sr-only`, and using that name here would have left this
+          announcement visible on the page. */}
+      <p class="visually-hidden" role="status" aria-live="polite" data-timer-announce></p>
+
       <div class="stack resend">
         <p class="auth__hint">{s.verify.spam}</p>
         {/* A button, not a link: it performs an action and does not navigate. */}
@@ -236,11 +259,85 @@ const base = `/${locale}`;
       if (sub && template && data?.user?.email) {
         sub.textContent = template.replace('{email}', data.user.email);
       }
+      startCountdown();
     } catch {
       /* Offline or the API is down. Leave the form up: it is the screen they
          need, and its own submit will report the failure properly. */
     }
   })();
+
+  /**
+   * The countdown.
+   *
+   * ONE value from the server, counted down locally. It does not poll: a tick
+   * per second against the API would be six hundred requests to watch a number
+   * the browser can subtract for itself.
+   *
+   * Seconds rather than an expiry timestamp, because the arithmetic then does
+   * not depend on the device's clock being right — a phone an hour out would
+   * otherwise render a confidently wrong figure.
+   */
+  const timer = document.querySelector<HTMLElement>('[data-timer]');
+  const timerValue = timer?.querySelector<HTMLElement>('.code-timer__value') ?? null;
+  const announce = document.querySelector<HTMLElement>('[data-timer-announce]');
+  let ticking: number | undefined;
+
+  const mmss = (total: number) => {
+    const m = Math.floor(total / 60);
+    const s = total % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  };
+
+  function paint(left: number): void {
+    if (!timer || !timerValue) return;
+    timer.hidden = false;
+    timerValue.textContent = (timer.dataset.template ?? '{time}').replace('{time}', mmss(left));
+    /* Below a minute the number takes the warning colour, which is the point at
+       which "plenty of time" stops being true. */
+    timer.dataset.low = left <= 60 ? 'true' : 'false';
+  }
+
+  /** Announced at thresholds only — see the markup for why not every second. */
+  function announceAt(left: number): void {
+    if (!announce || !timer) return;
+    if (left === 60) announce.textContent = timer.dataset.soon ?? '';
+    if (left === 0) announce.textContent = timer.dataset.expired ?? '';
+  }
+
+  async function startCountdown(): Promise<void> {
+    if (!timer) return;
+    window.clearInterval(ticking);
+    let left: number;
+    try {
+      const res = await fetch('/api/auth/verification', { credentials: 'same-origin' });
+      if (!res.ok) return;
+      const state = await res.json();
+      if (state.verified) { show('done'); return; }
+      left = Number(state.secondsRemaining) || 0;
+    } catch {
+      /* No number rather than a guessed one: leave the timer hidden. The form
+         still works, and the server is the thing that decides expiry anyway. */
+      return;
+    }
+
+    if (left <= 0) { show('expired'); return; }
+
+    paint(left);
+    ticking = window.setInterval(() => {
+      left -= 1;
+      announceAt(left);
+      if (left <= 0) {
+        window.clearInterval(ticking);
+        timer.hidden = true;
+        /* The code really is dead, and the panel that follows offers a new one
+           — better than leaving 0:00 on screen inviting an attempt the server
+           will refuse. */
+        show('expired');
+        return;
+      }
+      paint(left);
+    }, 1000);
+  }
 
   /**
    * The outcome of a code submission. Three server answers, three behaviours:
@@ -253,8 +350,10 @@ const base = `/${locale}`;
    * the screen for a typo loses the field they are working in.
    */
   form?.addEventListener('itqan:submitted', (async (e: CustomEvent<{ ok: boolean; status: number; body?: unknown }>) => {
-    if (e.detail.ok) { show('done'); return; }
-    if (e.detail.status === 410) { show('expired'); return; }
+    if (e.detail.ok) { window.clearInterval(ticking); show('done'); return; }
+    /* The server has settled it — stop counting down to a moment that has
+       already passed, or the timer keeps ticking behind the expired panel. */
+    if (e.detail.status === 410) { window.clearInterval(ticking); show('expired'); return; }
     if (e.detail.status === 422) {
       const remaining = (e.detail.body as { attemptsRemaining?: number } | undefined)
         ?.attemptsRemaining;
@@ -296,6 +395,13 @@ const base = `/${locale}`;
       if (field) field.dataset.state = '';
       const input = form?.querySelector<HTMLInputElement>('input[name="code"]');
       if (input) { input.value = ''; input.focus(); }
+
+      /* Re-read rather than assuming a full ten minutes. A throttled resend
+         answers 200 exactly like a sent one and issues NO new code, so assuming
+         here would restart the timer over a code whose real window is still
+         draining — the same lie the whole design avoids, reintroduced at the
+         one moment it would be least visible. */
+      void startCountdown();
 
       /* Re-enabled after a beat rather than immediately: it stops a
          double-click sending two codes, where the second silently invalidates
@@ -358,6 +464,28 @@ const base = `/${locale}`;
   .resend {
     margin-block-start: var(--space-5);
     align-items: flex-start;
+  }
+
+  /* The countdown. Tabular figures so the width does not jitter as the digits
+     change — a number that shuffles sideways every second is the kind of thing
+     the eye keeps returning to. */
+  .code-timer {
+    margin-block-start: var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Under a minute, when "plenty of time" stops being true. */
+  .code-timer[data-low='true'] {
+    color: var(--color-warning);
+    font-weight: var(--weight-medium);
+  }
+
+  /* `dir="ltr"` on the value keeps 9:58 from rendering as 58:9 in Arabic; this
+     keeps it sitting on the correct side of the sentence around it. */
+  .code-timer__value {
+    display: inline-block;
   }
 
   .form-card--warm {

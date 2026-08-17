@@ -387,6 +387,9 @@
       "errorWrongOne": "That code is not right. 1 attempt left."
     },
     "spam": "It can take a minute. Look in your spam folder if it does not arrive.",
+    "expiresIn": "Code expires in {time}",
+    "expiresSoon": "Less than a minute left",
+    "expiredNow": "That code has expired. Ask for a new one.",
     "resend": "Send me a new code",
     "resendSent": "A new code is on its way. The previous one no longer works.",
     "doneHeading": "You're verified",
