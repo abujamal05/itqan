@@ -117,7 +117,8 @@ export const courses = (l: Locale) => [
     id: 'c1',
     title: pick({ ar: 'Power BI من الأساس', en: 'Power BI from the ground up' }, l),
     provider: 'Microsoft Learn',
-    hours: 8,
+    // One stated figure: both ends equal. NOT a range that was averaged.
+    hoursMin: 8, hoursMax: 8, durationText: '8 hours',
     price: 0, currency: 'OMR', priceLabel: 'free' as const,
     unlocks: ['Power BI', pick({ ar: 'لوحات المعلومات', en: 'Dashboards' }, l)],
     recommended: true,
@@ -127,7 +128,9 @@ export const courses = (l: Locale) => [
     id: 'c2',
     title: pick({ ar: 'SQL للتحليل العملي', en: 'SQL for practical analysis' }, l),
     provider: 'Coursera / Google',
-    hours: 12,
+    // The commonest real shape on Coursera: a range, from
+    // '4 weeks of study, 2-4 hours a week'. The card must show 8-16, never 12.
+    hoursMin: 8, hoursMax: 16, durationText: '4 weeks of study, 2-4 hours a week',
     // No price published, but the platform sells its catalogue: "Paid".
     price: null, currency: null, priceLabel: 'paid' as const,
     unlocks: ['SQL', pick({ ar: 'نمذجة البيانات', en: 'Data modelling' }, l)],
@@ -138,7 +141,11 @@ export const courses = (l: Locale) => [
     id: 'c3',
     title: pick({ ar: 'التواصل المهني في بيئة العمل', en: 'Professional communication at work' }, l),
     provider: pick({ ar: 'إدراك', en: 'Edraak' }, l),
-    hours: 6,
+    // NOTHING stated, which is the majority of the real corpus and the case
+    // that rendered "0 hours" on every card. Present here so the "say nothing"
+    // branch is visible in dev — the stub showing a duration for every course is
+    // precisely how this went unnoticed, exactly as an 18 OMR price once did.
+    hoursMin: null, hoursMax: null, durationText: null,
     // Nothing known either way — the card must say "not listed", not guess.
     price: null, currency: null, priceLabel: null,
     unlocks: [pick({ ar: 'التواصل المهني', en: 'Professional communication' }, l)],
