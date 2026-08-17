@@ -163,12 +163,36 @@ export function createHttpApi(): ItqanApi {
     getThread(id, signal) {
       return req<ChatThread>(`/chat/threads/${encodeURIComponent(id)}`, { signal });
     },
-    ask({ threadId, question }, signal) {
+    ask({ threadId, question, files }, signal) {
+      /* Multipart only when there is actually a file, so the common case stays
+         a plain JSON post and the server is not made to parse a form for
+         nothing. `req` already leaves FormData's Content-Type to the browser,
+         which has to set the boundary itself. */
+      if (files?.length) {
+        const form = new FormData();
+        form.append('question', question);
+        if (threadId) form.append('threadId', threadId);
+        files.forEach((f) => form.append('files', f, f.name));
+        return req<{ threadId: string; message: ChatMessage }>('/chat/ask', {
+          method: 'POST',
+          body: form,
+          signal,
+        });
+      }
       return req<{ threadId: string; message: ChatMessage }>('/chat/ask', {
         method: 'POST',
         body: JSON.stringify({ threadId, question }),
         signal,
       });
+    },
+    async rateMessage({ threadId, messageId, verdict }, signal) {
+      // Swallowed on purpose: a rating that fails to send is not worth an error
+      // in front of someone who was only being helpful.
+      await req<void>('/chat/rate', {
+        method: 'POST',
+        body: JSON.stringify({ threadId, messageId, verdict }),
+        signal,
+      }).catch(() => {});
     },
   };
 }

@@ -23,7 +23,7 @@ import path from 'node:path';
 import type { Plugin, Connect } from 'vite';
 import type { ServerResponse } from 'node:http';
 import { analysisResult, courses, dashboard, jobs } from './data.js';
-import { chatAnswer } from './chat-data.js';
+import { chatAnswer, chatAttachmentReply } from './chat-data.js';
 import type { Locale } from './data.js';
 
 const SITE_DIST = path.resolve(__dirname, '../../itqan-website/dist');
@@ -85,6 +85,38 @@ const chatThreads = new Map<string, ChatThreadRow[]>();
  */
 const CHAT_TURN_MS = 900;
 const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Every file part in a multipart body, as metadata.
+ *
+ * Its own scan rather than an extension of `parseBody`, which flattens a body to
+ * one string per field and therefore keeps only the last file. Widening that
+ * would change a return type the document-upload path also depends on, for the
+ * sake of a dev stub.
+ *
+ * The bytes are read only to measure them. Nothing here stores a file, and
+ * nothing should: a transcript dropped into a chat must not become the document
+ * the pipeline runs on, because that route has a human confirmation screen and
+ * this one does not.
+ */
+function chatAttachments(raw: Buffer, contentType: string) {
+  if (!contentType.includes('multipart/form-data')) return [];
+  const boundary = contentType.split('boundary=')[1]?.split(';')[0];
+  if (!boundary) return [];
+  const out: { id: string; fileName: string; mimeType: string; sizeBytes: number }[] = [];
+  raw.toString('binary').split(`--${boundary}`).forEach((part, i) => {
+    const filename = /filename="([^"]*)"/.exec(part);
+    if (!filename || !filename[1]) return;
+    const value = part.split('\r\n\r\n').slice(1).join('\r\n\r\n').replace(/\r\n$/, '');
+    out.push({
+      id: `att${Date.now().toString(36)}${i}`,
+      fileName: filename[1],
+      mimeType: (/Content-Type:\s*([^\r\n]+)/i.exec(part)?.[1] ?? 'application/octet-stream').trim(),
+      sizeBytes: Buffer.byteLength(value, 'binary'),
+    });
+  });
+  return out;
+}
 
 /**
  * Finds the thread, or starts one.
@@ -446,12 +478,17 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
         }
 
         if (url === '/api/chat/ask' && req.method === 'POST') {
-          const sent = parseBody(await body(req), req.headers['content-type'] ?? '');
+          const raw = await body(req);
+          const contentType = req.headers['content-type'] ?? '';
+          const sent = parseBody(raw, contentType);
+          const attachments = chatAttachments(raw, contentType);
           const question = String(sent.question ?? '').trim();
-          if (!question) return json(res, 400, { error: 'empty_question' });
+          /* A question OR a file is enough. Requiring text alongside an
+             attachment would make "here, read this" impossible to express. */
+          if (!question && !attachments.length) return json(res, 400, { error: 'empty_question' });
           await pause(CHAT_TURN_MS);
 
-          const thread = openThread(me.id, String(sent.threadId ?? ''), question);
+          const thread = openThread(me.id, String(sent.threadId ?? ''), question || attachments[0].fileName);
           /* Both turns are stored, the user's included, because a thread read
              back on another device has to contain the questions as well as the
              answers. The client shows its own copy of the question immediately
@@ -460,12 +497,24 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
             id: `m${Date.now().toString(36)}u`,
             role: 'user',
             text: question,
+            ...(attachments.length ? { attachments } : {}),
             createdAt: Date.now(),
           });
-          const message = chatAnswer(locale, question);
+          const message = attachments.length
+            ? chatAttachmentReply(locale, attachments.map((a) => a.fileName))
+            : chatAnswer(locale, question);
           thread.messages.push(message);
           thread.updatedAt = Date.now();
           return json(res, 200, { threadId: thread.id, message });
+        }
+
+        /* Ratings have nowhere to go without a store, and that is fine: the
+           client never waits on this and never surfaces a failure. Accepting it
+           keeps the shape exercised so the real implementation has something to
+           replace. */
+        if (url === '/api/chat/rate' && req.method === 'POST') {
+          await body(req);
+          return json(res, 200, { ok: true });
         }
 
         if (url === '/api/onboarding/progress') {

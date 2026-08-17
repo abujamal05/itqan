@@ -21,6 +21,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useAuth } from '../state/auth';
+import { useChat } from '../state/chat';
 import { Logo } from '../components/Logo';
 import { PipelineProgress } from '../components/PipelineProgress';
 import { LangToggle, ThemeToggle } from '../components/Controls';
@@ -123,6 +124,7 @@ export function AppLayout() {
   // rather than to a locale-prefixed marketing URL. The account menu still uses
   // it for the "visit the site" item, where leaving the product is deliberate.
   const { t } = useI18n();
+  const { threads } = useChat();
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     try { return localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { return false; }
   });
@@ -191,6 +193,24 @@ export function AppLayout() {
             </NavLink>
           ))}
         </div>
+
+        {/* Saved conversations, the way Claude and ChatGPT list them: newest
+            first, titled by their opening question, no heading needed beyond
+            one quiet word. Hidden entirely when there are none and when the rail
+            is collapsed, because a truncated list of titles in a 64px column is
+            noise rather than navigation. */}
+        {!collapsed && threads.length > 0 && (
+          <div className="recents">
+            <p className="recents__label">{t('nav.recents')}</p>
+            <div className="recents__list">
+              {threads.slice(0, 8).map((thread) => (
+                <NavLink key={thread.id} to={`/chat/${thread.id}`} className="recents__item" title={thread.title}>
+                  <bdi>{thread.title}</bdi>
+                </NavLink>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="spacer" />
 

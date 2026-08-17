@@ -157,6 +157,12 @@ is not ordinary, and it is the thing to implement carefully.
 POST /api/chat/ask     { "threadId": "…" | null, "question": "…" }
                        -> { "threadId": "…", "message": ChatMessage }
 
+                       multipart/form-data when files are attached:
+                       fields `question`, `threadId`, and `files` (repeated)
+
+POST /api/chat/rate    { "threadId": "…", "messageId": "…", "verdict": "up" | "down" }
+                       -> any 2xx. The client never waits on this or shows a failure.
+
 GET  /api/chat/threads             -> ChatThreadSummary[]   (newest first)
 GET  /api/chat/threads/:id         -> ChatThread | 404
 ```
@@ -169,6 +175,9 @@ ChatMessage {
   "jobs": [JobMatch],          // real postings, ATTACHED not described
   "courses": [Course],         // real courses, same
   "suggestions": ["…"],        // follow-up questions, offered as chips
+  "attachments": [             // on the USER's turn: metadata only, echoed back
+    { "id": "…", "fileName": "…", "mimeType": "…", "sizeBytes": 12345 }
+  ],
   "createdAt": 1717171717171
 }
 
@@ -221,6 +230,23 @@ missing.
 **A thread with no messages is a normal answer.** So is an empty
 `GET /api/chat/threads` on a new account. Neither is an error, and the UI tells
 them apart from a failure.
+
+**Attachments are not a second door into the pipeline.** A chat upload arrives as
+`files` on `ask` and comes back as `attachments` (metadata only) on the user's
+turn. It must NOT be treated as the CV or transcript the analysis runs on. That
+route is `POST /api/documents`, and it exists precisely because it has a human
+confirmation screen in the middle of it — the product's first trust moment. A
+file dropped into a conversation that silently became the document the matching
+used would route around the one screen built to be checked. Acknowledge it, say
+what has and has not been done with it, and point at Documents. The dev stub and
+the Vercel handler both answer exactly that way; copy their wording rather than
+inventing a more impressive one. Enforce type and size server side; the composer
+rejects over 5MB first, but that is a courtesy, not a control.
+
+**Ratings are fire and forget.** A thumb is a signal for whoever tunes the
+service, never something a user should wait on or watch fail. Return any 2xx.
+Storing it against the message and the account is enough; nothing in the UI reads
+it back, and the pressed state is client-side for the session only.
 
 **Rate limiting belongs on the server**, per account. The composer has no
 throttle of its own.
@@ -422,7 +448,8 @@ deployment avoids it entirely, and the front end is configured for both
 | `avatarUrl` on `GET /api/profile` | **missing field** |
 | `suggestedRole` on `GET /api/profile` | **missing field** |
 | `phone` through `POST`/`PUT`/`GET /api/profile` | **new field, must persist** |
-| `POST /api/chat/ask` | **missing** — front end complete, stubbed in dev |
+| `POST /api/chat/ask` | **missing** — front end complete, stubbed in dev. Accepts multipart when files are attached |
+| `POST /api/chat/rate` | **missing** — fire and forget, any 2xx |
 | `GET /api/chat/threads` | **missing** — needs storage; Vercel twin answers `[]` |
 | `GET /api/chat/threads/:id` | **missing** — needs storage |
 | all chat routes | one Vercel function, `api/chat/[...path].js` — see the note in §1.4 |

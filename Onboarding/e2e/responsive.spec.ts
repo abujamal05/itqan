@@ -33,34 +33,44 @@ test.describe('marketing site has no horizontal scroll', () => {
 });
 
 /**
- * Never more than one Hud on the chat screen.
+ * How Hud is allowed to appear on the chat screen.
  *
- * A mascot per message is the obvious way to build a chat and the fastest way to
- * make one feel cheap, so the rule is asserted rather than trusted to comments.
- * It is a CEILING, not a quota: zero is fine, which is what a narrow viewport
- * gets mid-conversation because 120px is his floor and a phone has better uses
- * for it.
+ * Two separate rules, both easy to break by accident and neither visible in a
+ * screenshot of a short thread:
+ *
+ *  - the ILLUSTRATED mascot (`.hud`, the animated clip) appears at most once,
+ *    and only on the empty state where it has room for its 120px floor. A
+ *    mascot per message is the obvious way to build a chat and the fastest way
+ *    to make one look cheap.
+ *  - the compact MARK (`.mark`) is the per-turn avatar, exactly one per
+ *    assistant turn and never on the user's own.
  */
-test.describe('the chat screen never shows two Huds', () => {
+test.describe('Hud appears exactly where he is allowed to', () => {
   for (const width of [375, 768, 1280]) {
     test(`at ${width}px, through a whole turn`, async ({ page }) => {
       await login(page, ACCOUNTS.onboarded);
       await page.setViewportSize({ width, height: 900 });
       await page.goto('/app/chat');
-      await expect(page.locator('h1')).toBeVisible();
 
-      const huds = page.locator('.hud');
-      // Empty state: the greeting owns the one instance.
-      expect(await huds.count(), 'on the empty state').toBeLessThanOrEqual(1);
+      const mascot = page.locator('.hud');
+      const marks = page.locator('.mark');
 
-      // Ask, which unmounts the greeting and mounts the header mascot. The
-      // count must not spike during the swap either.
+      // Empty state: the greeting owns the single illustrated instance, and
+      // there are no per-turn avatars yet.
+      await expect(page.locator('.greet')).toBeVisible();
+      expect(await mascot.count(), 'mascots on the empty state').toBe(1);
+      expect(await marks.count(), 'marks on the empty state').toBe(0);
+
       await page.locator('.suggest').first().click();
-      expect(await huds.count(), 'mid turn').toBeLessThanOrEqual(1);
 
-      // And once the answer with its cards has landed.
-      await expect(page.locator('.turn--hud')).toBeVisible({ timeout: 15_000 });
-      expect(await huds.count(), 'after the answer').toBeLessThanOrEqual(1);
+      // The answer, its cards and its avatar.
+      await expect(page.locator('.turn--hud').first()).toBeVisible({ timeout: 15_000 });
+      await expect(page.locator('.acts').first()).toBeVisible({ timeout: 15_000 });
+
+      const hudTurns = await page.locator('.turn--hud').count();
+      expect(await mascot.count(), 'mascots mid conversation').toBe(0);
+      expect(await marks.count(), 'one mark per assistant turn').toBe(hudTurns);
+      expect(await page.locator('.turn--mine .mark').count(), 'no mark on the user turn').toBe(0);
     });
   }
 });

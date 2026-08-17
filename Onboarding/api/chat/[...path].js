@@ -16,7 +16,23 @@
  * so a thread is not stored and history is honestly empty.
  */
 import { COOKIE, LOCALE_COOKIE, json, parseBody, readCookies, readRaw, verify } from '../_lib/auth.js';
-import { chatAnswer } from '../_lib/chat-data.js';
+import { chatAnswer, chatAttachmentReply } from '../_lib/chat-data.js';
+
+/**
+ * Names of the file parts in a multipart body.
+ *
+ * Names only, and no storage: a transcript dropped into a chat must not become
+ * the document the pipeline runs on, because that route has a human confirmation
+ * screen and this one does not.
+ */
+function attachmentNames(raw, contentType) {
+  if (!String(contentType).includes('multipart/form-data')) return [];
+  const boundary = String(contentType).split('boundary=')[1]?.split(';')[0];
+  if (!boundary) return [];
+  return raw.toString('binary').split(`--${boundary}`)
+    .map((part) => /filename="([^"]*)"/.exec(part)?.[1])
+    .filter((name) => !!name);
+}
 
 /**
  * The segment after /api/chat/.
@@ -51,13 +67,28 @@ export default async function handler(req, res) {
 
   if (which === 'ask') {
     if (req.method !== 'POST') return json(res, 405, { error: 'method_not_allowed' });
-    const sent = parseBody(await readRaw(req), req.headers['content-type'] ?? '');
+    const contentType = req.headers['content-type'] ?? '';
+    const raw = await readRaw(req);
+    const sent = parseBody(raw, contentType);
+    const names = attachmentNames(raw, contentType);
     const question = String(sent.question ?? '').trim();
-    if (!question) return json(res, 400, { error: 'empty_question' });
+    // A question OR a file is enough; requiring both would make "read this"
+    // impossible to say.
+    if (!question && !names.length) return json(res, 400, { error: 'empty_question' });
 
-    const message = chatAnswer(locale, question);
+    const message = names.length
+      ? chatAttachmentReply(locale, names)
+      : chatAnswer(locale, question);
     const threadId = String(sent.threadId ?? '') || `t${Date.now().toString(36)}`;
     return json(res, 200, { threadId, message });
+  }
+
+  /* Ratings have nowhere to go without a store. Accepting them keeps the shape
+     exercised, and the client never waits on this call or surfaces its failure. */
+  if (which === 'rate') {
+    if (req.method !== 'POST') return json(res, 405, { error: 'method_not_allowed' });
+    await readRaw(req);
+    return json(res, 200, { ok: true });
   }
 
   return json(res, 404, { error: 'no_route' });

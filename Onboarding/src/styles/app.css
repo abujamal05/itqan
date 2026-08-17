@@ -976,147 +976,291 @@
 .profile__icon { vertical-align: -3px; margin-inline-end: var(--space-2); color: var(--color-accent-ink); }
 
 /* ------------------------------------------------------------ CHAT / HUD -- */
-/* A conversation. The one thing it does differently from every other assistant
-   is that nothing actionable lives in the prose: a job or a course is handed
-   over as the same card Jobs and Courses render, so it arrives with its own why,
-   source and confidence. Styling follows from that — Hud's turn is quiet and
-   typographic, and the cards are the weight on the page. */
+/* A conversation, kept deliberately bare. The only weight on this screen belongs
+   to the cards, because those are the part carrying claims; everything else —
+   avatar, actions, chips, composer — stays quiet enough to disappear while
+   somebody is reading. Almost nothing here has a label. */
 
-.chat { display: flex; flex-direction: column; gap: var(--space-6); }
-.chat__head {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  gap: var(--space-4); flex-wrap: wrap;
+.chat {
+  display: flex; flex-direction: column; gap: var(--space-6);
+  /* Narrower than the rest of the app on purpose: this is prose, and 74rem of
+     it is unreadable. Card grids inside still measure against the container. */
+  width: 100%; max-inline-size: 48rem; margin-inline: auto;
 }
-.chat__headText { flex: 1 1 16rem; min-inline-size: 0; }
-
-/* Hud's home once a thread has started. Out of the scroll, so he is present
-   without competing with the reading, and never below his 120px floor: under
-   34rem of content column he steps aside rather than shrinking. */
-.chat__hud { display: none; flex: 0 0 auto; }
-@container main (min-width: 34rem) { .chat__hud { display: block; } }
 
 /* ------------------------------------------------------------- empty state */
 
 .greet {
   display: flex; flex-direction: column; align-items: center;
-  gap: var(--space-4); text-align: center;
-  padding-block: var(--space-8);
+  gap: var(--space-5); text-align: center;
+  padding-block: var(--space-12) var(--space-6);
 }
-.greet__line {
-  font-size: var(--text-lg); color: var(--color-text);
-  max-inline-size: var(--measure-narrow);
+.greet__title {
+  font-size: var(--text-3xl); font-weight: var(--weight-semibold);
+  letter-spacing: -0.01em; color: var(--color-text);
 }
+[dir="rtl"] .greet__title { letter-spacing: normal; }
 
 /* ----------------------------------------------------------------- thread */
 
 .thread {
   list-style: none; margin: 0; padding: 0;
   display: flex; flex-direction: column; gap: var(--space-6);
+
+  /* Room to scroll the newest turn to the TOP.
+     Without it the scroll happens at the moment the turn arrives, when it is
+     still an empty paragraph with no cards under it — so the page has nothing
+     to scroll into and the answer settles halfway down, which is the exact
+     problem this screen is trying to avoid. Reserving the space means the first
+     line lands at the top and the text then grows downward into room that is
+     already there, with no second scroll to jerk the reader.
+     The trailing whitespace under a short answer is what every assistant shows
+     for the same reason. */
+  padding-block-end: 55vh;
 }
 
-.turn { display: flex; flex-direction: column; gap: var(--space-4); }
-.turn--mine { align-items: flex-end; }
+/* Room above each turn so scrolling one to the top does not butt it against the
+   viewport edge. This is what makes "scroll to the START of the answer" read as
+   deliberate rather than as an overshoot. */
+.turn { scroll-margin-block-start: var(--space-6); }
+.turn--mine { display: flex; justify-content: flex-end; }
 
-/* The user's own turn: short, quoted, on the reading-end side. A filled bubble
-   suits it because it is a fragment rather than a passage. */
+/* The user's turn: a fragment, so a filled bubble suits it. */
 .bubble {
-  max-inline-size: min(42ch, 100%);
+  max-inline-size: min(44ch, 100%);
   padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-lg);
-  border-end-end-radius: var(--radius-sm);
-  background: var(--color-surface-sunken);
-  color: var(--color-text);
+  border-radius: var(--radius-lg); border-end-end-radius: var(--radius-sm);
+  background: var(--color-surface-sunken); color: var(--color-text);
+  display: flex; flex-direction: column; gap: var(--space-2);
+}
+.bubble__text { overflow-wrap: anywhere; }
+
+/* Hud's turn: the mark, then the answer. NO bubble — several sentences in a
+   tinted balloon read worse than the same sentences on the page. */
+.turn--hud { display: flex; align-items: flex-start; gap: var(--space-3); }
+.turn__body { flex: 1 1 auto; min-inline-size: 0; display: flex; flex-direction: column; gap: var(--space-4); }
+
+.mark {
+  flex: 0 0 auto; display: block;
+  /* Optical alignment with the first line of text rather than its box. */
+  margin-block-start: 2px;
+}
+/* Still when idle. While the text arrives it breathes, which is the whole of
+   "he moves when he writes" — a 24px mark does not need more than that, and the
+   illustrated mascot keeps its 120px floor in the greeting instead. */
+.mark[data-writing] { animation: mark-bob 1.4s var(--ease-in-out) infinite; }
+@keyframes mark-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(calc(-3px * var(--motion-scale))); }
+}
+@media (prefers-reduced-motion: reduce) { .mark[data-writing] { animation: none; } }
+
+.said { max-inline-size: var(--measure); color: var(--color-text); white-space: pre-line; }
+
+/* The writing caret. Sits on the text baseline and blinks only while writing. */
+.caret {
+  display: inline-block; inline-size: 2px; block-size: 1em;
+  margin-inline-start: 2px; vertical-align: -2px;
+  background: var(--color-accent);
+  animation: caret-blink 1s steps(2, start) infinite;
+}
+@keyframes caret-blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .caret { animation: none; } }
+
+/* --------------------------------------------------------------- clips -- */
+
+.clips { list-style: none; margin: 0 0 var(--space-2); padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.clip {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  font-size: var(--text-sm); color: var(--color-text-muted);
   overflow-wrap: anywhere;
 }
-
-/* Hud's turn: NO bubble. Several sentences in a tinted balloon read worse than
-   the same sentences on the page, and the cards below need the page's weight
-   rather than a container competing with them. */
-.said {
-  max-inline-size: var(--measure);
-  color: var(--color-text);
-  white-space: pre-line;
+.clip--pending {
+  padding-block: var(--space-1); padding-inline: var(--space-3);
+  border: 1px solid var(--color-border); border-radius: var(--radius-full);
+  background: var(--color-surface); color: var(--color-text);
 }
-
-.turn__cardsLabel {
-  margin-block-end: var(--space-3);
-  font-size: var(--text-sm); font-weight: var(--weight-medium);
-  color: var(--color-text-muted);
+.clip__x {
+  display: grid; place-items: center; inline-size: 20px; block-size: 20px;
+  background: none; border: 0;
+  border-radius: var(--radius-full); color: var(--color-text-muted); cursor: pointer;
 }
-/* Two across when the column can hold them, measured against the content column
-   rather than the viewport, because the sidebar makes the viewport a lie. */
-.grid--cards { grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
-@container main (min-width: 46rem) { .grid--cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.clip__x:hover { background: var(--color-surface-sunken); color: var(--color-text); }
 
-/* ------------------------------------------------------------ suggestions */
+/* ---------------------------------------------------------------- cards -- */
 
-.suggests__label {
-  margin-block-end: var(--space-2);
-  font-size: var(--text-sm); color: var(--color-text-muted);
-}
-.suggests__row { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.suggests__row--center { justify-content: center; }
+/* Compact in chat: same components, same evidence, less padding and a tighter
+   type scale, so two of them read as an attachment to a sentence rather than as
+   a section of a dashboard. Nothing is removed — the why, the source and the
+   confidence badge are the reason these are cards and not prose. */
+.grid--chat { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); }
+@container main (min-width: 40rem) { .grid--chat { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.grid--chat .card { padding: var(--space-4); border-radius: var(--radius-md); }
+.grid--chat .match__title { font-size: var(--text-base); }
+.grid--chat .why { padding: var(--space-3); }
+.grid--chat .why p:last-child, .grid--chat .source { font-size: var(--text-xs); }
+.grid--chat .btn { font-size: var(--text-sm); padding-inline: var(--space-4); }
+.grid--chat .price { font-size: var(--text-lg); }
 
-/* Real next questions, for a user who cannot yet phrase one. Pill shaped so they
-   read as things to say rather than as buttons that do something. */
+/* ---------------------------------------------------------- suggestions -- */
+
+.suggests { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.suggests--center { justify-content: center; }
+/* Small, quiet, and unlabelled: real next questions for someone who cannot yet
+   phrase one, not a menu. */
 .suggest {
-  min-block-size: 44px;
-  padding-block: var(--space-2); padding-inline: var(--space-4);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-full);
+  min-block-size: 36px;
+  padding-block: var(--space-2); padding-inline: var(--space-3);
+  border: 1px solid var(--color-border); border-radius: var(--radius-full);
   background: var(--color-surface);
   font: inherit; font-size: var(--text-sm); color: var(--color-text);
   text-align: start; cursor: pointer;
   transition:
     background var(--duration-fast) var(--ease-hover),
-    border-color var(--duration-fast) var(--ease-hover),
-    transform var(--duration-fast) var(--ease-out);
+    border-color var(--duration-fast) var(--ease-hover);
 }
-.suggest:hover:not(:disabled) {
-  background: var(--color-accent-tint);
-  border-color: var(--color-border-accent);
-  transform: translateY(calc(-1px * var(--motion-scale)));
-}
+.suggest:hover:not(:disabled) { background: var(--color-accent-tint); border-color: var(--color-border-accent); }
 .suggest:disabled { opacity: 0.5; cursor: default; }
 
-/* ---------------------------------------------------------------- pending */
+/* -------------------------------------------------------------- actions -- */
 
-.thinking__line { margin: 0; color: var(--color-text-muted); }
+/* Icon only. Three captions under every answer would out-weigh the answer, and
+   these four icons are the convention everywhere. Each keeps an aria-label. */
+/* 12px apart, which is not a spacing preference: it is exactly the room the
+   invisible 44px hit areas below need in order to sit side by side without
+   overlapping. Tighter, and a thumb aiming at "copy" could land on "good". */
+.acts { display: flex; gap: var(--space-3); margin-inline-start: calc(-1 * var(--space-2)); }
+.act {
+  position: relative;
+  display: grid; place-items: center; inline-size: 32px; block-size: 32px;
+  /* Explicit, both of them. A <button> with no background paints the UA's
+     `buttonface` grey — which is nearly invisible on paper and actively wrong on
+     the dark canvas, where it put light-grey chips under every answer. It was
+     missed once because the action row sat below the fold in the screenshot. */
+  background: none; border: 0;
+  border-radius: var(--radius-sm); color: var(--color-text-muted); cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-hover), color var(--duration-fast) var(--ease-hover);
+}
+/* The control LOOKS 32px and is TOUCHED at 44px.
+   Every assistant draws these small, and the product floors touch targets at
+   44px; both are right, and this is how to keep both. The visible box stays
+   quiet under the answer while the tappable one clears the floor. */
+.act::before {
+  content: ''; position: absolute; inset: 50% auto auto 50%;
+  inline-size: 44px; block-size: 44px; transform: translate(-50%, -50%);
+}
+.act:hover:not(:disabled) { background: var(--color-surface-sunken); color: var(--color-text); }
+.act[aria-pressed="true"] { color: var(--color-accent-ink); background: var(--color-accent-tint); }
+.act:disabled { opacity: 0.4; cursor: default; }
+
+/* --------------------------------------------------------------- waiting -- */
+
+.waiting { display: flex; align-items: center; gap: var(--space-3); color: var(--color-text-muted); font-size: var(--text-sm); }
+.waiting__dots { display: inline-flex; gap: 3px; }
+.waiting__dots i { inline-size: 5px; block-size: 5px; border-radius: var(--radius-full); background: currentColor; animation: dot-pulse 1.2s ease-in-out infinite; }
+.waiting__dots i:nth-child(2) { animation-delay: 0.15s; }
+.waiting__dots i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes dot-pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .waiting__dots i { animation: none; opacity: 0.7; } }
 .chat__status:empty { display: none; }
 
-/* --------------------------------------------------------------- composer */
+/* -------------------------------------------------------------- composer -- */
 
-/* Sticky inside the content column, NOT fixed to the viewport. Anything inside
-   `.main` is trapped at z-index 1 beneath the sidebar's 200 (see the stacking
-   note further up this file), so a fixed composer would need a portal this
-   codebase does not have. Sticky avoids the question entirely. */
+/* Sticky inside the content column, NOT fixed. Anything inside `.main` is
+   trapped at z-index 1 beneath the sidebar's 200 (see the stacking note above),
+   so a fixed composer would need a portal this codebase does not have. */
 .composer {
   position: sticky; inset-block-end: 0; z-index: 1;
   margin-block-start: auto;
   padding-block-start: var(--space-4);
   background: var(--color-bg);
-  border-block-start: 1px solid var(--color-border);
+  /* So the fade below can sit above the composer's own ground. */
+  isolation: isolate;
 
-  /* Lifting the FIELD clear of the fixed tab bar with padding, rather than
-     offsetting the whole composer with inset-block-end.
-     Offsetting was tried first and is wrong twice over: it leaves a live gap
-     beneath the composer that page content scrolls through, and it has to know
-     the tab bar's exact height to line up. It does not — the first attempt
-     assumed 56px from .tabbar__item's min-height and the bar actually measures
-     67px, so the field sat 11px underneath it.
-     This value is a CEILING on that height, not a guess at it. Too much only
-     lifts the field slightly higher than needed; too little buries it. The
-     composer's own ground still reaches the viewport edge, and the tab bar
-     paints over the surplus at --z-sticky. */
+  /* Lifting the FIELD clear of the fixed tab bar with padding rather than an
+     inset offset. Offsetting was tried and is wrong twice over: it leaves a live
+     gap beneath the composer that page content scrolls through, and it has to
+     know the tab bar's exact height — the first attempt assumed 56px from
+     .tabbar__item's min-height and the bar measures 67px, so the field sat 11px
+     underneath it. This is a CEILING on that height, not a guess at it. */
   padding-block-end: calc(var(--space-20) + env(safe-area-inset-bottom));
 }
 @media (min-width: 900px) { .composer { padding-block-end: var(--space-4); } }
 
-.composer__label {
-  display: block; margin-block-end: var(--space-2);
-  font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--color-text-muted);
+/* Content passing behind the composer fades out instead of being sliced.
+   A hard edge across the middle of a sentence reads as a rendering fault; the
+   fade reads as depth, and it is what both of the assistants this screen is
+   modelled on do. Purely decorative, so it never eats a pointer event. */
+.composer::before {
+  content: ''; position: absolute; inset-inline: 0;
+  inset-block-end: 100%; block-size: var(--space-8);
+  background: linear-gradient(to bottom, transparent, var(--color-bg));
+  pointer-events: none;
 }
-.composer__row { display: flex; align-items: center; gap: var(--space-2); }
-.composer__input { flex: 1 1 auto; min-inline-size: 0; }
-.composer__send { flex: 0 0 auto; min-inline-size: 44px; min-block-size: 44px; justify-content: center; }
-[dir='rtl'] .composer__arrow { transform: scaleX(-1); }
+
+.composer__note { font-size: var(--text-sm); color: var(--color-danger); margin-block-end: var(--space-2); }
+
+.ask {
+  border: 1px solid var(--color-border); border-radius: var(--radius-lg);
+  background: var(--color-surface); box-shadow: var(--shadow-sm);
+  padding: var(--space-3);
+  transition: border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
+}
+.ask:focus-within { border-color: var(--color-border-strong); box-shadow: var(--shadow-md); }
+
+/* Grows to a few lines then scrolls. `field-sizing` does this natively where it
+   exists; the max-block-size holds everywhere else so a long paste cannot push
+   the send button off screen. */
+.ask__field {
+  inline-size: 100%; border: 0; background: none; resize: none;
+  font: inherit; color: var(--color-text);
+  padding: var(--space-2); min-block-size: 44px; max-block-size: 40vh;
+  field-sizing: content;
+}
+.ask__field:focus { outline: none; }
+.ask__field::placeholder { color: var(--color-text-muted); }
+
+.ask__row { display: flex; align-items: center; gap: var(--space-2); }
+.ask__row .spacer { flex: 1 1 auto; }
+.act--ask { inline-size: 36px; block-size: 36px; }
+
+.ask__send {
+  position: relative;
+  display: grid; place-items: center; inline-size: 36px; block-size: 36px;
+  border-radius: var(--radius-full); border: 0;
+  background: var(--color-accent); color: var(--color-text-on-gold);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-hover), opacity var(--duration-fast) var(--ease-hover);
+}
+.ask__send:hover:not(:disabled) { background: var(--color-accent-hover); }
+.ask__send:disabled { opacity: 0.35; cursor: default; }
+/* Same trick as .act: drawn at 36px, tapped at 44px. */
+.ask__send::before {
+  content: ''; position: absolute; inset: 50% auto auto 50%;
+  inline-size: 44px; block-size: 44px; transform: translate(-50%, -50%);
+}
+/* The arrow points up, so it is direction-neutral and needs no RTL mirror. */
+
+.composer__fineprint {
+  margin-block-start: var(--space-2);
+  text-align: center; font-size: var(--text-xs); color: var(--color-text-muted);
+}
+
+/* --------------------------------------------------------------- recents -- */
+
+.recents { display: flex; flex-direction: column; gap: var(--space-1); padding-block-start: var(--space-4); min-block-size: 0; }
+.recents__label {
+  padding-inline: var(--space-3); font-size: var(--text-xs);
+  font-weight: var(--weight-medium); color: var(--color-text-muted);
+}
+.recents__list { display: flex; flex-direction: column; overflow-y: auto; min-block-size: 0; }
+.recents__item {
+  display: block; min-block-size: 36px; padding-block: var(--space-2); padding-inline: var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm); color: var(--color-text-muted);
+  /* One line each. A wrapped title turns the list into a wall. */
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: background var(--duration-fast) var(--ease-hover), color var(--duration-fast) var(--ease-hover);
+}
+.recents__item:hover { background: var(--color-surface-sunken); color: var(--color-text); }
+.recents__item[aria-current="page"] { background: var(--color-accent-tint); color: var(--color-text); }
