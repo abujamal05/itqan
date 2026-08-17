@@ -1,8 +1,18 @@
 ---
 import Hud from '../Hud.astro';
 import { t, type Locale } from '../../i18n';
-import { formEndpoints, appUrl } from '../../config';
+import { formEndpoints } from '../../config';
 import '../../styles/forms.css';
+
+/* Signing up now lands on VERIFICATION, not on the app.
+ *
+ * A new account is signed in but unproved, and the API refuses uploads,
+ * analysis and profile writes until a code is accepted — so sending someone to
+ * /app/ would drop them into a flow that cannot progress, with nothing on
+ * screen explaining why. `appUrl` (/api/handoff) would now redirect here
+ * anyway; going straight there saves a round trip for what is, at signup, the
+ * only possible outcome. Log in still uses `appUrl`, because a returning user
+ * may well be verified already and handoff is what knows. */
 
 interface Props {
   locale: Locale;
@@ -25,7 +35,7 @@ const base = `/${locale}`;
       action={formEndpoints.signup}
       novalidate
       data-server-error={s.signup.serverError}
-      data-success-url={appUrl}
+      data-success-url={`${base}/verify-email/`}
     >
       <div class="form-summary" role="alert" tabindex="-1" hidden>
         <Hud pose="error" size="sm" />

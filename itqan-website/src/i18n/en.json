@@ -369,6 +369,34 @@
     "expiredBody": "Reset links stop working after a short time, and after they have been used once. Ask for a new one and it will arrive in a moment.",
     "expiredCta": "Send a new link"
   },
+  "verify": {
+    "title": "Verify your email",
+    "metaDescription": "Enter the code we sent to confirm your email address.",
+    "heading": "Check your email",
+    "sub": "We sent a 6-digit code to {email}. Enter it below to finish setting up your account.",
+    "subNoEmail": "We sent a 6-digit code to the address you signed up with. Enter it below to finish setting up your account.",
+    "submit": "Verify my email",
+    "summaryHeading": "Check the form",
+    "serverError": "Something went wrong. Try again in a moment.",
+    "code": {
+      "label": "Verification code",
+      "hint": "Six digits, from the email we just sent.",
+      "errorRequired": "Enter the 6-digit code.",
+      "errorFormat": "The code is 6 digits.",
+      "errorWrong": "That code is not right. {n} attempts left.",
+      "errorWrongOne": "That code is not right. 1 attempt left."
+    },
+    "spam": "It can take a minute. Look in your spam folder if it does not arrive.",
+    "resend": "Send me a new code",
+    "resendSent": "A new code is on its way. The previous one no longer works.",
+    "doneHeading": "You're verified",
+    "doneBody": "Your email address is confirmed. You can pick up where you left off.",
+    "doneCta": "Continue",
+    "expiredHeading": "That code has expired",
+    "expiredBody": "Codes last a few minutes, and stop working after five wrong attempts. Ask for a new one and it will arrive in a moment.",
+    "expiredCta": "Send a new code",
+    "back": "Back to log in"
+  },
   "privacy": {
     "eyebrow": "Your data",
     "title": "Privacy",
