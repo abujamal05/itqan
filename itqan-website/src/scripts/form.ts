@@ -36,6 +36,14 @@ function validate(field: HTMLElement): string | null {
   if (value && field.dataset.check === 'password' && !isStrongPassword(value)) {
     return field.dataset.msgWeak ?? null;
   }
+  // A verification code, and this check earns its place rather than being
+  // tidiness: the server allows FIVE attempts before the code dies, so sending
+  // an obviously impossible value would spend a scarce resource to learn
+  // something the browser already knew. Spaces are stripped first, because a
+  // code pasted out of an email often arrives with them.
+  if (value && field.dataset.check === 'digits' && !/^\d+$/.test(value.replace(/\s/g, ''))) {
+    return field.dataset.msgFormat ?? null;
+  }
   return null;
 }
 
@@ -153,8 +161,20 @@ export function initForm(form: HTMLFormElement): void {
          in place rather than navigating (password recovery shows "check your
          email" beside the address just typed), and a form with no
          data-success-url is exactly that case. */
+      /* The parsed body travels with it, because a status code is not always
+         the whole answer: email verification returns how many attempts are left
+         with its 422, and a page that could only see "422" would have to say
+         "wrong code" without saying the thing the person actually needs to know.
+         Parsed defensively — a non-JSON error page must not turn a handled
+         rejection into an unhandled throw. */
+      let body: unknown;
+      try {
+        body = await response.clone().json();
+      } catch {
+        body = undefined;
+      }
       form.dispatchEvent(new CustomEvent('itqan:submitted', {
-        detail: { ok: response.ok, status: response.status },
+        detail: { ok: response.ok, status: response.status, body },
       }));
       if (response.ok) {
         if (form.dataset.successUrl) window.location.assign(form.dataset.successUrl);

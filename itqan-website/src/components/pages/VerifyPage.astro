@@ -1,0 +1,409 @@
+---
+/**
+ * Email verification, by the code sent at signup.
+ *
+ * ONE route, three panels, chosen by what the server says — the same shape as
+ * `ForgotPage.astro`, which this deliberately mirrors so the auth screens read
+ * as one flow rather than three inventions:
+ *
+ *   /verify-email/     enter the 6-digit code   (with "send me a new one")
+ *   (on success)       verified, continue        in place
+ *   (on 410)           this code is over        ask for a new one
+ *
+ * WHAT ENFORCES THIS IS NOT THIS PAGE. An unverified account is refused by the
+ * API itself — `require_verified_user` answers 403 on uploads, analysis and
+ * profile writes — so closing this tab and typing the app's URL gets a person
+ * nowhere. This screen exists to tell them what to do, not to stop them; a
+ * front end that is the only thing standing between a user and a gated action
+ * is a suggestion, and this project has measured what suggestions are worth.
+ *
+ * NO EMAIL FIELD, and that is the difference from recovery. The person already
+ * has a session — signup signed them in — so the code is checked against THEIR
+ * account and a new one is sent to THEIR stored address. Nothing here accepts an
+ * address, which is why this flow needs none of the anti-enumeration care that
+ * shapes the forgot-password endpoint.
+ */
+import Hud from '../Hud.astro';
+import { t, type Locale } from '../../i18n';
+import '../../styles/forms.css';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const s = t(locale);
+const base = `/${locale}`;
+---
+
+<div class="container auth">
+  {/* Enter the code. */}
+  <section class="auth__panel" data-panel="code">
+    <div class="auth__figure">
+      <Hud pose="waving" size="md" loop />
+    </div>
+
+    <div class="auth__body">
+      <header class="page-head">
+        <h1>{s.verify.heading}</h1>
+        {/* Filled in with the real address by the script below once the session
+            answers. Starts as the address-less wording so it is never wrong,
+            only less specific — a flash of a literal "{email}" would be worse,
+            and someone on a slow connection would see it. */}
+        <p class="auth__sub" data-sub data-with-email={s.verify.sub}>{s.verify.subNoEmail}</p>
+      </header>
+
+      <form
+        class="form-card auth-form"
+        id="verify-form"
+        method="post"
+        action="/api/auth/verify-email"
+        novalidate
+        data-server-error={s.verify.serverError}
+        data-msg-wrong={s.verify.code.errorWrong}
+        data-msg-wrong-one={s.verify.code.errorWrongOne}
+      >
+        <div class="form-summary" role="alert" tabindex="-1" hidden>
+          <Hud pose="error" size="sm" />
+          <div>
+            <p class="form-summary__heading">{s.verify.summaryHeading}</p>
+            <ul class="form-summary__list"></ul>
+          </div>
+        </div>
+
+        <div
+          class="field"
+          data-check="digits"
+          data-msg-required={s.verify.code.errorRequired}
+          data-msg-format={s.verify.code.errorFormat}
+          data-msg-minlength={s.verify.code.errorFormat}
+        >
+          <label for="ve-code">{s.verify.code.label}</label>
+          <span class="field__hint">{s.verify.code.hint}</span>
+          <div class="field__control">
+            {/* `one-time-code` is what makes a phone offer the code straight
+                from the mail app, and `inputmode="numeric"` brings up the digit
+                keypad. `dir="ltr"` because a number is read left to right in
+                both languages. */}
+            <input
+              id="ve-code"
+              name="code"
+              type="text"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              pattern="[0-9]*"
+              maxlength="6"
+              minlength="6"
+              dir="ltr"
+              class="code-input"
+              required
+              aria-describedby="ve-code-error"
+            />
+            <span class="field__check" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"></path></svg>
+            </span>
+          </div>
+          <p class="field__error" id="ve-code-error" hidden>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.5" r="0.5" fill="currentColor"></circle></svg>
+            <span class="field__error-text"></span>
+          </p>
+        </div>
+
+        <button class="button button--primary form-submit" type="submit">
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="form-submit__label">{s.verify.submit}</span>
+        </button>
+      </form>
+
+      <div class="stack resend">
+        <p class="auth__hint">{s.verify.spam}</p>
+        {/* A button, not a link: it performs an action and does not navigate. */}
+        <button class="button button--ghost" type="button" data-resend>
+          {s.verify.resend}
+        </button>
+        <p class="auth__hint" role="status" aria-live="polite"
+           data-resend-status data-sent={s.verify.resendSent}></p>
+      </div>
+
+      <p class="auth__alt">
+        <a href={`${base}/login/`}>{s.verify.back}</a>
+      </p>
+    </div>
+  </section>
+
+  {/* Verified. The one good moment in this flow, so it takes the warm ground
+      the design system reserves for reassurance — the same treatment the
+      "check your email" panel gets on the recovery page.
+      `waving`, not `celebrating`: the celebrating assets exist in
+      public/mascot/ but the pose is not in Hud's exported union, and widening a
+      shared component's public type as a side effect of a signup screen is not
+      this change's business. */}
+  <section class="auth__panel" data-panel="done" hidden>
+    <div class="auth__figure">
+      <Hud pose="waving" size="md" loop />
+    </div>
+
+    <div class="auth__body">
+      <header class="page-head">
+        <h1>{s.verify.doneHeading}</h1>
+      </header>
+      <div class="form-card form-card--warm" role="status" aria-live="polite">
+        <div class="stack">
+          <p>{s.verify.doneBody}</p>
+          <div class="row">
+            {/* /api/handoff, not /app/ — it reads the session and decides where
+                the person belongs, so this link cannot get out of step with the
+                gate. */}
+            <a class="button button--primary" href="/api/handoff">{s.verify.doneCta}</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* The code is over — expired, or five wrong attempts. Its own panel because
+      retrying is not the action any more; asking for a new code is. */}
+  <section class="auth__panel" data-panel="expired" hidden>
+    <div class="auth__figure">
+      <Hud pose="error" size="md" loop />
+    </div>
+
+    <div class="auth__body">
+      <header class="page-head">
+        <h1>{s.verify.expiredHeading}</h1>
+      </header>
+      <div class="form-card">
+        <div class="stack">
+          <p>{s.verify.expiredBody}</p>
+          <div class="row">
+            <button class="button button--primary" type="button" data-resend data-back-to-code>
+              {s.verify.expiredCta}
+            </button>
+          </div>
+        </div>
+      </div>
+      <p class="auth__alt">
+        <a href={`${base}/login/`}>{s.verify.back}</a>
+      </p>
+    </div>
+  </section>
+</div>
+
+<script>
+  import { initForm } from '../../scripts/form';
+
+  document
+    .querySelectorAll<HTMLFormElement>('form.form-card')
+    .forEach((form) => initForm(form));
+
+  const panels = document.querySelectorAll<HTMLElement>('[data-panel]');
+  const show = (name: string) => {
+    panels.forEach((p) => { p.hidden = p.dataset.panel !== name; });
+  };
+
+  const form = document.getElementById('verify-form') as HTMLFormElement | null;
+  const field = form?.querySelector<HTMLElement>('.field') ?? null;
+  const errorBox = field?.querySelector<HTMLElement>('.field__error') ?? null;
+  const errorText = field?.querySelector<HTMLElement>('.field__error-text') ?? null;
+
+  /* The wording for a wrong code, with the attempts the server reported. Held
+     here as templates so the count can be interpolated without the page owning
+     a second copy of the sentence. */
+  const WRONG = form?.dataset.msgWrong ?? '';
+  const WRONG_ONE = form?.dataset.msgWrongOne ?? '';
+
+  /**
+   * Who is this, and are they already done?
+   *
+   * Three answers, and each needs a different screen:
+   *   no session      — they cannot verify anything; send them to log in.
+   *   verified        — they came back to a page they no longer need.
+   *   signed in only  — the normal case: show the code form, with their address.
+   */
+  (async () => {
+    try {
+      const res = await fetch('/api/session', { credentials: 'same-origin' });
+      if (res.status === 401) {
+        window.location.assign(document.documentElement.lang === 'ar'
+          ? '/ar/login/' : '/en/login/');
+        return;
+      }
+      const data = await res.json();
+      if (data?.user?.emailVerified) { show('done'); return; }
+
+      const sub = document.querySelector<HTMLElement>('[data-sub]');
+      const template = sub?.dataset.withEmail;
+      if (sub && template && data?.user?.email) {
+        sub.textContent = template.replace('{email}', data.user.email);
+      }
+    } catch {
+      /* Offline or the API is down. Leave the form up: it is the screen they
+         need, and its own submit will report the failure properly. */
+    }
+  })();
+
+  /**
+   * The outcome of a code submission. Three server answers, three behaviours:
+   *
+   *   200  verified            -> the done panel
+   *   410  the code is over    -> the expired panel, which offers a new one
+   *   422  wrong, but alive    -> a message under the field, with attempts left
+   *
+   * 422 stays on this panel deliberately. A wrong code is a typo, and swapping
+   * the screen for a typo loses the field they are working in.
+   */
+  form?.addEventListener('itqan:submitted', (async (e: CustomEvent<{ ok: boolean; status: number; body?: unknown }>) => {
+    if (e.detail.ok) { show('done'); return; }
+    if (e.detail.status === 410) { show('expired'); return; }
+    if (e.detail.status === 422) {
+      const remaining = (e.detail.body as { attemptsRemaining?: number } | undefined)
+        ?.attemptsRemaining;
+      const message = remaining === 1
+        ? WRONG_ONE
+        : WRONG.replace('{n}', String(remaining ?? ''));
+      if (field && errorBox && errorText && message) {
+        field.dataset.state = 'error';
+        errorText.textContent = message;
+        errorBox.hidden = false;
+      }
+    }
+  }) as EventListener);
+
+  /**
+   * Resend, from either panel.
+   *
+   * Always reports success, because the endpoint always answers 200 — including
+   * when it is rate limited. That is deliberate on the server, and repeating it
+   * here keeps the two consistent: a person hammering the button learns nothing
+   * either way, and sees the same reassurance.
+   */
+  const status = document.querySelector<HTMLElement>('[data-resend-status]');
+  document.querySelectorAll<HTMLButtonElement>('[data-resend]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      button.disabled = true;
+      try {
+        await fetch('/api/auth/resend-verification', {
+          method: 'POST', credentials: 'same-origin',
+        });
+      } catch { /* reported by the message below either way */ }
+
+      if (button.hasAttribute('data-back-to-code')) show('code');
+      if (status) status.textContent = status.dataset.sent ?? '';
+      /* The old code stopped working the moment a new one was issued, so a
+         stale error under the field would now be about a code that no longer
+         exists. */
+      if (errorBox) errorBox.hidden = true;
+      if (field) field.dataset.state = '';
+      const input = form?.querySelector<HTMLInputElement>('input[name="code"]');
+      if (input) { input.value = ''; input.focus(); }
+
+      /* Re-enabled after a beat rather than immediately: it stops a
+         double-click sending two codes, where the second silently invalidates
+         the first one the person is already reading. */
+      window.setTimeout(() => { button.disabled = false; }, 3000);
+    });
+  });
+</script>
+
+<style>
+  .auth {
+    padding-block-end: var(--space-20);
+  }
+
+  /* `:not([hidden])` is load-bearing here for the same reason it is on the
+     recovery page: `[hidden] { display: none }` carries almost no specificity,
+     so a bare display rule on the panel silently renders all three at once. */
+  .auth__panel[data-panel]:not([hidden]) {
+    display: flex;
+    gap: var(--space-12);
+    align-items: center;
+    justify-content: center;
+  }
+
+  .auth__figure {
+    order: -1;
+    flex: 0 0 auto;
+  }
+
+  .auth__body {
+    flex: 0 1 32rem;
+    inline-size: 100%;
+  }
+
+  .page-head {
+    padding-block: var(--space-16) var(--space-6);
+  }
+
+  .page-head h1 {
+    font-size: var(--text-4xl);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-tight);
+  }
+
+  .auth__sub {
+    margin-block-start: var(--space-3);
+    color: var(--color-text-muted);
+    line-height: 1.6;
+  }
+
+  .auth__alt {
+    margin-block-start: var(--space-6);
+  }
+
+  .auth__hint {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+
+  .resend {
+    margin-block-start: var(--space-5);
+    align-items: flex-start;
+  }
+
+  .form-card--warm {
+    background-color: var(--color-surface-warm);
+    border-color: var(--color-border-accent);
+  }
+
+  /* The code itself: wide-tracked and tabular so six digits are read as six
+     separate characters rather than as a number. `ch` sizing keeps the box the
+     width of the content instead of stretching across the card, which is what
+     tells the eye how many digits are expected. */
+  .code-input {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: var(--text-2xl);
+    letter-spacing: 0.4em;
+    text-align: center;
+    inline-size: 9ch;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  @media (max-width: 51.99rem) {
+    .auth__panel[data-panel] {
+      flex-direction: column;
+      align-items: stretch;
+      gap: var(--space-8);
+    }
+
+    .auth__figure {
+      order: 0;
+      align-self: center;
+    }
+
+    .page-head {
+      padding-block: var(--space-10) var(--space-5);
+    }
+  }
+</style>

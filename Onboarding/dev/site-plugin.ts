@@ -31,7 +31,8 @@ const LOCALE_COOKIE = 'itqan_locale';
 
 /* ------------------------------------------------------------- accounts -- */
 
-interface Account { id: string; fullName: string; email: string; password: string; onboarded: boolean }
+interface Account { id: string; fullName: string; email: string; password: string;
+                    onboarded: boolean; emailVerified: boolean }
 
 /**
  * Seeded test accounts live HERE, on the server side, and are never rendered
@@ -48,8 +49,8 @@ const accounts: Account[] = [
    * and the profile screen showed its empty state even afterwards because
    * nothing seeded `profiles`.
    */
-  { id: 'u_maryam', fullName: 'Maryam Al Balushi', email: 'maryam@itqan.test', password: 'itqan1234', onboarded: true },
-  { id: 'u_nasser', fullName: 'Nasser Al Hinai', email: 'nasser@itqan.test', password: 'itqan1234', onboarded: true },
+  { id: 'u_maryam', fullName: 'Maryam Al Balushi', email: 'maryam@itqan.test', password: 'itqan1234', onboarded: true, emailVerified: true },
+  { id: 'u_nasser', fullName: 'Nasser Al Hinai', email: 'nasser@itqan.test', password: 'itqan1234', onboarded: true, emailVerified: true },
   /**
    * The un-onboarded fixture, and the E2E suite's `ACCOUNTS.fresh` — the
    * onboarding.spec walk depends on this landing on /app/upload rather than the
@@ -57,7 +58,7 @@ const accounts: Account[] = [
    * account any more: she is seeded onboarded for manual QA, and pointing the
    * fresh-flow tests at her is exactly what turned CI red.
    */
-  { id: 'u_new', fullName: 'Salim Al Amri', email: 'new@itqan.test', password: 'itqan1234', onboarded: false },
+  { id: 'u_new', fullName: 'Salim Al Amri', email: 'new@itqan.test', password: 'itqan1234', onboarded: false, emailVerified: true },
 ];
 
 /** Progress and profile per account, so a reload does not restart onboarding. */
@@ -250,6 +251,11 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
             email,
             password: pw,
             onboarded: false,
+            // FALSE, as production leaves it. The stub previously had no such
+            // field, and developing the app against a shape production cannot
+            // produce is how `null 0` on a price and a fabricated birthDate both
+            // reached a real screen unnoticed.
+            emailVerified: false,
           };
           accounts.push(account);
           return json(res, 200, { ok: true }, [

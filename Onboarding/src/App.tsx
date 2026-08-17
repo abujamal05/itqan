@@ -22,7 +22,7 @@ import { ThemeProvider } from './lib/theme';
 import { ApiProvider, useApi } from './state/api';
 import { AuthProvider, useAuth } from './state/auth';
 import { OnboardingProvider, useOnboarding } from './state/onboarding';
-import { siteLogin } from './lib/site';
+import { siteLogin, siteVerify } from './lib/site';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 import { Upload } from './screens/Upload';
@@ -59,11 +59,33 @@ function ToSiteLogin() {
   return <Booting />;
 }
 
+/**
+ * Signed in but the address is not proved yet — back to the site's code page.
+ *
+ * A full navigation, like `ToSiteLogin`, because verification is an auth screen
+ * and the site owns those. Note this is NOT what enforces verification: the API
+ * answers 403 `email_unverified` on every route that advances onboarding, so a
+ * build of this app made before the guard existed is a confusing experience
+ * rather than a way past it.
+ */
+function ToSiteVerify() {
+  const { locale } = useI18n();
+  useEffect(() => {
+    window.location.assign(siteVerify(locale));
+  }, [locale]);
+  return <Booting />;
+}
+
 /** Signed in, and still onboarding. */
 function RequireOnboarding({ children }: { children: ReactNode }) {
   const { user, booting } = useAuth();
   if (booting) return <Booting />;
   if (!user) return <ToSiteLogin />;
+  // Before the `onboarded` check, not after: an unverified account cannot have
+  // finished onboarding, so testing that first would bounce them to /upload —
+  // a screen whose every action the API refuses — instead of to the one page
+  // that can actually unblock them.
+  if (!user.emailVerified) return <ToSiteVerify />;
   if (user.onboarded) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
@@ -83,6 +105,7 @@ function RequireConfirmable({ children }: { children: ReactNode }) {
   const { reuploading } = useOnboarding();
   if (booting) return <Booting />;
   if (!user) return <ToSiteLogin />;
+  if (!user.emailVerified) return <ToSiteVerify />;
   if (user.onboarded && !reuploading) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
@@ -92,6 +115,7 @@ function RequireApp({ children }: { children: ReactNode }) {
   const { user, booting } = useAuth();
   if (booting) return <Booting />;
   if (!user) return <ToSiteLogin />;
+  if (!user.emailVerified) return <ToSiteVerify />;
   if (!user.onboarded) return <Navigate to="/upload" replace />;
   return <>{children}</>;
 }

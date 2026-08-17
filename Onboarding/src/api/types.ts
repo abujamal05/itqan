@@ -346,6 +346,14 @@ export interface User {
    *  the account, not the browser, so finishing on a phone and returning on a
    *  laptop does not restart the flow. */
   onboarded: boolean;
+  /** Has this address been proved with the code emailed at signup?
+   *
+   *  The app only READS this, to send someone to the site's verification page
+   *  rather than leaving them in a flow that cannot progress. It is not the
+   *  control: the API refuses uploads, analysis and profile writes for an
+   *  unverified account with 403 `email_unverified`, so a stale build of this
+   *  app is a worse experience and not a way in. */
+  emailVerified: boolean;
 }
 
 /**

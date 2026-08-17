@@ -29,6 +29,9 @@ export const SITE_ORIGIN = SAME_ORIGIN
 
 export const siteHome = (locale: string) => `${SITE_ORIGIN}/${locale}/`;
 export const siteLogin = (locale: string) => `${SITE_ORIGIN}/${locale}/login/`;
+/** Where an account that has not proved its address belongs. The site owns the
+ *  auth screens, so this is a full navigation like `siteLogin`, not a route. */
+export const siteVerify = (locale: string) => `${SITE_ORIGIN}/${locale}/verify-email/`;
 
 /**
  * The handoff token the site puts in the URL after a successful sign in.
