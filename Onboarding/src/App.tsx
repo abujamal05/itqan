@@ -181,7 +181,7 @@ function WithOnboarding({ children }: { children: ReactNode }) {
 
 /**
  * Chat state lives above the router so a thread survives a trip to Jobs and
- * back. It is deliberately NOT persisted further than that: the spine is a
+ * back. It is deliberately NOT persisted further than that: a thread is a
  * conversation, and one resumed silently a week later reads as the product
  * having remembered something the user did not ask it to.
  */
