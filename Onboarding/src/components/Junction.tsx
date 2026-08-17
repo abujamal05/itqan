@@ -60,18 +60,47 @@ export function Junction({
       )}
 
       {open.length > 0 && (
-        <div className="junction__forks">
-          <p className="junction__forksLabel">
-            {walked ? t('chat.otherDirections') : t('chat.directions')}
-          </p>
-          <ul className="junction__forkList" data-quiet={walked ? true : undefined}>
-            {open.map((fork: ChatFork) => (
-              <li key={fork.id}>
-                <ForkCard fork={fork} onTake={take} disabled={busy} />
-              </li>
-            ))}
-          </ul>
-        </div>
+        walked ? (
+          /**
+           * Once a direction is walked, the others FOLD rather than disappear.
+           *
+           * Left open, they stood between the choice and its answer: the reply
+           * to what you just picked was pushed below two cards you explicitly
+           * did not pick, which is the opposite of the reading order the screen
+           * is arguing for. Collapsing keeps the promise — they are still here,
+           * still counted, still walkable — while letting the answer sit next to
+           * the question.
+           *
+           * Native <details>, deliberately not height animated: the marketing
+           * site tried that and found ::details-content reports as supported in
+           * Chromium while the rule that releases it does not apply, so every
+           * panel rendered clipped to zero height. A clipped disclosure is a
+           * worse failure than an instant one.
+           */
+          <details className="junction__forks junction__forks--folded">
+            <summary className="junction__forksSummary">
+              {t('chat.otherDirections', { n: open.length })}
+            </summary>
+            <ul className="junction__forkList" data-quiet>
+              {open.map((fork: ChatFork) => (
+                <li key={fork.id}>
+                  <ForkCard fork={fork} onTake={take} disabled={busy} />
+                </li>
+              ))}
+            </ul>
+          </details>
+        ) : (
+          <div className="junction__forks">
+            <p className="junction__forksLabel">{t('chat.directions')}</p>
+            <ul className="junction__forkList">
+              {open.map((fork: ChatFork) => (
+                <li key={fork.id}>
+                  <ForkCard fork={fork} onTake={take} disabled={busy} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
       )}
     </li>
   );

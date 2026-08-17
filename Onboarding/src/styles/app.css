@@ -1020,7 +1020,16 @@
      through it. */
   box-shadow: 0 0 0 3px var(--color-bg);
 }
-.junction[data-first] .junction__dot { background: var(--color-border-accent); }
+/* The opening junction is the TRAILHEAD, not a node on the path.
+   It carried a dot and the inline offset like every other node, and on a fresh
+   screen — where it is also the last child, so no thread draws from it — that
+   left a single gold dot floating in the margin with nothing attached to it,
+   reading as a rendering artifact rather than as a marker. The spine now begins
+   at the first real exchange, which is also truer: Hud greeting you is not a
+   junction you walked to. */
+.junction[data-first] { padding-inline-start: 0; }
+.junction[data-first] .junction__dot { display: none; }
+.junction[data-first]::before { display: none; }
 
 @keyframes spine-draw { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 @media (prefers-reduced-motion: reduce) {
@@ -1050,6 +1059,29 @@
   margin: 0 0 var(--space-3); font-size: var(--text-sm);
   font-weight: var(--weight-medium); color: var(--color-text-muted);
 }
+
+/* The folded "directions you did not take". A disclosure, so the promise that
+   nothing is lost survives without the unchosen options blocking the answer. */
+.junction__forksSummary {
+  display: flex; align-items: center; gap: var(--space-2);
+  min-block-size: 44px; cursor: pointer;
+  font-size: var(--text-sm); font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
+  list-style: none;
+}
+.junction__forksSummary::-webkit-details-marker { display: none; }
+/* An authored chevron rather than the UA triangle, so it matches the icon set
+   and can turn. It points along the block axis, so it needs no RTL mirror. */
+.junction__forksSummary::after {
+  content: ''; inline-size: 8px; block-size: 8px;
+  border-inline-end: 2px solid currentColor;
+  border-block-end: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform var(--duration-base) var(--ease-out);
+}
+.junction__forks--folded[open] > .junction__forksSummary::after { transform: rotate(-135deg); }
+.junction__forksSummary:hover { color: var(--color-text); }
+.junction__forks--folded[open] > .junction__forkList { margin-block-start: var(--space-3); }
 .junction__forkList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-4); }
 
 /* Directions not taken. Quieted by removing the card's WEIGHT, never by fading
