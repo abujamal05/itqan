@@ -34,7 +34,7 @@ import { siteHome, siteLogin } from '../lib/site';
  *
  * Chat leads, ahead of that sequence rather than inside it, because it is the
  * way IN to all three: a graduate who does not yet know which of these they
- * need is exactly who Hud is for, and every junction he opens ends up pointing
+ * need is exactly who Hud is for, and the answers he gives end up pointing
  * at one of the rows below. The journey argument still governs those three.
  *
  * The icon is Waypoints, not a speech bubble. What the screen actually is, is a
