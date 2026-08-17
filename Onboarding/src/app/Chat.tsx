@@ -1,129 +1,129 @@
 /**
- * Hud. The chat surface, built as a junction spine.
+ * Hud. A conversation, with the actionable parts handed over as cards.
  *
- * The shape of this screen is an argument about the product, so it is worth
- * stating before the code: the anchor user's own opening line is "I do not know
- * what job I want", and that is not a question with an answer. It is a person
- * standing at a fork. A scrollback of bubbles is the wrong container for it,
- * because the one thing such a person needs — seeing the options side by side,
- * and being able to go back and take the other one — is the one thing a
- * transcript makes hard.
+ * ONE HUD, EVER — and it is worth being precise about how that is guaranteed,
+ * because it is the kind of rule that decays quietly.
  *
- * So every exchange lands as a node on a spine, carrying the two or three real
- * directions available from where the user actually stands. Walking one extends
- * the spine. The ones not walked stay on their junction, quiet but intact, and
- * remain walkable. Nothing the user learned ever scrolls away.
+ * There are exactly two <Hud> call sites below and they are mutually exclusive
+ * on `started`: the greeting owns him while the thread is empty, the page header
+ * owns him once it is not. They can never both be mounted, because the same flag
+ * that shows one hides the other, and `ask()` flips it in a single React commit.
  *
- * HUD IS HERE, and that is an explicit, dated exception to the brand fence
- * (workspace PRODUCT.md, 2026-08-17). What keeps the fence's argument alive is
- * the split the markup enforces: he speaks orientation, the forks carry the
- * claims and their evidence. If a score or a match ever appears inside his
- * read, the exception has been misread.
+ * He is NOT rendered per message. Message.tsx contains no mascot on purpose: a
+ * six-turn thread would otherwise show six of him, which is both the obvious bug
+ * and the thing that makes a mascot feel cheap. That is the one edit that breaks
+ * this, so the rule is written in that file too.
  *
- * JUNCTION ZERO IS AUTHORED HERE rather than fetched. It is the empty state,
- * and an empty state that waits on a network round trip is a blank screen with
- * extra steps. It also means the screen has something true to show a user whose
- * pipeline has not finished.
+ * `key={pose}` is load bearing, not habit. Hud's own loader bails out with
+ * `if (video.src) return`, so handing a mounted instance a new pose changes the
+ * prop and nothing else — the old clip keeps playing. Keying on the pose remounts
+ * it, which swaps the clip without touching mascot code the onboarding screens
+ * also depend on.
+ *
+ * Below 34rem of content column the header mascot steps aside entirely rather
+ * than shrinking: 120px is his floor, under which the brand rules call him visual
+ * noise, and a phone mid-conversation has better uses for 120px than a bird. One
+ * is the ceiling here, never a quota.
+ *
+ * HE IS HERE AT ALL by an explicit, dated exception to the brand fence
+ * (workspace PRODUCT.md, 2026-08-17). The condition is the split this screen
+ * enforces structurally: Hud talks, and anything the user might act on is handed
+ * over as a MatchCard or CourseCard carrying its own why, source and confidence.
+ * A score or a match written into his prose would break the exception rather
+ * than use it.
+ *
+ * The greeting is authored on the client, not fetched, because an empty state
+ * that waits on a round trip is a blank screen with extra steps.
  */
 import { useEffect, useRef } from 'react';
 import { MessageSquarePlus } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useChat } from '../state/chat';
-import { Junction } from '../components/Junction';
+import { Message } from '../components/Message';
 import { Composer } from '../components/Composer';
 import { Hud } from '../components/Hud';
 import { Button, Callout } from '../components/ui';
-import type { ChatJunction } from '../api';
+import type { Pose } from '../components/Hud';
 
 export function Chat() {
   const { t } = useI18n();
-  const { junctions, taken, pending, failed, ask, takeFork, retry, reset } = useChat();
-  const spineEnd = useRef<HTMLDivElement>(null);
-  const count = junctions.length;
+  const { messages, pending, failed, ask, retry, reset } = useChat();
+  const end = useRef<HTMLDivElement>(null);
+  const count = messages.length;
+  const started = count > 0;
 
   /**
-   * Bring the newest junction into view when one arrives.
+   * Follow the conversation as it grows.
    *
-   * Keyed on the COUNT, not on the array: re-running when `taken` changes would
-   * yank the page down every time someone walked a fork higher up the spine,
-   * which is exactly the moment they are reading something further up.
+   * Keyed on the count rather than the array so it fires when a turn arrives and
+   * not when anything else changes — being yanked to the bottom while reading a
+   * card further up is the classic chat annoyance.
    */
   useEffect(() => {
     if (count === 0) return;
-    spineEnd.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    end.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }, [count]);
 
-  const opening: ChatJunction = {
-    id: 'j0',
-    question: null,
-    read: t('chat.opening'),
-    takenForkId: null,
-    parentId: null,
-    createdAt: 0,
-    forks: [
-      {
-        id: 'f-roles',
-        kind: 'topic',
-        label: t('chat.open.roles'),
-        detail: t('chat.open.rolesDetail'),
-      },
-      {
-        id: 'f-skills',
-        kind: 'topic',
-        label: t('chat.open.skills'),
-        detail: t('chat.open.skillsDetail'),
-      },
-      {
-        id: 'f-courses',
-        kind: 'topic',
-        label: t('chat.open.courses'),
-        detail: t('chat.open.coursesDetail'),
-      },
-    ],
-  };
-
-  const all = [opening, ...junctions];
+  const pose: Pose = pending ? 'thinking' : failed ? 'error' : 'idle';
+  const openers = [t('chat.open.roles'), t('chat.open.skills'), t('chat.open.courses')];
 
   return (
-    <div className="chat">
+    <div className="chat" data-started={started || undefined}>
       <div className="chat__head">
-        <div className="stack stack--sm">
+        <div className="stack stack--sm chat__headText">
           <h1 className="headline">{t('chat.title')}</h1>
           <p className="subhead">{t('chat.sub')}</p>
         </div>
-        {count > 0 && (
-          <Button variant="ghost" onClick={reset}>
-            <MessageSquarePlus size={16} aria-hidden="true" />
-            {t('chat.newThread')}
-          </Button>
+
+        {started && (
+          <>
+            {/* Hud's second and only other home. */}
+            <div className="chat__hud" data-pose={pose}>
+              <Hud key={pose} pose={pose} loop size="sm" />
+            </div>
+            <Button variant="ghost" onClick={reset}>
+              <MessageSquarePlus size={16} aria-hidden="true" />
+              {t('chat.newThread')}
+            </Button>
+          </>
         )}
       </div>
 
-      <ol className="spine">
-        {all.map((junction, i) => (
-          <Junction
-            key={junction.id}
-            junction={junction}
-            takenForkId={taken[junction.id] ?? junction.takenForkId}
-            onTake={takeFork}
-            busy={pending}
-            first={i === 0}
-          />
-        ))}
-      </ol>
+      {!started && (
+        <div className="greet">
+          <div className="greet__hud">
+            <Hud pose="waving" then="idle" loop size="md" eager />
+          </div>
+          <p className="greet__line">{t('chat.opening')}</p>
+          <div className="suggests__row suggests__row--center">
+            {openers.map((s) => (
+              <button key={s} type="button" className="suggest" onClick={() => ask(s)} disabled={pending}>
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {started && (
+        <ol className="thread">
+          {messages.map((m, i) => (
+            <Message
+              key={m.id}
+              message={m}
+              onSuggest={ask}
+              busy={pending}
+              isLast={i === count - 1}
+            />
+          ))}
+        </ol>
+      )}
 
       {/* Announced without stealing focus, the same pattern PipelineProgress
-          uses: the user may well be reading a fork further up while this
-          resolves, and pulling them away from it would be the wrong trade. */}
+          uses: the reader may well be part way through a card when this
+          resolves, and pulling them out of it would be the wrong trade. */}
       <div className="chat__status" role="status" aria-live="polite">
-        {pending && (
-          <div className="thinking">
-            <div className="thinking__hud">
-              <Hud pose="thinking" loop size="sm" />
-            </div>
-            <p className="thinking__line">{t('chat.thinking')}</p>
-          </div>
-        )}
+        {pending && <p className="thinking__line">{t('chat.thinking')}</p>}
       </div>
 
       {failed && (
@@ -137,7 +137,7 @@ export function Chat() {
         </Callout>
       )}
 
-      <div ref={spineEnd} />
+      <div ref={end} />
 
       <Composer onAsk={ask} busy={pending} />
     </div>

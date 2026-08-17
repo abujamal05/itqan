@@ -63,12 +63,15 @@ Not optional, and in this order:
 - **The Hud fence.** Never beside a verdict, score, real match, data table, or the confirmation screen. He
   is absent from the dashboard entirely.
   **One exception, added 2026-08-17: the chat surface** (`src/app/Chat.tsx` and its parts), where the
-  assistant is named after him. He is present there throughout, including on a junction that offers real
-  matches. This was decided with the conflict on the table; it is not drift, so do not revert it.
-  The boundary that keeps the fence's argument alive: **Hud speaks orientation, never a verdict.** He
-  opens a junction and names the directions; every actionable answer renders as its own card carrying
-  `why`, a real source and an honest confidence label. Where a fork resolves to a real job or course it
-  reuses `MatchCard` / `CourseCard` unchanged, so the trust rules are inherited rather than reimplemented.
+  assistant is named after him. He is present there, including in turns that offer real matches. This
+  was decided with the conflict on the table; it is not drift, so do not revert it.
+  Two boundaries keep the fence's argument alive, and both are structural rather than editorial:
+  **Hud may talk, but nothing actionable lives in his prose** — a job or a course is ATTACHED to the
+  message and rendered through `MatchCard` / `CourseCard` unchanged, so `why`, the real source and the
+  confidence badge are inherited rather than reimplemented. And **exactly one Hud is on screen at a
+  time**: `Chat.tsx` owns the single instance, `Message.tsx` deliberately contains no mascot, and
+  `e2e/responsive.spec.ts` asserts the count through a whole turn at three widths. A mascot per message
+  is the obvious way to build a chat and the fastest way to make one look cheap.
   Everywhere else the fence stands, and the "Hud is deliberately absent" comments in `Dashboard.tsx`,
   `Profile.tsx` and `MatchCard.tsx` are still correct.
 - **Trust rules.** Every extracted value carries its confidence; every recommendation carries `why` and a

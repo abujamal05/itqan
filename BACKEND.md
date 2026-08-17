@@ -144,94 +144,89 @@ suggested yet" when they are absent.
 ### 1.4 Hud, the chat
 
 **The front end is finished.** `Onboarding/src/app/Chat.tsx` and its parts work
-today against `dev/site-plugin.ts`, and the Vercel handlers in `api/chat/`
-answer a stateless version of the same shapes. The authority is
+today against `dev/site-plugin.ts`, and the Vercel handler in `api/chat/` answers
+a stateless version of the same shapes. The authority is
 `Onboarding/src/api/types.ts`.
 
-Read this section before implementing it. The shape is not a chat log, and that
-is deliberate.
+It is an ordinary conversation: alternating turns, in order. One thing about it
+is not ordinary, and it is the thing to implement carefully.
 
-**Hud does not answer a question. He returns a junction.**
+**Hud may talk, but nothing actionable goes in his prose.**
 
 ```
 POST /api/chat/ask     { "threadId": "…" | null, "question": "…" }
-                       -> { "threadId": "…", "junction": ChatJunction }
-
-POST /api/chat/fork    { "threadId": "…", "junctionId": "…", "forkId": "…" }
-                       -> { "junction": ChatJunction }
+                       -> { "threadId": "…", "message": ChatMessage }
 
 GET  /api/chat/threads             -> ChatThreadSummary[]   (newest first)
 GET  /api/chat/threads/:id         -> ChatThread | 404
 ```
 
 ```jsonc
-ChatJunction {
+ChatMessage {
   "id": "…",
-  "question": "…" | null,     // null on the junction that opens a thread
-  "read": "…",                // Hud's orientation. NEVER a verdict. See below.
-  "forks": [ChatFork],        // two or three
-  "takenForkId": "…" | null,
-  "parentId": "…" | null,
+  "role": "hud" | "user",
+  "text": "…",                 // already localised when role is "hud"
+  "jobs": [JobMatch],          // real postings, ATTACHED not described
+  "courses": [Course],         // real courses, same
+  "suggestions": ["…"],        // follow-up questions, offered as chips
   "createdAt": 1717171717171
 }
 
-ChatFork {
-  "id": "…",
-  "kind": "role" | "course" | "job" | "skill" | "topic",
-  "label": "…",               // the direction, phrased as somewhere to go
-  "detail": "…",              // the distance: what is held, what it unlocks
-  "why": "…",                 // REQUIRED for role | course | job
-  "confidence": 0.91,         // 0..1, required wherever `why` is
-  "source": { "name": "…", "url": "…", "retrievedAt": "…" },
-  "job": JobMatch,            // when the fork IS a real posting
-  "course": Course            // when the fork IS a real course
-}
+ChatThread { "id": "…", "title": "…", "messages": [ChatMessage], "updatedAt": … }
 ```
 
 Five rules that are contract, not preference:
 
-1. **`read` carries no claim.** It is one or two sentences naming what Hud is
-   looking at and what the options are. A verdict, a score, a percentage or a
-   named match inside `read` is a contract violation, not a wording choice. The
-   mascot is allowed on this screen precisely because the claims live on the
-   forks, where they carry their own evidence; move one into his mouth and the
-   screen is making an unfounded claim in the product's friendliest voice.
+1. **Attach, never describe.** A posting belongs in `jobs` as a whole `JobMatch`;
+   a course belongs in `courses` as a whole `Course`. The screen renders those
+   through the same `MatchCard` and `CourseCard` that `/api/jobs` and
+   `/api/courses` feed, so `why`, the live `source` with its `retrievedAt` and
+   the confidence badge all come along automatically and cannot drift away from
+   the rest of the product. Writing "Bank Muscat is hiring a data analyst, 94%
+   match" into `text` instead moves a claim somewhere nobody can audit, and is a
+   violation rather than a shortcut.
 
-2. **Every fork of kind `role`, `course` or `job` carries `why` and a real
-   `source`.** Same rule as `/api/jobs` and `/api/courses`, for the same
-   reason. `skill` and `topic` may omit both, because they lead to another
-   junction rather than to an action.
+2. **This is what lets the mascot be there at all.** The brand fences Hud away
+   from verdicts, scores and real matches; the exception granted for this screen
+   (workspace `PRODUCT.md`, 2026-08-17) rests entirely on the separation above. A
+   service that puts a score in `text` has removed the reason the exception was
+   granted.
 
-3. **Send the whole `job` or `course` object where a fork resolves to one.**
-   The screen renders those through the existing `MatchCard` and `CourseCard`,
-   so the trust rules cannot drift on this screen independently of the others.
-   A fork that describes a posting in prose instead loses the source link, the
-   retrieval date and the confidence badge in one move.
+3. **`suggestions` are questions, not commands.** Three at most, phrased as
+   something a person would say. They exist because the anchor user's opening
+   line is "I do not know what job I want" — someone who cannot yet phrase a
+   question needs real ones offered. The client shows them only on the newest
+   turn.
 
-4. **`fork` records the choice; it never prunes the alternatives.** Set
-   `takenForkId` on the junction that was walked from and leave its other forks
-   exactly where they are. The user can come back and walk a different one, and
-   the screen shows the ones they did not take. Pruning them breaks the
-   feature's promise, not just its layout.
+4. **Store both turns.** `POST /api/chat/ask` returns only Hud's message, but the
+   thread read back by `GET /api/chat/threads/:id` must contain the user's turns
+   too, or a conversation resumed on another device is a list of answers to
+   questions nobody can see. The client renders its own copy of the question
+   immediately and does not wait for the response to do it.
 
 5. **Strings arrive localised**, per the `itqan_locale` cookie, like every other
-   agent authored string. `label`, `detail`, `read` and `why` all of them.
+   agent-authored string — `text` and every entry in `suggestions`. Note the
+   client keeps each turn in the language it was spoken and does NOT re-fetch a
+   thread when the user switches language: a conversation is history, and quietly
+   re-asking the questions on a language toggle would be worse than mixed
+   languages in a scrollback.
 
-**Streaming is not required and the seam does not need to change for it.** The
-client calls `ask` and waits, showing Hud thinking. When you can stream, stream
-inside `ask`: emit `read` early and resolve to the same junction. Do not add a
-second endpoint for it. A junction is not usefully partial, because half a fork
-is a recommendation with its evidence missing.
+**Streaming is not required and the seam does not change for it.** The client
+calls `ask` and waits, showing Hud thinking. When you can stream, stream inside
+`ask`: emit `text` in chunks and resolve to the same message with its cards
+attached. Do not add a second endpoint. The cards are the part worth waiting
+for, and a card without its source is a recommendation with its evidence
+missing.
 
-**A thread with no junctions is a normal answer.** So is an empty
+**A thread with no messages is a normal answer.** So is an empty
 `GET /api/chat/threads` on a new account. Neither is an error, and the UI tells
 them apart from a failure.
 
 **Rate limiting belongs on the server**, per account. The composer has no
 throttle of its own.
 
-**A deployment constraint, learned the hard way.** All four of these routes are
-served by ONE file on Vercel, `api/chat/[...path].js`, not four. Vercel counts
+**A deployment constraint, learned the hard way.** All of these routes are served
+by ONE file on Vercel, `api/chat/[...path].js`, not one per route. Vercel counts
 every file under `api/` as its own Serverless Function and the Hobby plan allows
 12 per deployment; this project sits at 11 with the catch-all and was at 13 with
 a file per route, which failed the `app-itqan` build while `itqan-site` passed.
@@ -428,9 +423,8 @@ deployment avoids it entirely, and the front end is configured for both
 | `suggestedRole` on `GET /api/profile` | **missing field** |
 | `phone` through `POST`/`PUT`/`GET /api/profile` | **new field, must persist** |
 | `POST /api/chat/ask` | **missing** — front end complete, stubbed in dev |
-| `POST /api/chat/fork` | **missing** — front end complete, stubbed in dev |
 | `GET /api/chat/threads` | **missing** — needs storage; Vercel twin answers `[]` |
 | `GET /api/chat/threads/:id` | **missing** — needs storage |
-| all four chat routes | one Vercel function, `api/chat/[...path].js` — see the note in §1.4 |
+| all chat routes | one Vercel function, `api/chat/[...path].js` — see the note in §1.4 |
 | `POST /api/placeholder/{signup,login}` | exists — **rename before launch** |
 | everything else in §2 | contracted, stubbed in dev, needs a real implementation |

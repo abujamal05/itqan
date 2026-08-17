@@ -123,14 +123,25 @@ not have to re-derive them.
   present throughout it, including alongside recommendations. This was decided deliberately, with the
   conflict on the table, and it is not a rule that drifted. Do not "correct" it back.
 
-  The exception is bounded, and the boundary is what keeps the fence's original argument intact. Hud
-  speaks orientation only — he opens a junction and names the directions available. He never states a
-  verdict, a score or a match himself. Every actionable answer renders as its own card carrying its own
-  evidence: `why this match`, a real source with its retrieval date, and an honest confidence label.
+  The exception is bounded, and the boundary is what keeps the fence's original argument intact.
+  **Hud may talk, but nothing actionable lives in his prose.** The moment an answer becomes something
+  to act on it is handed over as its own card carrying its own evidence: `why this match`, a real
+  source with its retrieval date, and an honest confidence label. Jobs and courses render through the
+  same `MatchCard` and `CourseCard` the rest of the product uses, so the trust rules cannot drift on
+  this screen independently of the others. A score or a match written into his sentences breaks the
+  exception rather than using it.
+
   That separation is the point rather than a technicality: the hoopoe of An-Naml carried a report that
   was verified before anyone acted on it, which is exactly the relationship this surface asks the user
-  to have with it. The fence is unchanged everywhere else — he stays off the dashboard, the profile
-  screen, the job match card in its own right, the OCR confirmation screen and `/proof`.
+  to have with it.
+
+  **One Hud on screen at a time**, and never one per message. The chat screen mounts exactly one
+  instance and moves it between the greeting and the page header as state changes. The 120px floor
+  still applies, so on a narrow screen mid-conversation he steps aside rather than shrinking; one is a
+  ceiling, never a quota.
+
+  The fence is unchanged everywhere else — he stays off the dashboard, the profile screen, the job
+  match card in its own right, the OCR confirmation screen and `/proof`.
 - **The anti-cliché law.** No brains, circuit patterns, robot faces, glowing neural networks or synthetic
   futurism, ever. The work reads *considered*, not generated.
 - **Voice.** A knowledgeable person who refuses to oversell. Lead with capability; show the working; be
