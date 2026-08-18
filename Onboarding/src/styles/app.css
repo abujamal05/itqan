@@ -445,9 +445,36 @@
 .unsure__name { font-weight: var(--weight-medium); min-inline-size: 0; overflow-wrap: anywhere; }
 .unsure__from {
   grid-column: 1;
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-3);
   font-size: var(--text-sm); color: var(--color-text-muted);
   min-inline-size: 0; overflow-wrap: anywhere;
 }
+/* The figure behind "not sure". Same muted weight as the provenance it sits
+   with — it qualifies the row, it is not a verdict on it. */
+.unsure__pct { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+
+/* Undo after removing a skill. A line, not a floating toast: it belongs to the
+   list it changed and must not cover anything else on a form. */
+.undo {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border);
+  font-size: var(--text-sm);
+}
+.undo__btn {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  min-block-size: 32px; padding-inline: var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit; font-weight: var(--weight-medium);
+  cursor: pointer;
+}
+.undo__btn:hover { border-color: var(--color-border-accent); }
+.undo__btn:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 .unsure__x {
   grid-column: 2; grid-row: 1 / span 2;
   display: inline-grid; place-items: center;
@@ -879,6 +906,49 @@
   font-weight: var(--weight-medium);
   color: var(--color-text-muted);
 }
+
+/* ---- A score with no goal behind it ---------------------------------------
+   Sits under the readiness sentence, states what the figure is actually
+   measured against, and offers the fix in the same breath. A sunken well with
+   an accent hairline — the product register's "context you should act on",
+   the same treatment the next-step block uses. Not a warning tone: having no
+   goal yet is the normal starting position, not a mistake to correct. */
+.nogoal {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-accent-wash);
+  border: 1px solid var(--color-border-accent);
+}
+.nogoal__what { flex: 1 1 14rem; min-inline-size: 0; font-size: var(--text-sm); }
+
+/* ---- Your skills, behind one disclosure ------------------------------------
+   Replaces "four rows plus a show-more". The toggle carries the count so the
+   user knows the size of what is behind it before opening, which is the whole
+   difference between a disclosure and a mystery. */
+.skills { display: flex; flex-direction: column; gap: var(--space-4); }
+.skills__toggle {
+  display: flex; align-items: center; gap: var(--space-3);
+  inline-size: 100%; min-block-size: 44px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer; text-align: start;
+  transition: background-color var(--duration-fast) var(--ease-hover),
+              border-color var(--duration-fast) var(--ease-hover);
+}
+.skills__toggle:hover { background: var(--color-surface-sunken); border-color: var(--color-border-strong); }
+.skills__toggle:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.skills__title { font-weight: var(--weight-semibold); font-size: var(--text-base); }
+/* Pushed to the reading end, ahead of the chevron. */
+.skills__count { margin-inline-start: auto; font-size: var(--text-sm); color: var(--color-text-muted); }
+.skills__panel {
+  display: flex; flex-direction: column; gap: var(--space-4);
+  animation: fb-open var(--duration-base) var(--ease-out) both;
+}
+@media (prefers-reduced-motion: reduce) { .skills__panel { animation-name: fb-open-reduced; } }
 
 /* ---- The career goal -----------------------------------------------------
    Deliberately NOT a card. It is the second half of the readiness statement,

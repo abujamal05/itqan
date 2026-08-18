@@ -23,7 +23,7 @@
  * over a dashboard to change one string would be the heaviest interaction on
  * the page for the smallest change on it.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, MoreVertical, Target, X } from 'lucide-react';
 import { useI18n } from '../i18n';
@@ -34,11 +34,22 @@ import { Button, InputField } from './ui';
 import { Menu, MenuItem } from './Menu';
 
 export function CareerGoal({
-  profile, onSaved,
+  profile, onSaved, editing, setEditing,
 }: {
   profile: StoredProfile | null;
   /** Refetch the dashboard: readiness and the journey are measured against this. */
   onSaved: () => void;
+  /**
+   * CONTROLLED, because there are now two ways in.
+   *
+   * The three-dot menu here is one; the "set your goal" button in the readiness
+   * block beside it is the other, and it exists because that is where the
+   * problem is visible — a score with nothing to be a score of. Two triggers
+   * for one editor means the state cannot live in this component, or the second
+   * one would open a different editor than the first.
+   */
+  editing: boolean;
+  setEditing: (v: boolean) => void;
 }) {
   const { t } = useI18n();
   const api = useApi();
@@ -48,17 +59,18 @@ export function CareerGoal({
   const role = named || suggested;
   const isSuggested = !named && !!suggested;
 
-  const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const open = () => {
-    // Seeds with the NAMED role only. Pre-filling the agents' suggestion would
-    // turn "we think this might be you" into "you said this" the moment the
-    // user pressed save without reading it.
-    setDraft(named);
-    setEditing(true);
-  };
+  /**
+   * Seeds with the NAMED role only. Pre-filling the agents' suggestion would
+   * turn "we think this might be you" into "you said this" the moment the user
+   * pressed save without reading it.
+   *
+   * Runs when the editor OPENS however it was opened, so the parent's button
+   * and this component's menu both get a correctly seeded field.
+   */
+  useEffect(() => { if (editing) setDraft(named); }, [editing, named]);
 
   const save = async () => {
     if (!profile) return;
@@ -163,7 +175,7 @@ export function CareerGoal({
         align="end"
       >
         {(close) => (
-          <MenuItem onSelect={() => { close(); open(); }}>
+          <MenuItem onSelect={() => { close(); setEditing(true); }}>
             {t('dash.goalChange')}
           </MenuItem>
         )}
