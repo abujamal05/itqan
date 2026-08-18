@@ -17,24 +17,18 @@ const s = t(locale);
     <p class="eyebrow">{s.privacy.eyebrow}</p>
     <h1>{s.privacy.heading}</h1>
     <div class="page-head__rule" aria-hidden="true"></div>
-    <p class="page-head__intro">{s.privacy.intro}</p>
   </header>
 
-  {
-    s.privacy.sections.map((section) => (
-      <section class="legal-section">
-        <h2>{section.heading}</h2>
-        <NoticeBox>
-          <p>{s.privacy.noticeLabel}</p>
-          <ul>
-            {section.questions.map((q) => (
-              <li>{q}</li>
-            ))}
-          </ul>
-        </NoticeBox>
-      </section>
-    ))
-  }
+  {/* UNDER CONSTRUCTION, and nothing more.
+      This used to publish the lawyer's own question list, section by section, on
+      the live page. That reads to a visitor as a privacy notice with the answers
+      missing, which is worse than saying nothing: it puts the gaps on display
+      under a heading people arrive at precisely because they want certainty.
+      `s.privacy.sections` and `noticeLabel` stay in the locale files as the
+      brief for whoever drafts the real notice. */}
+  <NoticeBox>
+    <p>{s.privacy.intro}</p>
+  </NoticeBox>
 </div>
 
 <style>
@@ -44,24 +38,4 @@ const s = t(locale);
   }
 
   /* .page-head now lives in global.css. */
-
-  .legal-section {
-    margin-block-end: var(--space-10);
-  }
-
-  .legal-section h2 {
-    font-size: var(--text-xl);
-    font-weight: var(--weight-semibold);
-    margin-block-end: var(--space-4);
-  }
-
-  .legal-section ul {
-    margin: var(--space-2) 0 0;
-    padding-inline-start: var(--space-5);
-    font-weight: var(--weight-regular);
-    color: var(--color-text-muted);
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-1);
-  }
 </style>
