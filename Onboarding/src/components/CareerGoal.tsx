@@ -37,8 +37,15 @@ export function CareerGoal({
   profile, onSaved, editing, setEditing,
 }: {
   profile: StoredProfile | null;
-  /** Refetch the dashboard: readiness and the journey are measured against this. */
-  onSaved: () => void;
+  /**
+   * Refetch the dashboard, and say whether the role actually MOVED.
+   *
+   * The parent needs both: readiness and the journey are measured against this
+   * role, so a change means the numbers on screen are now about the previous
+   * one — and only a real change is worth offering a re-match for. Saving the
+   * same string, or clearing it, is not.
+   */
+  onSaved: (role: string, changed: boolean) => void;
   /**
    * CONTROLLED, because there are now two ways in.
    *
@@ -92,7 +99,8 @@ export function CareerGoal({
       // string is how two copies of a preference start disagreeing.
       await api.updateProfile(next);
       setEditing(false);
-      onSaved();
+      const value = draft.trim();
+      onSaved(value, value !== named);
     } finally {
       setSaving(false);
     }

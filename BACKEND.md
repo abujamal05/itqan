@@ -321,6 +321,26 @@ must never receive the rejected one back.
 onboarding collects, and a second write path for one string is how the two drift.
 The ranker must treat a change to it as a signal, not just as a stored value.
 
+**Two gaps this leaves open, both worth closing server side.**
+
+*The results go stale and only the client half-knows.* Readiness, the journey and
+every job match are computed against the target role, so changing that role makes
+all three wrong — but `PUT /api/profile` does not re-run the pipeline, and it
+should not: correcting a birth date is no reason to spend the weekly re-match.
+The dashboard therefore offers a re-match after a role change, tracked in
+component state, which a reload forgets. The honest fix is a server flag —
+something like `resultsStaleSince` on `GET /api/dashboard`, or simply exposing
+the finished run's timestamp so the client can compare it against
+`profile.updatedAt`. Then the offer survives a reload and appears for a change
+made on another device.
+
+*The re-run credit balance is invisible outside chat.* `credits` only rides
+`proposedRerun` on a chat message, so any other surface offering a re-match can
+state the cost but not the remaining balance, and finds out there is none from a
+`429`. A small `GET /api/assistant/rerun` returning the same
+`{used, limit, remaining, resetsAt}` would let every surface show it before the
+tap rather than after.
+
 **One new field on `preferences`**, written by onboarding and by that same PUT:
 
 ```jsonc

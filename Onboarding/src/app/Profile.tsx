@@ -121,6 +121,9 @@ function AvatarField({
 }: { name: string; url: string | null; onChanged: () => void }) {
   const { t } = useI18n();
   const api = useApi();
+  /* The sidebar reads the photo from the auth context, so it has to be told.
+     `onChanged` only refetches THIS screen's profile query. */
+  const { setAvatarUrl } = useAuth();
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -132,7 +135,9 @@ function AvatarField({
     if (file.size > MAX_AVATAR_BYTES) { setError(t('profile.photoTooBig')); return; }
     setBusy(true);
     try {
-      await api.uploadAvatar({ file });
+      // The endpoint answers with the stored URL; use it rather than guessing.
+      const { avatarUrl } = await api.uploadAvatar({ file });
+      setAvatarUrl(avatarUrl);
       onChanged();
     } catch {
       setError(t('profile.photoFailed'));
@@ -148,6 +153,7 @@ function AvatarField({
     setBusy(true);
     try {
       await api.removeAvatar();
+      setAvatarUrl(null);
       onChanged();
     } catch {
       setError(t('profile.photoFailed'));

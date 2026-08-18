@@ -16,6 +16,9 @@ import {
 } from 'react';
 import type { ReactNode } from 'react';
 import type { ChatMessage, ChatThreadSummary, ChatVerdict, ItqanApi } from '../api';
+// ChatProvider is mounted inside OnboardingProvider (see App.tsx), so the run
+// this re-match starts can be handed to the poll that already exists.
+import { useOnboarding } from './onboarding';
 
 interface ChatValue {
   threadId: string | null;
@@ -55,6 +58,7 @@ interface ChatValue {
 const Ctx = createContext<ChatValue | null>(null);
 
 export function ChatProvider({ api, children }: { api: ItqanApi; children: ReactNode }) {
+  const { watchJob } = useOnboarding();
   const [threadId, setThreadId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [threads, setThreads] = useState<ChatThreadSummary[]>([]);
@@ -186,11 +190,14 @@ export function ChatProvider({ api, children }: { api: ItqanApi; children: React
        it up — so announcing it twice would put a second, drifting account of
        the same work on screen. */
     try {
-      await api.rerunMatching();
+      const { jobId: id } = await api.rerunMatching();
+      // Hand the job to the provider that owns the poll. Without this the
+      // comment above was wishful: nothing watched a run started here.
+      watchJob(id);
     } catch {
       setFailed(true);
     }
-  }, [api]);
+  }, [api, watchJob]);
 
   const open = useCallback(
     (id: string) => {

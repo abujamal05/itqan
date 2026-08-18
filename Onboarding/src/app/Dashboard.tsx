@@ -37,13 +37,13 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check, ChevronDown, Plus, Target } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, Plus, RefreshCw, Target } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useApi } from '../state/api';
 import { useAsync } from '../lib/useAsync';
 import { useOnboarding } from '../state/onboarding';
 import { useAuth } from '../state/auth';
-import { Card, EmptyState, ErrorState, GapChip, LoadingBlock } from '../components/ui';
+import { Button, Card, EmptyState, ErrorState, GapChip, LoadingBlock } from '../components/ui';
 import { CareerGoal } from '../components/CareerGoal';
 import type { Course } from '../api';
 import { MatchCard } from '../components/MatchCard';
@@ -120,6 +120,41 @@ export function Dashboard() {
    */
   const [editingGoal, setEditingGoal] = useState(false);
   const openGoalEditor = useCallback(() => setEditingGoal(true), []);
+
+  /**
+   * THE GOAL CHANGED AND THE NUMBERS DID NOT.
+   *
+   * `PUT /api/profile` deliberately does not re-run the pipeline — correcting a
+   * birth date is no reason to re-match. But the readiness score, the journey
+   * and every job match ARE measured against the target role, so changing it
+   * leaves all three quietly computed for a goal the user has abandoned. The
+   * screen refetched and got the same stale numbers back, which looked like
+   * nothing had happened because, on the server, nothing had.
+   *
+   * The re-match is NOT fired automatically. It spends a scarce weekly credit,
+   * and someone fixing a typo in their job title must not lose their week to
+   * it. So the staleness is stated, the cost is stated, and the user decides.
+   *
+   * Session-scoped: a reload forgets it. Knowing that results predate a profile
+   * edit is genuinely the server's to answer — see the note added to BACKEND.md.
+   */
+  const [staleGoal, setStaleGoal] = useState<string | null>(null);
+  const [rematch, setRematch] = useState<'idle' | 'starting' | 'failed' | 'running'>('idle');
+  const { watchJob } = useOnboarding();
+
+  const startRematch = useCallback(async () => {
+    setRematch('starting');
+    try {
+      const { jobId } = await api.rerunMatching();
+      // Hand it to the poll so the bar, `settled` and the refetch all follow.
+      watchJob(jobId);
+      setStaleGoal(null);
+      setRematch('running');
+    } catch {
+      // Almost always "no credit left this week", which is what the copy says.
+      setRematch('failed');
+    }
+  }, [api, watchJob]);
   /**
    * Same in-place replacement the courses page has, for the two cards shown
    * here. See the longer note in Courses.tsx — the point is that rejecting a
@@ -249,6 +284,35 @@ export function Dashboard() {
                 </div>
               )}
 
+              {/* The goal moved, so the numbers above it are about the old one.
+                  Same well as the no-goal case: it is the same class of problem,
+                  a score that is not about what the user thinks it is about. */}
+              {staleGoal && rematch !== 'running' && (
+                <div className="nogoal">
+                  <div className="nogoal__what">
+                    <p>{t('dash.goalStale', { role: staleGoal })}</p>
+                    {/* The cost, before the tap that spends it. */}
+                    <p className="text-sm muted">{t('dash.goalRematchCost')}</p>
+                    {rematch === 'failed' && (
+                      <p className="text-sm" role="alert">{t('dash.goalRematchFail')}</p>
+                    )}
+                  </div>
+                  <Button
+                    variant="secondary"
+                    onClick={startRematch}
+                    loading={rematch === 'starting'}
+                  >
+                    <RefreshCw size={15} aria-hidden="true" />
+                    {t('dash.goalRematch')}
+                  </Button>
+                </div>
+              )}
+              {rematch === 'running' && (
+                <p className="text-sm" role="status" aria-live="polite">
+                  {t('dash.goalRematchGo')}
+                </p>
+              )}
+
               <details>
                 <summary className="disclosure">{t('dash.readinessHow')}</summary>
                 <p className="text-sm muted" style={{ marginBlockStart: 'var(--space-2)' }}>
@@ -263,7 +327,13 @@ export function Dashboard() {
                 computed for the old one on screen is the worst of both. */}
             <CareerGoal
               profile={stored ?? null}
-              onSaved={() => { reloadProfile(); reload(); }}
+              onSaved={(nextRole, changed) => {
+                reloadProfile();
+                reload();
+                // Only when the role actually MOVED. Saving the same string,
+                // or clearing it, is not a reason to offer a re-match.
+                if (changed && nextRole) { setStaleGoal(nextRole); setRematch('idle'); }
+              }}
               editing={editingGoal}
               setEditing={setEditingGoal}
             />

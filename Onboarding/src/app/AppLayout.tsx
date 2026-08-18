@@ -72,7 +72,7 @@ function initials(name: string) {
 
 function AccountMenu() {
   const { t, locale } = useI18n();
-  const { user, logout } = useAuth();
+  const { user, avatarUrl, logout } = useAuth();
   if (!user) return null;
 
   return (
@@ -80,7 +80,17 @@ function AccountMenu() {
       label={t('account.menu')}
       trigger={
         <>
-          <span className="avatar" aria-hidden="true">{initials(user.fullName) || <UserIcon size={16} />}</span>
+          {/* THE PHOTO, when there is one. This drew initials unconditionally:
+              `avatarUrl` lived only on the profile payload, which only the
+              profile screen read, so uploading a picture changed one page and
+              nothing else. Initials remain the fallback rather than a grey
+              silhouette — an empty avatar reads as a broken image, initials
+              read as an account. */}
+          <span className="avatar" aria-hidden="true">
+            {avatarUrl
+              ? <img className="avatar__img" src={avatarUrl} alt="" width={28} height={28} />
+              : initials(user.fullName) || <UserIcon size={16} />}
+          </span>
           <span className="menu__name"><bdi>{user.fullName}</bdi></span>
         </>
       }

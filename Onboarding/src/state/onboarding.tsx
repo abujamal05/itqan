@@ -73,6 +73,17 @@ interface OnboardingValue {
   beginReupload: (documents: UploadedDocument[]) => Promise<void>;
   /** True while a finished user is re-reading their documents. */
   reuploading: boolean;
+  /**
+   * Adopt a run that was STARTED ELSEWHERE, so the poll, the progress bar and
+   * `settled` all follow it.
+   *
+   * `rerunMatching()` returns a job id and, until now, every caller threw it
+   * away — the chat's re-run even carried a comment saying the progress bar
+   * would pick the job up, which it could not: the poll only ever watched an id
+   * this provider had set itself. So a re-match ran invisibly and the screens
+   * that read the finished run never learned it had finished.
+   */
+  watchJob: (jobId: string) => void;
   startManual: () => void;
   /** Merges one answer; the rest are left alone. */
   setPreference: <K extends keyof Preferences>(key: K, value: Preferences[K]) => void;
@@ -255,6 +266,18 @@ export function OnboardingProvider({
     setJobId(id);
   }, [api]);
 
+  /**
+   * Same shape as `beginReupload` minus the upload: there are no new documents,
+   * the pipeline is re-running over the corpus it already has. `entry` has to
+   * be `document` because that is what gates the progress bar and
+   * `useRunInFlight`; a re-match is a real run and should be visible as one.
+   */
+  const watchJob = useCallback((id: string) => {
+    setEntry('document');
+    setAnalysis(null);
+    setJobId(id);
+  }, []);
+
   const startManual = useCallback(() => {
     stopPolling();
     setEntry('manual');
@@ -312,11 +335,11 @@ export function OnboardingProvider({
     failed: !!failed,
     preferences, profile,
     resumable, checking, dismissResume, resume,
-    begin, beginReupload, reuploading, startManual, setPreference,
+    begin, beginReupload, reuploading, watchJob, startManual, setPreference,
     completeProfile, reset,
   }), [entry, documents, jobId, analysis, settled, ready, failed, preferences, profile,
-       resumable, checking, dismissResume, resume, begin, beginReupload, reuploading, startManual, setPreference,
-       completeProfile, reset]);
+       resumable, checking, dismissResume, resume, begin, beginReupload, reuploading, watchJob,
+       startManual, setPreference, completeProfile, reset]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

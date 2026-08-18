@@ -66,6 +66,8 @@ const accounts: Account[] = [
 const progress = new Map<string, unknown>();
 /** Confirmed profiles, so the profile screen can read one back. */
 const profiles = new Map<string, Record<string, unknown>>();
+/** Profile photos, as data URIs. Production stores files and returns URLs. */
+const avatars = new Map<string, string>();
 
 /** Hud's threads per account. */
 interface ChatThreadRow {
@@ -674,6 +676,43 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           return json(res, 204, { ok: true });
         }
 
+        /* THE PROFILE PHOTO, which was missing from this stub entirely — and
+           that absence is why a real bug survived: with no local way to upload
+           one, nobody noticed that the sidebar had no code path to a photo at
+           all and always drew initials.
+
+           The bytes are echoed back as a `data:` URI rather than written to
+           disk. Production returns a real URL from real storage; what this has
+           to reproduce is the SHAPE (`{ avatarUrl }` on the way out, the value
+           later appearing on `GET /api/profile`) and, more importantly, the
+           fact that a photo exists at all so the chrome can be looked at. */
+        if (url === '/api/profile/avatar' && req.method === 'POST') {
+          const raw = await body(req);
+          const ct = req.headers['content-type'] ?? '';
+          const boundary = ct.split('boundary=')[1]?.split(';')[0];
+          let dataUri: string | null = null;
+          if (boundary) {
+            // Split on the raw buffer in latin1 so the bytes survive the round
+            // trip; a utf8 read would mangle every non-ASCII byte in the image.
+            const parts = raw.toString('binary').split(`--${boundary}`);
+            const filePart = parts.find((p) => /filename="[^"]+"/.test(p));
+            if (filePart) {
+              const mime = (/Content-Type:\s*([^\r\n]+)/i.exec(filePart)?.[1] ?? 'image/png').trim();
+              const bytes = filePart.split('\r\n\r\n').slice(1).join('\r\n\r\n').replace(/\r\n$/, '');
+              dataUri = `data:${mime};base64,${Buffer.from(bytes, 'binary').toString('base64')}`;
+            }
+          }
+          if (!dataUri) return json(res, 400, { error: 'no_file' });
+          avatars.set(me.id, dataUri);
+          return json(res, 200, { avatarUrl: dataUri });
+        }
+
+        if (url === '/api/profile/avatar' && req.method === 'DELETE') {
+          avatars.delete(me.id);
+          res.statusCode = 204;
+          return res.end();
+        }
+
         /* Spending the weekly credit. Requires `confirm: true` exactly as the
            real route does, so a client that forgets it fails HERE rather than in
            production — and the credit is decremented so the proposal stops
@@ -686,7 +725,19 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           }
           if (rerunCredits <= 0) return json(res, 429, { error: 'rerun_limit_reached' });
           rerunCredits -= 1;
-          return json(res, 200, { jobId: `job_rerun_${Date.now().toString(36)}` });
+          /* REGISTER THE JOB, or nothing can watch it.
+             This used to mint an id and store nothing, so `GET /api/analysis/:id`
+             404'd and the client turned a healthy re-match into `stage: failed`.
+             Backdating `started` past PHASE_ONE_MS and setting `confirmedAt`
+             puts the run straight into phase two, which is what a re-match is:
+             the documents are already read, only the matching runs again. */
+          const jobId = `job_rerun_${Date.now().toString(36)}`;
+          jobs_.set(jobId, {
+            started: Date.now() - PHASE_ONE_MS,
+            bad: false,
+            confirmedAt: Date.now(),
+          });
+          return json(res, 200, { jobId });
         }
 
         if (url === '/api/onboarding/progress') {
@@ -725,7 +776,11 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
         if (url === '/api/profile' && req.method === 'GET') {
           const stored = profiles.get(me.id);
           if (!stored) return json(res, 404, { error: 'no_profile' });
-          return json(res, 200, { ...stored, email: me.email });
+          // `avatarUrl` rides the profile, which is where the app reads it from
+          // on boot — see BACKEND.md §1.3.
+          return json(res, 200, {
+            ...stored, email: me.email, avatarUrl: avatars.get(me.id) ?? null,
+          });
         }
 
         /* Edits from the profile screen. Distinct from POST: this one does NOT
