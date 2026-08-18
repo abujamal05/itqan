@@ -23,6 +23,7 @@ import { ApiProvider, useApi } from './state/api';
 import { AuthProvider, useAuth } from './state/auth';
 import { OnboardingProvider, useOnboarding } from './state/onboarding';
 import { ChatProvider } from './state/chat';
+import { FeedbackProvider } from './state/feedback';
 import { siteLogin, siteVerify } from './lib/site';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -104,11 +105,30 @@ function RequireOnboarding({ children }: { children: ReactNode }) {
  */
 function RequireConfirmable({ children }: { children: ReactNode }) {
   const { user, booting } = useAuth();
-  const { reuploading } = useOnboarding();
+  const { reuploading, profile } = useOnboarding();
   if (booting) return <Booting />;
   if (!user) return <ToSiteLogin />;
   if (!user.emailVerified) return <ToSiteVerify />;
-  if (user.onboarded && !reuploading) return <Navigate to="/dashboard" replace />;
+  /**
+   * `!profile` is what stops this guard racing the screen it guards.
+   *
+   * Confirm finishes by calling `markOnboarded()` and then `navigate('/chat')`.
+   * React Router 7 wraps its location update in `startTransition`, so it is a
+   * LOW priority update, while `markOnboarded` is an ordinary urgent one. React
+   * therefore renders the urgent one first — still on `/confirm`, but now with
+   * `onboarded: true` — this guard fired, and its `<Navigate to="/dashboard">`
+   * committed and cancelled the pending transition to `/chat`.
+   *
+   * The effect was that a first run always landed on the dashboard, silently,
+   * while the comments here and at the end of Confirm both said it lands in
+   * chat. It never did.
+   *
+   * `profile` is set by `completeProfile()` in the same breath as the confirm
+   * succeeding, so it marks exactly the window in which Confirm owns where the
+   * user goes next. A returning user typing this URL has no in-memory profile
+   * and is still sent to the dashboard, which is the case this guard is for.
+   */
+  if (user.onboarded && !reuploading && !profile) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
 
@@ -189,6 +209,22 @@ function WithOnboarding({ children }: { children: ReactNode }) {
 function WithChat({ children }: { children: ReactNode }) {
   const api = useApi();
   return <ChatProvider api={api}>{children}</ChatProvider>;
+}
+
+/**
+ * Likes and dislikes, above the router so a verdict given on the dashboard is
+ * still there on the courses page. Only loaded for a finished user: there is
+ * nothing to rate during onboarding, and asking the endpoint before the account
+ * has any recommendations would be a request that can only answer "none".
+ */
+function WithFeedback({ children }: { children: ReactNode }) {
+  const api = useApi();
+  const { user } = useAuth();
+  return (
+    <FeedbackProvider api={api} enabled={!!user?.onboarded}>
+      {children}
+    </FeedbackProvider>
+  );
 }
 
 /** Adopts the language the user was already using on the site. */
@@ -296,6 +332,7 @@ export default function App() {
             <AuthProvider>
               <FollowSessionLocale />
               <WithOnboarding>
+                <WithFeedback>
                 <WithChat>
                   <SkipLink />
                   <DocumentTitle />
@@ -328,6 +365,7 @@ export default function App() {
                     </Routes>
                   </ScreenBoundary>
                 </WithChat>
+                </WithFeedback>
               </WithOnboarding>
             </AuthProvider>
           </ApiProvider>

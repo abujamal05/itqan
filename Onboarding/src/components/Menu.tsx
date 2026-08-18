@@ -15,12 +15,19 @@ export function Menu({
   children,
   label,
   align = 'end',
+  drop = 'up',
 }: {
   /** Rendered inside the trigger button. */
   trigger: ReactNode;
   children: (close: () => void) => ReactNode;
   label: string;
   align?: 'start' | 'end';
+  /**
+   * Which way the panel opens. `up` is the default because the first caller was
+   * the account menu, which lives at the BOTTOM of the sidebar. A menu near the
+   * top of the page needs `down`, or it opens off the top of its own container.
+   */
+  drop?: 'up' | 'down';
 }) {
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
@@ -72,7 +79,7 @@ export function Menu({
       </button>
 
       {open && (
-        <div className="menu__panel" id={id} role="menu" data-align={align}>
+        <div className="menu__panel" id={id} role="menu" data-align={align} data-drop={drop}>
           {children(() => close())}
         </div>
       )}

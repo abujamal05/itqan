@@ -586,6 +586,11 @@ That is true of *Itqan*, but third-party courses have prices and the courses pag
 prominently. These are not really in tension, but the brief should say so explicitly: **Itqan is
 free; courses it points to may not be, and their cost is always shown up front.**
 
+> **Resolved differently, 2026-08-18.** The premise changed rather than the tension: Itqan now has a
+> free tier and a premium tier for extended AI use, so "everything is free, no pricing ever" is simply
+> retired. The surviving claim is narrower and stronger — the account is free and nobody pays to get
+> hired. See `itqan-website/CLAUDE.md`.
+
 ### 11.2 Stale entries in the brief's open-decisions list
 
 - **"Three of four Hud poses TBD (scanning, celebrating, empathetic)."** Seven poses have shipped and

@@ -20,7 +20,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Camera, Check, FileText, GraduationCap, Pencil, Sparkles, Target,
+  ArrowRight, Camera, Check, FileText, GraduationCap, Pencil, Sparkles, Target,
   User as UserIcon, X,
 } from 'lucide-react';
 import { useI18n } from '../i18n';
@@ -32,6 +32,9 @@ import {
 } from '../components/ui';
 import type { ConfirmedProfile, Preferences, StoredProfile } from '../api';
 import { emptyPreferences } from '../api';
+import {
+  MIN_AGE, birthDateProblem, earliestBirthDate, isoDate, latestBirthDate,
+} from '../lib/age';
 
 /* ------------------------------------------------------------------ parts -- */
 
@@ -46,8 +49,10 @@ function initials(name: string) {
  * them and drift.
  */
 function Section({
-  title, icon: Icon, editing, onEdit, onCancel, onSave, saving, children,
+  id, title, icon: Icon, editing, onEdit, onCancel, onSave, saving, children,
 }: {
+  /** Anchors the section so the missing-information box can send you to it. */
+  id: string;
   title: string;
   icon: typeof UserIcon;
   editing: boolean;
@@ -59,7 +64,7 @@ function Section({
 }) {
   const { t } = useI18n();
   return (
-    <Card>
+    <Card id={`sec-${id}`}>
       <div className="stack">
         <div className="section__head">
           <h2 className="section__title">
@@ -212,19 +217,37 @@ function Row({ label, value }: { label: string; value: string | null | undefined
 
 /* ---------------------------------------------------------------- screen -- */
 
+/** Which sections can be edited in place. */
+type EditKey = 'details' | 'roles' | 'education' | 'prefs';
+
+/**
+ * One entry in the missing-information box.
+ *
+ * The box itself is unchanged by request — same card, same wording, same place.
+ * What changed is that its items now know where they live, so naming a gap and
+ * fixing it are one action instead of two. `section` is where the value is
+ * edited; `edit` is false for the one gap that is not editable here, because
+ * skills come from the documents and the honest fix is to re-read them.
+ */
+interface MissingItem {
+  label: string;
+  section: EditKey | 'skills';
+  edit: boolean;
+}
+
 export function Profile() {
   const { t, locale, formatDate } = useI18n();
   const api = useApi();
   const { user } = useAuth();
   const { data, loading, error, reload } = useAsync((s) => api.getProfile(s), [api, locale]);
 
-  const [editing, setEditing] = useState<'details' | 'prefs' | null>(null);
+  const [editing, setEditing] = useState<EditKey | null>(null);
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState<ConfirmedProfile | null>(null);
 
   // The draft mirrors whatever the server last confirmed, so cancelling is a
   // reset rather than a second source of truth.
-  const startEdit = useCallback((which: 'details' | 'prefs', p: StoredProfile) => {
+  const startEdit = useCallback((which: EditKey, p: StoredProfile) => {
     setDraft({
       fullName: p.fullName,
       birthDate: p.birthDate,
@@ -247,9 +270,8 @@ export function Profile() {
   if (!data) {
     return (
       <div className="stack stack--lg enter">
-        <header className="stack stack--sm">
+        <header>
           <h1 className="headline">{t('profile.title')}</h1>
-          <p className="subhead">{t('profile.sub')}</p>
         </header>
         <Card>
           <div className="empty">
@@ -270,14 +292,54 @@ export function Profile() {
    * it, and counting it would manufacture an incomplete profile out of a field
    * the product does not need.
    */
-  const missing: string[] = [];
-  if (!p.birthDate) missing.push(t('confirm.birth'));
-  if (!p.graduationDate) missing.push(t('confirm.graduation'));
-  if (!p.skills?.length) missing.push(t('profile.skills'));
-  if (!prefs.preferredRole) missing.push(t('q.preferredRole.title'));
-  if (!prefs.workArrangement) missing.push(t('q.workArrangement.title'));
+  const missing: MissingItem[] = [];
+  if (!p.birthDate) missing.push({ label: t('confirm.birth'), section: 'details', edit: true });
+  if (!p.graduationDate) missing.push({ label: t('confirm.graduation'), section: 'education', edit: true });
+  // Not editable here on purpose: skills are read from the documents, so the
+  // link goes to the section and its "update documents" action rather than
+  // opening a form that would let someone type a skill nothing evidences.
+  if (!p.skills?.length) missing.push({ label: t('profile.skills'), section: 'skills', edit: false });
+  if (!prefs.preferredRole) missing.push({ label: t('profile.targetedRole'), section: 'roles', edit: true });
+  if (!prefs.workArrangement) missing.push({ label: t('q.workArrangement.title'), section: 'prefs', edit: true });
+
+  /**
+   * Take the user to the thing they just tapped.
+   *
+   * Opens the section for editing where that is possible, then scrolls it into
+   * view and puts the caret in its first field. The focus call is the part that
+   * matters: scrolling alone leaves a keyboard or screen reader user exactly
+   * where they were, having "navigated" somewhere they cannot tell they arrived
+   * at. `requestAnimationFrame` because the section has to render its inputs
+   * before there is anything to focus.
+   */
+  const goToMissing = (item: MissingItem) => {
+    if (item.edit) startEdit(item.section as EditKey, p);
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`sec-${item.section}`);
+      el?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      const field = el?.querySelector<HTMLElement>('input:not([type=file]), textarea');
+      if (field) field.focus({ preventScroll: true });
+      else el?.focus({ preventScroll: true });
+    });
+  };
+
+  /**
+   * The age rule, applied to whatever is in the draft right now.
+   *
+   * Shown under the field AND used to block the save, so the two cannot
+   * disagree. `null` when the field is empty: a birth date is optional here for
+   * the same reason it is optional during onboarding — nothing in the pipeline
+   * reads one.
+   */
+  const birthProblem = draft ? birthDateProblem(draft.birthDate) : null;
+  const birthError = birthProblem
+    ? t(birthProblem, { min: String(MIN_AGE) })
+    : undefined;
 
   const save = async (next: ConfirmedProfile) => {
+    // A date the confirm screen would have rejected must not get in through the
+    // side door. Nothing else on this screen can be invalid today.
+    if (birthProblem) return;
     setSaving(true);
     try {
       await api.updateProfile(next);
@@ -293,9 +355,8 @@ export function Profile() {
 
   return (
     <div className="stack stack--lg enter">
-      <header className="stack stack--sm">
+      <header>
         <h1 className="headline">{t('profile.title')}</h1>
-        <p className="subhead">{t('profile.sub')}</p>
       </header>
 
       {/* Completeness first: the screen answers "am I finished" before detail. */}
@@ -304,8 +365,22 @@ export function Profile() {
           <div className="stack stack--sm">
             <strong>{t('profile.incomplete', { n: String(missing.length) })}</strong>
             <p className="text-sm">{t('profile.incompleteHelp')}</p>
+            {/* The box is unchanged; its ITEMS are now the way to fix them.
+                Real buttons, not chips with click handlers: each one moves
+                focus and changes what is on screen, which is a button's job and
+                is what makes it reachable by keyboard at all. */}
             <div className="row" style={{ gap: 'var(--space-2)' }}>
-              {missing.map((m) => <Chip key={m}>{m}</Chip>)}
+              {missing.map((m) => (
+                <button
+                  key={m.label}
+                  type="button"
+                  className="chip chip--action"
+                  onClick={() => goToMissing(m)}
+                >
+                  {m.label}
+                  <ArrowRight size={14} aria-hidden="true" className="go" />
+                </button>
+              ))}
             </div>
           </div>
         </Card>
@@ -314,6 +389,7 @@ export function Profile() {
       {/* Personal details. Email is read only: it identifies the account, and
           the pipeline must never be able to rewrite it. */}
       <Section
+        id="details"
         title={t('profile.personal')}
         icon={UserIcon}
         editing={editing === 'details'}
@@ -344,18 +420,24 @@ export function Profile() {
               onChange={(e) => setDraft({ ...draft, phone: e.target.value || null })}
               autoComplete="tel"
             />
+            {/* Same bounds and same rule as the onboarding screen, from
+                lib/age.ts. They used to exist only there, so this input would
+                happily accept a date the confirm screen rejected — the age
+                limit was enforced on exactly one of the two paths that set
+                this field. */}
             <InputField
               label={t('confirm.birth')}
+              hint={t('confirm.birthHint')}
               type="date"
+              min={isoDate(earliestBirthDate())}
+              max={isoDate(latestBirthDate())}
+              error={birthError}
               value={draft.birthDate ?? ''}
               onChange={(e) => setDraft({ ...draft, birthDate: e.target.value || null })}
             />
-            <InputField
-              label={t('confirm.graduation')}
-              type="month"
-              value={draft.graduationDate ?? ''}
-              onChange={(e) => setDraft({ ...draft, graduationDate: e.target.value || null })}
-            />
+            {/* Graduation moved to its own section. It was edited here AND
+                displayed there, so the same value had two homes and only one
+                of them had a way to change it. */}
           </div>
         ) : (
           <div className="stack stack--sm">
@@ -371,9 +453,37 @@ export function Profile() {
           things that every other product in this category collapses into one
           — and collapsing them is how a suggestion starts passing itself off
           as the user's own goal. The suggestion carries its reasoning. */}
-      <Section title={t('profile.roles')} icon={Target} editing={false}>
+      <Section
+        id="roles"
+        title={t('profile.roles')}
+        icon={Target}
+        editing={editing === 'roles'}
+        onEdit={() => startEdit('roles', p)}
+        onCancel={() => setEditing(null)}
+        onSave={() => draft && save(draft)}
+        saving={saving}
+      >
         <div className="stack stack--sm">
-          <Row label={t('profile.targetedRole')} value={prefs.preferredRole} />
+          {/* Editable HERE, and nowhere else. It used to be typed in the
+              preferences section below while being displayed up here as read
+              only, which is the arrangement that makes a user hunt for the edit
+              button belonging to the value in front of them. */}
+          {editing === 'roles' && draft ? (
+            <InputField
+              label={t('profile.targetedRole')}
+              hint={t('q.preferredRole.help')}
+              placeholder={t('q.preferredRole.placeholder')}
+              value={draft.preferences.preferredRole}
+              onChange={(e) => setDraft({
+                ...draft,
+                preferences: { ...draft.preferences, preferredRole: e.target.value },
+              })}
+            />
+          ) : (
+            <Row label={t('profile.targetedRole')} value={prefs.preferredRole} />
+          )}
+          {/* The agents' suggestion stays read only whatever happens: it is
+              what the documents imply, not something the user gets to set. */}
           <div className="profile__row">
             <span className="profile__label">{t('profile.suggestedRole')}</span>
             <span className={p.suggestedRole ? 'profile__value' : 'profile__value profile__value--missing'}>
@@ -390,16 +500,36 @@ export function Profile() {
       </Section>
 
       {/* Education. Graduation is the only field the pipeline reads today, so
-          the section holds exactly that rather than inventing a history. */}
-      <Section title={t('profile.education')} icon={GraduationCap} editing={false}>
+          the section holds exactly that rather than inventing a history — and
+          it is now editable here, where it is shown, instead of inside the
+          personal details form two sections up. */}
+      <Section
+        id="education"
+        title={t('profile.education')}
+        icon={GraduationCap}
+        editing={editing === 'education'}
+        onEdit={() => startEdit('education', p)}
+        onCancel={() => setEditing(null)}
+        onSave={() => draft && save(draft)}
+        saving={saving}
+      >
         <div className="stack stack--sm">
-          <Row label={t('confirm.graduation')} value={p.graduationDate} />
+          {editing === 'education' && draft ? (
+            <InputField
+              label={t('confirm.graduation')}
+              type="month"
+              value={draft.graduationDate ?? ''}
+              onChange={(e) => setDraft({ ...draft, graduationDate: e.target.value || null })}
+            />
+          ) : (
+            <Row label={t('confirm.graduation')} value={p.graduationDate} />
+          )}
         </div>
       </Section>
 
       {/* Skills, read only here on purpose: they come from the documents, and
           the honest way to change them is to re-read the documents. */}
-      <Section title={t('profile.skills')} icon={Sparkles} editing={false}>
+      <Section id="skills" title={t('profile.skills')} icon={Sparkles} editing={false}>
         <div className="stack stack--sm">
           {p.skills?.length ? (
             <div className="row" style={{ gap: 'var(--space-2)' }}>
@@ -416,7 +546,7 @@ export function Profile() {
       </Section>
 
       {/* Documents. */}
-      <Section title={t('profile.documents')} icon={FileText} editing={false}>
+      <Section id="documents" title={t('profile.documents')} icon={FileText} editing={false}>
         <div className="stack stack--sm">
           {p.documents?.length ? (
             <ul className="stack stack--sm">
@@ -448,6 +578,7 @@ export function Profile() {
       {/* Preferences: the four onboarding answers, editable because they are
           the user's opinion rather than an extraction. */}
       <Section
+        id="prefs"
         title={t('profile.preferences')}
         icon={Sparkles}
         editing={editing === 'prefs'}
@@ -458,15 +589,8 @@ export function Profile() {
       >
         {editing === 'prefs' && draft ? (
           <div className="stack">
-            <InputField
-              label={t('q.preferredRole.label')}
-              value={draft.preferences.preferredRole}
-              onChange={(e) => setDraft({
-                ...draft,
-                preferences: { ...draft.preferences, preferredRole: e.target.value },
-              })}
-              placeholder={t('q.preferredRole.placeholder')}
-            />
+            {/* The role is edited in the Roles section, which is also where it
+                is shown. Two editors for one string is how the two drift. */}
             {(['coursePricing', 'workArrangement', 'openToOtherRoles'] as const).map((key) => (
               <div className="field" key={key}>
                 <span className="field__label">{t(`q.${key}.title`)}</span>
@@ -491,7 +615,6 @@ export function Profile() {
           </div>
         ) : (
           <div className="stack stack--sm">
-            <Row label={t('q.preferredRole.title')} value={prefs.preferredRole} />
             <Row label={t('q.workArrangement.title')} value={prefLabel('workArrangement', prefs.workArrangement)} />
             <Row label={t('q.coursePricing.title')} value={prefLabel('coursePricing', prefs.coursePricing)} />
             <Row label={t('q.openToOtherRoles.title')} value={prefLabel('openToOtherRoles', prefs.openToOtherRoles)} />

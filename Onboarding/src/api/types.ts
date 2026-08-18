@@ -139,6 +139,15 @@ export interface Preferences {
   /** 'free' = free courses only. 'any' = free and paid both fine. */
   coursePricing: 'free' | 'any' | null;
   workArrangement: 'remote' | 'hybrid' | 'onsite' | null;
+  /**
+   * Whether the user knows what they are aiming for at all, asked before we ask
+   * WHICH role. Kept as its own field rather than inferred from an empty
+   * `preferredRole`, because the two are genuinely different people: someone who
+   * skipped the question, and someone who stopped to say they do not know yet.
+   * The second is the person this product exists for, and the flow branches on
+   * it — 'no' ends the questions and hands them to Hud.
+   */
+  knowsRole: 'yes' | 'no' | null;
   /** Free text, in the user's own words. May be empty. */
   preferredRole: string;
   /** Whether to surface adjacent roles they did not name. */
@@ -148,6 +157,7 @@ export interface Preferences {
 export const emptyPreferences = (): Preferences => ({
   coursePricing: null,
   workArrangement: null,
+  knowsRole: null,
   preferredRole: '',
   openToOtherRoles: null,
 });
@@ -449,6 +459,75 @@ export interface ChatThread {
 
 export type ChatThreadSummary = Pick<ChatThread, 'id' | 'title' | 'updatedAt'>;
 
+/* --------------------------------------------------- RECOMMENDATION FEEDBACK -- */
+
+/**
+ * What the user thought of a recommendation. PENDING BACKEND — see BACKEND.md §1.5.
+ *
+ * The whole point of collecting this is that the next run is better than the
+ * last, so it is stored on the ACCOUNT rather than in the tab. A thumb that
+ * survives only until a reload teaches the recommender nothing, and the user
+ * finds their dislikes back in the list, which reads as the product ignoring
+ * them.
+ *
+ * `reason` is deliberately a closed list plus `other`. Free text alone cannot
+ * be aggregated across users, and a preset alone cannot say the thing the user
+ * actually meant; both, and the ranker gets a signal it can act on today
+ * without losing the sentence that explains the outliers.
+ */
+export type FeedbackVerdict = 'like' | 'dislike';
+
+/** Which list the item came from. Job and course reasons do not overlap. */
+export type FeedbackSubject = 'job' | 'course';
+
+/**
+ * Why a recommendation was rejected.
+ *
+ * Split by subject because the useful reasons genuinely differ: a job can be in
+ * the wrong place or want the wrong experience, a course cannot be "too far to
+ * commute" and can be too expensive. `other` exists in both and is the only one
+ * that carries a note.
+ */
+export const JOB_DISLIKE_REASONS = [
+  'notInterested', 'wrongLocation', 'wrongLevel', 'wrongField', 'employer', 'other',
+] as const;
+export const COURSE_DISLIKE_REASONS = [
+  'notInterested', 'alreadyKnow', 'tooAdvanced', 'tooBasic', 'tooLong', 'price', 'other',
+] as const;
+
+export type JobDislikeReason = (typeof JOB_DISLIKE_REASONS)[number];
+export type CourseDislikeReason = (typeof COURSE_DISLIKE_REASONS)[number];
+export type DislikeReason = JobDislikeReason | CourseDislikeReason;
+
+export interface Feedback {
+  subject: FeedbackSubject;
+  /** The job or course id, as the service issued it. */
+  itemId: string;
+  verdict: FeedbackVerdict;
+  /** Only on a dislike, and only once the user has chosen one. */
+  reason?: DislikeReason | null;
+  /** Only when `reason` is `other`. The user's own words, never parsed here. */
+  note?: string | null;
+  /**
+   * The user asked for a replacement rather than only registering the dislike.
+   * Courses only — there is no "find me a different posting for this one" idea,
+   * because a posting is a real vacancy and not an interchangeable slot.
+   */
+  replaced?: boolean;
+}
+
+/**
+ * Every verdict this account has given, so a card can render the state the user
+ * left it in. Keyed by item id; absent means no opinion, which is different
+ * from a neutral one.
+ */
+export interface FeedbackState {
+  jobs: Record<string, FeedbackVerdict>;
+  courses: Record<string, FeedbackVerdict>;
+}
+
+export const emptyFeedback = (): FeedbackState => ({ jobs: {}, courses: {} });
+
 /** The whole surface the UI depends on. Implemented by http.ts and mock.ts. */
 export interface ItqanApi {
   /**
@@ -546,6 +625,38 @@ export interface ItqanApi {
     input: { threadId: string; messageId: string; verdict: ChatVerdict },
     signal?: AbortSignal,
   ): Promise<void>;
+
+  /**
+   * PENDING BACKEND — recommendation feedback. See BACKEND.md §1.5.
+   *
+   * Fire and forget for the same reason `rateMessage` is: the user has already
+   * seen the card change state, and an error toast over a thumb would cost more
+   * than the lost signal. The failure that matters is silent loss across a
+   * whole account, which is a server concern, not something to surface here.
+   */
+  sendFeedback(input: Feedback, signal?: AbortSignal): Promise<void>;
+  /**
+   * What this account has already said. Read once per list screen so a like
+   * survives a reload — the thing that makes it a preference rather than a
+   * highlight. An empty state is a normal answer on a new account.
+   */
+  getFeedback(signal?: AbortSignal): Promise<FeedbackState>;
+  /**
+   * A different course that closes the SAME gap, to drop into the slot the
+   * rejected one occupied.
+   *
+   * `exclude` carries every course already on screen, not just the rejected
+   * one: without it the obvious implementation hands back the card sitting
+   * directly below, and the user watches a course they can already see slide
+   * into the gap they just made.
+   *
+   * Null when there is genuinely nothing else — which the UI must say, rather
+   * than leaving a hole or silently restoring the disliked course.
+   */
+  findSimilarCourse(
+    input: { courseId: string; exclude: string[] },
+    signal?: AbortSignal,
+  ): Promise<Course | null>;
 }
 
 export const isStrong = (c: Confidence) => c >= TRUST_THRESHOLD;

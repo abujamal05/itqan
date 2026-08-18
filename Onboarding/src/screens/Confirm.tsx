@@ -31,7 +31,9 @@ import { useAuth } from '../state/auth';
 import { isStrong } from '../api';
 import type { Skill } from '../api';
 import { Button, Callout, Card, LoadingBlock } from '../components/ui';
-import { PipelineProgress } from '../components/PipelineProgress';
+import {
+  MIN_AGE, birthDateProblem, earliestBirthDate, isoDate, latestBirthDate,
+} from '../lib/age';
 import { SiteHeader } from '../components/SiteHeader';
 
 interface Draft {
@@ -42,10 +44,13 @@ interface Draft {
 }
 
 const today = new Date();
-const iso = (d: Date) => d.toISOString().slice(0, 10);
+/** Both bounds and the rule itself live in lib/age.ts; the profile screen
+ *  collects the same field and has to enforce the same thing. */
+const latestBirth = latestBirthDate(today);
+const earliestBirth = earliestBirthDate(today);
 
 export function Confirm() {
-  const { t } = useI18n();
+  const { t, formatNumber } = useI18n();
   const navigate = useNavigate();
   const api = useApi();
   // Flips the account's onboarded flag so the guards stop routing back here.
@@ -120,10 +125,16 @@ export function Confirm() {
   const errors = useMemo(() => {
     const e: Record<string, string> = {};
     if (!draft.name.trim()) e.name = t('confirm.errName');
-    if (draft.birth) {
-      const d = new Date(draft.birth);
-      if (d > today) e.birth = t('confirm.errBirthFuture');
-      else if (d.getFullYear() < 1940) e.birth = t('confirm.errBirthRange');
+    /**
+     * Still OPTIONAL — Agent A does not read a birth date and nothing in the
+     * pipeline needs one, so an empty field is not an error and blocking on it
+     * would invent a requirement. But a date that IS given has to be possible,
+     * and has to clear the minimum age; under 17 blocks the submit, because
+     * `errors` being non-empty is what stops it.
+     */
+    const birthProblem = birthDateProblem(draft.birth, today);
+    if (birthProblem) {
+      e.birth = t(birthProblem, { min: formatNumber(MIN_AGE) });
     }
     if (draft.graduation) {
       const y = Number(draft.graduation.slice(0, 4));
@@ -132,7 +143,25 @@ export function Confirm() {
     if (draft.skills.length === 0) e.skills = t('confirm.errSkills');
     if (!consent) e.consent = t('confirm.errConsent');
     return e;
-  }, [draft, consent, t]);
+    // `formatNumber` joins `t` here: the age message interpolates the limit, so
+    // a locale change has to re-run this or the numeral stays in the old script.
+  }, [draft, consent, t, formatNumber]);
+
+  /**
+   * The two groups, partitioned once rather than branched per chip.
+   *
+   * `isStrong` is the same threshold every other confidence in this product is
+   * judged against, so "found" here means exactly what "strong match" means on
+   * a job card. Order within each group is the pipeline's, which is roughly
+   * descending confidence; resorting would hide that.
+   */
+  const sureSkills = useMemo(
+    () => draft.skills.filter((s) => isStrong(s.confidence)), [draft.skills]);
+  const unsureSkills = useMemo(
+    () => draft.skills.filter((s) => !isStrong(s.confidence)), [draft.skills]);
+
+  const removeSkill = (id: string) =>
+    setDraft((d) => ({ ...d, skills: d.skills.filter((x) => x.id !== id) }));
 
   const addSkill = () => {
     const name = newSkill.trim();
@@ -175,7 +204,17 @@ export function Confirm() {
        * route in App.tsx. Someone returning is coming back to results, not to a
        * conversation.
        */
-      navigate('/chat', { replace: true });
+      /**
+       * `findRole` carries the one thing chat cannot work out for itself: this
+       * user stopped during onboarding to say they do not know what job they
+       * want, so the conversation should open ON that rather than on a generic
+       * "how can I help". Read from the stored preference rather than from a
+       * navigation flag, so it stays true if this call ever moves.
+       */
+      navigate('/chat', {
+        replace: true,
+        state: { findRole: preferences.knowsRole === 'no' },
+      });
     } catch {
       setBusy(false);
     }
@@ -200,13 +239,6 @@ export function Confirm() {
                 {entry === 'manual' || failed ? t('confirm.emptySub') : t('confirm.sub')}
               </p>
             </div>
-
-            {/* The bar belongs HERE most of all.
-                This is the screen the user lands on after answering everything,
-                and the one that has to wait for Agent A. Without it they get a
-                bare skeleton with no percentage, no stage and no reason — which
-                is indistinguishable from a hung app. */}
-            <PipelineProgress />
 
             {waiting ? (
               <Card><LoadingBlock rows={4} /></Card>
@@ -238,7 +270,12 @@ export function Confirm() {
                       value={draft.birth}
                       onChange={(v) => setDraft((d) => ({ ...d, birth: v }))}
                       type="date"
-                      max={iso(today)}
+                      // Was `max={iso(today)}`, which allowed a newborn and
+                      // opened the picker on this year. Both bounds now come
+                      // from today's date, so nothing here needs maintaining
+                      // when the year turns over.
+                      min={isoDate(earliestBirth)}
+                      max={isoDate(latestBirth)}
                       error={show('birth')}
                       // Always empty, and not an oversight: Agent A does not
                       // extract a birth date — it is not a field it reads — so
@@ -259,44 +296,91 @@ export function Confirm() {
                   </div>
                 </Card>
 
-                {/* Skills lead as capability: these are things the user HAS. */}
+                {/* TWO GROUPS, NOT TWO CHIP COLOURS.
+                    These used to be one flat list in which the only difference
+                    between "confident" and "guessing" was a tick versus a
+                    question mark and a slightly different tint. That is not a
+                    distinction anyone reads at a glance, on the one screen whose
+                    entire purpose is deciding what to trust.
+
+                    They are now different SHAPES in different regions. Confident
+                    skills stay compact chips; uncertain ones become rows in
+                    their own well, each carrying the course it came from. The
+                    second group also answers the two questions the flat list
+                    left open: WHY a skill is in it, and that being unsure is not
+                    an accusation. Both are said in words, because a dashed
+                    border cannot say either. */}
                 <Card>
                   <div className="stack">
                     <div className="stack stack--sm">
-                      <h2 className="section__title">{t('confirm.skills')}</h2>
-                      <p className="text-sm muted">{t('confirm.skillsSub')}</p>
+                      <h2 className="section__title">{t('confirm.skillsFound')}</h2>
+                      <p className="text-sm muted">{t('confirm.skillsFoundSub')}</p>
                     </div>
 
-                    {draft.skills.length > 0 ? (
+                    {sureSkills.length > 0 ? (
                       <ul className="row" style={{ gap: 'var(--space-2)' }}>
-                        {draft.skills.map((s) => {
-                          const sure = isStrong(s.confidence);
-                          return (
-                            <li key={s.id}>
-                              <span
-                                className={`chip chip--removable ${sure ? 'chip--capability' : 'chip--gap'}`}
-                                title={s.fromCourse ? t('confirm.skillFrom', { course: s.fromCourse }) : undefined}
+                        {sureSkills.map((s) => (
+                          <li key={s.id}>
+                            <span
+                              className="chip chip--removable chip--capability"
+                              title={s.fromCourse ? t('confirm.skillFrom', { course: s.fromCourse }) : undefined}
+                            >
+                              <Check size={14} aria-hidden="true" />
+                              <bdi>{s.name}</bdi>
+                              <button
+                                type="button"
+                                className="chip__x"
+                                aria-label={`${t('action.remove')}: ${s.name}`}
+                                onClick={() => removeSkill(s.id)}
                               >
-                                {sure
-                                  ? <Check size={14} aria-hidden="true" />
-                                  : <HelpCircle size={14} aria-hidden="true" />}
-                                <bdi>{s.name}</bdi>
-                                {!sure && <span className="sr-only">{t('confirm.lowConfidence')}</span>}
-                                <button
-                                  type="button"
-                                  className="chip__x"
-                                  aria-label={`${t('action.remove')}: ${s.name}`}
-                                  onClick={() => setDraft((d) => ({ ...d, skills: d.skills.filter((x) => x.id !== s.id) }))}
-                                >
-                                  <X size={14} aria-hidden="true" />
-                                </button>
-                              </span>
-                            </li>
-                          );
-                        })}
+                                <X size={14} aria-hidden="true" />
+                              </button>
+                            </span>
+                          </li>
+                        ))}
                       </ul>
                     ) : (
                       <p className="text-sm muted">{t('confirm.skillsEmpty')}</p>
+                    )}
+
+                    {/* Rendered only when there IS one. A permanent empty panel
+                        headed "skills to check" is a worry about nothing. */}
+                    {unsureSkills.length > 0 && (
+                      <div className="unsure">
+                        <div className="stack stack--sm">
+                          <h3 className="unsure__title">
+                            <HelpCircle size={16} aria-hidden="true" />
+                            {t('confirm.skillsUnsure')}
+                          </h3>
+                          <p className="text-sm">{t('confirm.skillsUnsureSub')}</p>
+                        </div>
+
+                        <ul className="unsure__list">
+                          {unsureSkills.map((s) => (
+                            <li key={s.id} className="unsure__row">
+                              <span className="unsure__name"><bdi>{s.name}</bdi></span>
+                              {/* Provenance in the LAYOUT, not in a title
+                                  attribute. As a tooltip it did not exist on a
+                                  phone and did not exist for a keyboard, which
+                                  between them are most of the people being asked
+                                  to make this judgement. */}
+                              <span className="unsure__from">
+                                {s.fromCourse
+                                  ? t('confirm.skillFrom', { course: s.fromCourse })
+                                  : t('confirm.skillFromUnknown')}
+                              </span>
+                              <button
+                                type="button"
+                                className="unsure__x"
+                                aria-label={`${t('action.remove')}: ${s.name}`}
+                                onClick={() => removeSkill(s.id)}
+                              >
+                                <X size={15} aria-hidden="true" />
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
 
                     <div className="row" style={{ flexWrap: 'nowrap' }}>

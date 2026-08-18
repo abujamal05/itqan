@@ -77,10 +77,12 @@ export function Upload() {
           <div className="stage__content">
             <ResumeBanner />
 
-            <div className="stack stack--sm">
-              <h1 className="headline">{t('upload.title')}</h1>
-              <p className="subhead">{t('upload.sub')}</p>
-            </div>
+            {/* The subtitle is gone. It read "Your CV is the one Itqan needs to
+                start. Add your transcript too and it will read that as well." —
+                which is the same requirement the drop zone labels and the
+                `upload.missingRequired` callout already state, twice, closer to
+                the control they apply to. */}
+            <h1 className="headline">{t('upload.title')}</h1>
 
             <DocumentUpload items={items} setItems={setItems} />
 
@@ -99,25 +101,26 @@ export function Upload() {
             )}
             {ready && <p className="text-sm muted">{t('upload.othersLater')}</p>}
 
-            <div className="row">
+            {/* THE TWO ROUTES OUT OF THIS SCREEN, SIDE BY SIDE.
+                They used to be separated by a horizontal rule, which framed
+                "I do not have my documents" as a footnote below the real
+                action rather than as the other way through — and for the
+                graduate who cannot lay hands on a PDF right now, it is the
+                only way through. Presenting them as a pair says both are
+                allowed. The primary still leads: filled against bordered, and
+                first in the reading order.
+
+                `upload__routes` wraps to a column below 30rem, where two full
+                width buttons beat two cramped ones. */}
+            <div className="upload__routes">
               <Button onClick={submit} disabled={!ready || uploading} loading={busy}>
                 {t('upload.cta')}
               </Button>
-            </div>
-
-            <hr className="divider" />
-
-            {/* A real bordered button, not a ghost. As a ghost it was
-                invisible until hovered, so the one escape route for someone
-                without their documents read as body text and was missed. It
-                stays visually quieter than the primary action — secondary,
-                not hidden. */}
-            <div className="stack stack--sm">
-              <Button variant="secondary" onClick={goManual} style={{ alignSelf: 'flex-start' }}>
+              <Button variant="secondary" onClick={goManual}>
                 {t('upload.noDoc')}
               </Button>
-              <p className="text-sm muted">{t('upload.noDocHint')}</p>
             </div>
+            <p className="text-sm muted">{t('upload.noDocHint')}</p>
           </div>
         </div>
       </main>

@@ -27,9 +27,23 @@
  * here than usual, because a progress track drawn only in gold and grey is
  * exactly the kind of thing that vanishes for a colour-blind reader.
  */
-import { Check, Flag } from 'lucide-react';
+import { ArrowRight, Check, Flag } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import type { JourneyStage } from '../api';
+
+/**
+ * Stages that lead somewhere, by stage id.
+ *
+ * Only the last one does today, and that is deliberate rather than unfinished:
+ * "reading your documents" has no page to be the destination of, and a stage
+ * that navigates somewhere unhelpful is worse than one that does not navigate.
+ * Applying for jobs is the exception because the postings page IS that stage.
+ *
+ * Keyed by the SERVICE's stage id, and applied only to the final stage, so a
+ * pipeline that grows a step in the middle cannot silently turn it into a link.
+ */
+const STAGE_LINKS: Record<string, string> = { jobs: '/jobs' };
 
 export function Journey({ stages, target }: { stages: JourneyStage[]; target?: string }) {
   const { t, formatNumber } = useI18n();
@@ -71,11 +85,15 @@ export function Journey({ stages, target }: { stages: JourneyStage[]; target?: s
       </div>
 
       <ol className="journey" data-reached={reached}>
-        {stages.map((s) => (
+        {stages.map((s, i) => {
+          // Last stage only. See STAGE_LINKS.
+          const to = i === stages.length - 1 ? STAGE_LINKS[s.id] : undefined;
+          return (
           <li
             key={s.id}
             className="journey__stage"
             data-state={s.state}
+            data-linked={to ? '' : undefined}
             /* The one stage a screen reader should land on as "you are here". */
             aria-current={s.state === 'current' ? 'step' : undefined}
           >
@@ -95,7 +113,20 @@ export function Journey({ stages, target }: { stages: JourneyStage[]; target?: s
             </span>
 
             <span className="journey__body">
-              <span className="journey__label">{s.label}</span>
+              {/* A linked stage puts the LABEL in the anchor, and the anchor
+                  stretches over the whole stage through `.journey__go::after`.
+                  Wrapping the <li> in a link instead would put the rail and the
+                  marker inside the accessible name, and a stage that reads as
+                  "check mark Applying for jobs Next milestone Still to come" is
+                  not a link label anyone can act on. */}
+              {to ? (
+                <Link className="journey__go" to={to}>
+                  <span className="journey__label">{s.label}</span>
+                  <ArrowRight size={14} aria-hidden="true" className="go" />
+                </Link>
+              ) : (
+                <span className="journey__label">{s.label}</span>
+              )}
               {/* Only the current stage carries its detail into the layout. On
                   the others it is a tooltip's worth of information competing
                   with the one line the user needs. */}
@@ -105,7 +136,8 @@ export function Journey({ stages, target }: { stages: JourneyStage[]; target?: s
             {/* Spoken, never drawn: the visual state is already obvious. */}
             <span className="sr-only">{t(`journey.state.${s.state}`)}</span>
           </li>
-        ))}
+          );
+        })}
       </ol>
 
       {/* Where the road goes. A progress track with no destination is a

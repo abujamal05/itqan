@@ -102,28 +102,47 @@
 
 .guide { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); }
 
+/* HUD IS SPEAKING, so it has to look like speech and not like a notice.
+   It used to be `--color-surface` behind a hairline of `--color-border`, which
+   is exactly what every card on the screen is made of — so his line read as one
+   more panel of page furniture, distinguishable only by a small tail.
+
+   The accent wash and the gold hairline separate it from every card around it
+   and tie it to him. This is NOT a second gold anchor: a wash at 7% behind a
+   `--color-border-accent` hairline is the same "accent surface" treatment the
+   dashboard's next-step well uses, and the viewport's actual gold anchor is
+   still the primary button. */
 .guide__bubble {
   position: relative;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: var(--color-accent-wash);
+  border: 1px solid var(--color-border-accent);
   border-radius: var(--radius-lg);
   padding: var(--space-4) var(--space-5);
-  box-shadow: var(--shadow-sm);
+  /* Lifted off the page. Speech that sits flat reads as a caption. */
+  box-shadow: var(--shadow-md);
   text-align: center;
-  max-inline-size: 22rem;
+  /* Was body copy at body weight, indistinguishable from the paragraph below
+     it. It is one short line and it is the first thing said on the screen. */
+  font-size: var(--text-lg);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-snug);
+  max-inline-size: 24rem;
   animation: bubble-in var(--duration-slow) var(--ease-out) both;
 }
-/* Tail: two stacked triangles so the 1px border reads through the notch. */
+/* Tail: two stacked triangles so the 1px border reads through the notch. Both
+   follow the bubble's own colours, or the notch shows the old white. */
 .guide__bubble::before,
 .guide__bubble::after {
   content: ''; position: absolute; inline-size: 0; block-size: 0;
   inset-block-start: -10px; inset-inline-start: 50%; translate: -50% 0;
   border-inline: 10px solid transparent;
-  border-block-end: 10px solid var(--color-border);
+  border-block-end: 10px solid var(--color-border-accent);
 }
 .guide__bubble::after {
   inset-block-start: -9px;
-  border-block-end-color: var(--color-surface);
+  /* The wash is translucent, so the tail is composited over the page ground
+     the same way the bubble is and the two cannot differ in tone. */
+  border-block-end-color: var(--color-accent-wash);
 }
 @keyframes bubble-in {
   from { opacity: 0; transform: translateY(-6px) scale(0.98); }
@@ -136,17 +155,21 @@
   .guide { flex-direction: row; align-items: center; gap: var(--space-3); }
   .guide__hud { flex: 0 0 auto; }
   .guide .hud { inline-size: 84px; min-inline-size: 84px; }
-  .guide__bubble { text-align: start; flex: 1; padding: var(--space-3) var(--space-4); }
+  .guide__bubble {
+    text-align: start; flex: 1;
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-base);
+  }
   /* The tail turns to point sideways at him, and mirrors with direction. */
   .guide__bubble::before, .guide__bubble::after {
     inset-block-start: 50%; inset-inline-start: -10px; translate: 0 -50%;
     border-inline: none; border-block: 10px solid transparent;
-    border-inline-end: 10px solid var(--color-border);
+    border-inline-end: 10px solid var(--color-border-accent);
   }
   .guide__bubble::after {
     inset-inline-start: -9px;
     border-block-color: transparent;
-    border-inline-end-color: var(--color-surface);
+    border-inline-end-color: var(--color-accent-wash);
   }
   /* He stays on narrow screens now that he costs one short row, and leads the
      content because he is the one introducing it. */
@@ -257,6 +280,25 @@
   from { opacity: 0; transform: translateY(4px) scale(0.98); }
   to   { opacity: 1; transform: none; }
 }
+/* Opening DOWNWARD, for a menu that is not at the bottom of the viewport.
+   The default above suits the account menu in the sidebar footer; a trigger in
+   the first card on the page needs the opposite, or the panel is drawn off the
+   top of its own container. The entrance mirrors too — a panel that grows
+   downward should not fly upward into place. */
+.menu__panel[data-drop='down'] {
+  inset-block-end: auto;
+  inset-block-start: calc(100% + var(--space-2));
+  transform-origin: top center;
+  animation-name: menu-in-down;
+}
+@keyframes menu-in-down {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+/* `align` was being written to the DOM and read by nothing, so every panel
+   hung off the START edge of its trigger whatever it asked for. A trigger at
+   the inline END of a card needs the panel to hang back INTO the card. */
+.menu__panel[data-align='end'] { inset-inline-start: auto; inset-inline-end: 0; }
 .menu__head {
   padding: var(--space-3); border-block-end: 1px solid var(--color-border);
   margin-block-end: var(--space-1);
@@ -467,7 +509,17 @@
   inset: 0;
   z-index: 1;
   border-radius: var(--radius-md);
-  background: var(--color-accent-tint);
+  /* OPAQUE BASE, then the tint on top. `background: var(--color-accent-tint)`
+     alone did NOT occlude the rail, because that token is 16% alpha in both
+     themes — so the gold thread read straight through the card it was supposed
+     to be interrupted by, and z-index: 1 above the rail bought nothing. It was
+     visible in light mode and glaring in dark, where the rail is `--gold-400`
+     on navy. Compositing the same tint over an opaque surface keeps the
+     intended colour and actually hides what is behind it.
+     This also fixes the LAST stage: once "applying for jobs" becomes current,
+     it is this card the thread was cutting through. */
+  background-color: var(--color-surface);
+  background-image: linear-gradient(var(--color-accent-tint), var(--color-accent-tint));
   border: 1px solid var(--color-border-accent);
 }
 /* Content rides above the card it sits on. */
@@ -523,6 +575,52 @@
 }
 .target svg { color: var(--color-accent-ink); flex: 0 0 auto; }
 .target__hint { color: var(--color-text-muted); font-style: normal; }
+
+/* ---- The one stage that leads somewhere ----------------------------------
+   Only the final stage links, to the postings page (Journey.tsx, STAGE_LINKS).
+   The anchor holds just the label so the accessible name is the stage name,
+   and `::after` stretches the hit area over the whole stage — a 14px text link
+   inside a 120px card is a target nobody finds on a phone. z-index 3 puts it
+   above the current stage's card (1) and its content (2); nothing else in the
+   panel is interactive, so it cannot swallow another control. */
+.journey__go {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  color: inherit; text-decoration: none;
+  font-size: var(--text-sm); font-weight: var(--weight-medium);
+}
+.journey__go::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: var(--radius-md);
+}
+.journey__go .go {
+  color: var(--color-accent-ink);
+  flex: 0 0 auto;
+  transition: transform var(--duration-base) var(--ease-hover);
+}
+/* Travel is a transform on an inline icon, so it costs no layout, and the
+   distance rides --motion-scale like everything else here. */
+.journey__go:hover .go { transform: translateX(calc(3px * var(--motion-scale))); }
+[dir='rtl'] .journey__go .go { transform: scaleX(-1); }
+[dir='rtl'] .journey__go:hover .go { transform: scaleX(-1) translateX(calc(3px * var(--motion-scale))); }
+
+/* A linked stage says so before it is clicked: it lifts out of the "upcoming"
+   dimming on hover, and the label underlines. Both are state changes on an
+   element the user is already pointing at, so neither needs to shout. */
+.journey__stage[data-linked] { cursor: pointer; }
+.journey__stage[data-linked]:hover { opacity: 1; }
+.journey__stage[data-linked]:hover .journey__label { text-decoration: underline; }
+.journey__stage[data-linked]:hover .journey__marker { border-color: var(--color-border-accent); }
+/* The ring goes on the STAGE, not on the stretched anchor: the anchor's box is
+   the label, so a focus ring on it outlined two words in the middle of a card
+   the keyboard user had just landed on. */
+.journey__stage:has(.journey__go:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.journey__go:focus-visible { outline: none; }
 
 /* Phones: the track runs downward and the stages become rows. The thread has to
    move with it — as a horizontal rule at 42px it would cut across the column. */

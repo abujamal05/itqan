@@ -154,6 +154,53 @@ export const courses = (l: Locale) => [
   },
 ];
 
+/**
+ * A bench of courses that never appear in the main list, so "look for another
+ * similar course" has somewhere to look.
+ *
+ * Without these the stub could only ever hand back a course already on screen,
+ * and the one behaviour the replacement flow has to prove — a NEW card in the
+ * slot — could not be seen locally. Each one deliberately shares an `unlocks`
+ * entry with a course in the main list, because that is the match rule the real
+ * recommender is being asked for: same gap, different course.
+ *
+ * Their price and duration shapes repeat the awkward cases on purpose (a null
+ * duration, an unlabelled price), so a replacement card is rendered through the
+ * same branches the originals exercise rather than through the easy one.
+ */
+export const alternateCourses = (l: Locale) => [
+  {
+    id: 'c4',
+    title: pick({ ar: 'لوحات معلومات Power BI عملياً', en: 'Power BI dashboards in practice' }, l),
+    provider: pick({ ar: 'إدراك', en: 'Edraak' }, l),
+    hoursMin: 6, hoursMax: 6, durationText: '6 hours',
+    price: 0, currency: 'OMR', priceLabel: 'free' as const,
+    unlocks: ['Power BI', pick({ ar: 'لوحات المعلومات', en: 'Dashboards' }, l)],
+    recommended: false,
+    source: { name: 'Edraak', url: 'https://example.com/courses/c4', retrievedAt: '2026-08-02' },
+  },
+  {
+    id: 'c5',
+    title: pick({ ar: 'استعلامات SQL من الصفر', en: 'SQL queries from scratch' }, l),
+    provider: 'freeCodeCamp',
+    hoursMin: null, hoursMax: null, durationText: null,
+    price: 0, currency: 'OMR', priceLabel: 'free' as const,
+    unlocks: ['SQL', pick({ ar: 'نمذجة البيانات', en: 'Data modelling' }, l)],
+    recommended: false,
+    source: { name: 'freeCodeCamp', url: 'https://example.com/courses/c5', retrievedAt: '2026-08-05' },
+  },
+  {
+    id: 'c6',
+    title: pick({ ar: 'مهارات العرض والتواصل', en: 'Presenting and communicating at work' }, l),
+    provider: 'Coursera / Google',
+    hoursMin: 10, hoursMax: 20, durationText: '5 weeks of study, 2-4 hours a week',
+    price: null, currency: null, priceLabel: 'paid' as const,
+    unlocks: [pick({ ar: 'التواصل المهني', en: 'Professional communication' }, l)],
+    recommended: false,
+    source: { name: 'Coursera', url: 'https://example.com/courses/c6', retrievedAt: '2026-08-05' },
+  },
+];
+
 export const dashboard = (l: Locale) => ({
   readiness: 72,
   readinessNote: pick({

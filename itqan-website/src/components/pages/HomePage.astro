@@ -32,10 +32,6 @@ const stepIcons = [
 <section class="hero">
   <div class="container hero__grid">
     <div class="hero__copy">
-      <p class="hero__kicker reveal">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5l5 5L20 6"></path></svg>
-        <span>{s.home.hero.kicker}</span>
-      </p>
       <h1 class="hero__title reveal">{s.home.hero.heading}</h1>
       <div class="hero__rule reveal" aria-hidden="true"></div>
       <p class="hero__sub reveal">{s.home.hero.sub}</p>
@@ -418,28 +414,9 @@ const stepIcons = [
     flex: 1 1 32rem;
   }
 
-  .hero__kicker {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-full);
-    background-color: var(--color-surface);
-    border: 1px solid var(--color-border);
-    box-shadow: var(--shadow-sm);
-    color: var(--color-text);
-    font-size: var(--text-sm);
-    font-weight: var(--weight-medium);
-  }
-
-  .hero__kicker svg {
-    color: var(--color-accent-ink);
-  }
-
   /* Size is fluid and lives in global.css beside the other display headings, so
      the hero and the interior page heads scale on one curve. */
   .hero__title {
-    margin-block-start: var(--space-6);
     font-weight: var(--weight-bold);
     line-height: var(--leading-tight);
     max-inline-size: 20ch;

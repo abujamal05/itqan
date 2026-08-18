@@ -23,8 +23,8 @@
  * The greeting is authored on the client, not fetched, because an empty state
  * that waits on a round trip is a blank screen with extra steps.
  */
-import { useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { useChat } from '../state/chat';
 import { Message } from '../components/Message';
@@ -45,6 +45,43 @@ export function Chat() {
   const thread = useRef<HTMLOListElement>(null);
   const count = messages.length;
   const started = count > 0;
+
+  /**
+   * ARRIVING FROM ONBOARDING WITHOUT A ROLE IN MIND.
+   *
+   * The confirm screen sets `findRole` when the user answered "not yet" to
+   * whether they know what job they want. Two things follow, and they are
+   * separate on purpose:
+   *
+   *  - a welcome line is rendered ABOVE the thread, authored on the client for
+   *    the same reason the greeting is: it is orientation, not an answer, and
+   *    waiting on a round trip to say hello is a blank screen with extra steps;
+   *  - the roles question is asked once, automatically, so Hud's first turn is
+   *    the real one — three roles drawn from their own courses, each with the
+   *    reasoning, plus live postings attached as cards. That answer has to come
+   *    from the service. Authoring role names on the client would be inventing
+   *    the single most consequential sentence this product says to anyone.
+   *
+   * Captured into state on the first render because the effect below rewrites
+   * the URL to `/chat/:threadId`, which discards `location.state` — reading it
+   * lazily would lose the flag before the auto-ask fires.
+   */
+  const location = useLocation();
+  const [findRole] = useState(
+    () => (location.state as { findRole?: boolean } | null)?.findRole === true);
+  const asked = useRef(false);
+
+  useEffect(() => {
+    if (!findRole || asked.current) return;
+    // Guarded against a thread that already exists: arriving back here later
+    // must not append the same question to a conversation in progress.
+    if (param || threadId || count > 0 || loading) return;
+    asked.current = true;
+    ask(t('chat.open.roles'));
+    // Fires once, on arrival. `ask` and `t` are stable enough that adding them
+    // would only risk re-running this against a thread the user has moved on in.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [findRole, param, threadId, count, loading]);
 
   /* The URL owns which conversation is showing. A param that does not match the
      loaded thread means the user arrived by link or by the sidebar; no param at
@@ -79,7 +116,11 @@ export function Chat() {
 
   return (
     <div className="chat" data-started={started || undefined}>
-      {!started && !loading && (
+      {/* Suppressed on the findRole path: the generic "how can I help today"
+          would flash for the moment between arriving and the auto-asked turn
+          landing, which is the wrong question asked of someone who has just
+          told us they do not know the answer. */}
+      {!started && !loading && !findRole && (
         <div className="greet">
           <div className="greet__hud">
             <Hud pose="waving" then="idle" loop size="md" eager />
@@ -96,6 +137,14 @@ export function Chat() {
       )}
 
       {loading && <LoadingBlock rows={4} />}
+
+      {/* The welcome for someone who arrived here without a role in mind. It
+          sits above the thread and stays there, because it is the frame for the
+          whole conversation rather than a turn in it — and because a greeting
+          that vanishes the moment the first answer lands never gets read. */}
+      {findRole && (
+        <p className="chat__welcome">{t('chat.welcomeRoles')}</p>
+      )}
 
       {started && (
         <>

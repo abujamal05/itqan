@@ -33,15 +33,17 @@
  * Hud is deliberately absent from this whole page: the brand locks the mascot out
  * of verdicts, scores, real matches and data tables, all of which are here.
  */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check, ChevronDown, Plus, Target } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, Plus } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useApi } from '../state/api';
 import { useAsync } from '../lib/useAsync';
 import { useOnboarding } from '../state/onboarding';
 import { useAuth } from '../state/auth';
 import { Card, EmptyState, ErrorState, GapChip, LoadingBlock } from '../components/ui';
+import { CareerGoal } from '../components/CareerGoal';
+import type { Course } from '../api';
 import { MatchCard } from '../components/MatchCard';
 import { CourseCard } from '../components/CourseCard';
 import { Journey } from '../components/Journey';
@@ -50,6 +52,31 @@ import { useRunInFlight } from '../components/PipelineProgress';
 /** How much of each list the dashboard shows before handing off to its page. */
 const SKILLS_SHOWN = 4;
 const CARDS_SHOWN = 2;
+
+/**
+ * Where the user stands today, in a word: still studying, or out.
+ *
+ * DERIVED from the graduation date they confirmed, not stated by the service.
+ * That date is the one fact on the profile that answers this question, and
+ * deriving it means this line cannot disagree with the date shown on the
+ * profile screen. It is also why there is no third guess: no date, no claim,
+ * and the line is simply absent rather than defaulting to either.
+ */
+function standingOf(
+  graduationDate: string | null | undefined,
+  t: (k: string) => string,
+): string | null {
+  if (!graduationDate) return null;
+  // `yyyy-mm` is what <input type="month"> stores and what Agent A returns.
+  const grad = new Date(`${graduationDate.slice(0, 7)}-01T00:00:00`);
+  if (Number.isNaN(grad.getTime())) return null;
+  const now = new Date();
+  // Compared at month granularity, because that is the precision of the value.
+  // A day-level comparison would call someone graduating this month a student
+  // for up to 30 days after their own certificate says otherwise.
+  const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  return grad > thisMonth ? t('dash.standingStudent') : t('dash.standingGraduate');
+}
 
 export function Dashboard() {
   const { t, locale } = useI18n();
@@ -79,9 +106,23 @@ export function Dashboard() {
    * never merged — see the note in api/types.ts.
    * Same fire-and-forget pattern as the courses fetch: no target, no banner.
    */
-  const { data: stored } = useAsync((s) => api.getProfile(s), [api, locale, settled]);
+  const { data: stored, reload: reloadProfile } = useAsync((s) => api.getProfile(s),
+                                                          [api, locale, settled]);
 
   const [showAllSkills, setShowAllSkills] = useState(false);
+  /**
+   * Same in-place replacement the courses page has, for the two cards shown
+   * here. See the longer note in Courses.tsx — the point is that rejecting a
+   * course must not throw the user off the dashboard they were reading.
+   */
+  const [editedCourses, setEditedCourses] = useState<Course[] | null>(null);
+  useEffect(() => { setEditedCourses(null); }, [courses]);
+  const [courseNotice, setCourseNotice] = useState<string | null>(null);
+  const replaceCourse = useCallback((id: string, next: Course) => {
+    setEditedCourses((cur) => (cur ?? courses ?? []).map((c) => (c.id === id ? next : c)));
+    // See the same note in Courses.tsx: the card that asked is already gone.
+    setCourseNotice(t('fb.replaced'));
+  }, [courses, t]);
 
   // The account is the source of truth for who this is: the onboarding profile
   // only exists in the session that ran onboarding, so a returning user has
@@ -109,9 +150,12 @@ export function Dashboard() {
    * change the shape of the document outline.
    */
   const header = (
-    <header className="stack stack--sm">
+    // No subtitle. It read "Here is what your transcript shows you can do
+    // today", which is a description of the page the page itself already is —
+    // the readiness block, the journey and the matches below it say it with
+    // data. A greeting does not need a caption.
+    <header>
       <h1 className="headline">{t('dash.greeting', { name: firstName })}</h1>
-      <p className="subhead">{t('dash.sub')}</p>
     </header>
   );
 
@@ -139,14 +183,16 @@ export function Dashboard() {
 
   const standings = showAllSkills ? data.standings : data.standings.slice(0, SKILLS_SHOWN);
   const hiddenSkills = Math.max(0, data.standings.length - SKILLS_SHOWN);
-  const topCourses = (courses ?? []).slice(0, CARDS_SHOWN);
+  const topCourses = (editedCourses ?? courses ?? []).slice(0, CARDS_SHOWN);
   const topMatches = data.topMatches.slice(0, CARDS_SHOWN);
 
   // What the user named beats what the agents guessed; the suggestion is only
   // ever a fallback, and it is labelled as a suggestion when it is used.
+  // `target` is still needed here for the journey's destination line; the
+  // readiness block's copy of it now lives in <CareerGoal>.
   const namedTarget = stored?.preferences?.preferredRole?.trim() || '';
   const target = namedTarget || stored?.suggestedRole?.title || '';
-  const targetIsSuggested = !namedTarget && !!stored?.suggestedRole?.title;
+  const standing = standingOf(stored?.graduationDate, t);
 
   return (
     // `seq` staggers the direct children in, rather than the old single fade on
@@ -166,21 +212,13 @@ export function Dashboard() {
                 floor: on a 320px phone the card's content box is 215px, the
                 block refused to go under 256, and the readiness sentence — the
                 first thing on the first screen — hung 16px outside the card. */}
-            <div className="stack stack--sm" style={{ flex: 1, minWidth: 'min(16rem, 100%)' }}>
+            {/* LEFT: where you are, and nothing else. The target used to sit
+                here too, as a line of body copy under the heading, which read
+                as a footnote on the score instead of as the other half of the
+                sentence. It is now its own side. */}
+            <div className="stack stack--sm readiness__where">
               <h2 className="section__title" id="dash-readiness">{t('dash.readiness')}</h2>
-              {/* The score is a distance to something. Naming the target is what
-                  turns "62 out of 100" from a grade into a position on a route,
-                  and it is the same destination the journey below ends at. */}
-              {target && (
-                <p className="target">
-                  <Target size={15} aria-hidden="true" />
-                  <span>
-                    {t('dash.targetLabel')}{' '}
-                    <strong><bdi>{target}</bdi></strong>
-                    {targetIsSuggested && <em className="target__hint"> {t('dash.targetSuggested')}</em>}
-                  </span>
-                </p>
-              )}
+              {standing && <p className="standing">{standing}</p>}
               <p>{data.readinessNote}</p>
               <details>
                 <summary className="disclosure">{t('dash.readinessHow')}</summary>
@@ -189,6 +227,15 @@ export function Dashboard() {
                 </p>
               </details>
             </div>
+
+            {/* RIGHT: where you are going, and the control that changes it.
+                Both reloads, because readiness and the journey are both
+                measured against this role — changing it and leaving a score
+                computed for the old one on screen is the worst of both. */}
+            <CareerGoal
+              profile={stored ?? null}
+              onSaved={() => { reloadProfile(); reload(); }}
+            />
           </div>
 
           <hr className="divider" style={{ marginBlock: 'var(--space-6)' }} />
@@ -261,8 +308,20 @@ export function Dashboard() {
 
         {topCourses.length > 0 && (
           <div className="grid grid--2">
-            {topCourses.map((c) => <CourseCard key={c.id} course={c} />)}
+            {topCourses.map((c) => (
+              <CourseCard
+                key={c.id}
+                course={c}
+                onReplace={(next) => replaceCourse(c.id, next)}
+              />
+            ))}
           </div>
+        )}
+
+        {/* Outlives the card it describes. Polite, so it never pulls focus off
+            whatever the user is reading. */}
+        {courseNotice && (
+          <p className="text-sm" role="status" aria-live="polite">{courseNotice}</p>
         )}
 
         {/* The single most important thing on the page: one named action. It is
@@ -300,7 +359,6 @@ export function Dashboard() {
             <ArrowRight size={16} aria-hidden="true" className="go" />
           </Link>
         </div>
-        <p className="section__note">{t('dash.matchesSub')}</p>
         {topMatches.length === 0 ? (
           <Card>
             <EmptyState

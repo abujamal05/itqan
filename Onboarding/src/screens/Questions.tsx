@@ -1,6 +1,11 @@
 /**
- * Step 2 — four questions about the work they want, asked one at a time,
+ * Step 2 — a few questions about the work they want, asked one at a time,
  * while the documents are being read.
+ *
+ * FIVE OR THREE, depending on one answer. The middle question asks whether they
+ * know what job they want at all; "not yet" makes the two questions after it
+ * meaningless, so they are not asked and the flow ends early, handing the user
+ * to Hud. See the note above QUESTIONS.
  *
  * The parallel wait is the best idea in the original sketches and it is kept:
  * four agents take real time, and a user watching a progress bar is a user
@@ -30,23 +35,44 @@ import type { Preferences } from '../api';
 import { Button, Callout, TextField } from '../components/ui';
 import { HudGuide } from '../components/HudGuide';
 import { SiteHeader } from '../components/SiteHeader';
-import { PipelineProgress } from '../components/PipelineProgress';
 
 /** Each question names the field it fills, so answers cannot drift from state. */
 type ChoiceQuestion = {
   kind: 'choice';
-  field: 'coursePricing' | 'workArrangement' | 'openToOtherRoles';
+  field: 'coursePricing' | 'workArrangement' | 'knowsRole' | 'openToOtherRoles';
   options: string[];
 };
 type TextQuestion = { kind: 'text'; field: 'preferredRole' };
 type Question = (ChoiceQuestion | TextQuestion) & { id: string };
 
+/**
+ * THE FORK SITS BEFORE THE ROLE QUESTION, and that order is the point.
+ *
+ * "What job are you looking for?" is a question that assumes an answer exists.
+ * Asked of a final year student who genuinely does not know, it is not a
+ * question, it is a small failure — and the honest answer, a blank field, is
+ * indistinguishable from not bothering. Asking whether they know FIRST turns
+ * "I do not know" from a non-answer into a route: the remaining questions are
+ * about a role they have not chosen, so they are not asked, and the flow ends
+ * with Hud rather than with a dashboard measuring progress towards nothing.
+ */
 const QUESTIONS: Question[] = [
   { id: 'coursePricing', kind: 'choice', field: 'coursePricing', options: ['free', 'any'] },
   { id: 'workArrangement', kind: 'choice', field: 'workArrangement', options: ['remote', 'hybrid', 'onsite'] },
+  { id: 'knowsRole', kind: 'choice', field: 'knowsRole', options: ['yes', 'no'] },
   { id: 'preferredRole', kind: 'text', field: 'preferredRole' },
   { id: 'openToOtherRoles', kind: 'choice', field: 'openToOtherRoles', options: ['yes', 'no'] },
 ];
+
+/** The questions that still apply, given what has been answered so far. */
+const flowFor = (knowsRole: Preferences['knowsRole']) => QUESTIONS.filter((q) => (
+  // Both of the remaining questions are ABOUT a named role. With no role named
+  // they have nothing to be about, so they are dropped rather than asked and
+  // ignored — which is also what keeps the counter honest.
+  q.id === 'preferredRole' || q.id === 'openToOtherRoles'
+    ? knowsRole !== 'no'
+    : true
+));
 
 export function Questions() {
   const { t, formatNumber } = useI18n();
@@ -54,20 +80,44 @@ export function Questions() {
   const { preferences, setPreference, ready, failed, entry } = useOnboarding();
   const [index, setIndex] = useState(0);
 
-  const q = QUESTIONS[index];
-  const isLast = index === QUESTIONS.length - 1;
+  const flow = flowFor(preferences.knowsRole);
+  /**
+   * Clamped, because the flow can SHRINK under the index: answering "not yet"
+   * drops the last two questions, and coming back from the confirm screen would
+   * otherwise land on an index the list no longer has.
+   */
+  const at = Math.min(index, flow.length - 1);
+  const q = flow[at];
+  const isLast = at === flow.length - 1;
   // `ready`, not `settled`: what this screen is waiting on is Agent A's reading.
   // Agent C and Agent E do not start until the user confirms, so waiting for the
   // whole pipeline here would wait for something that cannot happen yet.
   const done = entry === 'document' && ready && !failed;
 
-  const goNext = () => (isLast ? navigate('/confirm') : setIndex((i) => i + 1));
-  const goBack = () => (index === 0 ? navigate('/upload') : setIndex((i) => i - 1));
+  const goNext = () => (isLast ? navigate('/confirm') : setIndex(at + 1));
+  const goBack = () => (at === 0 ? navigate('/upload') : setIndex(at - 1));
 
   const choose = (value: string) => {
     setPreference(q.field as keyof Preferences, value as never);
     // A beat so the selection is seen before the screen moves on.
-    window.setTimeout(goNext, 220);
+    window.setTimeout(() => {
+      /**
+       * "Not yet" ends the questions here.
+       *
+       * It goes to CONFIRM, not straight to chat, and that is a deliberate
+       * departure from a literal reading of "finish the onboarding flow at that
+       * point". Confirm is not another question — it is where the user checks
+       * what was read from their documents and gives consent, and it is the call
+       * that flips the account to onboarded and starts the second half of the
+       * pipeline. Skipping it would leave an account that the route guards send
+       * straight back to /upload, with no profile, no consent and a run that
+       * never finishes. What the user is spared is the questions, which is what
+       * was actually being asked for; Confirm then hands them to Hud rather than
+       * to the dashboard.
+       */
+      if (q.id === 'knowsRole' && value === 'no') { navigate('/confirm'); return; }
+      goNext();
+    }, 220);
   };
 
   return (
@@ -86,10 +136,6 @@ export function Questions() {
           </aside>
 
           <div className="stage__content">
-            {/* Pipeline status. Announced politely so it reaches a screen
-                reader without stealing focus from the question. */}
-            <PipelineProgress />
-
             {failed && (
               <Callout tone="danger">
                 <div className="stack stack--sm">
@@ -108,10 +154,13 @@ export function Questions() {
             )}
 
             <div className="stack stack--sm">
+              {/* Counts the questions this user will ACTUALLY be asked, so
+                  answering "not yet" shortens the total rather than leaving a
+                  promise of two more that never arrive. */}
               <span className="eyebrow">
                 {t('questions.counter', {
-                  current: formatNumber(index + 1),
-                  total: formatNumber(QUESTIONS.length),
+                  current: formatNumber(at + 1),
+                  total: formatNumber(flow.length),
                 })}
               </span>
               {/* key remounts the heading so a screen reader re-reads the new
