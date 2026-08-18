@@ -133,7 +133,7 @@ export interface AnalysisJob {
  * would be wrong for most of them.
  *
  * Every field is nullable. The questions only re-rank results, so refusing to
- * answer must never block anyone from their own transcript.
+ * answer must never block anyone from their own documents.
  */
 export interface Preferences {
   /** 'free' = free courses only. 'any' = free and paid both fine. */
@@ -197,7 +197,7 @@ export interface ConfirmedProfile {
 export interface SuggestedRole {
   title: string;
   confidence: Confidence;
-  /** The transcript -> skill -> role chain, in the user's language. */
+  /** The documents -> skill -> role chain, in the user's language. */
   why: string;
 }
 
@@ -254,7 +254,7 @@ export interface JobMatch {
   /** e.g. "Full time", "Remote", already localised by the service. */
   arrangement: string;
   score: Confidence;
-  /** The transcript -> skill -> requirement chain, in the user's language. */
+  /** The documents -> skill -> requirement chain, in the user's language. */
   why: string;
   matchedSkills: string[];
   source: Source;
@@ -313,7 +313,7 @@ export interface Course {
 
 export interface SkillStanding {
   name: string;
-  /** 0..1 how well evidenced this is by the transcript. */
+  /** 0..1 how well evidenced this is by the documents. */
   level: number;
   held: boolean;
 }
@@ -559,7 +559,7 @@ export interface ItqanApi {
   /**
    * Uploads one document. `onProgress` reports 0..1 so the UI can show real
    * movement instead of an indeterminate spinner — on a phone connection a
-   * transcript scan is not instant, and a stalled bar is the difference
+   * document scan is not instant, and a stalled bar is the difference
    * between "still working" and "broken".
    */
   uploadDocument(

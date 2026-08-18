@@ -16,7 +16,7 @@ Two audiences:
 
 Itqan is an Arabic-native career intelligence platform for graduates in Oman and the Gulf. It attacks
 one problem: a graduate cannot translate "Database Systems II" into the word a recruiter searches
-for, "SQL". Itqan reads a transcript and does that translation, showing its working.
+for, "SQL". Itqan reads your documents and does that translation, showing its working.
 
 The repo holds **two deployed products** that are halves of one thing:
 
@@ -154,7 +154,7 @@ Two of those are **reachable only by typing the URL**, on purpose:
 /dashboard   where you stand
 /courses     courses that close gaps
 /jobs        job postings you match
-/documents   replace the CV or transcript, then re-read them
+/documents   replace your documents, then re-read them
 /profile     see and correct everything held about you
 ```
 
@@ -263,27 +263,35 @@ site login/signup → /upload → /questions → /confirm → /dashboard
 empty boxes most users never fill. Files arrive however they arrive and each becomes a row stating
 what Itqan thinks it is, correctable in one tap. The kind is guessed from the filename because people
 name these files predictably. Kinds: transcript, CV, graduation certificate, certification,
-recommendation letter, other. **Only the transcript is required**, and the requirement is explained
+recommendation letter, other. **Only the CV is required** (`REQUIRED_KIND`), and the requirement is explained
 next to the button it blocks. "I do not have my documents right now" is a first-class path that
 routes to the confirm screen with blank fields — the manual route reuses one screen instead of adding
 one.
 
-**Questions.** Four, one per screen, asked *while the pipeline runs*. This is the best idea in the
+**Questions.** Five, one per screen, asked *while the pipeline runs* — or three, if the user says
+they do not know what job they want, because the two after that question are about a role they have
+not named. This is the best idea in the
 original sketches: four agents take real time, and a user watching a progress bar is a user deciding
 whether to close the tab. Choice questions advance on selection; the free-text one keeps a Continue
 button because no machine can tell when someone has finished typing. All are skippable — the answers
-only re-rank results and must never stand between someone and their own transcript.
+only re-rank results and must never stand between someone and their own documents.
 
-1. Should Itqan suggest paid courses? → `coursePricing: 'free' | 'any'`
+1. Are paid courses okay? → `coursePricing: 'free' | 'any'`
 2. Where would you like to work? → `workArrangement: 'remote' | 'hybrid' | 'onsite'`
-3. What role are you aiming for? → `preferredRole: string` (free text)
-4. Should Itqan show roles you did not name? → `openToOtherRoles: 'yes' | 'no'`
+3. Do you know what job you want? → `knowsRole: 'yes' | 'no'`
+4. What kind of job are you looking for? → `preferredRole: string` (free text)
+5. Want to see similar jobs too? → `openToOtherRoles: 'yes' | 'no'`
+
+Answering **"not yet"** to 3 ends the questions there and routes the user to Hud after the confirm
+screen, rather than to a dashboard measuring progress towards a role they have not chosen. Confirm is
+still passed through: it carries consent and starts the pipeline's second half.
 
 **Confirm.** The most important screen. Four agents run in sequence and their errors compound, so a
 human checkpoint before anything is used is the difference between a product that is 85% right and
 shows its working, and one that is 95% right and cannot be checked. Name, birth date, graduation date
-and extracted skills are all editable inline; anything below the trust threshold is flagged
-"Suggested — confirm" with its provenance. It also carries the consent control, in the open, because
+and extracted skills are all editable inline. Skills are split into two groups, "Skills found" and
+"Skills to check", the second carrying the course each one came from; other fields below the trust
+threshold are flagged "Suggested — confirm" with their provenance. It also carries the consent control, in the open, because
 this is the first moment the user has seen what was actually extracted. Consent asked earlier is not
 informed consent.
 
@@ -464,7 +472,7 @@ Two notes worth keeping:
 - **`extracted_fields` versus `profiles` is the whole trust architecture.** Never overwrite the raw
   extraction with the correction. The gap between them is the only measurement of how good the
   pipeline actually is, and the brief blocks publishing any accuracy figure until roughly 20–30 real
-  transcripts have been validated.
+  documents have been validated.
 - **`price` is a number with a `currency`, not a formatted string.** A service returning `"OMR 25"`
   makes both locale formatting and the "free only" filter impossible.
 
@@ -488,7 +496,7 @@ evidence chain.
 automatically. **Never fabricate a posting or a course.** Recommend only from a verified catalogue,
 and always carry the live `source` with `retrievedAt`.
 
-**4. Explain** — writes `why` for every match, in the user's language, as a transcript → skill →
+**4. Explain** — writes `why` for every match, in the user's language, as a documents → skill →
 requirement chain. Also authors `readinessNote` and the `journey` labels. This agent is not
 decoration: it is what makes the product checkable, and the brief treats that as the moat.
 
@@ -660,7 +668,7 @@ Recorded so the brief can absorb or overturn them.
   use, so it is not reachable. No patched version existed at the time. Recheck on upgrade.
 - **The `/api/placeholder/…` path names are now misleading** — they are real endpoints. Renaming
   means touching the site's forms and `config.ts` together.
-- **No accuracy figure may be published** until measured against real transcripts. The brief blocks
+- **No accuracy figure may be published** until measured against real documents. The brief blocks
   this and the UI states no figure anywhere.
 
 ---

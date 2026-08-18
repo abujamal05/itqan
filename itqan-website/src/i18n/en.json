@@ -69,7 +69,7 @@
       },
       {
         "id": "documents",
-        "q": "What happens to my transcript?",
+        "q": "What happens to my documents?",
         "keywords": "transcript document documents upload privacy data record certificate store stored delete safe security",
         "a": "It gets read so your courses can be matched to the skills they actually cover. Before anything moves on from there, the extracted list is put in front of you to check and correct. That screen is where the decision sits, and it is yours rather than ours.",
         "slug": "privacy",
@@ -206,8 +206,8 @@
     "confirmTag": "You confirm",
     "steps": [
       {
-        "title": "You share your academic record",
-        "body": "Your transcript is the input. Not a CV, not a form with twenty fields. The document you already have."
+        "title": "You share your documents",
+        "body": "Your CV starts it, and your academic record backs it up. Not a form with twenty fields. What you already have."
       },
       {
         "title": "It reads your courses and you confirm them",
@@ -280,7 +280,7 @@
         "It cannot promise you a job. It shows you where you stand and what closes the distance. The applying is still yours.",
         "It has not published an accuracy figure, because measurement on enough real records is not finished. Publishing a number before that would be a guess.",
         "Some results are suggestions to confirm, not facts. They are labelled.",
-        "A transcript is a starting point, not the whole picture of you. Projects, work and character live outside it.",
+        "Your documents are a starting point, not the whole picture of you. Projects, work and character live outside them.",
         "It reads Arabic and English records. Other languages, not yet."
       ]
     }
@@ -411,7 +411,7 @@
         "heading": "What is collected",
         "questions": [
           "Which fields are required at sign up?",
-          "Is the original transcript file kept, or only the extracted text?",
+          "Are the original files kept, or only the extracted text?",
           "What usage data or technical logs are collected?"
         ]
       },

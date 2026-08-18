@@ -50,8 +50,8 @@ export const jobs = (l: Locale) => [
     arrangement: pick({ ar: 'دوام كامل', en: 'Full time' }, l),
     score: 0.94,
     why: pick({
-      ar: 'يطلب الإعلان SQL والتحليل الإحصائي. كشف درجاتك يوثّق الاثنين: نظم قواعد البيانات 2 و إحصاء للمهندسين.',
-      en: 'The posting asks for SQL and statistical analysis. Your transcript evidences both, through Database Systems II and Statistics for Engineers.',
+      ar: 'يطلب الإعلان SQL والتحليل الإحصائي. مستنداتك توثّق الاثنين: نظم قواعد البيانات 2 و إحصاء للمهندسين.',
+      en: 'The posting asks for SQL and statistical analysis. Your documents evidence both, through Database Systems II and Statistics for Engineers.',
     }, l),
     matchedSkills: ['SQL', pick({ ar: 'التحليل الإحصائي', en: 'Statistical analysis' }, l)],
     source: { name: 'Bank Muscat Careers', url: 'https://example.com/postings/j1', retrievedAt: '2026-07-24' },
@@ -64,7 +64,7 @@ export const jobs = (l: Locale) => [
     arrangement: pick({ ar: 'دوام كامل', en: 'Full time' }, l),
     score: 0.88,
     why: pick({
-      ar: 'الدور يعتمد على أساسيات الشبكات، وهي مغطاة بمادة شبكات الحاسوب في كشف درجاتك.',
+      ar: 'الدور يعتمد على أساسيات الشبكات، وهي مغطاة بمادة شبكات الحاسوب في مستنداتك.',
       en: 'The role rests on networking fundamentals, which your Computer Networks course covers.',
     }, l),
     matchedSkills: [pick({ ar: 'إدارة الشبكات', en: 'Network administration' }, l)],
@@ -78,8 +78,8 @@ export const jobs = (l: Locale) => [
     arrangement: pick({ ar: 'عمل مرن', en: 'Hybrid' }, l),
     score: 0.79,
     why: pick({
-      ar: 'تتطابق مهاراتك في البيانات مع جزء من المطلوب. يطلب الإعلان أيضاً Power BI، وهي غير موثّقة في كشف درجاتك بعد.',
-      en: 'Your data skills cover part of what is asked. The posting also wants Power BI, which your transcript does not yet evidence.',
+      ar: 'تتطابق مهاراتك في البيانات مع جزء من المطلوب. يطلب الإعلان أيضاً Power BI، وهي غير موثّقة في مستنداتك بعد.',
+      en: 'Your data skills cover part of what is asked. The posting also wants Power BI, which your documents do not yet evidence.',
     }, l),
     matchedSkills: ['SQL'],
     source: { name: 'Asyad Careers', url: 'https://example.com/postings/j3', retrievedAt: '2026-07-22' },
@@ -92,8 +92,8 @@ export const jobs = (l: Locale) => [
     arrangement: pick({ ar: 'دوام كامل', en: 'Full time' }, l),
     score: 0.74,
     why: pick({
-      ar: 'أساسيات البرمجة لديك تغطي Python. يطلب الدور خبرة في الأطر البرمجية للويب، وهي غير ظاهرة في كشف درجاتك.',
-      en: 'Your programming fundamentals cover Python. The role also asks for web framework experience, which does not appear in your transcript.',
+      ar: 'أساسيات البرمجة لديك تغطي Python. يطلب الدور خبرة في الأطر البرمجية للويب، وهي غير ظاهرة في مستنداتك.',
+      en: 'Your programming fundamentals cover Python. The role also asks for web framework experience, which does not appear in your documents.',
     }, l),
     matchedSkills: ['Python'],
     source: { name: 'Thawani Careers', url: 'https://example.com/postings/j4', retrievedAt: '2026-07-21' },
@@ -204,8 +204,8 @@ export const alternateCourses = (l: Locale) => [
 export const dashboard = (l: Locale) => ({
   readiness: 72,
   readinessNote: pick({
-    ar: 'كشف درجاتك يوثّق معظم ما تطلبه أدوار تحليل البيانات المبتدئة في عُمان. أكبر فجوة واحدة هي أدوات لوحات المعلومات.',
-    en: 'Your transcript evidences most of what entry level data roles in Oman ask for. The single largest gap is dashboard tooling.',
+    ar: 'مستنداتك توثّق معظم ما تطلبه أدوار تحليل البيانات المبتدئة في عُمان. أكبر فجوة واحدة هي أدوات لوحات المعلومات.',
+    en: 'Your documents evidence most of what entry level data roles in Oman ask for. The single largest gap is dashboard tooling.',
   }, l),
   strengths: ['SQL', pick({ ar: 'التحليل الإحصائي', en: 'Statistical analysis' }, l), 'Python'],
   standings: [

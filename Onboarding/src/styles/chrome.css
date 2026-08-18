@@ -295,9 +295,16 @@
   from { opacity: 0; transform: translateY(-4px) scale(0.98); }
   to   { opacity: 1; transform: none; }
 }
-/* `align` was being written to the DOM and read by nothing, so every panel
-   hung off the START edge of its trigger whatever it asked for. A trigger at
-   the inline END of a card needs the panel to hang back INTO the card. */
+/* `align` was being written to the DOM and read by nothing, so every panel hung
+   off the START edge of its trigger whatever it asked for. A trigger at the
+   inline END of a card needs the panel to hang back INTO the card.
+
+   Opt in only — the component's default is `start`, which is what every caller
+   was really getting before this rule existed. Making `end` the effective
+   default put the collapsed sidebar's account menu 173px off the left edge of
+   the viewport, because that trigger is 59px wide and the panel is 240px. A
+   panel wider than its trigger cannot be end-aligned unless there is room on
+   the start side for it to hang into. */
 .menu__panel[data-align='end'] { inset-inline-start: auto; inset-inline-end: 0; }
 .menu__head {
   padding: var(--space-3); border-block-end: 1px solid var(--color-border);

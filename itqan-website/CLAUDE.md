@@ -16,7 +16,7 @@ the job matches and the advisor are all in the free tier. So "create your free a
 everywhere it appears. What must NOT appear again is an absolute: "free forever", "no plan to pick",
 "no payment at any point". Those were removed from `ar.json` and `en.json` in the same change.
 
-**Scope stops at the sign up and log in pages.** The product (transcript upload, the AI pipeline,
+**Scope stops at the sign up and log in pages.** The product (document upload, the AI pipeline,
 results, dashboards, auth logic) is a separate application and is out of scope here. If a task feels like
 product work, stop and ask.
 

@@ -122,7 +122,7 @@ const unsureAnswer = (l: Locale) =>
 /**
  * What Hud says when a file arrives.
  *
- * Careful, and deliberately unimpressive. Reading a transcript is a pipeline run
+ * Careful, and deliberately unimpressive. Reading documents is a pipeline run
  * with a human confirmation screen in the middle of it — that is the product's
  * first trust moment. A chat that quietly swallowed a file and started talking
  * about its contents would be claiming to have done something it has not, and

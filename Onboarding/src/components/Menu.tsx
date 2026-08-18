@@ -14,13 +14,28 @@ export function Menu({
   trigger,
   children,
   label,
-  align = 'end',
+  align = 'start',
   drop = 'up',
 }: {
   /** Rendered inside the trigger button. */
   trigger: ReactNode;
   children: (close: () => void) => ReactNode;
   label: string;
+  /**
+   * Which edge of the TRIGGER the panel hangs from.
+   *
+   * The default is `start`, and it used to be `end` — but `data-align` was
+   * written to the DOM and read by no CSS at all, so every menu in the app
+   * actually rendered start-aligned whatever it asked for. Implementing the
+   * rule without changing this default silently moved the account menu: with
+   * the sidebar collapsed its trigger is 59px wide and the panel is 240px, so
+   * pinning the panel's end to the trigger's end put it 173px off the left of
+   * the viewport. Measured, not guessed.
+   *
+   * `start` therefore preserves what every existing caller was really getting.
+   * Pass `end` only where the trigger sits at the inline end of a container and
+   * the panel needs to hang back into it.
+   */
   align?: 'start' | 'end';
   /**
    * Which way the panel opens. `up` is the default because the first caller was
