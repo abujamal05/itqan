@@ -261,6 +261,80 @@ Playwright suite and only shows up as a red check on the PR. **Adding endpoints
 here means adding a branch to that switch, not a new file** — and any new
 top-level `api/` route should be counted against the 12 first.
 
+### 1.5 Recommendation feedback, and the preferences it feeds
+
+Every job card and every course card carries a like and a dislike. A dislike asks
+why, from a closed list plus `other` with free text. On a course, the user may
+also ask for a **replacement** rather than only registering the rejection.
+
+**The point of all of it is the next run.** These are stored on the ACCOUNT and
+fed to the ranker; a verdict that lives in the tab teaches nothing and reappears
+as the same card after a reload, which reads as the product ignoring the person.
+This is the one part of the feature a dev stub cannot stand in for, and the
+Vercel twin must not pretend otherwise by answering `{ok:true}` and dropping it.
+
+```jsonc
+// POST /api/preferences/feedback     -> 200 {"ok":true}
+{
+  "subject": "job" | "course",
+  "itemId": "j2",
+  "verdict": "like" | "dislike",
+  "reason": "wrongLocation" | null,   // dislike only, from the lists below
+  "note": "too far to commute" | null, // only when reason === "other"
+  "replaced": true                     // course only, the user asked for another
+}
+```
+
+Reason ids are fixed and are the same strings the client sends; they are
+translated in the front end, never on the wire. Jobs:
+`notInterested` `wrongLocation` `wrongLevel` `wrongField` `employer` `other`.
+Courses: `notInterested` `alreadyKnow` `tooAdvanced` `tooBasic` `tooLong`
+`price` `other`.
+
+```jsonc
+// GET /api/preferences/feedback
+{ "jobs": { "j2": "dislike" }, "courses": { "c1": "like" } }
+```
+
+The LATEST verdict per item, so a card can render the state the user left it in.
+Absent means no opinion, which is not the same as neutral. Empty on a new account
+and that is a 200, not a 404.
+
+```jsonc
+// POST /api/courses/similar   -> a Course, or null
+{ "courseId": "c1", "exclude": ["c1", "c2", "c3"] }
+```
+
+Returns one course that closes the **same gap** as the rejected one — matched on
+`unlocks`, not on provider or title similarity. `exclude` carries every course
+already on screen, and honouring it is not optional: without it the natural
+implementation returns the card sitting directly below, and the user watches a
+course they can already see slide into the slot they just cleared. It must also
+skip anything this account has previously disliked.
+
+`null` is a legitimate answer and means nothing else closes that gap. The screen
+says so; it must never receive an unrelated course dressed up as a match, and it
+must never receive the rejected one back.
+
+**Career goal changes** ride the existing `PUT /api/profile`
+(`preferences.preferredRole`) rather than a new endpoint — it is the same field
+onboarding collects, and a second write path for one string is how the two drift.
+The ranker must treat a change to it as a signal, not just as a stored value.
+
+**One new field on `preferences`**, written by onboarding and by that same PUT:
+
+```jsonc
+"knowsRole": "yes" | "no" | null
+```
+
+Asked before "what job are you looking for" and load bearing in the flow: `no`
+ends the questions early and routes the user to Hud instead of the dashboard. It
+is stored rather than inferred from an empty `preferredRole`, because "skipped
+the question" and "stopped to say I do not know yet" are different people and
+only the second should be offered role suggestions unprompted. Null on every
+account that onboarded before this existed, and that must read as "not asked",
+never as `no`.
+
 ---
 
 ## 2. Already contracted — must exist in production
@@ -448,6 +522,9 @@ deployment avoids it entirely, and the front end is configured for both
 | `avatarUrl` on `GET /api/profile` | **missing field** |
 | `suggestedRole` on `GET /api/profile` | **missing field** |
 | `phone` through `POST`/`PUT`/`GET /api/profile` | **new field, must persist** |
+| `POST /api/preferences/feedback` | **missing** — front end complete, stubbed in dev. Must persist and reach the ranker |
+| `GET /api/preferences/feedback` | **missing** — needs storage; empty object is a 200 |
+| `POST /api/courses/similar` | **missing** — must honour `exclude` and match on `unlocks`; `null` is valid |
 | `POST /api/chat/ask` | **missing** — front end complete, stubbed in dev. Accepts multipart when files are attached |
 | `POST /api/chat/rate` | **missing** — fire and forget, any 2xx |
 | `GET /api/chat/threads` | **missing** — needs storage; Vercel twin answers `[]` |

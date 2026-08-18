@@ -2,7 +2,7 @@
   "site": {
     "name": "Itqan",
     "strapline": "The jobs that fit you, and a path to the ones you want.",
-    "description": "Itqan reads your record, CV and certificates against real openings, shows you the jobs you fit today with the reason for each, and the shortest path to the role you want next. Free, in Arabic and English."
+    "description": "Itqan reads your record, CV and certificates against real openings, shows you the jobs you fit today with the reason for each, and the shortest path to the role you want next. In Arabic and English."
   },
   "a11y": {
     "skip": "Skip to content",
@@ -63,7 +63,7 @@
         "id": "free",
         "q": "Is it really free?",
         "keywords": "free cost costs price pay paid payment money subscription plan card charge trial",
-        "a": "Yes. The gap, the full path, the job matches and the advisor are free and stay free. Nobody pays to get hired. There is no card to enter and no plan to pick.",
+        "a": "We offer different plans to fit different needs. The core is free: the gap, the full path, your job matches and the advisor. A premium tier covers extended use of the AI, and nobody pays to get hired.",
         "slug": "about",
         "linkLabel": "What we refuse"
       },
@@ -93,7 +93,6 @@
   },
   "home": {
     "hero": {
-      "kicker": "Free. Arabic and English.",
       "heading": "The jobs that fit you are already out there. Itqan finds them, and shows you why.",
       "sub": "Give it your record, your CV and your certificates, and answer a few short questions. Itqan checks all of it against real openings, shows you the ones you fit today, and lays out the shortest path to the role you want next.",
       "ctaSecondary": "See the proof"
@@ -171,7 +170,7 @@
       "items": [
         {
           "q": "Is it really free?",
-          "a": "Yes. Everything in Itqan is free. No plans, no trial period, and no payment at any point."
+          "a": "We offer different plans to fit different needs. The core is free: the gap, the full path, your job matches and the advisor. A premium tier covers extended use of the AI."
         },
         {
           "q": "What do you need from me?",
@@ -460,7 +459,7 @@
     "metaDescription": "Itqan's terms of use.",
     "heading": "Terms of use",
     "notice": "This is a draft, not a final text. The full terms are published before launch.",
-    "body": "The service is free, your account is yours, and your data is handled as the privacy page describes."
+    "body": "The core of the service is free, your account is yours, and your data is handled as the privacy page describes."
   },
   "notfound": {
     "title": "Page not found",
@@ -506,7 +505,7 @@
     "whereEyebrow": "Where we sit",
     "whereBody": "We are embedded at UTAS, which is both our first pilot and where our survey came from. Our regulator, MTCIT, runs Khuta, which we treat as a distribution channel rather than a competitor. We start in Oman, then Saudi Arabia and the wider Gulf.",
     "payEyebrow": "What you will never pay for",
-    "payBody": "You never pay to get hired. The core is free forever: the gap, the full path, the top job matches and the advisor. The paid tier is for people who already have income, not for you if you are still looking. Employers and universities pay for access to candidates who agreed to it.",
+    "payBody": "You never pay to get hired. The core is free: the gap, the full path, the top job matches and the advisor. The premium tier covers extended use of the AI, never the parts that get you into work. Employers and universities pay for access to candidates who agreed to it.",
     "refuseHeading": "And what we refuse.",
     "refuse1": "We will not sell a place in your results.",
     "refuse2": "We will not invent a course or a job that does not exist.",

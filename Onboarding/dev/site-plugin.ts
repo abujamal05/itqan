@@ -22,7 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { Plugin, Connect } from 'vite';
 import type { ServerResponse } from 'node:http';
-import { analysisResult, courses, dashboard, jobs } from './data.js';
+import { alternateCourses, analysisResult, courses, dashboard, jobs } from './data.js';
 import { chatAnswer, chatAttachmentReply } from './chat-data.js';
 import type { Locale } from './data.js';
 
@@ -75,6 +75,35 @@ interface ChatThreadRow {
   updatedAt: number;
 }
 const chatThreads = new Map<string, ChatThreadRow[]>();
+
+/**
+ * Recommendation feedback per account: likes, dislikes and why.
+ *
+ * A Map like everything else here, so it survives a reload and not a restart.
+ * Production stores this on the account and FEEDS IT TO THE RANKER — that is
+ * the whole reason the endpoint exists, and the part a stub cannot stand in
+ * for. What it can prove is the contract: a verdict given here is still here
+ * after a reload, which is what the screens are built against.
+ */
+interface FeedbackRow {
+  subject: 'job' | 'course';
+  itemId: string;
+  verdict: 'like' | 'dislike';
+  reason?: string | null;
+  note?: string | null;
+  replaced?: boolean;
+  at: number;
+}
+const feedback = new Map<string, FeedbackRow[]>();
+
+/** Latest verdict per item, which is what a card renders. */
+const feedbackState = (rows: FeedbackRow[] = []) => {
+  const out: { jobs: Record<string, string>; courses: Record<string, string> } =
+    { jobs: {}, courses: {} };
+  // Oldest first, so a later change of mind overwrites an earlier one.
+  rows.forEach((r) => { out[r.subject === 'job' ? 'jobs' : 'courses'][r.itemId] = r.verdict; });
+  return out;
+};
 
 /**
  * How long a chat turn takes to come back.
@@ -532,6 +561,43 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
         if (url === '/api/dashboard') return json(res, 200, dashboard(locale));
         if (url === '/api/jobs') return json(res, 200, jobs(locale));
         if (url === '/api/courses') return json(res, 200, courses(locale));
+
+        /* Recommendation feedback. Append-only: the history is the signal, and
+           the current verdict is derived from it rather than stored twice. */
+        if (url === '/api/preferences/feedback') {
+          if (req.method === 'POST') {
+            const f = parseBody(await body(req), req.headers['content-type'] ?? '') as unknown as FeedbackRow;
+            if (f.subject !== 'job' && f.subject !== 'course') return json(res, 400, { error: 'bad_subject' });
+            if (f.verdict !== 'like' && f.verdict !== 'dislike') return json(res, 400, { error: 'bad_verdict' });
+            const rows = feedback.get(me.id) ?? [];
+            rows.push({ ...f, at: Date.now() });
+            feedback.set(me.id, rows);
+            return json(res, 200, { ok: true });
+          }
+          return json(res, 200, feedbackState(feedback.get(me.id)));
+        }
+
+        /* A different course closing the same gap.
+           Ranked rather than picked at random: something sharing an `unlocks`
+           entry with the rejected course comes first, because "similar" has to
+           mean "same gap" or the replacement is just the next row down. */
+        if (url === '/api/courses/similar' && req.method === 'POST') {
+          const f = parseBody(await body(req), req.headers['content-type'] ?? '') as unknown as
+            { courseId?: string; exclude?: string[] };
+          const excluded = new Set([...(f.exclude ?? []), f.courseId ?? '']);
+          const all = [...courses(locale), ...alternateCourses(locale)];
+          const rejected = all.find((c) => c.id === f.courseId);
+          const wanted = new Set(rejected?.unlocks ?? []);
+          // Never hand back something this account has already turned down.
+          const disliked = new Set((feedback.get(me.id) ?? [])
+            .filter((r) => r.subject === 'course' && r.verdict === 'dislike')
+            .map((r) => r.itemId));
+          const pool = all.filter((c) => !excluded.has(c.id) && !disliked.has(c.id));
+          const sameGap = pool.find((c) => c.unlocks.some((u) => wanted.has(u)));
+          // `null`, never a random course: nothing else closing this gap is a
+          // real answer, and the screen has copy for it.
+          return json(res, 200, sameGap ?? pool[0] ?? null);
+        }
 
         /* Hud's chat. Threads live in a Map keyed by account, like everything
            else here, so they survive a reload and not a restart.

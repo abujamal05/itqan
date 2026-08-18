@@ -78,9 +78,8 @@ export function Jobs() {
 
   return (
     <div className="stack stack--lg enter">
-      <header className="stack stack--sm">
+      <header>
         <h1 className="headline">{t('jobs.title')}</h1>
-        <p className="subhead">{t('jobs.sub')}</p>
       </header>
 
       <BrowseBar

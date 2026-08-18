@@ -46,8 +46,12 @@ The operative word is **trusted**, not smartest. When accuracy and trust conflic
 "suggested — confirm this" beats a confident guess. A gap analysis that is 85% right and shows its working
 is worth more than one that is 95% right and cannot be checked.
 
-Success for the marketing site is one thing only: a stranger creates a free account. Everything is free —
-no pricing, no plans, no payment, ever, and nothing may imply otherwise.
+Success for the marketing site is one thing only: a stranger creates a free account. The account itself
+is free and nobody pays to get hired: the gap, the full path, the job matches and the advisor are all in
+the free tier. A premium tier covers extended use of the AI. Superseded 2026-08-18, and the superseded
+version is worth stating because it is still quoted in older notes: the rule used to be "everything is
+free, no pricing, no plans, no payment, ever". Absolutes like "free forever" or "no plan to pick" must
+not be reintroduced.
 
 ## Positioning
 

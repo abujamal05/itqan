@@ -13,9 +13,10 @@
  */
 import type {
   AnalysisJob, ChatMessage, ChatThread, ChatThreadSummary, ConfirmProfileResult,
-  ConfirmedProfile, Course, DashboardData, ItqanApi,
+  ConfirmedProfile, Course, DashboardData, Feedback, FeedbackState, ItqanApi,
   JobMatch, OnboardingProgress, Session, StoredProfile, UploadedDocument,
 } from './types';
+import { emptyFeedback } from './types';
 import { takeHandoffToken } from '../lib/site';
 
 const BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '/api';
@@ -203,6 +204,27 @@ export function createHttpApi(): ItqanApi {
         body: JSON.stringify({ threadId, messageId, verdict }),
         signal,
       }).catch(() => {});
+    },
+
+    async sendFeedback(input: Feedback, signal) {
+      // Swallowed for the same reason rateMessage is, and see the note on the
+      // interface: the card has already changed state in front of the user.
+      await req<void>('/preferences/feedback', {
+        method: 'POST', body: JSON.stringify(input), signal,
+      }).catch(() => {});
+    },
+    getFeedback(signal) {
+      // No opinions yet is the normal state of a new account, not a failure.
+      return req<FeedbackState>('/preferences/feedback', { signal })
+        .catch(() => emptyFeedback());
+    },
+    findSimilarCourse({ courseId, exclude }, signal) {
+      return req<Course | null>('/courses/similar', {
+        method: 'POST', body: JSON.stringify({ courseId, exclude }), signal,
+      // Null is a real answer here ("nothing else closes this gap"), and so is a
+      // failed lookup. The screen says the same thing for both, because to the
+      // user they are the same thing: no replacement arrived.
+      }).catch(() => null);
     },
   };
 }

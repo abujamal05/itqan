@@ -13,12 +13,25 @@ import { Logo } from './Logo';
 import { LangToggle, ThemeToggle } from './Controls';
 import { Steps } from './Steps';
 import type { StepIndex } from './Steps';
+import { PipelineProgress } from './PipelineProgress';
 import { useI18n } from '../i18n';
 import { siteHome } from '../lib/site';
 
+/**
+ * The pipeline bar lives HERE, directly under the step indicator, rather than
+ * inside each screen's content.
+ *
+ * It used to be placed by Questions and Confirm individually, part way down the
+ * page, where it competed with the question being asked and moved position
+ * between the two screens. One fixed place under the steps means it is the same
+ * object throughout onboarding, and the two progress indicators — which step you
+ * are on, and how far the reading has got — sit together instead of at opposite
+ * ends of the page.
+ */
 export function SiteHeader({ step }: { step?: StepIndex }) {
   const { t, locale } = useI18n();
   return (
+    <>
     <header className="topbar">
       {/* A plain anchor, not a router Link: the mark leads to the marketing
           site, which is a different app on the same origin. */}
@@ -34,5 +47,12 @@ export function SiteHeader({ step }: { step?: StepIndex }) {
         <ThemeToggle compact />
       </div>
     </header>
+
+    {/* Only in the flow, and only once there is a run to report — the strip
+        renders nothing at all before the documents are submitted. `reading`
+        scope: during onboarding the only thing the user is waiting for is
+        Agent A, and the bar has to reach 100% when that finishes. */}
+    {step !== undefined && <PipelineProgress variant="strip" scope="reading" />}
+    </>
   );
 }

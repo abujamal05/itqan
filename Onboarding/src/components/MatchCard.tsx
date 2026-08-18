@@ -20,6 +20,7 @@ import { useI18n } from '../i18n';
 import { isStrong } from '../api';
 import type { JobMatch } from '../api';
 import { Card, ConfidenceBadge } from './ui';
+import { FeedbackBar } from './FeedbackBar';
 
 export function MatchCard({
   job, saved, onToggleSave,
@@ -86,6 +87,13 @@ export function MatchCard({
             </button>
           )}
         </div>
+
+        {/* Below the actions and above the source line. The user has to have
+            READ the match before an opinion of it means anything, so the
+            controls sit after the evidence rather than beside the title where
+            they would compete with the verdict. No replacement affordance for a
+            posting: a vacancy is a real thing at a real employer, not a slot. */}
+        <FeedbackBar subject="job" itemId={job.id} />
 
         <p className="source">
           {t('jobs.source', { source: job.source.name, date: formatDate(job.source.retrievedAt) })}

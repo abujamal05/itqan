@@ -42,9 +42,17 @@ export function Card({ children, className = '', ...rest }: { children: ReactNod
 /* ------------------------------------------------------------------- Badge */
 
 /**
- * Confidence badge. Above the trust threshold it may read as fact; below it,
- * it must say "Suggested — confirm" and never state the result plainly.
- * Colour, icon and word all carry the state so hue is never load-bearing.
+ * Confidence badge. Above the trust threshold it may read as fact; below it, it
+ * must hedge and never state the result plainly. Colour, icon and word all carry
+ * the state so hue is never load-bearing.
+ *
+ * THE LABEL IS THE CALLER'S, and the two callers now differ on purpose.
+ * `confirm.lowConfidence` is still "Suggested — confirm", because the
+ * confirmation screen is a form and confirming is the literal next action there.
+ * `jobs.matchSuggested` is now just "Suggested": a job card has no confirm
+ * control and never had one, so the word was instructing the user to press
+ * something that does not exist. The hedge survives in the word, the dashed
+ * outline and the question icon; only the dead instruction is gone.
  */
 export function ConfidenceBadge({
   strong, label, percent,

@@ -19,8 +19,20 @@ import { Clock, ExternalLink } from 'lucide-react';
 import { useI18n } from '../i18n';
 import type { Course } from '../api';
 import { Badge, Card, GapChip } from './ui';
+import { FeedbackBar } from './FeedbackBar';
 
-export function CourseCard({ course }: { course: Course }) {
+export function CourseCard({
+  course, onReplace,
+}: {
+  course: Course;
+  /**
+   * Swap this card for another course closing the same gap. Passed by the
+   * screens that own a course LIST, because only the owner of the list can
+   * replace an entry in place — which is the whole requirement: the user stays
+   * where they are, with their filters and scroll position intact.
+   */
+  onReplace?: (next: Course) => void;
+}) {
   const { t, formatDate, formatNumber, formatMoney } = useI18n();
 
   /**
@@ -115,6 +127,8 @@ export function CourseCard({ course }: { course: Course }) {
             <ExternalLink size={16} aria-hidden="true" />
           </a>
         </div>
+
+        <FeedbackBar subject="course" itemId={course.id} onReplace={onReplace} />
 
         <p className="source">
           {t('jobs.source', { source: course.source.name, date: formatDate(course.source.retrievedAt) })}

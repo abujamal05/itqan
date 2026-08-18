@@ -6,8 +6,15 @@ When it conflicts with a stale memory or a guess, this file and the installed sk
 ## What this is
 
 A public marketing website for **Itqan**, an Arabic native career intelligence platform for graduates in
-Oman and the Gulf. Its one job: convince a stranger to create a free account. Everything is free — no
-pricing, no plans, no payment, ever. Do not imply otherwise anywhere.
+Oman and the Gulf. Its one job: convince a stranger to create a free account.
+
+**The pricing rule changed on 2026-08-18** and the old one is no longer true. It used to read
+"everything is free, no pricing, no plans, no payment, ever". The model is now a **free tier carrying
+the core, and a premium tier covering extended use of the AI**. What still holds, and is the part that
+was ever load bearing: **the account is free, and nobody pays to get hired** — the gap, the full path,
+the job matches and the advisor are all in the free tier. So "create your free account" stays accurate
+everywhere it appears. What must NOT appear again is an absolute: "free forever", "no plan to pick",
+"no payment at any point". Those were removed from `ar.json` and `en.json` in the same change.
 
 **Scope stops at the sign up and log in pages.** The product (transcript upload, the AI pipeline,
 results, dashboards, auth logic) is a separate application and is out of scope here. If a task feels like
