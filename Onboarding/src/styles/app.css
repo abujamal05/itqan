@@ -1537,6 +1537,15 @@
 
 .rerun__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 
+/* A re-run in flight. The meter is the point: a sentence with nothing moving
+   under it is indistinguishable from a button that did nothing, which is the
+   state this replaced. */
+.rerun__running {
+  display: flex; flex-direction: column; gap: var(--space-2);
+  margin-block-start: var(--space-3);
+}
+.rerun__running .rerun__note { margin-block-start: 0; }
+
 .rerun__note {
   margin-block-start: var(--space-3);
   font-size: var(--text-sm); color: var(--color-text-muted);
