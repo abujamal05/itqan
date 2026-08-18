@@ -84,6 +84,9 @@ const chatThreads = new Map<string, ChatThreadRow[]>();
  * state is the one place Hud actually animates on that screen.
  */
 const CHAT_TURN_MS = 900;
+
+/** One re-run a week, as production allows. Spent, it stops being offered. */
+let rerunCredits = 1;
 const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /**
@@ -573,10 +576,25 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
             ...(attachments.length ? { attachments } : {}),
             createdAt: Date.now(),
           });
-          const message = attachments.length
+          const message: Record<string, unknown> = attachments.length
             ? chatAttachmentReply(locale, attachments.map((a) => a.fileName))
             : chatAnswer(locale, question);
-          thread.messages.push(message);
+
+          /* The re-run proposal, so the confirm step is developed against
+             something. Keyword-triggered and obviously dumb, like the rest of
+             this file — what it reproduces faithfully is the SHAPE: a proposal
+             is data on a message, never an action, and only the client's
+             confirm calls the endpoint that spends the credit. */
+          if (/again|new|جديد|أعد/i.test(question) && rerunCredits > 0) {
+            message.proposedRerun = {
+              reason: locale === 'ar'
+                ? 'ظهرت وظائف جديدة منذ آخر مطابقة.'
+                : 'New postings have appeared since your last match.',
+              credits: { used: 1 - rerunCredits, limit: 1, remaining: rerunCredits,
+                         resetsAt: '2026-08-24T00:00:00+04:00' },
+            };
+          }
+          thread.messages.push(message as never);
           thread.updatedAt = Date.now();
           return json(res, 200, { threadId: thread.id, message });
         }
@@ -587,7 +605,22 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
            replace. */
         if (url === '/api/chat/rate' && req.method === 'POST') {
           await body(req);
-          return json(res, 200, { ok: true });
+          return json(res, 204, { ok: true });
+        }
+
+        /* Spending the weekly credit. Requires `confirm: true` exactly as the
+           real route does, so a client that forgets it fails HERE rather than in
+           production — and the credit is decremented so the proposal stops
+           being offered, which is the behaviour that would otherwise only show
+           up on a real account a week later. */
+        if (url === '/api/assistant/rerun' && req.method === 'POST') {
+          const sent = parseBody(await body(req), req.headers['content-type'] ?? '');
+          if (String(sent.confirm) !== 'true') {
+            return json(res, 400, { error: 'confirmation_required' });
+          }
+          if (rerunCredits <= 0) return json(res, 429, { error: 'rerun_limit_reached' });
+          rerunCredits -= 1;
+          return json(res, 200, { jobId: `job_rerun_${Date.now().toString(36)}` });
         }
 
         if (url === '/api/onboarding/progress') {

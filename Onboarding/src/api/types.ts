@@ -427,6 +427,21 @@ export interface ChatMessage {
    * this one does not. See BACKEND.md §1.4.
    */
   attachments?: ChatAttachment[];
+  /**
+   * Hud has noticed that new results might change the answer, and is raising a
+   * hand. Present only when a credit actually remains.
+   *
+   * NOT an action, and the distinction is the whole design: this is a
+   * suggestion the model may make, and the only thing that spends the single
+   * weekly credit is `rerunMatching()` behind an explicit confirmation. A
+   * persuasive sentence — or an injected one — can produce this field and
+   * nothing else. It is rendered as a chip that opens a confirm, never as a
+   * chip that runs.
+   */
+  proposedRerun?: {
+    reason: string | null;
+    credits: { used: number; limit: number; remaining: number; resetsAt: string };
+  };
   createdAt: number;
 }
 
@@ -524,6 +539,17 @@ export interface ItqanApi {
    * resolve to the same message with its cards attached — so none of these
    * signatures have to change.
    */
+  /**
+   * Spends the single weekly credit and re-matches against the current corpus.
+   *
+   * Called ONLY from an explicit confirmation, never from Hud's proposal
+   * directly: `proposedRerun` on a message is the model raising a hand, and a
+   * chip that ran on one tap would let a mis-tap — or a persuasive sentence —
+   * cost someone their whole week. The model proposes, the user disposes, the
+   * server executes.
+   */
+  rerunMatching(signal?: AbortSignal): Promise<{ jobId: string }>;
+
   listThreads(signal?: AbortSignal): Promise<ChatThreadSummary[]>;
   /** A thread with no messages is a normal answer, not an error. */
   getThread(id: string, signal?: AbortSignal): Promise<ChatThread>;

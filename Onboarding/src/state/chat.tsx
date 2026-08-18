@@ -39,6 +39,11 @@ interface ChatValue {
   retryMessage: (messageId: string) => void;
   retry: () => void;
   rate: (messageId: string, verdict: ChatVerdict) => void;
+  /**
+   * Spends the weekly credit and re-matches. Reaching this already took a
+   * deliberate confirm in the view — Hud's proposal alone never calls it.
+   */
+  rerun: () => Promise<void>;
   /** Loads a saved conversation. */
   open: (id: string) => void;
   /** Starts a fresh one. The old one stays on the server. */
@@ -175,6 +180,18 @@ export function ChatProvider({ api, children }: { api: ItqanApi; children: React
     [api, threadId],
   );
 
+  const rerun = useCallback(async () => {
+    /* Deliberately quiet about the outcome here. The run is a background job
+       the rest of the app already watches — the progress bar in AppLayout picks
+       it up — so announcing it twice would put a second, drifting account of
+       the same work on screen. */
+    try {
+      await api.rerunMatching();
+    } catch {
+      setFailed(true);
+    }
+  }, [api]);
+
   const open = useCallback(
     (id: string) => {
       if (id === threadId) return;
@@ -210,11 +227,11 @@ export function ChatProvider({ api, children }: { api: ItqanApi; children: React
   const value = useMemo(
     () => ({
       threadId, messages, threads, loading, pending, failed, writingId, verdicts,
-      ask, retryMessage, retry, rate, open, reset, doneWriting,
+      ask, retryMessage, retry, rate, rerun, open, reset, doneWriting,
     }),
     [
       threadId, messages, threads, loading, pending, failed, writingId, verdicts,
-      ask, retryMessage, retry, rate, open, reset, doneWriting,
+      ask, retryMessage, retry, rate, rerun, open, reset, doneWriting,
     ],
   );
 

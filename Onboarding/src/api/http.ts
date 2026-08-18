@@ -156,6 +156,16 @@ export function createHttpApi(): ItqanApi {
     getJobs(signal) { return req<JobMatch[]>('/jobs', { signal }); },
     getCourses(signal) { return req<Course[]>('/courses', { signal }); },
 
+    rerunMatching(signal) {
+      // `confirm: true` is required by the server and is sent only from the
+      // confirm step — it is not a formality: at one re-run a week, a credit
+      // spent by accident is the user's entire allowance gone.
+      return req<{ jobId: string }>('/assistant/rerun', {
+        method: 'POST',
+        body: JSON.stringify({ confirm: true }),
+        signal,
+      });
+    },
     listThreads(signal) {
       // No threads yet is a normal state on a new account, not a failure.
       return req<ChatThreadSummary[]>('/chat/threads', { signal }).catch(() => []);

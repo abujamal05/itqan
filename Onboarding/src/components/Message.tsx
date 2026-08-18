@@ -32,10 +32,12 @@ import { CourseCard } from './CourseCard';
 import { useTypewriter } from '../lib/useTypewriter';
 
 export function Message({
-  message, onSuggest, onRetry, onRate, verdict, busy, isLast, writing, onWritten,
+  message, onSuggest, onRetry, onRate, onRerun, verdict, busy, isLast, writing, onWritten,
 }: {
   message: ChatMessage;
   onSuggest: (question: string) => void;
+  /** Confirmed re-run. Reaching this already required a second, deliberate tap. */
+  onRerun: () => Promise<void> | void;
   onRetry: (messageId: string) => void;
   onRate: (messageId: string, verdict: ChatVerdict) => void;
   verdict?: ChatVerdict;
@@ -103,6 +105,10 @@ export function Message({
               verdict={verdict}
               busy={busy}
             />
+
+            {isLast && message.proposedRerun ? (
+              <RerunProposal proposal={message.proposedRerun} onRerun={onRerun} busy={busy} />
+            ) : null}
 
             {isLast && message.suggestions?.length ? (
               <div className="suggests">
@@ -203,6 +209,60 @@ function Actions({
       >
         <RefreshCw size={15} aria-hidden="true" />
       </button>
+    </div>
+  );
+}
+
+
+/**
+ * Hud has suggested re-running the matching. This is where that becomes an
+ * action, and the two-step is the point.
+ *
+ * The proposal is a MODEL OUTPUT. A single-tap chip would mean a persuasive
+ * sentence — or an injected one — could spend the user's only re-run for the
+ * week, which is the whole allowance. So the chip opens a confirm that states
+ * the cost, and only the confirm calls the server. The model proposes, the user
+ * disposes, the server executes.
+ */
+function RerunProposal({
+  proposal, onRerun, busy,
+}: {
+  proposal: NonNullable<ChatMessage['proposedRerun']>;
+  onRerun: () => Promise<void> | void;
+  busy: boolean;
+}) {
+  const { t, formatNumber } = useI18n();
+  const [confirming, setConfirming] = useState(false);
+  const [spending, setSpending] = useState(false);
+
+  if (spending) return <p className="rerun__note">{t('chat.rerun.started')}</p>;
+
+  return (
+    <div className="rerun">
+      {proposal.reason ? <p className="rerun__why">{proposal.reason}</p> : null}
+      {!confirming ? (
+        <button type="button" className="suggest" disabled={busy}
+                onClick={() => setConfirming(true)}>
+          {t('chat.rerun.offer')}
+        </button>
+      ) : (
+        <div className="rerun__confirm">
+          {/* The cost, stated before the tap that spends it — not after. */}
+          <p className="rerun__cost">
+            {t('chat.rerun.cost', { n: formatNumber(proposal.credits.remaining) })}
+          </p>
+          <div className="rerun__actions">
+            <button type="button" className="button button--primary" disabled={busy}
+                    onClick={async () => { setSpending(true); await onRerun(); }}>
+              {t('chat.rerun.confirm')}
+            </button>
+            <button type="button" className="button button--ghost"
+                    onClick={() => setConfirming(false)}>
+              {t('chat.rerun.cancel')}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

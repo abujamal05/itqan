@@ -39,7 +39,7 @@ export function Chat() {
   const navigate = useNavigate();
   const {
     threadId, messages, loading, pending, failed, writingId, verdicts,
-    ask, retryMessage, retry, rate, open, reset, doneWriting,
+    ask, retryMessage, retry, rate, rerun, open, reset, doneWriting,
   } = useChat();
 
   const thread = useRef<HTMLOListElement>(null);
@@ -111,6 +111,7 @@ export function Chat() {
               onSuggest={ask}
               onRetry={retryMessage}
               onRate={rate}
+              onRerun={rerun}
               verdict={verdicts[m.id]}
               busy={pending}
               isLast={i === count - 1}

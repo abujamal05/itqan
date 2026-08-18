@@ -1122,6 +1122,35 @@
 .suggest:hover:not(:disabled) { background: var(--color-accent-tint); border-color: var(--color-border-accent); }
 .suggest:disabled { opacity: 0.5; cursor: default; }
 
+/* ------------------------------------------------------------- re-run -- */
+
+/* Hud proposing a re-match. Deliberately quieter than a suggestion chip until
+   it is opened: this is the only thing on the screen that SPENDS something, and
+   an eye-catching button next to a conversation is how a week's allowance goes
+   on a mis-tap. The confirm below is where it earns emphasis. */
+.rerun { margin-block-start: var(--space-3); }
+
+.rerun__why {
+  font-size: var(--text-sm); color: var(--color-text-muted);
+  margin-block-end: var(--space-2);
+}
+
+.rerun__confirm {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-accent); border-radius: var(--radius-md);
+  background: var(--color-surface-warm, var(--color-surface));
+}
+
+/* The cost, stated above the button that spends it. */
+.rerun__cost { font-size: var(--text-sm); margin-block-end: var(--space-3); }
+
+.rerun__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+.rerun__note {
+  margin-block-start: var(--space-3);
+  font-size: var(--text-sm); color: var(--color-text-muted);
+}
+
 /* -------------------------------------------------------------- actions -- */
 
 /* Icon only. Three captions under every answer would out-weigh the answer, and
