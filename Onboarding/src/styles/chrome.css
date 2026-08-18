@@ -374,6 +374,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   .guide__bubble, .doc, .menu__panel, .form-summary { animation: none; }
+  /* The downward panel sets `animation-name` through a higher-specificity
+     selector, so the shorthand above cannot clear its NAME — only its duration,
+     which is what actually stops the motion today. Restating it here means the
+     kill does not depend on that interaction holding. */
+  .menu__panel[data-drop='down'] { animation: none; }
 }
 
 /* ----------------------------------------------------------------- PRICE -- */

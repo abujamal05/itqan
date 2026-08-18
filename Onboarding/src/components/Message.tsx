@@ -68,9 +68,32 @@ export function Message({
   }
 
   return (
-    <li className="turn turn--hud">
-      {/* Still when idle, bobbing while the text arrives. */}
-      <span className="mark" data-writing={writing || undefined} aria-hidden="true">
+    <li className="turn turn--hud" data-marked={isLast || undefined}>
+      {/* ONE MARK IN THE THREAD, ON THE NEWEST TURN ONLY.
+          It used to sit beside every assistant turn, which is the convention
+          — and the convention is for a chat where the mark answers "who said
+          this". Here the shapes already answer it: the user's turns are filled
+          bubbles on the reading-end side and Hud's are plain text on the page.
+          So a repeated mark identified something never in doubt, and stacked a
+          column of identical logos down a scrolling conversation.
+
+          Kept on the LAST turn because that one does a second job: it bobs
+          while the answer is arriving, and it is the only moving sign that Hud
+          is still writing.
+
+          HIDDEN RATHER THAN REMOVED on the earlier turns, so every Hud turn
+          reserves the same gutter and the whole column of text keeps one
+          straight reading edge. Dropping the element instead would leave the
+          older turns flush and only the newest one indented, and reserving the
+          space with a padding constant would hardcode the mark's aspect ratio
+          — it measures 22px wide at a 24px height today, which is a property
+          of the asset and not something CSS should be told twice. */}
+      <span
+        className="mark"
+        data-writing={(isLast && writing) || undefined}
+        data-hidden={!isLast || undefined}
+        aria-hidden="true"
+      >
         <Logo variant="icon" height={24} />
       </span>
 
@@ -251,12 +274,19 @@ function RerunProposal({
           <p className="rerun__cost">
             {t('chat.rerun.cost', { n: formatNumber(proposal.credits.remaining) })}
           </p>
+          {/* `btn`, not `button`. These two carried `button button--primary`
+              and `button button--ghost` — classes that exist in the MARKETING
+              site's stylesheet and nowhere in this app, which only defines
+              `.btn`. So both rendered as bare browser buttons: no padding, no
+              44px target, no visual difference between confirming a spend and
+              cancelling it, on the one control in the whole product that spends
+              the user's weekly re-run allowance. */}
           <div className="rerun__actions">
-            <button type="button" className="button button--primary" disabled={busy}
+            <button type="button" className="btn btn--primary" disabled={busy}
                     onClick={async () => { setSpending(true); await onRerun(); }}>
               {t('chat.rerun.confirm')}
             </button>
-            <button type="button" className="button button--ghost"
+            <button type="button" className="btn btn--ghost"
                     onClick={() => setConfirming(false)}>
               {t('chat.rerun.cancel')}
             </button>

@@ -16,7 +16,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import {
   BookOpen, Briefcase, ExternalLink, LayoutDashboard, LogOut,
-  PanelLeftClose, User as UserIcon, Waypoints,
+  PanelLeftClose, SquarePen, User as UserIcon, Waypoints,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useI18n } from '../i18n';
@@ -124,7 +124,7 @@ export function AppLayout() {
   // rather than to a locale-prefixed marketing URL. The account menu still uses
   // it for the "visit the site" item, where leaving the product is deliberate.
   const { t } = useI18n();
-  const { threads } = useChat();
+  const { threads, reset: resetChat } = useChat();
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     try { return localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { return false; }
   });
@@ -193,6 +193,41 @@ export function AppLayout() {
             </NavLink>
           ))}
         </div>
+
+        {/* STARTING A NEW CONVERSATION HAD NO CONTROL AT ALL.
+            The only way to leave a thread was to click "Chat" in the nav and
+            notice that it happened to reset — a side effect, not an offer, and
+            invisible to anyone who had not already discovered it. It sits
+            directly above the saved conversations because that is the pair:
+            the ones you had, and starting another.
+
+            A button, not a nav row. The four rows above are destinations and
+            look alike on purpose; this performs an action and has to read
+            differently or it becomes a fifth place to go. It is always
+            present, including when there are no saved threads yet — the first
+            conversation is the one most worth making easy to start. */}
+        <Link
+          to="/chat"
+          className="newchat"
+          aria-label={collapsed ? t('chat.new') : undefined}
+          title={collapsed ? t('chat.new') : t('chat.newHint')}
+          /**
+           * `reset()` HERE, not left to the route change, and this is load
+           * bearing rather than belt and braces.
+           *
+           * Chat.tsx has two effects on the URL: one resets the thread when the
+           * param disappears, and one restores `/chat/:threadId` when a thread
+           * exists without a param. Navigating alone fires both, and the second
+           * still sees the old `threadId` in its closure, so it pushes the URL
+           * straight back and the conversation never clears. Clearing the state
+           * in the same interaction means the restore effect has nothing to
+           * restore by the time it runs.
+           */
+          onClick={resetChat}
+        >
+          <SquarePen size={17} aria-hidden="true" />
+          <span className="nav__label">{t('chat.new')}</span>
+        </Link>
 
         {/* Saved conversations, the way Claude and ChatGPT list them: newest
             first, titled by their opening question, no heading needed beyond

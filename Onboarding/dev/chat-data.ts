@@ -61,8 +61,8 @@ const skillsAnswer = (l: Locale) => {
   const d = dashboard(l);
   return message(
     pick({
-      ar: `أبدأ بما تملكه، لأنه النصف الأنفع: ${d.strengths.join('، ')}، وكل واحدة منها موثّقة بمقرر بعينه في كشف درجاتك. أما ما لم يوثّقه سجلك بعد فهو ${d.gaps.join(' و')}. وهاتان دورتان تغلقان الفجوتين.`,
-      en: `Starting with what you have, because it is the more useful half: ${d.strengths.join(', ')}, each traced to a named course in your transcript. What your record does not evidence yet is ${d.gaps.join(' and ')}. These two courses close those gaps.`,
+      ar: `أبدأ بما تملكه، لأنه النصف الأنفع: ${d.strengths.join('، ')}، وكل واحدة منها موثّقة بمقرر بعينه في مستنداتك. أما ما لم توثّقه بعد فهو ${d.gaps.join(' و')}. وهاتان دورتان تغلقان الفجوتين.`,
+      en: `Starting with what you have, because it is the more useful half: ${d.strengths.join(', ')}, each traced to a named course in your documents. What they do not evidence yet is ${d.gaps.join(' and ')}. These two courses close those gaps.`,
     }, l),
     {
       courses: [courses(l)[0], courses(l)[2]],
@@ -77,8 +77,8 @@ const skillsAnswer = (l: Locale) => {
 const coursesAnswer = (l: Locale) =>
   message(
     pick({
-      ar: 'أكبر فجوة واحدة أمامك هي Power BI: ثلاثة من الأدوار المرصودة تطلبه صراحةً، ولا يوثّقه أي مقرر في كشف درجاتك. لذلك أبدأ به. وكل دورة هنا من كتالوج موثّق ومربوطة بالفجوة التي تغلقها، ولا أقترح ما لا أستطيع إحالتك إليه.',
-      en: 'The single largest gap in front of you is Power BI: three of the tracked roles ask for it by name and no course in your transcript evidences it, so that is where I would start. Every course here comes from a verified catalogue and is tied to the gap it closes. I do not suggest anything I cannot link you to.',
+      ar: 'أكبر فجوة واحدة أمامك هي Power BI: ثلاثة من الأدوار المرصودة تطلبه صراحةً، ولا يوثّقه أي مقرر في مستنداتك. لذلك أبدأ به. وكل دورة هنا من كتالوج موثّق ومربوطة بالفجوة التي تغلقها، ولا أقترح ما لا أستطيع إحالتك إليه.',
+      en: 'The single largest gap in front of you is Power BI: three of the tracked roles ask for it by name and no course in your documents evidences it, so that is where I would start. Every course here comes from a verified catalogue and is tied to the gap it closes. I do not suggest anything I cannot link you to.',
     }, l),
     {
       courses: courses(l),

@@ -66,7 +66,12 @@
 .obprogress {
   width: 100%;
   border-block-end: 1px solid var(--color-border);
-  background: var(--color-surface);
+  /* NO SURFACE OF ITS OWN. This was `--color-surface`, which is pure white
+     against the warm paper ground — so a status line the eye should read as
+     part of the header arrived as a bright slab wedged between the header and
+     the page, brighter than either. It is a band of chrome, not a card, so it
+     shares the ground and earns its separation from the hairline alone. */
+  background: transparent;
 }
 .obprogress__inner {
   width: 100%; max-width: 68rem; margin-inline: auto;
@@ -1356,6 +1361,11 @@
   /* Optical alignment with the first line of text rather than its box. */
   margin-block-start: 2px;
 }
+/* Every Hud turn but the newest. `visibility`, not `display`, so the gutter is
+   still reserved and the column of answers keeps one straight reading edge —
+   see the note in Message.tsx for why the space is reserved by the element
+   itself rather than by a padding constant. */
+.mark[data-hidden] { visibility: hidden; }
 /* Still when idle. While the text arrives it breathes, which is the whole of
    "he moves when he writes" — a 24px mark does not need more than that, and the
    illustrated mascot keeps its 120px floor in the greeting instead. */
@@ -1557,7 +1567,16 @@
   padding: var(--space-2); min-block-size: 44px; max-block-size: 40vh;
   field-sizing: content;
 }
-.ask__field:focus { outline: none; }
+/* `:focus`, NOT `:focus-visible`, and only the non-visible half.
+   This was a blanket `.ask__field:focus { outline: none }`, which stripped the
+   ring for keyboard users too and left them nothing of their own —
+   `.ask:focus-within` fires for a mouse click as readily as a Tab, so it cannot
+   say "you are here by keyboard". Narrowing it to `:not(:focus-visible)` is the
+   same pattern global.css already uses everywhere else, and it hands the field
+   back to the global `:focus-visible` ring rather than re-implementing one.
+   The field is inset by the shell's own padding, so that ring lands inside the
+   border rather than fighting it. */
+.ask__field:focus:not(:focus-visible) { outline: none; }
 .ask__field::placeholder { color: var(--color-text-muted); }
 
 .ask__row { display: flex; align-items: center; gap: var(--space-2); }
@@ -1584,6 +1603,46 @@
 .composer__fineprint {
   margin-block-start: var(--space-2);
   text-align: center; font-size: var(--text-xs); color: var(--color-text-muted);
+}
+
+/* -------------------------------------------------------------- new chat -- */
+/* An ACTION, sitting among destinations, so it must not look like one more of
+   them. The four nav rows are borderless text with a hover wash; this carries a
+   real edge and the page ground, which is the same "secondary button" language
+   used everywhere else in the app. That is the whole distinction: rows take you
+   somewhere, this one makes something.
+
+   Not a primary gold fill, deliberately. The gold anchor on these screens is
+   spent on the content — the readiness block, the next-step action — and a
+   permanently gold button in the chrome would outrank whatever the user
+   actually came to do. */
+.newchat {
+  display: flex; align-items: center; gap: var(--space-3);
+  margin-block-start: var(--space-4);
+  padding-block: var(--space-3); padding-inline: var(--space-4);
+  min-block-size: 44px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: var(--weight-medium); font-size: var(--text-sm);
+  text-decoration: none;
+  transition: background-color var(--duration-fast) var(--ease-hover),
+              border-color var(--duration-fast) var(--ease-hover),
+              transform var(--duration-fast) var(--ease-hover);
+}
+.newchat svg { flex: 0 0 auto; color: var(--color-accent-ink); }
+.newchat:hover {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border-accent);
+  transform: translateY(calc(-1px * var(--motion-scale)));
+}
+.newchat:active { transform: none; }
+.newchat:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+/* Collapsed rail: the label leaves with the others (the shared rule above
+   hides `.nav__label`), so the icon centres in the 44px square it keeps. */
+.sidebar[data-collapsed='true'] .newchat {
+  justify-content: center; padding-inline: var(--space-2);
 }
 
 /* --------------------------------------------------------------- recents -- */
