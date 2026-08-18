@@ -1,11 +1,18 @@
 /**
  * Courses.
  *
- * The line that matters most on this page is "Itqan earns nothing from these".
- * The product refuses affiliate commissions, and saying so is the difference
- * between a recommendation and an advert. Showing the price prominently is the
- * other half of that: a cost the user has to hunt for reads as a cost someone
- * hoped they would not notice.
+ * NO SUBTITLE. This page used to open with "Itqan earns nothing from these",
+ * and an earlier note here called it the most important line on the screen.
+ * Removed on request, 2026-08-18, along with the other page subtitles.
+ *
+ * The commitment behind it has not changed and is not being hidden: the product
+ * still refuses affiliate commissions, and the way it is now shown is the way
+ * that was always the stronger half — every card states its price up front,
+ * including "Free" and "Price not listed", and links to the provider's own
+ * page. A cost the user has to hunt for reads as a cost someone hoped they
+ * would not notice, so the prices stay prominent. If the claim needs saying in
+ * words again, it belongs somewhere it can be substantiated rather than as a
+ * heading's caption.
  *
  * Recommended courses sort first, because a list ordered by nothing in
  * particular asks the user to do the ranking the product exists to do.
@@ -109,9 +116,8 @@ export function Courses() {
 
   return (
     <div className="stack stack--lg enter">
-      <header className="stack stack--sm">
+      <header>
         <h1 className="headline">{t('courses.title')}</h1>
-        <p className="subhead">{t('courses.sub')}</p>
       </header>
 
       <BrowseBar

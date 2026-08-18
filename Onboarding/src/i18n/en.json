@@ -128,7 +128,6 @@
   "jobs.empty": "No job postings to show here yet",
   "jobs.emptySub": "Try another filter, or add a document so Itqan has more to match against.",
   "courses.title": "Courses",
-  "courses.sub": "Itqan earns nothing from these.",
   "courses.unlocks": "Unlocks",
   "courses.hours": "{n} hours",
   "courses.hour": "{n} hour",
