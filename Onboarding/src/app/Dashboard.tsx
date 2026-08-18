@@ -9,10 +9,12 @@
  * the bridge — it answers "how far along am I" immediately before the page shows
  * what is at the end of the road.
  *
- * VOLUME — every list on this page is capped. Skills collapse to the first four,
- * courses and jobs show two each with a way through to the full page. A
- * dashboard's job is to be read in one screen and acted on; a complete inventory
- * of everything the pipeline produced is what the dedicated pages are for.
+ * VOLUME — courses and jobs show two each with a way through to the full page.
+ * Skills sit behind ONE closed disclosure carrying all of them, rather than the
+ * first four with a "show more" underneath: a partial list cut at an arbitrary
+ * number is the worst of both, and the skills are this card's detail, not its
+ * point. A dashboard's job is to be read in one screen and acted on; a complete
+ * inventory of what the pipeline produced is what the dedicated pages are for.
  *
  * The one thing kept from the capability-first argument is the framing rather
  * than the sequence. The readiness number never appears alone — it carries a
@@ -35,7 +37,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check, ChevronDown, Plus } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, Plus, Target } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useApi } from '../state/api';
 import { useAsync } from '../lib/useAsync';
@@ -49,8 +51,8 @@ import { CourseCard } from '../components/CourseCard';
 import { Journey } from '../components/Journey';
 import { useRunInFlight } from '../components/PipelineProgress';
 
-/** How much of each list the dashboard shows before handing off to its page. */
-const SKILLS_SHOWN = 4;
+/** How much of each list the dashboard shows before handing off to its page.
+ *  Skills are no longer truncated — they live behind one disclosure instead. */
 const CARDS_SHOWN = 2;
 
 /**
@@ -79,7 +81,7 @@ function standingOf(
 }
 
 export function Dashboard() {
-  const { t, locale } = useI18n();
+  const { t, locale, formatNumber } = useI18n();
   const api = useApi();
   const { profile } = useOnboarding();
   const { user } = useAuth();
@@ -109,7 +111,15 @@ export function Dashboard() {
   const { data: stored, reload: reloadProfile } = useAsync((s) => api.getProfile(s),
                                                           [api, locale, settled]);
 
+  // Closed by default: the skills are the card's DETAIL, not its point.
   const [showAllSkills, setShowAllSkills] = useState(false);
+  /**
+   * The career-goal editor, owned here because two controls open it: the
+   * three-dot menu inside <CareerGoal>, and the "set your goal" button in the
+   * readiness block, which sits where the missing goal is actually noticed.
+   */
+  const [editingGoal, setEditingGoal] = useState(false);
+  const openGoalEditor = useCallback(() => setEditingGoal(true), []);
   /**
    * Same in-place replacement the courses page has, for the two cards shown
    * here. See the longer note in Courses.tsx — the point is that rejecting a
@@ -181,8 +191,6 @@ export function Dashboard() {
     );
   }
 
-  const standings = showAllSkills ? data.standings : data.standings.slice(0, SKILLS_SHOWN);
-  const hiddenSkills = Math.max(0, data.standings.length - SKILLS_SHOWN);
   const topCourses = (editedCourses ?? courses ?? []).slice(0, CARDS_SHOWN);
   const topMatches = data.topMatches.slice(0, CARDS_SHOWN);
 
@@ -220,6 +228,27 @@ export function Dashboard() {
               <h2 className="section__title" id="dash-readiness">{t('dash.readiness')}</h2>
               {standing && <p className="standing">{standing}</p>}
               <p>{data.readinessNote}</p>
+
+              {/* A SCORE HAS TO SAY WHAT IT IS A SCORE OF.
+                  With no goal set, the ring was reporting a hard figure out of
+                  100 while the block beside it said "finding your career goal"
+                  — a number measured against nothing, next to an admission
+                  that nothing had been chosen. That is exactly the
+                  uninterrogable figure this product's own rules say loses a
+                  skeptical reader.
+                  So when there is no target the ring is labelled as the general
+                  reading it is, and the fix is offered next to the problem
+                  rather than left for the user to go hunting for. */}
+              {!target && (
+                <div className="nogoal">
+                  <p className="nogoal__what">{t('dash.readinessNoGoal')}</p>
+                  <button type="button" className="btn btn--secondary btn--sm" onClick={openGoalEditor}>
+                    <Target size={15} aria-hidden="true" />
+                    {t('dash.readinessSetGoal')}
+                  </button>
+                </div>
+              )}
+
               <details>
                 <summary className="disclosure">{t('dash.readinessHow')}</summary>
                 <p className="text-sm muted" style={{ marginBlockStart: 'var(--space-2)' }}>
@@ -235,44 +264,66 @@ export function Dashboard() {
             <CareerGoal
               profile={stored ?? null}
               onSaved={() => { reloadProfile(); reload(); }}
+              editing={editingGoal}
+              setEditing={setEditingGoal}
             />
           </div>
 
           <hr className="divider" style={{ marginBlock: 'var(--space-6)' }} />
 
-          <ul className="stack" aria-label={t('dash.skillsLabel')}>
-            {standings.map((s) => (
-              <li key={s.name} className="skill">
-                <div className="skill__head">
-                  <span className="skill__name"><bdi>{s.name}</bdi></span>
-                  <span className="skill__state" data-held={s.held || undefined}>
-                    {s.held
-                      ? <><Check size={14} aria-hidden="true" />{t('dash.held')}</>
-                      : <><Plus size={14} aria-hidden="true" />{t('dash.toUnlock')}</>}
-                  </span>
-                </div>
-                <Meter value={s.level} />
-              </li>
-            ))}
-          </ul>
+          {/* ONE DISCLOSURE, ALL THE SKILLS, CLOSED BY DEFAULT.
+              This used to print the first four and offer "show more (1)",
+              which is the worst of both: a partial list nobody asked for,
+              cut at a number that means nothing to the reader, under a
+              button whose count changes with the data. Either the skills
+              are the point of this card or they are its detail — they are
+              its detail, because the score and the goal above them are
+              what the card is for.
+              A real <button> with `aria-expanded` and `aria-controls`, not
+              a <details>: the count belongs in the accessible name and the
+              open/closed state has to be announced. */}
+          {data.standings.length > 0 && (
+            <div className="skills">
+              <button
+                type="button"
+                className="skills__toggle"
+                onClick={() => setShowAllSkills((v) => !v)}
+                aria-expanded={showAllSkills}
+                aria-controls="dash-skills-list"
+              >
+                <span className="skills__title">{t('dash.yourSkills')}</span>
+                <span className="skills__count num">
+                  {t('dash.yourSkillsCount', { n: formatNumber(data.standings.length) })}
+                </span>
+                <ChevronDown
+                  size={18}
+                  aria-hidden="true"
+                  className="chevron"
+                  data-open={showAllSkills || undefined}
+                />
+              </button>
 
-          {/* Collapsed by default. A pipeline that read a full set of documents can
-              return twenty of these, and twenty meters is a data table wearing a
-              dashboard's clothes — it buries everything below it. A real button
-              rather than <details>, so the count is in the accessible name and
-              the state is announced. */}
-          {hiddenSkills > 0 && (
-            <button
-              type="button"
-              className="btn btn--ghost btn--block"
-              onClick={() => setShowAllSkills((v) => !v)}
-              aria-expanded={showAllSkills}
-            >
-              {showAllSkills
-                ? t('dash.showFewerSkills')
-                : t('dash.showAllSkills', { n: String(hiddenSkills) })}
-              <ChevronDown size={16} aria-hidden="true" className="chevron" data-open={showAllSkills || undefined} />
-            </button>
+              {showAllSkills && (
+                <div className="skills__panel" id="dash-skills-list">
+                  <p className="text-sm muted">{t('dash.yourSkillsSub')}</p>
+                  <ul className="stack" aria-label={t('dash.skillsLabel')}>
+                    {data.standings.map((s) => (
+                      <li key={s.name} className="skill">
+                        <div className="skill__head">
+                          <span className="skill__name"><bdi>{s.name}</bdi></span>
+                          <span className="skill__state" data-held={s.held || undefined}>
+                            {s.held
+                              ? <><Check size={14} aria-hidden="true" />{t('dash.held')}</>
+                              : <><Plus size={14} aria-hidden="true" />{t('dash.toUnlock')}</>}
+                          </span>
+                        </div>
+                        <Meter value={s.level} />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           )}
         </Card>
       </section>

@@ -23,7 +23,7 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, Check, FileText, HelpCircle, Plus, X } from 'lucide-react';
+import { AlertCircle, Check, FileText, HelpCircle, Plus, RotateCcw, X } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useOnboarding } from '../state/onboarding';
 import { useApi } from '../state/api';
@@ -160,8 +160,48 @@ export function Confirm() {
   const unsureSkills = useMemo(
     () => draft.skills.filter((s) => !isStrong(s.confidence)), [draft.skills]);
 
-  const removeSkill = (id: string) =>
-    setDraft((d) => ({ ...d, skills: d.skills.filter((x) => x.id !== id) }));
+  /**
+   * Removal is undoable, because it is the one destructive act on this screen
+   * and the list it acts on was written by a machine. A user clearing a row
+   * they misread has no other way back — the skill came from their document,
+   * not from anything they could retype from memory.
+   *
+   * The removed row is held with its ORIGINAL INDEX so undo puts it back where
+   * it was, rather than appending it to the end and quietly reordering the
+   * evidence.
+   */
+  const [undo, setUndo] = useState<{ skill: Skill; at: number } | null>(null);
+
+  const removeSkill = (id: string) => {
+    setDraft((d) => {
+      const at = d.skills.findIndex((x) => x.id === id);
+      if (at === -1) return d;
+      setUndo({ skill: d.skills[at], at });
+      return { ...d, skills: d.skills.filter((x) => x.id !== id) };
+    });
+  };
+
+  const undoRemove = () => {
+    if (!undo) return;
+    setDraft((d) => {
+      const next = [...d.skills];
+      next.splice(Math.min(undo.at, next.length), 0, undo.skill);
+      return { ...d, skills: next };
+    });
+    setUndo(null);
+  };
+
+  /**
+   * How many uncertain rows are shown before the rest are folded away.
+   *
+   * Deliberately HIGH. These are work the user has to do, so hiding them by
+   * default would let someone confirm without seeing what they confirmed — the
+   * opposite of what this screen is for. The fold exists only for the
+   * pathological case a bad scan produces, where a dozen rows bury the consent
+   * control below them.
+   */
+  const UNSURE_SHOWN = 6;
+  const [showAllUnsure, setShowAllUnsure] = useState(false);
 
   const addSkill = () => {
     const name = newSkill.trim();
@@ -356,18 +396,29 @@ export function Confirm() {
                         </div>
 
                         <ul className="unsure__list">
-                          {unsureSkills.map((s) => (
+                          {(showAllUnsure ? unsureSkills : unsureSkills.slice(0, UNSURE_SHOWN)).map((s) => (
                             <li key={s.id} className="unsure__row">
                               <span className="unsure__name"><bdi>{s.name}</bdi></span>
                               {/* Provenance in the LAYOUT, not in a title
                                   attribute. As a tooltip it did not exist on a
                                   phone and did not exist for a keyboard, which
                                   between them are most of the people being asked
-                                  to make this judgement. */}
+                                  to make this judgement.
+                                  The NUMBER sits beside it because this is the
+                                  one place the product was asking someone to
+                                  judge a confidence it would not show them —
+                                  every other confidence surface here states
+                                  one, and "not sure" without a figure is the
+                                  vaguest possible version of the truth. */}
                               <span className="unsure__from">
                                 {s.fromCourse
                                   ? t('confirm.skillFrom', { course: s.fromCourse })
                                   : t('confirm.skillFromUnknown')}
+                                <span className="unsure__pct num">
+                                  {t('confirm.skillConfidence', {
+                                    n: formatNumber(Math.round(s.confidence * 100)),
+                                  })}
+                                </span>
                               </span>
                               <button
                                 type="button"
@@ -380,7 +431,35 @@ export function Confirm() {
                             </li>
                           ))}
                         </ul>
+
+                        {unsureSkills.length > UNSURE_SHOWN && (
+                          <button
+                            type="button"
+                            className="btn btn--ghost btn--block"
+                            onClick={() => setShowAllUnsure((v) => !v)}
+                            aria-expanded={showAllUnsure}
+                          >
+                            {showAllUnsure
+                              ? t('confirm.skillsFewer')
+                              : t('confirm.skillsMoreToCheck', {
+                                n: formatNumber(unsureSkills.length - UNSURE_SHOWN),
+                              })}
+                          </button>
+                        )}
                       </div>
+                    )}
+
+                    {/* Undo for the one destructive act on this screen. Polite
+                        live region, so it is announced without pulling focus
+                        off whatever the user is reading next. */}
+                    {undo && (
+                      <p className="undo" role="status" aria-live="polite">
+                        <span>{t('confirm.skillRemoved', { name: undo.skill.name })}</span>
+                        <button type="button" className="undo__btn" onClick={undoRemove}>
+                          <RotateCcw size={14} aria-hidden="true" />
+                          {t('confirm.skillUndo')}
+                        </button>
+                      </p>
                     )}
 
                     <div className="row" style={{ flexWrap: 'nowrap' }}>

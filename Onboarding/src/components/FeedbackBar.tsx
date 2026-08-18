@@ -72,15 +72,32 @@ export function FeedbackBar({
     setAsking(true);
   };
 
-  const submitReason = () => {
+  /**
+   * THE REASON IS THE ANSWER, so choosing one finishes the job.
+   *
+   * This used to be select-then-press-Send: two taps for one thought, on a
+   * panel the user only opened to get rid of a card. The chips were also
+   * competing with three buttons underneath, which put ten targets on screen at
+   * the moment of least patience. Tapping a reason now records it and closes.
+   *
+   * `other` is the exception and has to be: it opens a text field, and there is
+   * no moment a machine can call "done typing" — so that branch keeps a Send.
+   */
+  const submitReason = (picked: DislikeReason | null = reason) => {
     send({
       subject, itemId, verdict: 'dislike',
-      reason,
+      reason: picked,
       // Only carried when it is the thing the user actually typed.
-      note: reason === 'other' ? note.trim() || null : null,
+      note: picked === 'other' ? note.trim() || null : null,
     });
     setAsking(false);
     setDone(t('fb.thanks'));
+  };
+
+  const pickReason = (r: DislikeReason) => {
+    setReason(r);
+    // `other` needs the text field before it can be sent.
+    if (r !== 'other') submitReason(r);
   };
 
   const replace = async () => {
@@ -161,11 +178,7 @@ export function FeedbackBar({
               and turned this panel into an 822px tower inside a 257px card. */}
           <div className="fb__reasons">
             {reasons.map((r) => (
-              <Chip
-                key={r}
-                selected={reason === r}
-                onToggle={() => setReason((cur) => (cur === r ? null : r))}
-              >
+              <Chip key={r} selected={reason === r} onToggle={() => pickReason(r)}>
                 {t(`fb.${subject}.${r}`)}
               </Chip>
             ))}
@@ -174,17 +187,23 @@ export function FeedbackBar({
           {/* Only once `other` is chosen. A free-text box sitting open beside a
               list of presets asks every user to consider writing an essay. */}
           {reason === 'other' && (
-            <TextField
-              label={t('fb.otherLabel')}
-              placeholder={t('fb.otherPlaceholder')}
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              rows={2}
-            />
+            <>
+              <TextField
+                label={t('fb.otherLabel')}
+                placeholder={t('fb.otherPlaceholder')}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={2}
+              />
+              <div className="row row--tight">
+                <Button onClick={() => submitReason()}>{t('fb.send')}</Button>
+              </div>
+            </>
           )}
 
+          {/* Two controls, not four: the reasons above submit themselves, so
+              what is left is the course-only escape hatch and a way out. */}
           <div className="row row--tight">
-            <Button onClick={submitReason} disabled={!reason}>{t('fb.send')}</Button>
             {onReplace && (
               <Button variant="secondary" onClick={replace} loading={finding}>
                 <RefreshCw size={15} aria-hidden="true" className={finding ? 'spin' : undefined} />
