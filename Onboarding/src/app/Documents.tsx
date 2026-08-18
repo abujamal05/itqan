@@ -1,6 +1,6 @@
 /**
  * Documents — where a user who has already finished onboarding replaces their
- * CV or transcript.
+ * documents.
  *
  * It exists as its own route rather than reusing /upload because /upload is
  * behind RequireOnboarding, which by design bounces a finished user to the

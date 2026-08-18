@@ -64,7 +64,7 @@ suggests roles they are already close to. Then it **measures the gap** against l
 out the shortest path** across it in real courses, and **matches the jobs that fit them now**, each with
 a plain reason.
 
-**Reading the transcript and CV is how the measuring starts. It is not the product.** An earlier pitch
+**Reading the documents is how the measuring starts. It is not the product.** An earlier pitch
 called Itqan "a translation engine" and that framing keeps resurfacing in copy; translating a course into
 a skill is one step inside step one. The product is the gap, the path, and the fit.
 
@@ -79,7 +79,7 @@ scope. Beachhead Oman; expansion Saudi Arabia.
 ## Operating Context
 
 - The graduate uploads a real transcript (PDF or a phone photo of one), often mixed Arabic/Latin, often a
-  scan of variable quality. **Transcript upload and gap-analysis reading are desktop-favoured** and must be
+  scan of variable quality. **Document upload and gap-analysis reading are desktop-favoured** and must be
   full-fidelity on a large screen. **Job browsing is the mobile-favoured surface.**
 - The pipeline runs four sequential agents (parse → extract skills → match jobs → build pathway) taking
   ~20–60 seconds. Errors compound: four stages at 90% is roughly 73% end to end, so every stage must expose
@@ -173,7 +173,7 @@ not have to re-derive them.
    "suggested — confirm" beats a confident guess, always.
 2. **Capability leads, deficit follows.** The first thing a graduate sees is what they already have. This
    is a product rule, not a copy preference — violating it loses the anchor user permanently.
-3. **Show the working.** "Because your transcript shows X" beats "our AI determined Y". Every claim carries
+3. **Show the working.** "Because your documents show X" beats "our AI determined Y". Every claim carries
    a source a skeptic can click.
 4. **Arabic is the brand, not a translation.** Bilingual parity is architecture, not localisation.
 5. **Considered, not generated — and considered is not plain.** The users are graduates in their twenties;

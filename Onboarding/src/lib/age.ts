@@ -14,7 +14,7 @@
 
 /**
  * Itqan is for people entering work. Below this there are no roles to match and
- * no transcript to read, so the form says so rather than producing an empty
+ * no documents to read, so the form says so rather than producing an empty
  * dashboard.
  */
 export const MIN_AGE = 17;

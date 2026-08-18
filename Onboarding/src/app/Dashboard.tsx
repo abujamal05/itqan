@@ -256,7 +256,7 @@ export function Dashboard() {
             ))}
           </ul>
 
-          {/* Collapsed by default. A pipeline that read a full transcript can
+          {/* Collapsed by default. A pipeline that read a full set of documents can
               return twenty of these, and twenty meters is a data table wearing a
               dashboard's clothes — it buries everything below it. A real button
               rather than <details>, so the count is in the accessible name and

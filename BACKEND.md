@@ -124,7 +124,7 @@ Notes that are contract, not preference:
   "suggestedRole": {                     // agent derived, READ ONLY
     "title": "Data Analyst",
     "confidence": 0.82,                  // 0..1
-    "why": "…the transcript -> skill -> role chain, already localised…"
+    "why": "…the documents -> skill -> role chain, already localised…"
   } | null
 }
 ```
@@ -477,7 +477,7 @@ GET /api/courses     -> Course[]
 
 Three rules the types enforce and the UI will expose if they are broken:
 
-1. **Everything recommended carries `why`** — the transcript → skill → requirement
+1. **Everything recommended carries `why`** — the documents → skill → requirement
    chain — **and a real `source`** (`{ name, url, retrievedAt }`). Nothing
    fabricated is displayable.
 2. **Strings arrive localised.** The services decide the wording, including the

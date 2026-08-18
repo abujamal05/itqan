@@ -10,7 +10,7 @@ just invisible from here.
 
 ## What this is
 
-The signed-in product: a graduate uploads a CV and transcript, answers a few questions, confirms what the
+The signed-in product: a graduate uploads their documents, answers a few questions, confirms what the
 agents extracted, and lands on a dashboard of readiness, skills, courses and real job matches. React +
 Vite + react-router. **Log in and sign up do NOT live here** — they are on the marketing site, and this app
 only ever reads the session it established.

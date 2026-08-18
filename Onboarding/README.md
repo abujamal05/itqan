@@ -55,7 +55,7 @@ The order is the product argument, not just a flow.
 2. **Questions** (`/questions`) — asked *during* the pipeline wait, one at a time, so the wait does
    work instead of being dead time. Four questions: course pricing, work arrangement, preferred role,
    and whether to show adjacent roles. Every answer is optional; they only re-rank results, so refusing
-   to answer never blocks anyone from their own transcript.
+   to answer never blocks anyone from their own documents.
 3. **Confirm** (`/confirm`) — the extracted details, editable. **Nothing downstream runs until the user
    confirms.** This is the first trust moment and the consent checkpoint. Anything the extraction was
    unsure about is labelled "Suggested — confirm" rather than stated as fact.

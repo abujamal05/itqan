@@ -128,10 +128,16 @@ Our own survey. It must be scoped as an early sample and never presented as a na
 
 ### What you will never pay for, and what we refuse
 
+> **Pricing updated 2026-08-18.** This section used to say the core was "free forever" and that the
+> paid tier was "for people who already have income". The model is a free tier carrying the core and a
+> premium tier for extended use of the AI. The claim that survived, and the one worth keeping, is
+> narrower and stronger: **you never pay to get hired.** The rows below are the current wording, and
+> they match what `ar.json` and `en.json` ship.
+
 | | |
 |---|---|
-| **EN** | You never pay to get hired. The core is free forever: the gap, the full path, the top job matches and the advisor. The paid tier is for people who already have income, not for you if you are still looking. Employers and universities pay for access to candidates who agreed to it. |
-| **AR** | لا تدفع أبداً مقابل أن تُوظَّف. الأساس مجاني دائماً: الفجوة، والمسار كاملاً، وأفضل الوظائف المطابقة، والمرشد. أما الاشتراك المدفوع فلمن لديهم دخل بالفعل، لا لك وأنت ما زلت تبحث. وتدفع جهات التوظيف والجامعات مقابل الوصول إلى مرشحين وافقوا على ذلك. |
+| **EN** | You never pay to get hired. The core is free: the gap, the full path, the top job matches and the advisor. The premium tier covers extended use of the AI, never the parts that get you into work. Employers and universities pay for access to candidates who agreed to it. |
+| **AR** | لا تدفع أبداً مقابل أن تُوظَّف. الأساس مجاني: الفجوة، والمسار كاملاً، وأفضل الوظائف المطابقة، والمرشد. أما الباقة المدفوعة فتغطي الاستخدام الموسّع للذكاء الاصطناعي، لا الأجزاء التي توصلك إلى العمل. وتدفع جهات التوظيف والجامعات مقابل الوصول إلى مرشحين وافقوا على ذلك. |
 
 Then, short:
 

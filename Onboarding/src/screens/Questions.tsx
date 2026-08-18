@@ -25,7 +25,7 @@
  * typing".
  *
  * Nothing here blocks anything. The answers only re-rank results, so refusing
- * to answer must never stand between someone and their own transcript.
+ * to answer must never stand between someone and their own documents.
  */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
