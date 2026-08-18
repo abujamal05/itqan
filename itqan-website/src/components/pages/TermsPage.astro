@@ -17,11 +17,15 @@ const s = t(locale);
     <div class="page-head__rule" aria-hidden="true"></div>
   </header>
 
+  {/* UNDER CONSTRUCTION, and nothing more.
+      There is no drafted terms text, and a page that summarises terms it does
+      not have reads as terms. `s.terms.body` stays in the locale files as the
+      brief for whoever drafts the real thing, but it is not rendered: a plain
+      sentence about the service is not a term of use, and putting it under this
+      heading invites someone to treat it as one. */}
   <NoticeBox>
     <p>{s.terms.notice}</p>
   </NoticeBox>
-
-  <p class="legal__body">{s.terms.body}</p>
 </div>
 
 <style>
@@ -31,9 +35,4 @@ const s = t(locale);
   }
 
   /* .page-head now lives in global.css. */
-
-  .legal__body {
-    margin-block-start: var(--space-8);
-    font-size: var(--text-lg);
-  }
 </style>
