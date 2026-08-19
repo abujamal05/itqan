@@ -57,33 +57,48 @@ commissions are refused.
 A gap analysis that is 85% right and shows its working is worth more than one that is 95% right and
 cannot be checked.
 
+**Vision: a world where nobody has to guess their next step.** Authored with the lead's sign off and
+live on the About page. It was a TBD in this skill for longer than it was true.
+
 ## 2. Positioning
 
-Itqan does not attack graduate unemployment in the aggregate. It attacks the **distance between where a
-graduate is and the role they actually want** — a distance nobody measures for them, so they discover
-it only after years of applying and being turned down.
+Itqan does not attack unemployment in the aggregate. It attacks the **distance between where someone is
+and the role they actually want** — a distance nobody measures for them, so they discover it only after
+months of applying and hearing nothing.
 
-Itqan starts from **where the graduate wants to go**, not from a job listing. They name a target role,
-or Itqan suggests roles they are already close to. Then it does three things:
+**The pain, in the user's own terms:** confusion, and time lost. They are applying to hundreds of roles
+that were never a fit, cannot tell which are worth the evening, and have nobody telling them what to fix
+first. Itqan narrows that. It is not another list.
 
-1. **Measures the gap** against live Gulf demand, not a generic checklist of what a role supposedly needs.
-2. **Lays out the shortest path** across it, in real courses.
-3. **Matches the jobs that fit them now**, each with a plain reason.
+Itqan starts from **where they want to go**, not from a job listing. They name a target role, or Itqan
+suggests roles they are already close to. Then it answers four questions in order:
 
-> **Reading the transcript and CV is how the measuring starts. It is not the product.**
+1. **Where do I stand today?**
+2. **Which role should I aim for?**
+3. **What is the shortest path there?** In real courses and certifications.
+4. **Which jobs can I apply to now?** Matched to that position and their stated preferences.
+
+Every answer is measured against **live regional demand and what those openings currently ask for**, not
+a generic checklist of what a role is supposed to need. Every one carries its reason and a real source.
+
+> **Reading the documents is how the measuring starts. It is not the product.**
 >
-> This sentence exists because the old positioning called Itqan "a translation engine", and that framing
-> keeps creeping back into copy written from this skill. Translating a course into a skill is one step
-> inside step one. **The product is the gap, the path, and the fit.** Any page, deck or headline that
-> makes decoding a transcript the story is reproducing a superseded pitch.
+> This sentence exists because an earlier positioning called Itqan "a translation engine", and that
+> framing keeps creeping back into copy written from this skill. Turning a course into a skill is one
+> step inside question one. **The product is the position, the goal, the path, and the fit.** Any page,
+> deck or headline that makes decoding a document the story is reproducing a superseded pitch.
 
 **The thesis:** the commercial opportunity is not the unemployment rate — it is that Gulf nationalisation
 policy turns getting nationals into real roles into a mandatory, funded institutional workflow, and no
 one is doing it against live regional demand.
 
 **Scope boundary.** Itqan is a *career navigator* — not a job board, not a course shop, not a CV parser.
-Anything that does not help a graduate see the distance to the role they want, or close it, is out of
-scope. Beachhead Oman; expansion Saudi Arabia.
+Anything that does not help someone see the distance to the role they want, or close it, is out of scope.
+Beachhead Oman; expansion Saudi Arabia.
+
+**Pricing.** The parts that get someone into work are free and stay free: where they stand, the path, the
+job matches and the advisor. A premium tier covers extended use of the AI. Never write an absolute like
+"free forever" or "no payment at any point" — they were true of an earlier model and are not now.
 
 ## 3. Personality
 
@@ -114,14 +129,16 @@ because gradients look modern is generated.
 
 ## 4. Audience — check every decision against three people
 
-They fail in different directions, which is the point.
+They fail in different directions, which is the point. Two are looking for a first job and one is
+switching. Copy that addresses only new graduates leaves out half the audience.
 
 - **Maryam** — unemployed Omani IT graduate, the anchor user. Leaves if the first screen shows deficits.
   → *Lead with capability. Jobs before gaps. Arabic-first.*
 - **Yusuf** — international graduate needing a Gulf sponsor. Leaves if the product is Arabic-only or
   dishonest about visas. → *Co-equal English. "Why this match" everywhere. Non-GCC transcripts must parse.*
-- **Nasser** — underemployed AI-skeptic. Leaves permanently on one unverifiable claim.
-  → *Radical transparency. Zero hallucination. No hype language.*
+- **Nasser** — in work, underemployed, switching into a different role, and an AI-skeptic. Leaves
+  permanently on one unverifiable claim. → *Radical transparency. Zero hallucination. No hype language.
+  Never assume he is starting from zero: his experience counts for more than his job title says.*
 
 Full personas, research findings and the six-stage journey map: `references/audience.md`.
 
@@ -206,7 +223,7 @@ performs enthusiasm and never hides a limitation to look more capable.
 Three rules that govern everything:
 
 1. **Lead with capability.** Say what the user has before what they lack.
-2. **Show the working.** "Because your transcript shows X" beats "our AI determined Y".
+2. **Show the working.** "Because your documents show X" beats "our AI determined Y".
 3. **Be honest about limits.** Naming a constraint builds more trust than hiding it. Honesty converts;
    hype loses.
 
@@ -216,7 +233,7 @@ point; *missing / deficient / unqualified*; vague hedges like "might be a good f
 **Always available:** "suggested — confirm this" for anything below threshold; "why this match" as the
 standing name for the evidence chain; "you already have…" for capabilities, "unlock" for gaps.
 
-Sentence case everywhere. Active voice. Buttons name the outcome ("See my matches", never "Submit").
+Sentence case everywhere. Active voice. Buttons name the outcome ("See where I stand", never "Submit").
 Arabic and English are both *authored*, never translated. Full system: `references/voice-writing.md`.
 
 ## 8. Displaying AI output
@@ -258,9 +275,12 @@ Run before anything ships.
 
 Marked TBD deliberately. If work requires one, **flag it and ask**; do not quietly author it.
 
-Vision statement · brand archetype · vector (SVG) masters · Arabic-only and Latin-only lockups ·
-sub-32px simplified icon · three of four Hud poses (scanning, celebrating, empathetic) · UI icon style
-system · layout grid · photography direction · Arabic grammar conventions (punctuation, numerals, dates,
-bidi strings) · social and email templates · Rubik's Arabic weight coverage (a verification, not a
-decision — if a weight is missing in Arabic, remove it from the system entirely) · pipeline accuracy
-figures (blocked on validating 20–30 real transcripts).
+Brand archetype · vector (SVG) masters · Arabic-only and Latin-only lockups · sub-32px simplified icon ·
+UI icon style system · layout grid · photography direction · Arabic grammar conventions (punctuation,
+numerals, dates, bidi strings) · social and email templates · Rubik's Arabic weight coverage (a
+verification, not a decision — if a weight is missing in Arabic, remove it from the system entirely) ·
+pipeline accuracy figures (blocked on validating 20 to 30 real cases).
+
+Closed since this list was written: the **vision statement** is in §1, and the **Hud poses** all ship
+(`idle`, `waving`, `flying-in`, `thinking`, `analyzing`, `celebrating`, `error` are in
+`itqan-website/public/mascot/`).

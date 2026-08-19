@@ -80,7 +80,7 @@ product, and it is licensed.
 
 ```jsx
 /* Staged progress: advance, check completed stages, stream results in */
-const stages = ["Reading transcript", "Extracting skills", "Matching jobs", "Building pathway"];
+const stages = ["Reading your documents", "Understanding your background", "Matching you to roles and courses", "Finished"];
 // render each with state: pending | active (animated dot) | done (check, ease-out fade)
 ```
 

@@ -1,8 +1,8 @@
 {
   "site": {
     "name": "Itqan",
-    "strapline": "Know where you stand. See the shortest path to the job you want.",
-    "description": "Itqan shows you where you stand today, which role to aim for, and the shortest path there. Real jobs and real courses matched to your position. In Arabic and English."
+    "strapline": "You already hold most of the pattern.",
+    "description": "Itqan shows what you already hold, what the role you want still needs, and the shortest way to close it. Against openings that exist right now, in Arabic and English."
   },
   "a11y": {
     "skip": "Skip to content",
@@ -18,7 +18,9 @@
     "footerNav": "Site links",
     "homeLink": "Itqan, home page",
     "showPassword": "Show password",
-    "hidePassword": "Hide password"
+    "hidePassword": "Hide password",
+    "tileSet": "A piece you already hold",
+    "tileOpen": "A piece still missing"
   },
   "nav": {
     "home": "Home",
@@ -29,7 +31,8 @@
   "actions": {
     "login": "Log in",
     "signup": "Create your free account",
-    "register": "Register"
+    "register": "Register",
+    "seeWorking": "See the working"
   },
   "badge": {
     "strong": "Strong match",
@@ -40,7 +43,7 @@
     "close": "Close",
     "title": "Hud",
     "limit": "Answers about Itqan. Anything about your own record needs an account.",
-    "greeting": "Hello. I am Hud. Ask me about Itqan: what it does, what it does not do, and what happens to your documents.",
+    "greeting": "I am Hud. Ask me what Itqan does, what it costs, or what happens to your documents.",
     "nudge": "Ask me about Itqan",
     "forksLabel": "Start here",
     "forksMoreLabel": "Other questions",
@@ -49,13 +52,13 @@
     "send": "Send question",
     "youAsked": "You asked",
     "noMatchTitle": "That one needs your record.",
-    "noMatchBody": "I do not have a ready answer for that. I can answer questions about Itqan itself: what it does, what it costs, and what happens to your documents. Anything about you specifically I cannot answer until I have read what you give me, and that starts with a free account.",
+    "noMatchBody": "I can answer questions about Itqan itself. Anything about you specifically I cannot answer until I have read what you give me, and that starts with a free account.",
     "forks": [
       {
         "id": "what",
         "q": "What does Itqan actually do?",
         "keywords": "what does do how work works working product itqan",
-        "a": "You give it whatever you already have. It reads that, tells you where you stand today, and helps you settle on the role to aim for. Then it shows the shortest path there in real courses, and the live openings you can apply to now, each with the reason it fits.",
+        "a": "It reads whatever you already have, tells you where you stand, and helps you settle on a role to aim for. Then the shortest path there in real courses, and the openings you can apply to now, each with the reason it fits.",
         "slug": "how-it-works",
         "linkLabel": "The four steps"
       },
@@ -63,7 +66,7 @@
         "id": "free",
         "q": "Is it really free?",
         "keywords": "free cost costs price pay paid payment money subscription plan card charge trial",
-        "a": "We offer different plans to fit different needs. The core is free: the gap, the full path, your job matches and the advisor. A premium tier covers extended use of the AI, and nobody pays to get hired.",
+        "a": "The core is free: where you stand, the full path, your job matches and the advisor. A premium tier covers extended use of the AI. Nobody pays to get hired.",
         "slug": "about",
         "linkLabel": "What we refuse"
       },
@@ -71,7 +74,7 @@
         "id": "documents",
         "q": "What happens to my documents?",
         "keywords": "transcript document documents upload privacy data record certificate store stored delete safe security",
-        "a": "They get read so Itqan can work out where you stand. Before anything moves on from there, everything it read is put in front of you to check and correct. That screen is where the decision sits, and it is yours rather than ours.",
+        "a": "They get read so Itqan can work out where you stand. Before anything moves on, everything it read is put in front of you to check and correct. That decision is yours rather than ours.",
         "slug": "privacy",
         "linkLabel": "The privacy page"
       },
@@ -79,159 +82,144 @@
         "id": "outside",
         "q": "My degree is not from Oman. Does that work?",
         "keywords": "outside oman abroad foreign international degree university visa sponsor gulf english expat",
-        "a": "Yes. Itqan is built for Arabic and English equally, and it reads qualifications from outside the Gulf. Where it is unsure it says so and asks you to confirm, rather than guessing.",
+        "a": "Yes. Itqan is built for Arabic and English equally, and it reads qualifications from outside the Gulf. Where it is unsure it says so and asks you to confirm.",
         "slug": "proof",
         "linkLabel": "A worked example"
       }
     ]
   },
   "footer": {
-    "tagline": "Know where you stand, and the shortest path to the job you want.",
+    "tagline": "You already hold most of the pattern.",
     "privacy": "Privacy",
     "terms": "Terms",
     "rights": "© Itqan 2026"
   },
   "home": {
     "hero": {
-      "heading": "You are applying to hundreds of jobs. Almost none of them fit.",
-      "sub": "Itqan shows you where you stand today, which role to aim for, and the shortest path there. Then it brings you the jobs and courses that match your actual position.",
+      "heading": "You already hold most of the pattern.",
+      "sub": "Itqan names the pieces you are missing, in the order that closes them fastest, against openings that exist right now.",
       "ctaSecondary": "See the proof"
     },
-    "problem": {
-      "eyebrow": "Where the time goes",
+    "pain": {
       "heading": "It is not you. It is the guessing.",
-      "cards": [
-        {
-          "title": "A hundred applications, no answers",
-          "body": "You apply, you wait, you hear nothing. Most of those roles were never a fit, and you find that out after the evening is gone."
-        },
-        {
-          "title": "Every posting looks close enough",
-          "body": "The title fits. One line in the requirements does not. So you apply on a guess, or you close the tab on a guess."
-        },
-        {
-          "title": "Nobody tells you what to fix",
-          "body": "You know roughly where you want to end up. No one has shown you the distance, or what to close first."
-        }
-      ]
+      "body": "A hundred applications. No answers. Nobody telling you which piece to cut first.",
+      "eyebrow": "Where the time goes"
     },
-    "what": {
-      "eyebrow": "In three steps",
-      "heading": "What Itqan does",
+    "build": {
+      "heading": "Four questions, in order.",
       "steps": [
         {
-          "title": "See where you stand",
-          "body": "Bring what you already have. Itqan reads it and tells you your position today, in the words the market uses."
+          "title": "Where you stand",
+          "body": "Bring what you already have. Itqan reads it and names your position in the words the market uses."
         },
         {
-          "title": "Choose the role to aim for",
-          "body": "Know it already? Say so. Not sure? Itqan suggests roles your position already supports."
+          "title": "Which role to aim for",
+          "body": "Know it already? Say so. If not, Itqan suggests the roles your position already supports."
         },
         {
-          "title": "Follow the shortest path",
-          "body": "The courses and certifications that close the distance, and the real openings you can apply to now."
+          "title": "The shortest path",
+          "body": "Real courses and certifications that close the distance, in the order that closes it fastest."
+        },
+        {
+          "title": "Jobs you can apply to now",
+          "body": "Live openings matched to that position, each carrying its reason and a source you can open."
         }
       ],
-      "link": "How it works, step by step"
+      "link": "How it works, step by step",
+      "eyebrow": "What Itqan does"
     },
-    "example": {
-      "eyebrow": "Evidence",
-      "heading": "What a fit looks like",
-      "intro": "One real opening, checked against where you stand today.",
-      "courseLabel": "A real opening",
-      "course": "Junior Data Analyst",
-      "skillLabel": "Your fit",
-      "skill": "Strong",
-      "whyLabel": "Why it fits you",
-      "why": "You already have four of the five things this role asks for. The fifth is one short course, and Itqan names it.",
-      "note": "An illustrative example. Inside Itqan, every match links to the live opening, with the date it was found."
-    },
-    "who": {
-      "eyebrow": "Three situations",
-      "heading": "Who it is for",
-      "cols": [
+    "openEdge": {
+      "heading": "The open edge is the point.",
+      "body": "A piece Itqan cannot evidence stays an outline, labelled for you to confirm. It is never filled in to look complete.",
+      "setLabel": "Held",
+      "openLabel": "Missing",
+      "link": "See a full worked example",
+      "roleLabel": "What a Junior Data Analyst opening asks for",
+      "pieces": [
         {
-          "title": "Looking for your first job",
-          "body": "You have more than a blank CV suggests. Itqan finds the roles it already adds up to."
+          "name": "SQL",
+          "state": "set"
         },
         {
-          "title": "Changing to a different field",
-          "body": "Your experience counts for more than the title on it. Itqan shows which roles it transfers to, and what is missing."
+          "name": "Data analysis",
+          "state": "set"
         },
         {
-          "title": "Back after a break",
-          "body": "You are closer than it feels. Itqan shows what still counts and the shortest way to the rest."
+          "name": "Reporting",
+          "state": "set"
+        },
+        {
+          "name": "Power BI",
+          "state": "open"
+        },
+        {
+          "name": "Stakeholder communication",
+          "state": "open"
         }
-      ]
+      ],
+      "note": "An illustrative example. Inside Itqan each piece links to the live opening it was read from, with the date it was found.",
+      "eyebrow": "Evidence"
     },
     "faq": {
-      "eyebrow": "Questions",
-      "heading": "Common questions",
+      "heading": "Before you start.",
       "items": [
         {
           "q": "Is it really free?",
-          "a": "The parts that get you into work are free and stay free: where you stand, your path, your job matches and the advisor. A premium tier covers extended use of the AI. Nothing you need is behind it."
+          "a": "The parts that get you into work are free and stay free: where you stand, your path, your job matches and the advisor. A premium tier covers extended use of the AI."
         },
         {
           "q": "What do you need from me?",
-          "a": "Whatever you already have. A CV, certificates, an academic record. Then a few short questions so Itqan knows what you are aiming for. The more it has, the sharper the fit."
+          "a": "Whatever you already have. A CV, certificates, an academic record. The more it has, the sharper the fit."
         },
         {
           "q": "Do you find real jobs, or just give advice?",
-          "a": "Real openings that exist right now, matched to your position and your preferences, each with the reason it fits. Itqan does not promise you a job. It shows you where you have a real chance and where you do not."
+          "a": "Real openings that exist right now, each with the reason it fits. Itqan does not promise you a job. It shows you where you have a real chance."
         },
         {
           "q": "What if I do not know what job I want?",
-          "a": "That is the common case, and it is the first thing Itqan works on. It reads what you have and suggests roles your position already supports, so you are choosing between real options instead of guessing."
-        },
-        {
-          "q": "Where do the recommendations come from?",
-          "a": "Openings and courses that exist, read against what those jobs currently ask for. Not a generic checklist of what a role is supposed to need."
-        },
-        {
-          "q": "Can I delete my data?",
-          "a": "Yes, at any time. Deleting your account removes everything you gave Itqan and everything built from it."
+          "a": "That is the common case, and it is the first thing Itqan works on. You choose between real options instead of guessing."
         }
-      ]
+      ],
+      "eyebrow": "Questions"
     },
     "closing": {
-      "heading": "See where you stand"
+      "heading": "See where you stand.",
+      "body": "A name, an email, a password."
     }
   },
   "hiw": {
-    "eyebrow": "The method",
     "title": "How Itqan works",
-    "metaDescription": "Four steps from what you already have to the shortest path to the job you want. No inflated numbers, no promises.",
+    "metaDescription": "Four steps from what you already have to the shortest path to the job you want.",
     "intro": "Four steps. No magic in any of them.",
     "confirmTag": "You confirm",
     "steps": [
       {
         "title": "You bring what you already have",
-        "body": "A CV, certificates, an academic record. Whatever exists. Not a form with twenty fields."
+        "body": "A CV, certificates, an academic record. Not a form with twenty fields."
       },
       {
         "title": "Itqan tells you where you stand",
-        "body": "It shows you everything it read, exactly as it read it, and you correct anything wrong. Nothing moves forward until you approve it. A position you checked yourself is worth more than one you were handed."
+        "body": "It shows everything it read, exactly as it read it, and you correct anything wrong. A position you checked yourself is worth more than one you were handed."
       },
       {
         "title": "You choose the role to aim for",
-        "body": "If you know it, say it. If you do not, Itqan suggests roles your position already supports and you pick from real options."
+        "body": "If you know it, say it. If you do not, Itqan suggests roles your position already supports."
       },
       {
         "title": "You get the path and the jobs",
-        "body": "The courses and certifications that close the distance, in order, and the openings you can apply to today. Each one carries its reason and a source you can open."
+        "body": "The courses that close the distance, in order, and the openings you can apply to today. Each carries its reason and a source you can open."
       }
-    ]
+    ],
+    "eyebrow": "The method"
   },
   "proof": {
-    "eyebrow": "See for yourself",
     "title": "Proof",
-    "metaDescription": "A full worked example of how Itqan judges where you stand against a real role, with its current limits stated plainly.",
-    "heading": "Do not take our word for it",
-    "intro": "This page shows the reasoning itself, so you can judge it before creating an account.",
+    "metaDescription": "A full worked example of how Itqan judges a position against a real role, with its limits stated plainly.",
+    "heading": "Do not take our word for it.",
+    "intro": "The reasoning itself, so you can judge it before creating an account.",
     "example": {
       "heading": "One role, read against one person",
-      "intro": "What a Junior Data Analyst opening asks for, and where this person stands on each one.",
+      "intro": "What a Junior Data Analyst opening asks for, and where this person stands on each piece.",
       "courseLabel": "What the role asks for",
       "skillLabel": "Where you stand",
       "whyLabel": "Why we say that",
@@ -277,16 +265,16 @@
     "limits": {
       "heading": "What Itqan cannot do yet",
       "items": [
-        "It cannot promise you a job. It shows you where you stand and what closes the distance. The applying is still yours.",
+        "It cannot promise you a job. The applying is still yours.",
         "It has not published an accuracy figure, because measurement on enough real cases is not finished. A number before that would be a guess.",
         "Some results are suggestions to confirm, not facts. They are labelled.",
-        "What you upload is a starting point, not the whole picture of you. Projects, work and character live outside it.",
+        "What you upload is a starting point, not the whole picture of you.",
         "It reads Arabic and English. Other languages, not yet."
       ]
-    }
+    },
+    "eyebrow": "See for yourself"
   },
   "signup": {
-    "eyebrow": "Free account",
     "title": "Create your free account",
     "metaDescription": "A free account. Name, email, password.",
     "heading": "Create your free account",
@@ -317,10 +305,10 @@
     "summaryHeading": "A few fields need attention",
     "serverError": "We could not create the account just now. Try again in a moment.",
     "haveAccount": "Already have an account?",
-    "loginLink": "Log in"
+    "loginLink": "Log in",
+    "eyebrow": "Free account"
   },
   "login": {
-    "eyebrow": "Your account",
     "title": "Log in",
     "metaDescription": "Return to your Itqan account.",
     "heading": "Log in",
@@ -339,7 +327,8 @@
     "serverError": "We could not log you in just now. Try again in a moment.",
     "forgot": "Forgot your password?",
     "noAccount": "New to Itqan?",
-    "signupLink": "Create a free account"
+    "signupLink": "Create a free account",
+    "eyebrow": "Your account"
   },
   "forgot": {
     "title": "Password reset",
@@ -400,7 +389,6 @@
     "back": "Back to log in"
   },
   "privacy": {
-    "eyebrow": "Your data",
     "title": "Privacy",
     "metaDescription": "How Itqan collects, keeps and protects your data.",
     "heading": "How your data is handled",
@@ -451,15 +439,16 @@
           "What is the official email and postal address?"
         ]
       }
-    ]
+    ],
+    "eyebrow": "Your data"
   },
   "terms": {
-    "eyebrow": "The basics",
     "title": "Terms",
     "metaDescription": "Itqan's terms of use.",
     "heading": "Terms of use",
     "notice": "This page is under construction.",
-    "body": "The core of the service is free, your account is yours, and your data is handled as the privacy page describes."
+    "body": "The core of the service is free, your account is yours, and your data is handled as the privacy page describes.",
+    "eyebrow": "The basics"
   },
   "notfound": {
     "title": "Page not found",
@@ -475,44 +464,37 @@
   "about": {
     "title": "Who we are",
     "metaDescription": "Why we built Itqan. We show you where you stand, the shortest path to the job you want, and the real jobs that fit you today.",
-    "eyebrow": "Who we are",
-    "whyHeading": "You know roughly where you want to end up. Nobody tells you how far that is, or which way to go.",
-    "whyBody": "We built Itqan because that distance should be visible from the start, not discovered after a year of applying and hearing nothing. The hard part was never what you already have. It is knowing what stands between you and where you want to be, and what to do about it first.",
+    "whyHeading": "Nobody tells you how far it is.",
+    "whyBody": "You know roughly where you want to end up. That distance should be visible from the start, not discovered after a year of applying and hearing nothing.",
     "missionLabel": "Our mission",
     "mission": "We show you where you stand, the shortest path to the job you want, and the real jobs that fit you today.",
     "visionLabel": "Our vision",
     "vision": "A world where nobody has to guess their next step.",
-    "howEyebrow": "How we do it",
     "howHeading": "Three things we hold to.",
     "how1Title": "We measure against the real market.",
-    "how1Body": "Live Gulf demand and what those openings currently ask for, not a generic checklist of what a role is supposed to need.",
+    "how1Body": "Live Gulf demand and what those openings currently ask for, not a generic checklist.",
     "how2Title": "We show our working.",
-    "how2Body": "Every recommendation carries its reason and a real source you can open. Nothing invented is ever shown to you.",
+    "how2Body": "Every recommendation carries its reason and a real source you can open.",
     "how3Title": "We never sell your results.",
     "how3Body": "No employer can buy a place in what you see.",
-    "whatEyebrow": "What Itqan does",
-    "whatHeading": "Three things, in order.",
-    "what1Title": "Tells you where you stand",
-    "what1Body": "today, against the role you want.",
-    "what2Title": "Maps the shortest path",
-    "what2Body": "across the distance, in real courses.",
-    "what3Title": "Brings the jobs that fit you now,",
-    "what3Body": "each with a plain reason.",
-    "evidenceEyebrow": "What we found",
-    "evidenceHeading": "We asked graduates and final year students in Oman.",
-    "evidenceBody": "Roughly two thirds had read a job posting and could not tell whether something they had done counted as the skill being asked for. Nearly nine in ten were blocked by postings demanding experience they did not have. Nearly half of those who were rejected could not say why.",
+    "evidenceHeading": "We asked graduates in Oman.",
+    "evidenceBody": "Roughly two thirds had read a job posting and could not tell whether something they had done counted as the skill being asked for. Nearly nine in ten were blocked by postings demanding experience they did not have. Nearly half of those rejected could not say why.",
     "evidenceQualifier": "An early sample, drawn from the graduates we are launching to. We are widening it.",
-    "whereEyebrow": "Where we sit",
-    "whereBody": "We are embedded at UTAS, which is both our first pilot and where our survey came from. Our regulator, MTCIT, runs Khuta, which we treat as a distribution channel rather than a competitor. We start in Oman, then Saudi Arabia and the wider Gulf.",
-    "payEyebrow": "What you will never pay for",
-    "payBody": "You never pay for the parts that get you into work. Where you stand, your path, your job matches and the advisor are free and stay free. A premium tier covers extended use of the AI, never the parts that get you hired. Employers and universities pay for access to candidates who agreed to it.",
+    "whereBody": "We are embedded at UTAS, which is both our first pilot and where our survey came from. We start in Oman, then Saudi Arabia and the wider Gulf.",
+    "payHeading": "What you will never pay for.",
+    "payBody": "Where you stand, your path, your job matches and the advisor are free and stay free. A premium tier covers extended use of the AI, never the parts that get you hired.",
     "refuseHeading": "And what we refuse.",
     "refuse1": "We will not sell a place in your results.",
     "refuse2": "We will not invent a course or a job that does not exist.",
     "refuse3": "We will not promise you a job.",
     "refuse4": "We will not publish an accuracy figure we have not measured.",
-    "teamEyebrow": "The team",
     "teamHeading": "Four roles, clearly owned.",
-    "linkedinLabel": "{name} on LinkedIn"
+    "linkedinLabel": "{name} on LinkedIn",
+    "eyebrow": "Who we are",
+    "howEyebrow": "How we do it",
+    "evidenceEyebrow": "What we found",
+    "whereEyebrow": "Where we sit",
+    "payEyebrow": "What you will never pay for",
+    "teamEyebrow": "The team"
   }
 }

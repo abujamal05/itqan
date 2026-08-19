@@ -51,7 +51,13 @@ const base = `/${locale}`;
                   <span class="proof-row__value proof-row__value--skill"><bdi>{row.skill}</bdi></span>
                 </div>
               </div>
-              <Badge kind={row.confidence === 'strong' ? 'strong' : 'suggested'} locale={locale} />
+              {/* The badge marks CONFIDENCE IN THE READING, not match strength, so
+                  it appears only where the reading is uncertain. Rendering
+                  "Strong match" beside the "Not yet" verdict on the Power BI row
+                  said two contradictory things about one row, on the page a
+                  sceptic reads closest. An unlabelled row is a plain statement;
+                  a labelled one is asking to be confirmed. */}
+              {row.confidence !== 'strong' && <Badge kind="suggested" locale={locale} />}
             </div>
             <div class="proof-row__why">
               <span class="proof-row__label">{s.proof.example.whyLabel}</span>

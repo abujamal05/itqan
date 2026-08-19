@@ -10,3 +10,7 @@
 .env*
 node_modules/
 dist/
+
+# Impeccable session artifacts: decision-page payloads and answer logs.
+.impeccable/questions/
+.impeccable/direction-payload*.json

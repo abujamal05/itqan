@@ -23,15 +23,18 @@ Vite, structured so the view layer can be lifted to React Native later. Both con
 ## Users
 
 Three people, who fail in different directions. Every decision is checked against all three, not just the
-anchor.
+anchor. Two are looking for a first job and one is switching; the product serves both, and copy that
+addresses only new graduates leaves out half the audience.
 
 - **Maryam** — unemployed Omani IT graduate. The anchor user. Arrives demoralised. **Leaves for good if
   the first screen shows deficits.** Needs capability before gaps, jobs before analysis, Arabic first.
 - **Yusuf** — international graduate needing a Gulf sponsor. **Leaves if the product is Arabic-only or
   dishonest about visas.** Needs co-equal English, "why this match" everywhere, non-GCC transcripts that
   parse. The power user who reads the methodology.
-- **Nasser** — underemployed, actively AI-skeptic. **Leaves permanently on one unverifiable claim.**
-  Needs radical transparency, zero hallucination, no hype language, a visible "how this works".
+- **Nasser** — in work, underemployed, switching into a different role, and actively AI-skeptic.
+  **Leaves permanently on one unverifiable claim.** Needs radical transparency, zero hallucination, no
+  hype language, a visible "how this works". He is also the switcher: his experience counts for more
+  than his job title says, and nothing may assume he is starting from zero.
 
 **Out of scope as a product surface:** the institutional buyer. A university career office is a
 *distribution channel*, not a user. No admin or cohort-analytics dashboard is being built. Revisit only if
@@ -46,40 +49,50 @@ The operative word is **trusted**, not smartest. When accuracy and trust conflic
 "suggested — confirm this" beats a confident guess. A gap analysis that is 85% right and shows its working
 is worth more than one that is 95% right and cannot be checked.
 
-Success for the marketing site is one thing only: a stranger creates a free account. The account itself
-is free and nobody pays to get hired: the gap, the full path, the job matches and the advisor are all in
-the free tier. A premium tier covers extended use of the AI. Superseded 2026-08-18, and the superseded
-version is worth stating because it is still quoted in older notes: the rule used to be "everything is
-free, no pricing, no plans, no payment, ever". Absolutes like "free forever" or "no plan to pick" must
-not be reintroduced.
+Success for the marketing site is one thing only: a stranger creates a free account.
+
+**Pricing.** The parts that get someone into work are free and stay free: where they stand, the path,
+the job matches and the advisor. A premium tier covers extended use of the AI. Never write an absolute
+like "free forever" or "no payment at any point"; they were true of an earlier model and are not now.
 
 ## Positioning
 
-Itqan does not attack graduate unemployment in the aggregate. It attacks the **distance between where a
-graduate is and the role they actually want** — a distance nobody measures for them, so they discover it
-only after years of applying and being turned down.
+Itqan does not attack unemployment in the aggregate. It attacks the **distance between where someone is
+and the role they actually want** — a distance nobody measures for them, so they discover it only after
+months of applying and hearing nothing.
 
-It starts from where the graduate wants to go, not from a job listing. They name a target role, or Itqan
-suggests roles they are already close to. Then it **measures the gap** against live Gulf demand, **lays
-out the shortest path** across it in real courses, and **matches the jobs that fit them now**, each with
-a plain reason.
+**The pain, in the user's own terms:** confusion, and time lost. They are applying to hundreds of roles
+that were never a fit, cannot tell which are worth the evening, and have nobody telling them what to fix
+first. Itqan exists to narrow that, not to hand them another list.
 
-**Reading the documents is how the measuring starts. It is not the product.** An earlier pitch
-called Itqan "a translation engine" and that framing keeps resurfacing in copy; translating a course into
-a skill is one step inside step one. The product is the gap, the path, and the fit.
+It starts from where they want to go, not from a job listing. They name a target role, or Itqan suggests
+roles they are already close to. Then it answers four questions in order:
+
+1. **Where do I stand today?**
+2. **Which role should I aim for?**
+3. **What is the shortest path there?** In real courses and certifications.
+4. **Which jobs can I apply to now?** Matched to that position and their stated preferences.
+
+Every answer is measured against **live regional demand and what those openings currently ask for**, not
+a generic checklist of what a role is supposed to need, and every one carries its reason and a real
+source.
+
+**Reading the documents is how the measuring starts. It is not the product.** An earlier pitch called
+Itqan a translation engine, and that framing keeps resurfacing in copy. Turning a course into a skill is
+one step inside question one. The product is the position, the goal, the path, and the fit.
 
 **The thesis a neighbouring product could not truthfully copy:** the commercial opportunity is not the
 unemployment rate — it is that Gulf nationalisation policy turns placing nationals in real roles into a
 mandatory, funded institutional workflow, and no one is doing it against live regional demand.
 
 **Scope boundary.** Itqan is a *career navigator* — not a job board, not a course shop, not a CV parser.
-Anything that does not help a graduate see the distance to the role they want, or close it, is out of
-scope. Beachhead Oman; expansion Saudi Arabia.
+Anything that does not help someone see the distance to the role they want, or close it, is out of scope.
+Beachhead Oman; expansion Saudi Arabia.
 
 ## Operating Context
 
-- The graduate uploads a real transcript (PDF or a phone photo of one), often mixed Arabic/Latin, often a
-  scan of variable quality. **Document upload and gap-analysis reading are desktop-favoured** and must be
+- The user uploads whatever they already have: a CV, certificates, an academic record. Often mixed
+  Arabic and Latin, often a phone photo of variable quality. The CV is the one required document. **Document upload and gap-analysis reading are desktop-favoured** and must be
   full-fidelity on a large screen. **Job browsing is the mobile-favoured surface.**
 - The pipeline runs four sequential agents (parse → extract skills → match jobs → build pathway) taking
   ~20–60 seconds. Errors compound: four stages at 90% is roughly 73% end to end, so every stage must expose

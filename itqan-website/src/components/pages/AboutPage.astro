@@ -62,12 +62,6 @@ const howItems = [
   { title: s.about.how3Title, body: s.about.how3Body },
 ];
 
-const whatItems = [
-  { title: s.about.what1Title, body: s.about.what1Body },
-  { title: s.about.what2Title, body: s.about.what2Body },
-  { title: s.about.what3Title, body: s.about.what3Body },
-];
-
 const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.refuse4];
 ---
 
@@ -124,28 +118,6 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
         ))
       }
     </ul>
-  </div>
-</section>
-
-<!-- WHAT. The three things, in order, numbered because the order is real. -->
-<section class="section section--sunken">
-  <div class="container">
-    <div class="section__head reveal">
-      <p class="eyebrow">{s.about.whatEyebrow}</p>
-      <h2 class="section__heading">{s.about.whatHeading}</h2>
-    </div>
-    <ol class="about-steps stagger">
-      {
-        whatItems.map((item, i) => (
-          <li class="about-steps__item reveal">
-            <span class="about-steps__num" aria-hidden="true">{i + 1}</span>
-            <p class="about-steps__text">
-              <strong>{item.title}</strong> {item.body}
-            </p>
-          </li>
-        ))
-      }
-    </ol>
   </div>
 </section>
 
