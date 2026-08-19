@@ -1,244 +1,146 @@
 # CLAUDE.md — Itqan marketing website
 
-Read this first. It is the durable context for this project so a session does not have to re-derive it.
-When it conflicts with a stale memory or a guess, this file and the installed skills win.
+Read this before touching anything here. Where it conflicts with a memory or a guess, this file and the
+installed skills win.
 
 ## What this is
 
-A public marketing website for **Itqan**, an Arabic native career intelligence platform for graduates in
-Oman and the Gulf. Its one job: convince a stranger to create a free account.
+The public site for **Itqan**, a career navigator for job seekers and job switchers in Oman and the Gulf.
+Its one job: convince a stranger to create a free account.
 
-**The pricing rule changed on 2026-08-18** and the old one is no longer true. It used to read
-"everything is free, no pricing, no plans, no payment, ever". The model is now a **free tier carrying
-the core, and a premium tier covering extended use of the AI**. What still holds, and is the part that
-was ever load bearing: **the account is free, and nobody pays to get hired** — the gap, the full path,
-the job matches and the advisor are all in the free tier. So "create your free account" stays accurate
-everywhere it appears. What must NOT appear again is an absolute: "free forever", "no plan to pick",
-"no payment at any point". Those were removed from `ar.json` and `en.json` in the same change.
+The product answers four questions in order, and the site sells that, not a feature of step one:
 
-**Scope stops at the sign up and log in pages.** The product (document upload, the AI pipeline,
-results, dashboards, auth logic) is a separate application and is out of scope here. If a task feels like
-product work, stop and ask.
+1. Where do I stand today?
+2. Which role should I aim for?
+3. What is the shortest path there? In real courses and certifications.
+4. Which jobs can I apply to now?
+
+The pain is confusion and lost time: people applying to hundreds of roles that were never a fit. Every
+answer is measured against live regional demand and carries its reason and a real source.
+
+**Itqan is not a translation engine.** Turning a course into a skill is one step inside question one. An
+earlier pitch led with it; if a page makes decoding a document the story, it is the superseded pitch.
+
+**Pricing.** The parts that get someone into work are free and stay free. A premium tier covers extended
+use of the AI. Never write "free forever" or "no payment at any point".
+
+**Scope stops at the sign up and log in pages.** The product itself is `../Onboarding/`. If a task feels
+like product work, stop and ask.
 
 ## Stack and commands
 
-- **Astro** + TypeScript, static output. Plain CSS with design tokens. No Tailwind, no UI framework, no
-  component library. Client JS only where it earns its place (toggles, mobile menu, form validation,
-  mascot player, scroll reveal, Hud's ask panel).
-
-  **The JS budget, measured 2026-08-17 rather than remembered.** Astro inlines these scripts into each
-  page instead of emitting a shared bundle, so the cost is per page view and is not cached across
-  navigations. On a content page: **2,857 bytes gzipped**, of which Hud's ask panel is **752**. The
-  three form pages carry 2,106 bytes plus `form.js` at 1,344. This file claimed "~1KB total" for a
-  long time; that was never true of the built output, and the number above is what the build actually
-  produces. Measure after any change to a `<script>` rather than quoting this line:
-
-  ```bash
-  node -e "const f=require('fs'),z=require('zlib');const h=f.readFileSync('dist/en/index.html','utf8');const s=[...h.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map(m=>m[1]);console.log(z.gzipSync(Buffer.from(s.join('\n')),{level:9}).length)"
-  ```
-- Dev server config is in `.claude/launch.json` (name `itqan-website`, port 4321).
+Astro + TypeScript, static output. Plain CSS with design tokens. No Tailwind, no UI framework, no
+component library. Client JS only where it earns its place.
 
 ```bash
 npm install
-npm run dev                 # http://localhost:4321
-npm run build               # static output in dist/
-python scripts/audit.py src/    # the phase-gate audit (see below)
+npm run dev                  # http://localhost:4321  (config in .claude/launch.json)
+npm run build                # static output in dist/
+python scripts/audit.py src/ # phase-gate audit
+```
+
+**JS budget.** Astro inlines these scripts per page rather than emitting a shared bundle, so the cost is
+per page view and is not cached across navigations. A content page is **2,857 bytes gzipped** (Hud's ask
+panel is 752 of it); the three form pages carry 2,106 plus `form.js` at 1,344. Measure after any
+`<script>` change rather than quoting those numbers:
+
+```bash
+node -e "const f=require('fs'),z=require('zlib');const h=f.readFileSync('dist/en/index.html','utf8');const s=[...h.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map(m=>m[1]);console.log(z.gzipSync(Buffer.from(s.join('\n')),{level:9}).length)"
 ```
 
 ## Where things live
 
 | Thing | Path |
 |---|---|
-| Every colour, size, spacing, radius, duration | `src/styles/tokens.css` — copied verbatim from the design-system skill. **Never invent or hardcode a value; reference a token.** |
+| Every colour, size, spacing, radius, duration | `src/styles/tokens.css` — copied verbatim from the design-system skill |
 | Base styles, fonts, buttons, reveal, utilities | `src/styles/global.css` |
 | Form styles (8 interaction states) | `src/styles/forms.css` |
-| All user-facing copy, per locale | `src/i18n/ar.json`, `src/i18n/en.json` — authored in both, never machine-translated |
-| i18n helpers (locale, dir, alternate paths) | `src/i18n/index.ts` |
-| Form endpoints, site URL, app URL | `src/config.ts` — the single place to point forms at the real API later |
+| All user-facing copy, per locale | `src/i18n/{ar,en}.json` — authored in both, never machine-translated |
+| Form endpoints, site URL, app URL | `src/config.ts` |
 | Page shell (head, hreflang, theme init, header, footer) | `src/layouts/Base.astro` |
-| Route pages (thin wrappers) | `src/pages/{ar,en}/…`, `src/pages/404.astro`, `src/pages/index.astro` (redirect) |
+| Route pages (thin wrappers) | `src/pages/{ar,en}/…` |
 | Page bodies and components | `src/components/…`, `src/components/pages/…` |
 | Mascot component + file contract | `src/components/Hud.astro` |
-| Logo/favicon/mascot assets | `public/logos/`, `public/` (favicons), `public/mascot/` |
-| The audit script | `scripts/audit.py` |
-| Every microinteraction, catalogued | `MOTION.md` — keep new motion consistent with it |
+| Every microinteraction, catalogued | `MOTION.md` |
 
-## Locked rules — do not relearn these each time
+## Locked rules
 
-- **Tokens only.** No raw hex, px, ms, or curve values in components. The two `theme-color` metas in
-  `Base.astro` are the sole literal-hex exception (HTML meta cannot read a CSS var) and are suppressed
-  with a reasoned pragma.
+- **Tokens only.** No raw hex, px, ms or curve values in components. The two `theme-color` metas in
+  `Base.astro` are the sole literal-hex exception, suppressed with a reasoned pragma.
+- **The brand gold is `#F39F1C`.** `#D08C2F` is retired and `audit.py` trips on it if it returns.
 - **RTL is the base architecture.** Logical properties only: `margin-inline-start`, `inset-inline-end`,
-  `text-align: start`, `padding-block`, never physical `left`/`right`/`margin-left`/`text-align: left`.
-  Arabic is the default locale and default design direction.
-- **Bilingual parity.** Every string exists in `ar.json` and `en.json` (18 groups, 316 leaves counting
-  array entries, kept in exact lockstep — count it, do not trust this number after an edit).
-  `ar.json` types the dictionary, so author Arabic first: a key added only to `en.json` is a TS error
-  at every use site, while one added only to `ar.json` type-checks and then crashes English at render.
-  Wrap inline Latin/mixed runs in `<bdi>`. Arabic body is weight 400, more line-height, never
-  letter-spacing.
+  `text-align: start`, `padding-block`. Arabic is the default locale and the default design direction.
+- **Bilingual parity.** Every string exists in both locale files, in exact lockstep. `ar.json` types the
+  dictionary, so a key added only to `en.json` is a TS error at every use site, while one added only to
+  `ar.json` type-checks and then crashes English at render. Wrap inline Latin runs in `<bdi>`.
 - **No dashes in prose.** No em or en dashes, no hyphenated compounds where a rewrite works ("sign up",
-  "Arabic native", "first class"). Applies to both languages. The one exception is the design-system's
-  locked badge label "Suggested — confirm"; skills win over the brief there. CSS/HTML/file identifiers
-  keep their hyphens.
-- **No hype / no AI writing tells.** See the banned lists in the brand voice and the brief. Lead with
-  capability, never promise a job, never lead with the technology.
-- **The logo swaps in dark mode.** Full colour on light, reversed on dark. Implemented via the
-  `.brand-mark--light` / `.brand-mark--dark` pattern. Header uses the full horizontal lockup (team
-  decision), footer and 404 too.
-- **Hud (the mascot) is fenced.** Allowed on marketing pages, onboarding, empty states, errors. **Never
-  beside anything that looks like a result** — he is absent from the worked-example blocks and the entire
-  `/proof` page. Never the logo/favicon. All appearances go through `Hud.astro`; poses are assigned in
-  the brief §9 table, nowhere else.
-  **One exception, 2026-08-17: the Hud chat panel** (`HudChat.astro`), where the assistant is named
-  after him. He greets and orients there; he still never states a verdict. See the amended fence in the
-  workspace `PRODUCT.md` for the reasoning and the boundary. The static launcher figure is the one
-  place a still Hud is a design choice rather than a fallback, because a looping clip pinned to the
-  corner of every page would be the site shouting at the reader.
-- **No invented statistics, no accuracy figure, no legal text.** None has been measured or drafted;
-  writing one would break the core promise. Privacy/terms are structured placeholders for a lawyer.
+  "Arabic native"). Both languages. The one exception is the locked badge label "Suggested — confirm".
+  CSS and file identifiers keep their hyphens.
+- **No hype, no AI writing tells.** Lead with capability, never promise a job, never lead with the
+  technology.
+- **The logo swaps in dark mode.** Full colour on light, reversed on dark, via
+  `.brand-mark--light` / `.brand-mark--dark`.
+- **Hud is fenced.** Allowed on marketing pages, onboarding, empty states, errors. **Never beside
+  anything that looks like a result** — absent from the worked-example blocks and all of `/proof`. Never
+  the logo or favicon. All appearances go through `Hud.astro`.
+  **One exception:** the Hud chat panel (`HudChat.astro`), where the assistant is named after him. He
+  greets and orients; he never states a verdict.
+- **No invented statistics, no accuracy figure, no legal text.** None has been measured or drafted.
+  Terms and privacy are under construction and say exactly that; their question lists stay in the locale
+  files as the brief for whoever drafts them.
+- **Motion:** `--motion-scale` is the live mechanism and components multiply their travel by it.
+  `--reveal-rise` and `--hover-lift` are defined but unread; treat them as reserved.
 
-## The audit (phase-gate)
+## The audit, and the render check it does not replace
 
-`python scripts/audit.py src/` — static checker for the itqan-ui-review rule families (colour, brand,
-RTL, a11y, states, motion, typography, copy). Exit 1 on any critical/high. `--severity high` shows only
-ship-blockers; `--json` for CI. Suppress a genuine specimen with a reasoned pragma, never by weakening a
-rule:
+`python scripts/audit.py src/` — static checker for the itqan-ui-review rule families. Exit 1 on any
+critical or high. Suppress a genuine specimen with a reasoned pragma, never by weakening a rule:
 
 ```
 {/* itqan-audit-ignore-next-line: reason */}
-/* itqan-audit-ignore-start: reason */ … /* itqan-audit-ignore-end */
 ```
 
-**This is a local stand-in** for the skill's own `audit.py`, which is not installed here. It is static
-text analysis and cannot see a rendered page. **Passing it is necessary, never sufficient** — always
-follow with the render check: both themes, both directions, narrowest and widest widths, keyboard only.
-**Screenshots work. If one times out, you are addressing a background tab.** The pane only composites
-frames for the FRONTED tab, so a capture of any other one fails with "the Browser pane is not displayed".
-Starting a second preview server creates a new tab and fronts it, which silently orphans the tab you were
-using — that is how this happens, and it is easy to mistake for a broken tool.
+It is static text analysis and cannot see a rendered page. **Passing it is necessary, never sufficient.**
+Follow with the render check: both themes, both directions, narrowest and widest, keyboard only.
 
-The fix is two calls, not a workaround:
+**Screenshots work. A timeout means you are addressing a background tab.** The pane only composites the
+FRONTED tab. Starting a second preview server creates a new tab and fronts it, orphaning the one you were
+using. Fix it with `tabs_context`, then `tabs_select <tabId>`, then capture.
 
-```
-tabs_context            # find the tabId you want, and which one isActive
-tabs_select <tabId>     # front it
-computer screenshot     # now succeeds
-```
+DOM geometry via `javascript_tool` is a complement, not a substitute. It answers "is this 12px out of
+alignment"; it cannot tell you a meter is ten times too long or a plural is wrong. When the two disagree,
+trust the measurement over an eyeballed estimate from a scaled-down capture.
 
-DOM geometry via `javascript_tool` is a complement, not a substitute. It answers "is this element 12px
-out of alignment"; it cannot tell you a meter is ten times longer than it should be, a caption is
-overflowing its circle, or a plural is wrong. **Both** were needed to catch the real defects on this
-project. And when they disagree, trust the measurement over an eyeballed estimate from a scaled-down
-screenshot — a composition read as off-centre from an 0.625-scale capture measured as exactly centred.
+## Which skill owns which decision
 
-## How to use the skills — READ THIS
-
-The Itqan skills are the source of truth and split into clear roles. Load the one that owns the decision
-before making it; do not answer a design question from memory when a skill owns it.
-
-**When two sources conflict on a LOCKED thing, Itqan wins** — identity, marks, palette, typeface, the Hud
-fence, the voice, the trust rules. **When they conflict on anything else, the specialist skill usually
-wins.** Composition, hierarchy, depth, material, boldness, easing and physicality are *not* locked, and
-treating them as locked is what produced the flat, lifeless output this system was corrected for in
-August 2026. Read `itqan-design-system/references/depth-and-materials.md` before styling any surface.
-
-### Authoritative — these DEFINE the locked things (obey, do not override)
+Load the skill that owns the decision before making it. **On a LOCKED thing Itqan wins** — identity,
+marks, palette, typeface, the Hud fence, the voice, the trust rules. **On anything else the specialist
+skill usually wins.** Composition, hierarchy, depth, material, boldness and easing are *not* locked, and
+treating them as locked is what produced flat, lifeless output once already. Read
+`itqan-design-system/references/depth-and-materials.md` before styling any surface.
 
 | Skill | Owns | Load when |
 |---|---|---|
-| **itqan-brand** | Identity, voice, the logo programme, Hud the mascot, the three users. **The locked brand.** | Writing any copy; placing/scaling the logo; adding or restricting the mascot; any "is this on brand" call |
-| **itqan-design-system** | Every design **value** — tokens for colour, type, spacing, radius, motion; dark mode. **The locked values.** | Choosing any colour/size/spacing/radius/shadow/duration; building or restyling any component |
+| **itqan-brand** | Identity, voice, logo programme, Hud, the three users. **Locked.** | Any copy; the logo; the mascot; "is this on brand" |
+| **itqan-design-system** | Every design **value** — tokens, dark mode. **Locked.** | Any colour, size, spacing, radius, shadow, duration |
+| **itqan-ux-craft** | Behaviour — screen states, forms, errors, a11y, RTL engineering | Structuring a screen or flow |
+| **itqan-motion** | Motion choreography, easing, RTL-safe patterns, reduced motion | Animating or reviewing motion |
+| **itqan-ui-review** | Routing and verification only | First, to pick a skill; last, to audit |
+| **impeccable** | Design strategy and direction, and its scoped commands | Before deciding what a surface should look like |
+| **Emil's skills** (`.agents/skills/`) | Motion implementation canon | Easing, springs, physicality, animation review |
 
-### Guidance — these tell you HOW to build well (follow, they don't override brand/values)
+`impeccable` never sets Itqan's palette, typeface, logo, mascot rules or voice. Emil's skills are
+overridden by Itqan on exactly three things: RTL-safe direction, the Hud fence, and product-register
+limits on trust-critical surfaces. `ui-ux-pro-max` is a generic recommender only; where it differs from
+the tokens, use the tokens.
 
-| Skill | Owns | Load when |
-|---|---|---|
-| **itqan-ux-craft** | Behaviour and process — screen states, the 8 interaction states, forms, errors, accessibility, RTL/bilingual engineering | Structuring any screen or flow; forms; empty/loading/error states; responsive; a11y |
-| **itqan-motion** | Motion choreography and implementation — the two registers, easing, duration, RTL-safe patterns, the animated mascot, reduced motion | Animating or reviewing motion of anything |
-| **frontend-design** (generic) | General aesthetic taste | Broad visual direction, when nothing more specific owns it |
+## Open decisions — flag and ask, do not invent
 
-### Router / verifier
+- The brand reference files the brief cites (`voice-writing.md`, `logo-program.md`, `hud-mascot.md`) are
+  **not installed**; only the SKILL.md summaries exist. If a locked detail is missing, ask.
+- The skill's own `audit.py` and rulebook are not installed; `scripts/audit.py` is the stand-in.
+- Layout grid, sub-32px icon, three of four Hud poses, and the real reversed marks are TBD.
+- Pending design-system sign-off: `--color-success`, and `--color-accent-ink` for gold emphasis on light.
 
-| Skill | Role |
-|---|---|
-| **itqan-ui-review** | Use **first** to decide which skill to read, and **last** to audit. Owns routing and verification only — no design values of its own. |
-
-### Design strategy — impeccable (use it ALWAYS)
-
-`impeccable` is installed at `.claude/skills/impeccable/` and is the **design strategy and direction**
-authority for this project. Load it before deciding what a surface should look like — mode, visual world,
-composition, hierarchy, how bold to go — and use its scoped commands (`critique`, `bolder`, `delight`,
-`layout`, `typeset`, `animate`, `polish`, `audit`) rather than improvising.
-
-- Product truth lives in the workspace-root `PRODUCT.md`, written by `/impeccable init`.
-- It runs a design-detector hook after every UI file edit and on Stop. That is configured in
-  `.claude/settings.local.json`; `/impeccable hooks status` reports it.
-- **It never sets Itqan's palette, typeface, logo rules, mascot rules, or voice.** Those stay locked by
-  `itqan-brand` and `itqan-design-system`. Everything else is its call.
-
-### Motion craft — Emil Kowalski's skills
-
-Installed at `.agents/skills/`, symlinked into `.claude/skills/`. These are the **implementation canon**
-behind the easing and duration tokens; they do not compete with anything Itqan has locked.
-
-| Skill | Use it for |
-|---|---|
-| **emil-design-eng** | The craft philosophy — easing, duration, physicality, springs, interruptibility, the invisible details |
-| **review-animations** | Strict review of a diff's motion before shipping |
-| **improve-animations** | A prioritised roadmap when a whole codebase's motion needs lifting |
-| **find-animation-opportunities** | When a surface feels dead and you need to know what should move — and what shouldn't |
-| **animation-vocabulary** | Naming an effect precisely before building it |
-| **apple-design** | Gesture, spring, translucency, optical typography |
-
-Itqan overrides them on exactly three things: RTL-safe direction, the Hud fence, and the product-register
-limits on trust-critical surfaces. Everything else follows the canon.
-
-### ui-ux-pro-max — general build helper ONLY
-
-A general web-build design database (UI patterns, accessibility checklists, colour/type recommenders,
-motion presets, chart types). **Its only job here is generic craft sanity-checking**, and `impeccable` now
-covers most of what it was installed for.
-
-- **Never** let it set or change Itqan's voice, brand identity, colour palette, typography, logo rules,
-  or mascot rules.
-- It is a *recommender*; Itqan has already made those choices. Where it suggests a style, palette, or
-  font that differs from the tokens, **ignore it and use the tokens.**
-- Rule of thumb: **it may inform HOW something is built; it never decides what Itqan looks like or sounds
-  like.**
-
-## Open decisions — do not invent these (flag and ask)
-
-- The **brand reference files** the brief cites (`voice-writing.md`, `logo-program.md`, `hud-mascot.md`,
-  etc.) are **not installed** — only the brand SKILL.md summaries exist. Work from those; if a specific
-  locked detail is missing, ask rather than invent.
-- The skill's own `audit.py` and its `rulebook.md` / `review-playbook.md` are **not installed**;
-  `scripts/audit.py` here is the stand-in.
-- Layout grid, sub-32px icon, three of four Hud poses, and the real reversed marks are TBD — see
-  `PLACEHOLDERS.md`.
-- **Pending sign-off in the design system:** the functional green `--color-success`, and the new
-  `--color-accent-ink` (`--gold-800`) for gold-flavoured emphasis text on light.
-
-## Palette revision — 2026-08-03 (APPLIED)
-
-The final brand gold is **`#F39F1C`**. `#D08C2F` is **retired**, which resolved the long-standing
-contradiction between the brand checklist and `tokens.css` — the checklist was right and the token was
-stale.
-
-**This has landed in both apps.** `src/styles/tokens.css` defines `--gold: #F39F1C` and carries the
-whole rederived ramp; `#D08C2F` appears nowhere in `src/`, and `audit.py` has a critical rule that
-would trip on it if it returned. `Onboarding/src/styles/tokens.css` is in lockstep.
-
-The same revision added a depth and material layer (layered two-part shadows, rim light, gradients,
-off-centre glows, texture, five surfaces, display type) and replaced the blanket
-`prefers-reduced-motion` kill switch with motion scalars. **Both have landed too.** `--motion-scale`
-is the live mechanism and components multiply their travel by it; `--reveal-rise` and `--hover-lift`
-are defined but currently unread, so treat them as reserved rather than as the pattern to follow.
-
-This section said the opposite until 2026-08-17. It had gone stale, and a session trusted it over the
-file it describes. Read `tokens.css` before believing any claim about what is in it.
-
-## Everything still pending
-
-`PLACEHOLDERS.md` lists every missing asset, placeholder value, and legal text, with owners. Check it
+`PLACEHOLDERS.md` lists every missing asset, placeholder value and legal text with owners. Check it
 before assuming something needs building.

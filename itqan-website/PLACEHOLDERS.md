@@ -3,23 +3,18 @@
 Everything on this list is either a placeholder in the code or an asset that does not exist yet.
 Nothing here should ship as is.
 
-## Mascot animations (the Hud contract)
+## Mascot animations — DONE
 
-The `Hud` component (`src/components/Hud.astro`) looks for these files and uses them automatically
-when present. Dropping the files in requires zero page changes. Until then it renders a labelled box
-at the right aspect ratio.
+Every pose ships. `public/mascot/` holds `flying-in`, `idle`, `waving`, `thinking`, `analyzing`,
+`celebrating` and `error`, each as `.webm` plus a poster `.png`. This section listed all of them as
+missing long after they landed.
 
-| File | Pose | Used on | Status |
-|---|---|---|---|
-| `public/mascot/flying-in.webm` + `.png` | flying in, plays once then hands to idle | Home hero | Missing |
-| `public/mascot/idle.webm` + `.png` | gentle loop | Home hero after entry, FAQ section | Missing |
-| `public/mascot/waving.webm` + `.png` | plays once in view | Home closing, sign up, log in | **Poster exists** (still from the mascot art); webm missing |
-| `public/mascot/thinking.webm` + `.png` | loops in view | How it works, step 2 | Missing |
-| `public/mascot/analyzing.webm` + `.png` | loops in view | How it works, step 3 | Missing |
-| `public/mascot/error.webm` + `.png` | plays once | 404, form error summaries | Missing |
+Two things about them are still live constraints rather than gaps:
 
-Format: WebM with an alpha channel (see the conversion appendix in the build brief), target under
-300KB per pose, poster PNG per pose. Owner: animation team.
+- **The artwork's eyes are holes in the alpha channel.** Whatever is behind Hud shows through them, so
+  `Hud.astro` floods them with a double paper drop-shadow. The real fix is re-exporting with opaque eyes.
+- **WebM alpha does not work in WebKit**, so iOS and Safari need the HEVC companion. Both ship; the
+  contract is in `Hud.astro`.
 
 ## Assets that need a designer
 

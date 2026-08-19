@@ -1,8 +1,14 @@
 # Itqan marketing website
 
-Public marketing site for Itqan. Astro, TypeScript, static output, no client framework.
-Arabic is the default language and the default design direction; English is co-equal.
-Light and dark themes, both from the design tokens.
+Public marketing site for **Itqan**, a career navigator for job seekers and job switchers in Oman and
+the Gulf. It sells four answers, in order: where you stand, which role to aim for, the shortest path
+there, and the jobs you can apply to now. Its one job is a free account.
+
+Astro, TypeScript, static output, no client framework. Arabic is the default language and the default
+design direction; English is co-equal. Light and dark themes, both from the design tokens.
+
+**[`CLAUDE.md`](CLAUDE.md) holds the locked rules, the audit gate and the skill routing. Read it before
+changing anything.**
 
 ## Run it
 
@@ -38,13 +44,6 @@ dashes in prose, lead with capability, never promise a job.
 - The theme follows the OS setting until the visitor uses the toggle (stored as `itqan-theme`).
 - The logo swaps to the reversed version in dark mode. This is a brand rule, not a preference.
 
-## Dropping in the mascot files
-
-The Hud component arrives in phase 5. Its contract: place files at `public/mascot/{pose}.webm` and
-`public/mascot/{pose}.png` for the poses `flying-in`, `idle`, `waving`, `thinking`, `analyzing`,
-`error`. The component uses them automatically when present and shows a labelled placeholder when not.
-No page code changes needed.
-
 ## Pages
 
 | Route (per locale) | What it is |
@@ -54,12 +53,16 @@ No page code changes needed.
 | `/proof/` | Full worked example, match justification, honest limits. No mascot, by rule |
 | `/signup/` `/login/` | Forms only, validated client side, posting to the placeholder endpoints |
 | `/forgot-password/` | Stub |
-| `/privacy/` | Structured headings with lawyer placeholders |
-| `/terms/` | Draft stub with a visible notice |
+| `/privacy/` | Under construction. The lawyer's question list stays in the locale files |
+| `/terms/` | Under construction |
 | `/404` | Bilingual, stays in the visitor's language |
 
-## Build status
+## Status
 
-All pages are built in both locales, verified in both directions, both themes, and at mobile and
-desktop widths. Client JavaScript is about 1KB compressed plus small inline scripts. Remaining work
-is assets and legal text, all listed in `PLACEHOLDERS.md`.
+All pages build in both locales and are verified in both directions, both themes, and at mobile and
+desktop widths. Inlined JS is measured in `CLAUDE.md` rather than estimated here. Remaining work is
+assets and legal text, listed in `PLACEHOLDERS.md`.
+
+**The Arabic copy is a version behind the English.** The English pages were repositioned in August 2026
+and the Arabic was left deliberately; it still sells the retired framing. Arabic is the default locale,
+so this is the next content job.
