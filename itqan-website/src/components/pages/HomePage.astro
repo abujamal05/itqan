@@ -1,5 +1,19 @@
 ---
+/**
+ * Home.
+ *
+ * Six beats, paced so a dense passage always earns a quiet one:
+ *   navy hero (construction) -> paper pain (quiet, one line at title scale)
+ *   -> sunken spine (the four questions, dense) -> navy open edge (the proof)
+ *   -> paper questions (quiet) -> navy close (the anchor).
+ *
+ * Hud appears once, in the hero. He is fenced out of the open-edge panel and
+ * everything below it, because those surfaces show a judgement about a person.
+ */
 import Hud from '../Hud.astro';
+import GirihField from '../GirihField.astro';
+import GirihTile from '../GirihTile.astro';
+import { tile, type TileName } from '../../lib/girih';
 import { t, type Locale } from '../../i18n';
 
 interface Props {
@@ -10,206 +24,156 @@ const { locale } = Astro.props;
 const s = t(locale);
 const base = `/${locale}`;
 
-// Stroke icons (24x24) keyed to each card, so meaning never rides on colour alone.
-const problemIcons = [
-  'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14ZM20 20l-3.6-3.6', // which job fits: search
-  'M4 8.5h16V19H4zM9 8.5V6.5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M4 12.5h16', // experience: briefcase
-  'M4.5 5h15v9.5H10l-4 4v-4H4.5zM9 9.5h6M9 12h4', // no reason: silent reply
-];
-const whoIcons = [
-  'M12 3.5l1.9 4.4 4.6.4-3.5 3 1 4.5-4-2.4-4 2.4 1-4.5-3.5-3 4.6-.4z', // first job: spark
-  'M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17ZM3.5 12h17M12 3.5c2.4 2.6 2.4 14.4 0 17M12 3.5c-2.4 2.6-2.4 14.4 0 17', // foreign degree: globe
-  'M12 7.5V12l3 2M12 3.5a8.5 8.5 0 1 1-8.4 7.2', // out of study: time
-];
-const stepIcons = [
-  'M12 15V4M8 8l4-4 4 4M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3', // share: upload
-  'M4 12.5l4.5 4.5L20 5.5', // confirm: check
-  'M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17ZM12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7ZM12 11.5v.01', // see: target
-];
+/* One tile per question, in the order the set introduces them. The marks are
+   real girih tiles rather than picked icons, so a mark means "a piece" and the
+   four marks differ because the four pieces do. */
+const stepTiles: TileName[] = ['decagon', 'pentagon', 'hexagon', 'bowtie'];
+
+/* The rhombus turns to sit in place when an answer opens. */
+const rhombus = tile('rhombus', 9);
 ---
 
-<!-- 1. Hero. Hud flies in once, then idles. Evidence surfaces stay away from him. -->
-<section class="hero">
-  <div class="container hero__grid">
-    <div class="hero__copy">
-      <h1 class="hero__title reveal">{s.home.hero.heading}</h1>
-      <div class="hero__rule reveal" aria-hidden="true"></div>
-      <p class="hero__sub reveal">{s.home.hero.sub}</p>
-      <div class="hero__actions reveal">
-        <a class="button button--primary button--arrow" href={`${base}/signup/`}>
-          <span>{s.actions.signup}</span>
-          <svg class="button__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"></path></svg>
-        </a>
-        <a class="button button--secondary" href={`${base}/proof/`}>{s.home.hero.ctaSecondary}</a>
-      </div>
+<!-- 1. Hero. The pattern fills the panel and is masked back off the type, so
+     the headline sits in the open half and the construction fills the other. -->
+<section class="panel panel--navy on-navy hero-panel">
+  <div class="panel__pattern reveal">
+    <GirihField held={(row, col) => col + row < 9} />
+  </div>
+
+  <div class="container panel__inner hero">
+    <h1 class="display reveal">{s.home.hero.heading}</h1>
+    <p class="lede reveal">{s.home.hero.sub}</p>
+    <div class="actions reveal">
+      <a class="button button--primary button--arrow" href={`${base}/signup/`}>
+        <span>{s.actions.signup}</span>
+        <svg class="button__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"></path></svg>
+      </a>
+      <a class="button button--secondary" href={`${base}/proof/`}>{s.actions.seeWorking}</a>
     </div>
-    <div class="hero__figure reveal">
+
+    <div class="hero__mascot">
       <Hud pose="flying-in" then="idle" size="lg" eager />
     </div>
   </div>
 </section>
 
-<!-- 2. The problem, in their words. -->
-<section class="section">
-  <div class="container">
-    <div class="section__head reveal">
-      <p class="eyebrow">{s.home.problem.eyebrow}</p>
-      <h2 class="section__heading">{s.home.problem.heading}</h2>
-    </div>
-    <div class="card-grid stagger">
-      {
-        s.home.problem.cards.map((card, i) => (
-          <article class="card reveal">
-            <span class="icon-chip">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d={problemIcons[i]} />
-              </svg>
-            </span>
-            <h3>{card.title}</h3>
-            <p>{card.body}</p>
-          </article>
-        ))
-      }
-    </div>
+<!-- 2. The pain. One line, at title scale, with air around it. The quiet beat
+     between two dense ones. -->
+<section class="panel panel--paper pain">
+  <div class="container panel__inner">
+    <h2 class="title reveal">{s.home.pain.heading}</h2>
+    <p class="pain__body reveal">{s.home.pain.body}</p>
   </div>
 </section>
 
-<!-- 3. What Itqan does. Three steps linked by the gold translation thread. -->
-<section class="section section--sunken">
-  <div class="container">
-    <div class="section__head reveal">
-      <p class="eyebrow">{s.home.what.eyebrow}</p>
-      <h2 class="section__heading">{s.home.what.heading}</h2>
-    </div>
-    <ol class="steps stagger">
-      <span class="steps__thread reveal" aria-hidden="true"></span>
+<!-- 3. The four questions, laid along one strap. -->
+<section class="panel panel--sunken">
+  <div class="container panel__inner">
+    <h2 class="heading reveal">{s.home.build.heading}</h2>
+
+    <ol class="spine">
       {
-        s.home.what.steps.map((step, i) => (
-          <li class="steps__item reveal">
-            <span class="steps__node">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d={stepIcons[i]} />
-              </svg>
+        s.home.build.steps.map((step, i) => (
+          <li class="spine__step reveal">
+            <span class="spine__marker">
+              <GirihTile name={stepTiles[i]} state="set" size={30} />
             </span>
-            <h3>{step.title}</h3>
-            <p>{step.body}</p>
+            <div>
+              <h3 class="spine__title">{step.title}</h3>
+              <p class="spine__body">{step.body}</p>
+            </div>
           </li>
         ))
       }
     </ol>
-    <p class="section__link reveal">
-      <a class="link-arrow" href={`${base}/how-it-works/`}>
-        <span>{s.home.what.link}</span>
-        <svg class="button__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"></path></svg>
-      </a>
-    </p>
+
+    <div class="actions">
+      <a class="strap-link" href={`${base}/how-it-works/`}>{s.chat.forks[0].linkLabel}</a>
+    </div>
   </div>
 </section>
 
-<!-- 4. The worked example. The peak: a translation drawn as evidence. No mascot. -->
-<section class="section">
-  <div class="container example">
-    <div class="section__head reveal">
-      <p class="eyebrow">{s.home.example.eyebrow}</p>
-      <h2 class="section__heading">{s.home.example.heading}</h2>
-    </div>
-    <p class="example__intro reveal">{s.home.example.intro}</p>
+<!-- 4. The open edge. The site's one demonstration: a piece Itqan can evidence
+     is set and closed, a piece it cannot is an outline with nothing in it. -->
+<section class="panel panel--navy on-navy">
+  <div class="panel__pattern" aria-hidden="true">
+    <GirihField held={(row, col) => col - row < 4} animate={false} />
+  </div>
 
-    <div class="tcard reveal">
-      <div class="tcard__row">
-        <div class="tcard__panel">
-          <span class="tcard__label">{s.home.example.courseLabel}</span>
-          <span class="tcard__value"><bdi>{s.home.example.course}</bdi></span>
-        </div>
-
-        <div class="tcard__connector" aria-hidden="true">
-          <svg viewBox="0 0 96 28" width="96" height="28" fill="none" preserveAspectRatio="none">
-            <line class="draw-stroke" x1="6" y1="14" x2="74" y2="14" pathLength="1" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"></line>
-            <path class="draw-stroke" d="M66 7l10 7-10 7" pathLength="1" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
-            <circle cx="6" cy="14" r="4" fill="currentColor"></circle>
-          </svg>
-        </div>
-
-        <div class="tcard__panel tcard__panel--to">
-          <span class="tcard__label">{s.home.example.skillLabel}</span>
-          <span class="tcard__value tcard__value--skill"><bdi>{s.home.example.skill}</bdi></span>
-        </div>
-      </div>
-
-      <div class="tcard__why">
-        <span class="tcard__why-label">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17Z"></path><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1.5.9-1.5 1.9"></path><path d="M12 16.5v.01"></path></svg>
-          {s.home.example.whyLabel}
-        </span>
-        <p>{s.home.example.why}</p>
+  <div class="container panel__inner edge">
+    <div class="edge__copy">
+      <h2 class="heading reveal">{s.home.openEdge.heading}</h2>
+      <p class="lede reveal">{s.home.openEdge.body}</p>
+      <div class="actions">
+        <a class="strap-link" href={`${base}/proof/`}>{s.home.openEdge.link}</a>
       </div>
     </div>
-    <p class="example__note">{s.home.example.note}</p>
+
+    <div class="edge__demo plaque reveal">
+      <p class="edge__role">{s.home.openEdge.roleLabel}</p>
+      <ul class="pieces">
+        {
+          s.home.openEdge.pieces.map((piece) => (
+            <li class:list={['piece', piece.state === 'open' && 'piece--open']}>
+              <GirihTile
+                name={piece.state === 'set' ? 'pentagon' : 'rhombus'}
+                state={piece.state === 'set' ? 'set' : 'open'}
+                size={26}
+              />
+              <span class="piece__name">{piece.name}</span>
+              <span class="piece__state">
+                {piece.state === 'set' ? s.home.openEdge.setLabel : s.home.openEdge.openLabel}
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="edge__note">{s.home.openEdge.note}</p>
+    </div>
   </div>
 </section>
 
-<!-- 5. Who it is for. -->
-<section class="section section--sunken">
-  <div class="container">
-    <div class="section__head reveal">
-      <p class="eyebrow">{s.home.who.eyebrow}</p>
-      <h2 class="section__heading">{s.home.who.heading}</h2>
-    </div>
-    <div class="card-grid stagger">
+<!-- 5. Questions. Quiet, and the last thing between a visitor and the action. -->
+<section class="panel panel--paper">
+  <div class="container panel__inner">
+    <h2 class="heading reveal">{s.home.faq.heading}</h2>
+    <div class="faq">
       {
-        s.home.who.cols.map((col, i) => (
-          <article class="card card--who reveal">
-            <span class="icon-chip">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d={whoIcons[i]} />
+        s.home.faq.items.map((item) => (
+          <details class="faq__item">
+            <summary class="faq__q">
+              <span>{item.q}</span>
+              <svg
+                class="faq__mark"
+                viewBox={rhombus.viewBox}
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                aria-hidden="true"
+              >
+                <path d={rhombus.outline} />
               </svg>
-            </span>
-            <h3>{col.title}</h3>
-            <p>{col.body}</p>
-          </article>
+            </summary>
+            <p class="faq__a">{item.a}</p>
+          </details>
         ))
       }
     </div>
   </div>
 </section>
 
-<!-- 6. FAQ. Hud may idle here; it is not an evidence surface. -->
-<section class="section">
-  <div class="container faq__grid">
-    <div class="faq__main">
-      <div class="section__head reveal">
-        <p class="eyebrow">{s.home.faq.eyebrow}</p>
-        <h2 class="section__heading">{s.home.faq.heading}</h2>
-      </div>
-      <div class="faq__list">
-        {
-          s.home.faq.items.map((item) => (
-            <details class="faq-item reveal">
-              <summary>
-                <span>{item.q}</span>
-                <svg class="faq-item__chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="m6 9 6 6 6-6"></path>
-                </svg>
-              </summary>
-              <p class="faq-item__body">{item.a}</p>
-            </details>
-          ))
-        }
-      </div>
-    </div>
-    <div class="faq__aside">
-      <Hud pose="idle" size="md" loop />
-    </div>
+<!-- 6. The close. A completed rosette behind a single action. -->
+<section class="panel panel--navy panel--closing on-navy">
+  <div class="panel__pattern panel__pattern--centred reveal">
+    <GirihField held={() => true} radius={120} />
   </div>
-</section>
 
-<!-- 7. Closing call to action. Hud waves. One button. -->
-<section class="section section--closing">
-  <div class="container">
-    <div class="closing reveal">
-      <div class="closing__bg" aria-hidden="true"></div>
-      <Hud pose="waving" size="md" loop />
-      <h2>{s.home.closing.heading}</h2>
+  <div class="container panel__inner closing">
+    <h2 class="title reveal">{s.home.closing.heading}</h2>
+    <p class="lede reveal">{s.home.closing.body}</p>
+    <div class="actions">
       <a class="button button--primary button--arrow" href={`${base}/signup/`}>
         <span>{s.actions.signup}</span>
         <svg class="button__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"></path></svg>
@@ -219,688 +183,60 @@ const stepIcons = [
 </section>
 
 <style>
-  /* ---- Hero ---- */
-  .hero {
-    position: relative;
-    padding-block: var(--space-20) var(--space-16);
-    /* Clip only the horizontal bleed (which would add a scrollbar); let the glow
-       fade downward past the section instead of hitting the hard rectangular
-       edge `overflow: hidden` gave it. */
-    overflow-x: clip;
-    isolation: isolate;
-
-    /* Which way the light leans. Both glow layers are tilted, and a tilt is
-       the one thing a logical property cannot mirror for us: `inset-inline-end`
-       moves the shape to the other corner in Arabic but leaves it leaning the
-       same way, which reads as light coming from the wrong place. Every angle
-       below is multiplied by this, so the whole composition mirrors with the
-       page instead of only its position. */
-    --glow-lean: 1;
+  /* The hero panel carries the deepest ground on the page, so the pattern in it
+     reads at architectural scale rather than as a texture. */
+  .hero-panel {
+    padding-block: 0;
   }
 
-  :global([dir='rtl']) .hero {
-    --glow-lean: -1;
+  .pain {
+    padding-block: var(--space-32);
   }
 
-  /* THE HERO LIGHT
-     ---------------------------------------------------------------------
-     A single large light source bleeding in from the corner the mascot
-     stands in, breathing slowly. It is anchored to the SECTION's inline-end
-     edge, not to the mascot, because the shape being drawn is light entering
-     the page rather than a halo around a figure — a glow that stays centred
-     on him reads as a sticker no matter how soft it is.
-
-     Logical properties, so it is the right corner in English and the left in
-     Arabic. Both are the corner Hud stands in, because he sits at the
-     inline-end of the hero grid in either direction. That is the whole reason
-     it keeps working when the page flips.
-
-     Two stacked layers: a wide field and a tighter, brighter core. One gradient
-     either reads as a flat disc or blows out its middle; two give a falloff that
-     looks like light. Both are ELLIPSES — a circle at this size reads as a
-     spotlight aimed at the page, and the reference is a shaft of light entering
-     it.
-
-     SIZE, BRIGHTNESS AND MOTION were all dialled up after two passes read as
-     "too small, barely moving, and only shows on the dark theme":
-
-      - The centre is kept mostly ON screen now, not hung off the corner. A
-        blurred blob whose centre is off-screen barely appears to move when you
-        translate it — only its faint outer edge sweeps. Bringing the bright
-        middle into view is what makes the same motion actually visible, and is
-        most of why the earlier version looked static.
-      - Brightness is roughly doubled (peak core ~55% accent, not ~34% behind
-        0.45 opacity). At the old value it was a faint tint that vanished on the
-        paper theme and only registered against dark navy — which is why it
-        seemed to appear "in Arabic only" when Arabic happened to be in dark
-        mode. It now clears both themes.
-      - The swing is large and unmistakable: the core goes 0.4 -> 1 opacity and
-        0.75 -> 1.35 scale while drifting and rotating ~32deg.
-
-     SMOOTHNESS COMES FROM THE LOOP SHAPE, not the easing curve. A multi-keyframe
-     loop decelerates to a full stop at EVERY keyframe, and those repeated stops
-     are what read as stutter however gentle the curve is. So each layer is two
-     keyframes on `alternate` instead: velocity now rests only at the two
-     extremes, which is exactly where a breath pauses. The core's full there-and
-     -back swing is 2.5s x 2 = 5s. The field runs at 3.25s (6.5s round trip) so
-     the pair drifts in and out of phase and never looks mechanically locked,
-     while the core still sets the ~5s rhythm the eye actually reads.
-
-     Easing is `--ease-in-out` per itqan-motion's decision table: this is an
-     element already on screen, morphing in place.
-
-     Three details that are load-bearing rather than decorative:
-
-      - Every stop ends on the accent at ZERO alpha, never the `transparent`
-        keyword. `transparent` is transparent BLACK, and an engine that
-        interpolates without premultiplying drags the midtones toward grey,
-        which is what a glow with a dirty ring around it is.
-      - `filter: blur()` on each layer smooths the gradient's alpha steps, which
-        band into visible rings on WebKit because it does not dither them. Held
-        at the 20px ceiling itqan-motion sets for animated layers; the extra
-        gradient stops do the rest of the softening that a wider blur was doing.
-      - Only transform and opacity animate, so both layers stay on the
-        compositor and neither triggers layout or paint however far they travel.
-        `translate3d` in the keyframes promotes the layer without a standing
-        `will-change`, which the skill asks be temporary rather than permanent.
-     --------------------------------------------------------------------- */
-  .hero::before,
-  .hero::after {
-    content: '';
-    position: absolute;
-    z-index: -1;
-    pointer-events: none;
-    border-radius: var(--radius-full);
-  }
-
-  /* Outer field: broad, filling the inline-end half of the hero and reaching
-     well into the middle so the light has somewhere to fall off to. */
-  .hero::before {
-    inline-size: min(130vw, 62rem);
-    aspect-ratio: 1 / 1.15;
-    inset-block-start: -20%;
-    inset-inline-end: -12%;
-    background: radial-gradient(
-      closest-side at 50% 50%,
-      color-mix(in srgb, var(--color-accent) 22%, transparent) 0%,
-      color-mix(in srgb, var(--color-accent) 14%, transparent) 30%,
-      color-mix(in srgb, var(--color-accent) 7%, transparent) 52%,
-      color-mix(in srgb, var(--color-accent) 3%, transparent) 68%,
-      color-mix(in srgb, var(--color-accent) 0%, transparent) 86%
-    );
-    filter: blur(20px);
-    /* Base pose, used as-is when motion is reduced. */
-    transform: rotate(calc(var(--glow-lean) * -8deg)) scale(1.02);
-    animation: glow-field 3.25s var(--ease-in-out) infinite alternate;
-  }
-
-  /* The core: brighter, its centre sitting just inside the inline-end edge at
-     mid height, where the reference light is strongest. This is the layer the
-     eye registers as "something is happening over there", and the one that sets
-     the 5s rhythm. */
-  .hero::after {
-    inline-size: min(92vw, 42rem);
-    aspect-ratio: 1 / 1.3;
-    inset-block-start: 0%;
-    inset-inline-end: -4%;
-    background: radial-gradient(
-      closest-side at 50% 50%,
-      color-mix(in srgb, var(--color-accent) 30%, transparent) 0%,
-      color-mix(in srgb, var(--color-accent) 18%, transparent) 30%,
-      color-mix(in srgb, var(--color-accent) 8%, transparent) 52%,
-      color-mix(in srgb, var(--color-accent) 3%, transparent) 68%,
-      color-mix(in srgb, var(--color-accent) 0%, transparent) 84%
-    );
-    filter: blur(20px);
-    transform: rotate(calc(var(--glow-lean) * -10deg)) scale(1);
-    animation: glow-core 2.5s var(--ease-in-out) infinite alternate;
-  }
-
-  /* Two keyframes each, on `alternate`. Each angle and inline offset is
-     multiplied by --glow-lean so the whole thing mirrors in Arabic instead of
-     leaning the wrong way out of the opposite corner. */
-  @keyframes glow-field {
-    from {
-      transform: translate3d(calc(var(--glow-lean) * 5%), -4%, 0) rotate(calc(var(--glow-lean) * -21deg)) scale(0.86);
-      opacity: 0.55;
-    }
-    to {
-      transform: translate3d(calc(var(--glow-lean) * -8%), 6%, 0) rotate(calc(var(--glow-lean) * 4deg)) scale(1.2);
-      opacity: 1;
-    }
-  }
-
-  @keyframes glow-core {
-    from {
-      transform: translate3d(calc(var(--glow-lean) * 6%), -5%, 0) rotate(calc(var(--glow-lean) * -26deg)) scale(0.75);
-      opacity: 0.4;
-    }
-    to {
-      transform: translate3d(calc(var(--glow-lean) * -9%), 8%, 0) rotate(calc(var(--glow-lean) * 6deg)) scale(1.35);
-      opacity: 1;
-    }
-  }
-
-  /* Reduced motion is not NO motion (itqan-motion §5): movement goes, the fade
-     stays. An opacity breathe does not trigger vestibular symptoms, and killing
-     the light's life entirely was overcorrecting — it left a flat gold smear
-     where a light source should be.
-
-     Only the animation NAME and duration are overridden, so the shorthand's
-     `infinite alternate` still applies and the base `transform` on each layer
-     holds its pose. */
-  @media (prefers-reduced-motion: reduce) {
-    .hero::before,
-    .hero::after {
-      animation-name: glow-fade;
-      animation-duration: 6s;
-    }
-
-    @keyframes glow-fade {
-      from { opacity: 0.6; }
-      to   { opacity: 1; }
-    }
-  }
-
-  .hero__grid {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    gap: var(--space-12);
-  }
-
-  .hero__copy {
-    flex: 1 1 32rem;
-  }
-
-  /* Size is fluid and lives in global.css beside the other display headings, so
-     the hero and the interior page heads scale on one curve. */
-  .hero__title {
-    font-weight: var(--weight-bold);
-    line-height: var(--leading-tight);
-    max-inline-size: 20ch;
-  }
-
-  /* The drawn gold rule: a short thread that wipes in under the headline. */
-  .hero__rule {
+  .pain__body {
     margin-block-start: var(--space-6);
-    inline-size: var(--space-16);
-    block-size: 4px;
-    border-radius: var(--radius-full);
-    background-color: var(--color-accent);
-    transform: scaleX(1);
-    transform-origin: 0 50%;
-    transition: transform var(--duration-slower) var(--ease-out);
-  }
-
-  :global([dir='rtl']) .hero__rule {
-    transform-origin: 100% 50%;
-  }
-
-  :global(html.reveal-ready) .hero__rule.reveal:not(.is-visible) {
-    transform: scaleX(0);
-  }
-
-  .hero__sub {
-    margin-block-start: var(--space-6);
-    font-size: var(--text-lg);
-    line-height: 1.6;
-    color: var(--color-text-muted);
-    max-inline-size: 52ch;
-  }
-
-  .hero__actions {
-    margin-block-start: var(--space-8);
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-3);
-  }
-
-  .hero__figure {
-    flex: 0 0 auto;
-    position: relative;
-  }
-
-  @media (max-width: 51.99rem) {
-    /* The homepage is the first thing anyone sees, and on a phone the mascot
-       plus his glow filled most of the first screen before a word was read.
-       He is removed from the hero here — homepage only, phone only. He stays
-       on desktop, on every other page, and in the closing section below, which
-       is the one place on this page where he is the invitation rather than
-       decoration. Removed from the flow rather than hidden, so his video is
-       never fetched on a phone connection either. */
-    .hero__figure {
-      display: none;
-    }
-
-    .hero {
-      padding-block: var(--space-12) var(--space-10);
-    }
-    .hero__grid {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: var(--space-8);
-    }
-  }
-
-  /* ---- Sections ----
-     .section, .section--sunken, .section__heading and the whole closing block
-     now live in global.css: the about page uses every one of them and a scoped
-     rule here never reached it. */
-  .section__link {
-    margin-block-start: var(--space-10);
-  }
-
-  .link-arrow {
-    display: inline-flex;
-    align-items: center;
-    /* It is a standalone action sitting on its own line, not a link inside a
-       sentence, so it takes the 44px touch floor. Measured at 30px before. */
-    min-block-size: 44px;
-    gap: var(--space-2);
-    font-weight: var(--weight-semibold);
-    color: var(--color-text);
-    text-decoration: none;
-  }
-
-  .link-arrow .button__arrow {
-    color: var(--color-accent-ink);
-    transition: transform var(--duration-fast) var(--ease-out);
-  }
-
-  :global([dir='rtl']) .link-arrow .button__arrow {
-    transform: scaleX(-1);
-  }
-
-  .link-arrow:hover .button__arrow {
-    transform: translateX(3px);
-  }
-
-  :global([dir='rtl']) .link-arrow:hover .button__arrow {
-    transform: scaleX(-1) translateX(3px);
-  }
-
-  /* ---- Cards ---- */
-  .card-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--space-6);
-  }
-
-  @media (max-width: 51.99rem) {
-    .card-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  .card {
-    background-color: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
-    padding: var(--space-6);
-  }
-
-  /* The `.reveal` in the selector is load-bearing, not decoration.
-     `html.reveal-ready .reveal` in global.css sets `transition: opacity,
-     transform` and outweighs a plain `.card` rule, so the hover lift inherited
-     the reveal's 300ms while box-shadow and border-color were not in the
-     property list at all and snapped. Matching on both classes takes the
-     specificity back and restores one coherent hover. */
-  .card.reveal {
-    transition:
-      /* opacity is the reveal entrance's own; taking the declaration over means
-         carrying it, or the card fades in instantly and only slides. */
-      opacity var(--duration-slow) var(--ease-out),
-      transform var(--duration-base) var(--ease-out),
-      box-shadow var(--duration-base) var(--ease-out),
-      border-color var(--duration-base) var(--ease-out);
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    .card:hover {
-      transform: translateY(calc(-4px * var(--motion-scale)));
-      box-shadow: var(--shadow-lg);
-      border-color: var(--color-border-strong);
-    }
-  }
-
-  .card h3 {
-    font-size: var(--text-lg);
-    font-weight: var(--weight-semibold);
-    margin-block: var(--space-5) var(--space-3);
-  }
-
-  .card p {
-    color: var(--color-text-muted);
-    line-height: 1.6;
-  }
-
-  /* ---- Steps + the translation thread ---- */
-  .steps {
-    position: relative;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--space-8);
-  }
-
-  /* Thread runs across the node centres and draws from the reading-start side. */
-  .steps__thread {
-    position: absolute;
-    inset-block-start: 27px;
-    inset-inline: 16.6%;
-    block-size: 3px;
-    border-radius: var(--radius-full);
-    background-color: color-mix(in srgb, var(--color-accent) 45%, transparent);
-    transform: scaleX(1);
-    transform-origin: 0 50%;
-    transition: transform var(--duration-slower) var(--ease-out);
-  }
-
-  :global([dir='rtl']) .steps__thread {
-    transform-origin: 100% 50%;
-  }
-
-  :global(html.reveal-ready) .steps__thread.reveal:not(.is-visible) {
-    transform: scaleX(0);
-  }
-
-  .steps__item {
-    position: relative;
-    text-align: center;
-  }
-
-  .steps__node {
-    position: relative;
-    z-index: 1;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    inline-size: 56px;
-    block-size: 56px;
-    border-radius: var(--radius-full);
-    background-color: var(--color-accent);
-    color: var(--color-text-on-gold);
-    box-shadow: 0 0 0 6px var(--color-surface-sunken);
-    margin-block-end: var(--space-5);
-  }
-
-  .steps__item h3 {
-    font-size: var(--text-lg);
-    font-weight: var(--weight-semibold);
-    margin-block-end: var(--space-2);
-  }
-
-  .steps__item p {
-    color: var(--color-text-muted);
-    line-height: 1.6;
-    max-inline-size: 34ch;
-    margin-inline: auto;
-  }
-
-  @media (max-width: 51.99rem) {
-    .steps {
-      grid-template-columns: 1fr;
-      gap: var(--space-6);
-    }
-    .steps__thread {
-      display: none;
-    }
-    .steps__item {
-      text-align: start;
-      display: grid;
-      grid-template-columns: auto 1fr;
-      column-gap: var(--space-5);
-      align-items: center;
-    }
-    .steps__node {
-      margin-block-end: 0;
-      grid-row: span 2;
-    }
-    .steps__item p {
-      margin-inline: 0;
-      grid-column: 2;
-    }
-  }
-
-  /* ---- Worked example: the translation card ---- */
-  .example__intro {
-    color: var(--color-text-muted);
-    margin-block-end: var(--space-8);
-    font-size: var(--text-lg);
-    max-inline-size: 46rem;
-  }
-
-  .tcard {
-    background-color: var(--color-surface);
-    border: 1px solid var(--color-border-strong);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    padding: var(--space-8);
-    max-inline-size: 48rem;
-  }
-
-  .tcard__row {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    gap: var(--space-4);
-  }
-
-  .tcard__panel {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-    padding: var(--space-5);
-    border-radius: var(--radius-md);
-    background-color: var(--color-surface-sunken);
-  }
-
-  .tcard__panel--to {
-    background-color: var(--color-accent-tint);
-  }
-
-  .tcard__label {
-    font-size: var(--text-sm);
-    font-weight: var(--weight-medium);
-    color: var(--color-text-muted);
-  }
-
-  .tcard__value {
     font-size: var(--text-xl);
-    font-weight: var(--weight-semibold);
+    color: var(--color-text-muted);
+    max-inline-size: 38ch;
   }
 
-  .tcard__value--skill {
-    color: var(--color-text);
-  }
-
-  .tcard__connector {
-    color: var(--color-accent);
-    inline-size: 96px;
-    max-inline-size: 18vw;
-  }
-
-  .tcard__connector svg {
-    display: block;
-    inline-size: 100%;
-    block-size: auto;
-  }
-
-  :global([dir='rtl']) .tcard__connector svg {
-    transform: scaleX(-1);
-  }
-
-  .tcard__why {
-    margin-block-start: var(--space-6);
-    padding-block-start: var(--space-6);
-    border-block-start: 1px solid var(--color-border);
-  }
-
-  .tcard__why-label {
-    display: inline-flex;
+  /* The demonstration sits beside the claim rather than under it, so the words
+     and the thing they describe are read together. */
+  .edge {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: var(--space-16);
     align-items: center;
-    gap: var(--space-2);
+  }
+
+  .edge__role {
+    margin-block-end: var(--space-4);
     font-size: var(--text-sm);
-    font-weight: var(--weight-medium);
-    color: var(--color-text-muted);
-    margin-block-end: var(--space-2);
-  }
-
-  .tcard__why-label svg {
-    color: var(--color-accent-ink);
-  }
-
-  .tcard__why p {
-    line-height: 1.6;
-  }
-
-  .example__note {
-    margin-block-start: var(--space-4);
-    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
     color: var(--color-text-muted);
   }
 
-  @media (max-width: 39.99rem) {
-    .tcard__row {
-      grid-template-columns: 1fr;
-      justify-items: stretch;
-      gap: var(--space-3);
+  .edge__note {
+    margin-block-start: var(--space-5);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    max-inline-size: 46ch;
+  }
+
+  @media (max-width: 63.99rem) {
+    .edge {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-10);
     }
-    /* Square box, and the arrow rotated inside it.
-       The container used to be 40x12 (the svg's own ratio) while the rotated
-       arrow drew 12x40, so 14px of it hung out of the layout box top and bottom
-       and crossed into a 12px gap — the arrowhead sat on the panel below it.
-       A square cell is exactly as tall as the rotated art. */
-    .tcard__connector {
-      inline-size: 40px;
-      block-size: 40px;
-      max-inline-size: none;
-      justify-self: center;
-      display: grid;
-      place-items: center;
-    }
-    .tcard__connector svg {
-      inline-size: 40px;
-      transform: rotate(90deg);
-    }
-    /* Down the page in BOTH directions. `rotate(90deg) scaleX(-1)` applies the
-       flip first, so the Arabic arrow was rotated from pointing left and ended
-       up pointing UP — back at the course it had just come from. Vertical flow
-       has no reading direction to mirror; the plain rotation is correct for
-       both, and the dot stays at the top where the source is. */
-    :global([dir='rtl']) .tcard__connector svg {
-      transform: rotate(90deg);
-    }
-  }
-
-  /* ---- FAQ ---- */
-  .faq__grid {
-    display: flex;
-    gap: var(--space-12);
-    align-items: flex-start;
-  }
-
-  .faq__main {
-    flex: 1 1 36rem;
-  }
-
-  .faq__aside {
-    flex: 0 0 auto;
-    position: sticky;
-    inset-block-start: var(--space-16);
-  }
-
-  /* Scales with the viewport instead of sitting at a fixed 180px, which read
-     as a stamp next to a full column of questions on a large monitor. The
-     floor keeps him above the 120px where he becomes visual noise. */
-  .faq__aside :global(.hud) {
-    inline-size: clamp(11rem, 16vw, 20rem);
-  }
-
-  /* He faces the questions, not away from them. The artwork looks toward the
-     inline-end by default, and the aside sits after the content, so in LTR he
-     needs mirroring. In RTL the column order flips and he already faces in. */
-  .faq__aside :global(.hud__video),
-  .faq__aside :global(.hud__poster) {
-    transform: scaleX(-1);
-  }
-
-  :global([dir='rtl']) .faq__aside :global(.hud__video),
-  :global([dir='rtl']) .faq__aside :global(.hud__poster) {
-    transform: none;
   }
 
   @media (max-width: 51.99rem) {
-    .faq__aside {
-      display: none;
+    .pain {
+      padding-block: var(--space-20);
+    }
+
+    .pain__body {
+      font-size: var(--text-lg);
     }
   }
-
-  .faq__list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-  }
-
-  .faq-item {
-    background-color: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-  }
-
-  /* See the note on .card.reveal above. */
-  .faq-item.reveal {
-    transition:
-      opacity var(--duration-slow) var(--ease-out),
-      transform var(--duration-slow) var(--ease-out),
-      border-color var(--duration-base) var(--ease-out);
-  }
-
-  .faq-item[open] {
-    border-color: var(--color-border-strong);
-  }
-
-  .faq-item summary {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-4);
-    padding: var(--space-4) var(--space-5);
-    min-block-size: 44px;
-    cursor: pointer;
-    font-weight: var(--weight-medium);
-    list-style: none;
-    border-radius: var(--radius-md);
-  }
-
-  .faq-item summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .faq-item__chevron {
-    flex: 0 0 auto;
-    color: var(--color-accent-ink);
-    transition: transform var(--duration-base) var(--ease-out);
-  }
-
-  .faq-item[open] .faq-item__chevron {
-    transform: rotate(180deg);
-  }
-
-  .faq-item__body {
-    padding: 0 var(--space-5) var(--space-5);
-    color: var(--color-text-muted);
-    line-height: 1.6;
-  }
-
-  /* On why the answer is not height-animated, see the disclosure note in
-     global.css. The chevron rotation above is the animated half. */
-
-  /* ---- Closing ----
-     Moved to global.css; shared with the about page. */
 </style>

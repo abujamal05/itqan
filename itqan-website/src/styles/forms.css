@@ -284,3 +284,20 @@
 .field:has(.field__reveal) .field__check {
   inset-inline-end: var(--space-12);
 }
+
+/* ---- Inside a page card, the form is not a second card ------------------------
+   The account pages now float a paper card on the navy girih ground, and
+   .form-card put its own surface, border and shadow inside that one. A card
+   nested in a card is always a mistake: it draws a boundary where there is no
+   second object, and here it made the fields look like a widget embedded in the
+   page rather than the page's own content. The layout half of .form-card (the
+   column and its gap) is what the form actually needs, so only the surface is
+   removed. */
+.auth__card .form-card,
+.auth__body .form-card {
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+}

@@ -62,6 +62,9 @@ node -e "const f=require('fs'),z=require('zlib');const h=f.readFileSync('dist/en
 | Page bodies and components | `src/components/…`, `src/components/pages/…` |
 | Mascot component + file contract | `src/components/Hud.astro` |
 | Every microinteraction, catalogued | `MOTION.md` |
+| The visual world: what the site looks like and why | `DESIGN.md` |
+| Girih geometry (build time, zero client JS) | `src/lib/girih.ts` |
+| The girih wall and the tile icon set | `src/components/Girih{Field,Tile}.astro` |
 
 ## Locked rules
 

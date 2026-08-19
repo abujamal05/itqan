@@ -25,6 +25,7 @@
  * always 200, always the same body, and the same timing.
  */
 import Hud from '../Hud.astro';
+import GirihField from '../GirihField.astro';
 import { t, type Locale } from '../../i18n';
 /* THE MISSING IMPORT. Login and signup both pull this in; this page never did,
    so every `.form-card`, `.field` and `.field__check` rule it uses was inert.
@@ -42,7 +43,12 @@ const s = t(locale);
 const base = `/${locale}`;
 ---
 
-<div class="container auth">
+<section class="panel panel--navy auth-panel">
+  <div class="panel__pattern on-navy" aria-hidden="true">
+    <GirihField held={(row, col) => col + row < 8} radius={104} animate={false} />
+  </div>
+
+  <div class="container panel__inner auth">
   {/* Request. Hidden immediately by the inline script when a token is present,
       so a person following the emailed link never sees it flash. */}
   <section class="auth__panel" data-panel="request">
@@ -255,7 +261,8 @@ const base = `/${locale}`;
     </div>
   </section>
 
-</div>
+  </div>
+</section>
 
 <script>
   import { initForm } from '../../scripts/form';
@@ -361,13 +368,41 @@ const base = `/${locale}`;
 </script>
 
 <style>
+  /* The body column is a paper card floating on the navy girih ground, matching
+     log in and sign up so the whole account flow reads as one place. It keeps
+     the page's own surface tokens rather than .on-navy, so the fields inside
+     stay at full contrast in both themes. */
+  .auth__body {
+    padding: var(--space-8);
+    border-radius: var(--radius-xl);
+    background-color: var(--color-bg);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-xl), var(--rim-light);
+  }
+
+  .auth__body .page-head {
+    padding-block: 0 var(--space-6);
+    max-inline-size: none;
+  }
+
+  .auth__body .page-head h1 {
+    font-size: var(--text-3xl);
+  }
+
+  @media (max-width: 39.99rem) {
+    .auth__body {
+      padding: var(--space-5);
+      border-radius: var(--radius-lg);
+    }
+  }
+
   /* The container no longer caps its own width — each PANEL does, so the
      mascot column sits outside the reading measure instead of stealing from
      it. Was a bare 32rem cap with the form left aligned inside it and the
      "back to log in" link centred underneath, so nothing on the page agreed
      on an edge. */
   .auth {
-    padding-block-end: var(--space-20);
+    padding-block: var(--space-16);
   }
 
   /* One composition for every panel, and the same one log in and sign up use:

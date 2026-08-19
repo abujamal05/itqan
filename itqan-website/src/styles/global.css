@@ -367,104 +367,475 @@ html.reveal-ready .stagger > :nth-child(4) {
   }
 }
 
-/* ---- Section rhythm ------------------------------------------------------------
-   These lived in HomePage's SCOPED style block, which meant AboutPage — which
-   uses `.section`, `.section--sunken`, `.section__heading` and the whole closing
-   block — matched none of them and rendered with no vertical padding, no sunken
-   bands and an unstyled call to action. Astro scopes a component's styles to that
-   component's elements, so a shared page skeleton has to live here. */
-.section {
-  position: relative;
-  padding-block: var(--space-20);
+
+/* ============================================================================
+   THE GIRIH WORLD
+   ----------------------------------------------------------------------------
+   Girih is assembled from decorated polygons whose strap lines continue across
+   every join. The page is built the same way: a navy ground carrying gold
+   strapwork, with paper as the inset relief, and every state expressed as a
+   piece that is either SET (filled, strapwork closed) or OPEN (outline, with
+   nothing in it).
+
+   Two things the old site leaned on are deliberately absent and must not come
+   back: the eyebrow label above a heading, and the grid of same-size cards each
+   holding an icon, a heading and a line of text. A heading carries its own
+   weight, and a card is the container reached for when the structure has not
+   been decided.
+   ============================================================================ */
+
+/* ---- Canvas texture --------------------------------------------------------
+   The generic dot grid is replaced by a girih hairline: two sets of lines at
+   the 72 degree angles the tile set is built on, so even the empty ground
+   belongs to the same construction. Very low contrast, masked at both ends. */
+body::before {
+  background-image:
+    repeating-linear-gradient(
+      72deg,
+      color-mix(in srgb, var(--color-text) 4%, transparent) 0 1px,
+      transparent 1px 64px
+    ),
+    repeating-linear-gradient(
+      -72deg,
+      color-mix(in srgb, var(--color-text) 4%, transparent) 0 1px,
+      transparent 1px 64px
+    );
+  background-size: auto;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 18%, black 82%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, black 18%, black 82%, transparent);
 }
 
-.section--sunken {
+/* ---- Panels: the two registers the page alternates between ---------------- */
+.panel {
+  position: relative;
+  isolation: isolate;
+  padding-block: var(--space-24);
+
+  /* How present the girih wall is on this panel. Named so a single panel can
+     dial itself up or down without a second pattern component. */
+  --pattern-opacity: 0.8;
+}
+
+.panel__inner {
+  position: relative;
+  z-index: 1;
+}
+
+/* The navy register. Construction happens here: the pattern is legible, the
+   strapwork is gold, and the surface reads as a wall rather than a section. */
+.panel--navy {
+  background-color: var(--navy-900);
+  background-image: var(--gradient-navy);
+  overflow: hidden;
+}
+
+/* The paper register. Reading happens here. */
+.panel--paper {
+  background-color: var(--color-bg);
+}
+
+.panel--sunken {
   background-color: var(--color-surface-sunken);
 }
 
-.section__heading {
-  font-size: var(--text-3xl);
-  font-weight: var(--weight-semibold);
-  line-height: var(--leading-tight);
+/* The scrim.
+   Legibility over a pattern cannot depend on where a tile happens to land, so a
+   navy wash sits between the wall and the words. It is a real gradient rather
+   than a flat overlay, which keeps the pattern fully present where there is no
+   type and fully suppressed where there is.
+
+   The direction is a token because the closing panel centres its text and needs
+   a radial scrim instead of an inline one. `to right` is physical, so the
+   default is mirrored for RTL. */
+.panel--navy {
+  --scrim: linear-gradient(
+    to right,
+    var(--navy-900) 0%,
+    color-mix(in srgb, var(--navy-900) 88%, transparent) 30%,
+    color-mix(in srgb, var(--navy-900) 45%, transparent) 52%,
+    transparent 72%
+  );
 }
 
-/* Phones do not need 80px of air between every band: at that width the padding
-   is a third of the viewport and the page reads as disconnected fragments
-   rather than one argument. The groups stay clearly separated at 56px. */
+[dir='rtl'] .panel--navy {
+  --scrim: linear-gradient(
+    to left,
+    var(--navy-900) 0%,
+    color-mix(in srgb, var(--navy-900) 88%, transparent) 30%,
+    color-mix(in srgb, var(--navy-900) 45%, transparent) 52%,
+    transparent 72%
+  );
+}
+
+/* Paints after .panel__pattern in DOM order at the same stacking level, so it
+   covers the wall; .panel__inner sits at z-index 1 and stays above both. */
+.panel--navy::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--scrim);
+}
+
+/* A hairline of gold along the seam between registers, so the join is a drawn
+   edge rather than an unannounced colour change. */
+.panel--navy + .panel,
+.panel + .panel--navy {
+  border-block-start: 1px solid var(--color-border-accent);
+}
+
+/* The pattern layer inside a navy panel. Held back hard: it is the wall the
+   type sits on, and a wall that competes with the type is wallpaper. Masked
+   toward the outer corner so the headline always lands on quiet ground. */
+.panel__pattern {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: var(--pattern-opacity);
+  pointer-events: none;
+
+  /* The wall is strongest at the trailing edge and clears before the type, so
+     the headline always lands on quiet ground and the pattern still reads at
+     architectural scale rather than as a smudge along one border. Two masks
+     multiply: one across the inline axis, one softening the block ends.
+
+     `to right` is physical, so the inline mask is mirrored for RTL below. */
+  -webkit-mask-image:
+    linear-gradient(to right, transparent 8%, rgba(0, 0, 0, 0.55) 42%, black 82%),
+    linear-gradient(to bottom, transparent 0%, black 22%, black 88%, transparent 100%);
+  mask-image:
+    linear-gradient(to right, transparent 8%, rgba(0, 0, 0, 0.55) 42%, black 82%),
+    linear-gradient(to bottom, transparent 0%, black 22%, black 88%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+
+/* The generic reveal rule fades to opacity 1, which blew the pattern up to full
+   strength the moment it scrolled into view. These two restore the pattern's own
+   ceiling on both sides of the transition. */
+html.reveal-ready .panel__pattern.reveal {
+  opacity: 0;
+}
+
+html.reveal-ready .panel__pattern.reveal.is-visible {
+  opacity: var(--pattern-opacity);
+}
+
+[dir='rtl'] .panel__pattern {
+  -webkit-mask-image:
+    linear-gradient(to left, transparent 8%, rgba(0, 0, 0, 0.55) 42%, black 82%),
+    linear-gradient(to bottom, transparent 0%, black 22%, black 88%, transparent 100%);
+  mask-image:
+    linear-gradient(to left, transparent 8%, rgba(0, 0, 0, 0.55) 42%, black 82%),
+    linear-gradient(to bottom, transparent 0%, black 22%, black 88%, transparent 100%);
+}
+
 @media (max-width: 51.99rem) {
-  .section {
+  .panel {
     padding-block: var(--space-16);
+  }
+
+  .panel__pattern {
+    --pattern-opacity: 0.4;
   }
 }
 
-/* ---- Section header + eyebrow (grouping and scan-ability) --------------------- */
-.section__head {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin-block-end: var(--space-8);
-  max-inline-size: 40rem;
-}
-
-.eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
-  /* Not --color-accent-hover: that is a fill colour and measured 3.46:1 here. */
-  color: var(--color-accent-ink);
-}
-
-/* A short gold tick before the eyebrow label; drawn, not a colour-only cue. */
-.eyebrow::before {
-  content: '';
-  inline-size: var(--space-5);
-  block-size: 2px;
-  border-radius: var(--radius-full);
-  background-color: var(--color-accent);
-}
-
-/* ---- Page head (proof, how it works, privacy, terms) ---------------------------
-   This block was copy-pasted into four page components, four times, with two
-   slightly different paddings between them. One definition, one rhythm. */
-.page-head {
-  padding-block: var(--space-20) var(--space-12);
-  max-inline-size: 46rem;
-}
-
-.page-head h1 {
-  margin-block-start: var(--space-4);
+/* ---- Display type ----------------------------------------------------------
+   Scale contrast is where a page gets its life. The old site's largest text was
+   48px, which reads as a form. These run to 88px and are fluid, so the jump
+   survives a phone instead of collapsing at one breakpoint. */
+.display {
+  /* NOT --text-7xl directly. That token's floor is 3.75rem, which on a 375px
+     phone put a five line headline down the whole viewport before the visitor
+     reached a single word of the offer. The viewport term does the work here
+     and the token's ceiling is kept, so desktop is unchanged and the phone
+     starts from something a thumb can scroll past. */
+  font-size: clamp(2.5rem, 9.5vw, 5.5rem);
   font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  text-wrap: balance;
+  max-inline-size: 15ch;
+}
+
+.title {
+  font-size: clamp(2.125rem, 6.5vw, 4rem);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  text-wrap: balance;
+  max-inline-size: 18ch;
+}
+
+.heading {
+  font-size: clamp(1.625rem, 3.4vw, 2.25rem);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  text-wrap: balance;
+  max-inline-size: 22ch;
+}
+
+/* Latin sets loose at display sizes and needs pulling in. Arabic never does:
+   letter-spacing breaks the cursive joins, so this is guarded by direction. */
+[dir='ltr'] .display,
+[dir='ltr'] .title,
+[dir='ltr'] .heading {
+  letter-spacing: var(--tracking-tight-latin);
+}
+
+.lede {
+  margin-block-start: var(--space-6);
+  font-size: var(--text-xl);
+  line-height: 1.55;
+  color: var(--color-text-muted);
+  max-inline-size: 46ch;
+}
+
+.prose {
+  color: var(--color-text-muted);
+  max-inline-size: var(--measure);
+}
+
+@media (max-width: 51.99rem) {
+  .lede {
+    font-size: var(--text-lg);
+  }
+}
+
+/* ---- Hero ------------------------------------------------------------------
+   The pattern occupies the whole panel and is masked back from the type, so the
+   headline sits in the open half and the construction fills the other. Not a
+   two-column hero with an illustration parked in the second column. */
+.hero {
+  position: relative;
+  display: grid;
+  align-content: center;
+  min-block-size: min(88svh, 760px);
+  padding-block: var(--space-24);
+}
+
+.hero__mascot {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline-end: 0;
+  z-index: 1;
+  inline-size: clamp(140px, 20vw, 260px);
+  pointer-events: none;
+}
+
+@media (max-width: 63.99rem) {
+  .hero {
+    min-block-size: 0;
+  }
+
+  /* On a phone Hud moves to the INLINE START. Left at the end he landed under
+     the chat launcher, which is pinned to the same corner, and the launcher
+     covered his head. The 120px floor in the brand rules still holds: the
+     override below sets his width, it does not shrink him past it. */
+  .hero__mascot {
+    position: static;
+    margin-block-start: var(--space-10);
+    margin-inline-end: auto;
+    margin-inline-start: 0;
+  }
+
+  .hero__mascot :global(.hud) {
+    --hud-width: clamp(120px, 30vw, 160px);
+  }
+}
+
+/* The scrim sweeps across the inline axis, which on a narrow screen leaves the
+   end of a wrapped headline past its falloff. On phones the wash covers the
+   whole panel instead; there is no side column for the pattern to own. */
+@media (max-width: 51.99rem) {
+  .panel--navy,
+  [dir='rtl'] .panel--navy {
+    --scrim: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--navy-900) 82%, transparent) 0%,
+      color-mix(in srgb, var(--navy-900) 62%, transparent) 100%
+    );
+  }
+}
+
+/* ---- The construction spine ------------------------------------------------
+   The four questions, laid in order along one continuous strap. The strap is a
+   real line running between the markers rather than a border on a card, so the
+   sequence reads as one pattern being built and not as four boxes. */
+.spine {
+  position: relative;
+  display: grid;
+  gap: var(--space-16);
+  margin-block-start: var(--space-16);
+}
+
+.spine__step {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.spine__marker {
+  position: relative;
+  display: grid;
+  place-items: center;
+  inline-size: var(--space-16);
+  block-size: var(--space-16);
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-accent);
+  box-shadow: var(--shadow-sm), var(--rim-light);
+}
+
+/* The strap that carries from one piece to the next.
+   It is anchored to the STEP, not to the marker, and stretched between the two.
+   Hung off the marker with a fixed height it fell short the moment a step's
+   body ran taller than the marker plus that height, which is exactly what
+   happens on the step that carries the mascot: the strapwork visibly stopped
+   and restarted, in a world whose whole argument is that the lines continue
+   across every join.
+
+   `--spine-marker` keeps the centring honest at both marker sizes. */
+.spine {
+  --spine-marker: var(--space-16);
+  --spine-gap: var(--space-16);
+}
+
+.spine__step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  inset-block-start: var(--spine-marker);
+  inset-block-end: calc(-1 * var(--spine-gap));
+  inset-inline-start: calc(var(--spine-marker) / 2 - 1px);
+  inline-size: 2px;
+  background-image: linear-gradient(
+    to bottom,
+    var(--color-accent),
+    color-mix(in srgb, var(--color-accent) 18%, transparent)
+  );
+  transform: scaleY(1);
+  transform-origin: 50% 0;
+  transition: transform var(--duration-story) var(--ease-out);
+}
+
+html.reveal-ready .spine__step.reveal:not(.is-visible)::after {
+  transform: scaleY(0);
+}
+
+.spine__title {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold);
   line-height: var(--leading-tight);
 }
 
-/* Display type is fluid rather than one step at one breakpoint. The old pair of
-   fixed sizes meant the headline jumped 36 -> 48px the instant the viewport
-   crossed 832px and then never grew again, so a tablet got a headline built for
-   a phone and a 27in monitor got one built for a laptop. */
-.page-head h1,
-.hero__title {
-  font-size: clamp(var(--text-4xl), 2.5vw + 1.25rem, var(--text-5xl));
+.spine__body {
+  margin-block-start: var(--space-3);
+  color: var(--color-text-muted);
+  max-inline-size: 52ch;
 }
 
-.page-head__rule {
-  margin-block-start: var(--space-6);
-  inline-size: var(--space-16);
-  block-size: 4px;
+@media (max-width: 39.99rem) {
+  .spine {
+    gap: var(--space-12);
+    --spine-marker: var(--space-12);
+    --spine-gap: var(--space-12);
+  }
+
+  .spine__marker {
+    inline-size: var(--space-12);
+    block-size: var(--space-12);
+  }
+
+  .spine__title {
+    font-size: var(--text-xl);
+  }
+}
+
+/* ---- The piece list: held against missing -----------------------------------
+   The one place the site states a gap. A held piece is filled and its strapwork
+   is closed; a missing piece is a dashed outline with nothing in it. The
+   difference survives greyscale, so meaning never rides on colour. */
+.pieces {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+  max-inline-size: 44rem;
+}
+
+.piece {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.piece--open {
+  background-color: transparent;
+  border-style: dashed;
+  border-color: var(--color-border-strong);
+  box-shadow: none;
+}
+
+.piece__name {
+  font-weight: var(--weight-medium);
+}
+
+.piece__state {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-accent-ink);
+  white-space: nowrap;
+}
+
+.piece--open .piece__state {
+  color: var(--color-text-muted);
+}
+
+/* ---- Actions ---------------------------------------------------------------- */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-block-start: var(--space-8);
+}
+
+/* ---- Quiet link whose strap extends on hover -------------------------------- */
+.strap-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.strap-link::after {
+  content: '';
+  inline-size: var(--space-6);
+  block-size: 2px;
   border-radius: var(--radius-full);
   background-color: var(--color-accent);
-  transform: scaleX(1);
-  transform-origin: 0 50%;
-  transition: transform var(--duration-slower) var(--ease-out);
+  transition: inline-size var(--duration-base) var(--ease-out);
 }
 
-[dir='rtl'] .page-head__rule {
-  transform-origin: 100% 50%;
+.strap-link:hover::after {
+  inline-size: var(--space-10);
 }
 
-html.reveal-ready .page-head.reveal:not(.is-visible) .page-head__rule {
-  transform: scaleX(0);
+/* ---- Page head (proof, how it works, privacy, terms) ------------------------ */
+.page-head {
+  padding-block: var(--space-24) var(--space-12);
+  max-inline-size: 48rem;
 }
 
 .page-head__intro {
@@ -476,118 +847,45 @@ html.reveal-ready .page-head.reveal:not(.is-visible) .page-head__rule {
 
 @media (max-width: 51.99rem) {
   .page-head {
-    padding-block: var(--space-12) var(--space-8);
+    padding-block: var(--space-16) var(--space-8);
   }
 }
 
-/* ---- Closing call to action ---------------------------------------------------
-   Shared by the home and about pages. Scoped to HomePage it left the about
-   page's closing as a bare heading and a button on the page background. */
-.section--closing {
-  padding-block: var(--space-20);
-}
-
+/* ---- Closing ---------------------------------------------------------------- */
 .closing {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  display: grid;
+  justify-items: center;
   text-align: center;
-  gap: var(--space-6);
-  padding: var(--space-16) var(--space-6);
-  border-radius: var(--radius-lg);
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  overflow: hidden;
+  gap: var(--space-5);
 }
 
-.closing__bg {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background: radial-gradient(
-    circle at 50% 0%,
-    color-mix(in srgb, var(--color-accent) 16%, transparent),
-    transparent 60%
-  );
+.closing .actions {
+  justify-content: center;
 }
 
-.closing > :not(.closing__bg) {
-  position: relative;
-  z-index: 1;
-}
-
-.closing h2 {
-  font-size: var(--text-4xl);
-  font-weight: var(--weight-bold);
-  line-height: var(--leading-tight);
-  max-inline-size: 18ch;
-}
-
-@media (max-width: 51.99rem) {
-  .closing {
-    padding: var(--space-12) var(--space-5);
-  }
-  .closing h2 {
-    font-size: var(--text-3xl);
-  }
-}
-
-/* ---- Crafted-paper texture ---------------------------------------------------
-   A faint precision dot-grid on the canvas — إتقان is mastery and care, and the
-   grid reads as considered, not decorated. Fixed, very low contrast, masked at
-   the edges. Sits behind content; sunken bands cover it, which aids rhythm. */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--color-text) 6%, transparent) 1px,
-    transparent 1.5px
-  );
-  background-size: 24px 24px;
-  -webkit-mask-image: linear-gradient(to bottom, transparent, black 12%, black 88%, transparent);
-  mask-image: linear-gradient(to bottom, transparent, black 12%, black 88%, transparent);
-}
-
-/* ---- Gold marker: a highlighter stroke that wipes in under a key phrase ------- */
+/* ---- Gold marker: a highlighter stroke that wipes in under a key phrase ------ */
 .mark {
   background-image: linear-gradient(var(--color-accent), var(--color-accent));
   background-repeat: no-repeat;
   background-position: 0 92%;
-  background-size: 100% 0.3em;
+  background-size: 100% 0.28em;
   padding-inline: 0.08em;
-  transition: background-size var(--duration-slower) var(--ease-out);
+  transition: background-size var(--duration-story) var(--ease-out);
 }
 
 html.reveal-ready .reveal:not(.is-visible) .mark {
-  background-size: 0% 0.3em;
+  background-size: 0% 0.28em;
 }
 
-/* ---- Icon chip: rounded gold-tint tile with a navy glyph --------------------- */
-.icon-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  inline-size: var(--space-12);
-  block-size: var(--space-12);
-  border-radius: var(--radius-md);
-  background-color: var(--color-accent-tint);
-  color: var(--color-text);
-  flex: 0 0 auto;
-}
-
-/* ---- Draw-in strokes (the translation-thread motif) --------------------------
+/* ---- Draw-in strokes --------------------------------------------------------
    Any SVG stroke with pathLength="1" draws itself when its .reveal ancestor
-   enters view. Default is fully drawn (no-JS safe); only hidden while pending. */
+   enters view. This is what weaves the girih strapwork in. The default state is
+   fully drawn, so a visitor without JavaScript sees the finished pattern. */
 .draw-stroke {
   stroke-dasharray: 1;
   stroke-dashoffset: 0;
-  transition: stroke-dashoffset var(--duration-slower) var(--ease-out);
+  transition: stroke-dashoffset var(--duration-story) var(--ease-out);
 }
 
 html.reveal-ready .reveal:not(.is-visible) .draw-stroke {
@@ -595,25 +893,76 @@ html.reveal-ready .reveal:not(.is-visible) .draw-stroke {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mark {
+  .mark,
+  .draw-stroke,
+  .strap-link::after,
+  .faq__mark {
     transition: none;
   }
+
   .draw-stroke {
-    transition: none;
     stroke-dashoffset: 0;
+  }
+
+  .spine__step:not(:last-child)::after {
+    transition: none;
+    transform: scaleY(1);
   }
 }
 
-/* ---- Disclosure (FAQ) ---------------------------------------------------------
-   NOT animated, deliberately. A `::details-content` height transition was built
-   and then removed: `CSS.supports('selector(::details-content)')` returns true
-   in current Chromium, and the `block-size: 0` half of the pair applies, but the
-   `[open]` rule that releases it does not — so every answer rendered clipped to
-   zero height. A feature query that reports support for a pseudo-element it
-   does not fully implement cannot gate this safely, and a hidden answer is a far
-   worse failure than an instant one. The chevron still rotates on open, which is
-   the part of the gesture that can be animated without hiding content.
-   Revisit when `::details-content` ships completely. */
+/* ---- Disclosure (FAQ) -------------------------------------------------------
+   NOT height-animated, deliberately. `::details-content` reports as supported
+   in current Chromium while the `[open]` rule that releases the height does not
+   apply, which rendered every answer clipped to zero height. A hidden answer is
+   a far worse failure than an instant one. The marker still turns, which is the
+   part of the gesture that can move without hiding content. */
+.faq {
+  display: grid;
+  gap: 0;
+  margin-block-start: var(--space-10);
+  max-inline-size: 52rem;
+}
+
+.faq__item {
+  border-block-end: 1px solid var(--color-border);
+}
+
+.faq__q {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding-block: var(--space-5);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  list-style: none;
+}
+
+.faq__q::-webkit-details-marker {
+  display: none;
+}
+
+.faq__q:hover {
+  color: var(--color-accent-ink);
+}
+
+/* The marker is a girih rhombus: the piece turns to sit in place when the
+   answer opens. Drawn from the tile set, never a glyph or an emoji. */
+.faq__mark {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  transition: transform var(--duration-base) var(--ease-out);
+}
+
+.faq__item[open] .faq__mark {
+  transform: rotate(90deg);
+}
+
+.faq__a {
+  padding-block-end: var(--space-6);
+  color: var(--color-text-muted);
+  max-inline-size: var(--measure);
+}
 
 /* ---- Utilities ---------------------------------------------------------------- */
 .visually-hidden {
@@ -626,4 +975,82 @@ html.reveal-ready .reveal:not(.is-visible) .draw-stroke {
   clip-path: inset(50%);
   white-space: nowrap;
   border: 0;
+}
+
+/* The closing panel centres its type over a completed rosette, so its scrim
+   radiates from the middle instead of sweeping in from one edge. Mirroring is
+   unnecessary: a centred radial gradient is already direction neutral. */
+.panel--closing {
+  /* Tight enough to sit under the words and nothing more. The first version
+     reached 58% and cancelled the ring mask below out entirely, leaving a
+     closing panel with no pattern on it at all. */
+  --scrim: radial-gradient(
+    42% 52% at 50% 50%,
+    var(--navy-900) 0%,
+    color-mix(in srgb, var(--navy-900) 70%, transparent) 40%,
+    transparent 72%
+  );
+}
+
+/* The closing rosette is complete and centred: the pattern the visitor watched
+   being built, finished. Lives here rather than in HomePage's scoped styles
+   because how-it-works and about close on the same panel, and a scoped rule
+   would have left both of them with an unmasked full-bleed field. */
+.panel__pattern--centred {
+  --pattern-opacity: 0.9;
+  /* A RING, not a disc. The closing rosette should surround the last thing the
+     visitor reads rather than sit behind it, and a disc mask put the pattern
+     exactly where the scrim erases it. Direction neutral, so RTL needs no
+     mirror. */
+  -webkit-mask-image: radial-gradient(58% 68% at 50% 50%, transparent 26%, black 52%, black 76%, transparent 96%);
+  mask-image: radial-gradient(58% 68% at 50% 50%, transparent 26%, black 52%, black 76%, transparent 96%);
+}
+
+/* ---- Auth panels ------------------------------------------------------------
+   The form card sits on the trailing side, which is exactly where the inline
+   mask concentrates the pattern, so the wall ended up entirely behind the card
+   and the panel read as flat navy. Here the pattern is an even, quieter field
+   across the whole surface and the card sits on it like a plaque on a wall. */
+.auth-panel .panel__pattern,
+[dir='rtl'] .auth-panel .panel__pattern {
+  --pattern-opacity: 0.55;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 84%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 84%, transparent 100%);
+}
+
+.auth-panel {
+  --scrim: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--navy-900) 72%, transparent) 0%,
+    color-mix(in srgb, var(--navy-900) 58%, transparent) 100%
+  );
+}
+
+[dir='rtl'] .auth-panel {
+  --scrim: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--navy-900) 72%, transparent) 0%,
+    color-mix(in srgb, var(--navy-900) 58%, transparent) 100%
+  );
+}
+
+/* ---- Plaque ------------------------------------------------------------------
+   A panel set into the girih wall. Anything with rows to read needs its own
+   ground on a navy panel: without one the strapwork runs straight through the
+   text and the rows that matter most, the missing pieces, are the hardest to
+   read. Used by the home page's demonstration and the about page's refusals. */
+.plaque {
+  padding: var(--space-6);
+  border-radius: var(--radius-xl);
+  background-color: color-mix(in srgb, var(--navy-950) 76%, transparent);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg), var(--rim-light);
+  backdrop-filter: blur(var(--glass-blur));
+}
+
+@media (max-width: 39.99rem) {
+  .plaque {
+    padding: var(--space-4);
+    border-radius: var(--radius-lg);
+  }
 }

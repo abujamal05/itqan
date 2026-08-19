@@ -1,5 +1,6 @@
 ---
 import Hud from '../Hud.astro';
+import GirihField from '../GirihField.astro';
 import { t, type Locale } from '../../i18n';
 import { formEndpoints } from '../../config';
 import '../../styles/forms.css';
@@ -23,11 +24,21 @@ const s = t(locale);
 const base = `/${locale}`;
 ---
 
-<div class="container auth">
-  <div class="auth__main">
-    <p class="eyebrow">{s.signup.eyebrow}</p>
-    <h1>{s.signup.heading}</h1>
-    <p class="auth__sub">{s.signup.sub}</p>
+<section class="panel panel--navy auth-panel">
+  <div class="panel__pattern on-navy" aria-hidden="true">
+    <GirihField held={(row, col) => col + row < 8} radius={104} animate={false} />
+  </div>
+
+  <div class="container panel__inner auth">
+    <div class="auth__intro on-navy">
+      <h1>{s.signup.heading}</h1>
+      <p class="auth__sub">{s.signup.sub}</p>
+      <div class="auth__hud">
+        <Hud pose="waving" size="md" loop />
+      </div>
+    </div>
+
+    <div class="auth__card">
 
     <form
       class="form-card"
@@ -128,11 +139,8 @@ const base = `/${locale}`;
     </p>
   </div>
 
-  <!-- Hud waves, positioned away from the form itself. -->
-  <div class="auth__aside">
-    <Hud pose="waving" size="md" loop />
   </div>
-</div>
+</section>
 
 <script>
   import { initForm } from '../../scripts/form';
@@ -142,64 +150,97 @@ const base = `/${locale}`;
 </script>
 
 <style>
-  /* Mascot at the inline start, form beside it, the pair centred on the page.
-     `order` rather than moving the markup: the form stays first in the DOM so
-     keyboard and screen-reader users reach it immediately, while Hud — who is
-     decoration and aria-hidden — simply renders ahead of it. Being logical,
-     `order` also mirrors on its own, so he sits left in English and right in
-     Arabic without a second rule. */
+  /* The form sits on a paper card floating over the navy girih ground. The card
+     deliberately does NOT carry .on-navy, so it keeps the page's own surface
+     tokens and the fields inside it stay at full contrast in both themes. */
+  .auth-panel {
+    padding-block: 0;
+    overflow: hidden;
+  }
+
   .auth {
-    display: flex;
-    gap: var(--space-12);
+    display: grid;
+    grid-template-columns: minmax(0, 4fr) minmax(0, 5fr);
+    gap: var(--space-16);
     align-items: center;
-    justify-content: center;
-    padding-block: var(--space-16);
+    padding-block: var(--space-20);
   }
 
-  .auth__aside {
-    order: -1;
-  }
-
-  .auth__main {
-    flex: 0 1 30rem;
-  }
-
-  .auth__main h1 {
-    margin-block-start: var(--space-3);
-    font-size: var(--text-4xl);
+  .auth__intro h1 {
+    font-size: var(--text-6xl);
     font-weight: var(--weight-bold);
     line-height: var(--leading-tight);
+    text-wrap: balance;
+    max-inline-size: 14ch;
+  }
+
+  [dir='ltr'] .auth__intro h1 {
+    letter-spacing: var(--tracking-tight-latin);
   }
 
   .auth__sub {
-    margin-block: var(--space-3) var(--space-8);
+    margin-block-start: var(--space-5);
+    font-size: var(--text-lg);
     color: var(--color-text-muted);
+    max-inline-size: 34ch;
+  }
+
+  .auth__hud {
+    margin-block-start: var(--space-10);
+  }
+
+  .auth__card {
+    padding: var(--space-8);
+    border-radius: var(--radius-xl);
+    background-color: var(--color-bg);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-xl), var(--rim-light);
+  }
+
+  /* Centred under the submit button so it reads as the alternative to it, and
+     quiet: this is the path for the minority who need it, not a second call to
+     action competing with the one the page exists for. */
+  .auth__forgot {
+    margin: 0;
+    text-align: center;
+    font-size: var(--text-sm);
+  }
+
+  .auth__forgot a {
+    color: var(--color-text-muted);
+  }
+
+  .auth__forgot a:hover {
+    color: var(--color-text);
   }
 
   .auth__alt {
     margin-block-start: var(--space-6);
     color: var(--color-text-muted);
+    text-align: center;
   }
 
-  .auth__aside {
-    flex: 0 0 auto;
-  }
-
-  @media (max-width: 51.99rem) {
+  @media (max-width: 63.99rem) {
     .auth {
-      flex-direction: column;
-      padding-block: var(--space-10);
-      gap: var(--space-8);
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-10);
+      padding-block: var(--space-12);
     }
 
-    .auth__main {
-      flex-basis: auto;
-      inline-size: 100%;
+    .auth__intro h1 {
+      font-size: var(--text-4xl);
+      max-inline-size: 20ch;
     }
 
-    .auth__aside {
-      order: 0;
-      align-self: center;
+    .auth__hud {
+      margin-block-start: var(--space-6);
+    }
+  }
+
+  @media (max-width: 39.99rem) {
+    .auth__card {
+      padding: var(--space-5);
+      border-radius: var(--radius-lg);
     }
   }
 </style>
