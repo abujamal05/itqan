@@ -1,6 +1,5 @@
 ---
 import Hud from '../Hud.astro';
-import GirihField from '../GirihField.astro';
 import { t, type Locale } from '../../i18n';
 import { formEndpoints, appUrl } from '../../config';
 import '../../styles/forms.css';
@@ -14,20 +13,10 @@ const s = t(locale);
 const base = `/${locale}`;
 ---
 
-<section class="panel panel--navy auth-panel">
-  <div class="panel__pattern on-navy" aria-hidden="true">
-    <GirihField held={(row, col) => col + row < 8} radius={104} animate={false} />
-  </div>
-
-  <div class="container panel__inner auth">
-    <div class="auth__intro on-navy">
-      <h1>{s.login.heading}</h1>
-      <div class="auth__hud">
-        <Hud pose="waving" size="md" loop />
-      </div>
-    </div>
-
-    <div class="auth__card">
+<div class="container auth">
+  <div class="auth__main">
+    <p class="eyebrow">{s.login.eyebrow}</p>
+    <h1>{s.login.heading}</h1>
 
     <form
       class="form-card"
@@ -109,8 +98,11 @@ const base = `/${locale}`;
     </p>
   </div>
 
+  <!-- Hud waves, positioned away from the form itself. -->
+  <div class="auth__aside">
+    <Hud pose="waving" size="md" loop />
   </div>
-</section>
+</div>
 
 <script>
   import { initForm } from '../../scripts/form';
@@ -120,56 +112,38 @@ const base = `/${locale}`;
 </script>
 
 <style>
-  /* The form sits on a paper card floating over the navy girih ground. The card
-     deliberately does NOT carry .on-navy, so it keeps the page's own surface
-     tokens and the fields inside it stay at full contrast in both themes. */
-  .auth-panel {
-    padding-block: 0;
-    overflow: hidden;
-  }
-
+  /* Mascot at the inline start, form beside it, the pair centred on the page.
+     `order` rather than moving the markup: the form stays first in the DOM so
+     keyboard and screen-reader users reach it immediately, while Hud — who is
+     decoration and aria-hidden — simply renders ahead of it. Being logical,
+     `order` also mirrors on its own, so he sits left in English and right in
+     Arabic without a second rule. */
   .auth {
-    display: grid;
-    grid-template-columns: minmax(0, 4fr) minmax(0, 5fr);
-    gap: var(--space-16);
+    display: flex;
+    gap: var(--space-12);
     align-items: center;
-    padding-block: var(--space-20);
+    justify-content: center;
+    padding-block: var(--space-16);
   }
 
-  .auth__intro h1 {
-    font-size: var(--text-6xl);
+  .auth__aside {
+    order: -1;
+  }
+
+  .auth__main {
+    flex: 0 1 30rem;
+  }
+
+  .auth__main h1 {
+    margin-block: var(--space-3) var(--space-8);
+    font-size: var(--text-4xl);
     font-weight: var(--weight-bold);
     line-height: var(--leading-tight);
-    text-wrap: balance;
-    max-inline-size: 14ch;
   }
 
-  [dir='ltr'] .auth__intro h1 {
-    letter-spacing: var(--tracking-tight-latin);
-  }
-
-  .auth__sub {
-    margin-block-start: var(--space-5);
-    font-size: var(--text-lg);
-    color: var(--color-text-muted);
-    max-inline-size: 34ch;
-  }
-
-  .auth__hud {
-    margin-block-start: var(--space-10);
-  }
-
-  .auth__card {
-    padding: var(--space-8);
-    border-radius: var(--radius-xl);
-    background-color: var(--color-bg);
-    border: 1px solid var(--color-border);
-    box-shadow: var(--shadow-xl), var(--rim-light);
-  }
-
-  /* Centred under the submit button so it reads as the alternative to it, and
-     quiet: this is the path for the minority who need it, not a second call to
-     action competing with the one the page exists for. */
+  /* Centred under the submit button so it reads as the alternative to it,
+     and quiet: this is the path for the minority who need it, not a second
+     call to action competing with logging in. */
   .auth__forgot {
     margin: 0;
     text-align: center;
@@ -187,30 +161,27 @@ const base = `/${locale}`;
   .auth__alt {
     margin-block-start: var(--space-6);
     color: var(--color-text-muted);
-    text-align: center;
   }
 
-  @media (max-width: 63.99rem) {
+  .auth__aside {
+    flex: 0 0 auto;
+  }
+
+  @media (max-width: 51.99rem) {
     .auth {
-      grid-template-columns: minmax(0, 1fr);
-      gap: var(--space-10);
-      padding-block: var(--space-12);
+      flex-direction: column;
+      padding-block: var(--space-10);
+      gap: var(--space-8);
     }
 
-    .auth__intro h1 {
-      font-size: var(--text-4xl);
-      max-inline-size: 20ch;
+    .auth__main {
+      flex-basis: auto;
+      inline-size: 100%;
     }
 
-    .auth__hud {
-      margin-block-start: var(--space-6);
-    }
-  }
-
-  @media (max-width: 39.99rem) {
-    .auth__card {
-      padding: var(--space-5);
-      border-radius: var(--radius-lg);
+    .auth__aside {
+      order: 0;
+      align-self: center;
     }
   }
 </style>

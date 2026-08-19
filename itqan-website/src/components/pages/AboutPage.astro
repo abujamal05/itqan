@@ -2,18 +2,26 @@
 /**
  * Who we are.
  *
- * Why -> how -> what, in that order and deliberately. Most about pages open
- * with what the company does, which is the least persuasive thing they have.
- * This one opens with the belief, because the belief is what keeps a sceptical
- * graduate reading past the first screen.
+ * Structured Why -> How -> What (Sinek's golden circle), deliberately and in
+ * that order. Most about pages open with what the company does, which is the
+ * least persuasive thing they have; this one opens with the belief, because the
+ * belief is what keeps a sceptical graduate reading past the first screen.
+ *
+ * Two things the layout is doing on purpose:
+ *
+ *  - The WHY is the only full-width, large-type moment on the page. Everything
+ *    after it is quieter and more structured, so the page reads as an argument
+ *    that settles rather than a brochure that keeps shouting.
+ *  - The three HOW statements and the three WHAT statements are set as parallel
+ *    rows, not cards. Cards would make them feel like features to compare; they
+ *    are commitments and a sequence, which read better as a list you go down.
  *
  * NOT here, on purpose: any section about reading transcripts or CVs. That was
- * the superseded "translation engine" pitch and it creeps back every time
- * someone touches this page. The destination and the distance are the story.
+ * the old "translation engine" pitch and it creeps back in every time someone
+ * touches this page. Reading the documents is one step inside step one. The
+ * destination and the distance are the story; the documents are plumbing.
  */
 import Hud from '../Hud.astro';
-import GirihField from '../GirihField.astro';
-import GirihTile from '../GirihTile.astro';
 import { t, type Locale } from '../../i18n';
 
 interface Props {
@@ -26,8 +34,8 @@ const base = `/${locale}`;
 
 /**
  * The team, from itqan-pitch/build/team.json. Photos are the pre-cropped 720px
- * squares in public/team; the originals run from 400x400 to 720x1280 and a
- * centre crop beheads the tall ones, so they are never re-cropped here.
+ * squares copied to public/team; the originals run from 400x400 to 720x1280 and
+ * a centre crop beheads the tall ones, so they are never re-cropped here.
  */
 const team = [
   { slug: 'ahmad', name: 'Ahmad Faraj', nameAr: 'أحمد فرج', role: 'Business Developer', roleAr: 'مطوّر أعمال', url: 'https://www.linkedin.com/in/abujamal/' },
@@ -37,10 +45,14 @@ const team = [
 ];
 
 /**
- * LinkedIn's own mark, inlined. Simple Icons dropped it after a trademark
- * request, so this is the real mark rather than an approximation, drawn in
- * currentColor so it reads as neutral monochrome on both themes instead of
- * being recoloured into Itqan's palette.
+ * LinkedIn's own mark, inlined.
+ *
+ * The brief pointed at Simple Icons, but that set no longer carries LinkedIn:
+ * it was removed after a trademark request, so `npm i simple-icons` installs
+ * 3,453 icons and not this one. This is LinkedIn's actual mark rather than an
+ * approximation, drawn in currentColor so it reads as a neutral monochrome on
+ * both themes, which the brief allows and which avoids recolouring a trademark
+ * into Itqan's palette.
  */
 const LINKEDIN_PATH = 'M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z';
 
@@ -53,109 +65,123 @@ const howItems = [
 const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.refuse4];
 ---
 
-<!-- The why. The only display-scale moment on the page; everything after it is
-     quieter, so the page reads as an argument settling rather than a brochure
-     that keeps shouting. -->
-<section class="panel panel--navy on-navy about-head">
-  <div class="panel__pattern reveal">
-    <GirihField held={(row, col) => col + row < 9} />
-  </div>
-
-  <div class="container panel__inner about-why">
-    <h1 class="display reveal">{s.about.whyHeading}</h1>
-    <p class="lede reveal">{s.about.whyBody}</p>
-    <div class="about-hud">
-      <Hud pose="idle" size="md" loop />
+<!-- WHY. The belief, and the only large-type moment on the page. -->
+<section class="about-why">
+  <div class="container about-why__grid">
+    <div class="about-why__copy">
+      <p class="eyebrow reveal">{s.about.eyebrow}</p>
+      <h1 class="about-why__heading reveal">{s.about.whyHeading}</h1>
+      <div class="about-why__rule reveal" aria-hidden="true"></div>
+      <p class="about-why__body reveal">{s.about.whyBody}</p>
+    </div>
+    <div class="about-why__figure reveal">
+      <Hud pose="idle" size="lg" loop eager />
     </div>
   </div>
 </section>
 
-<!-- Mission and vision, as two plain statements. -->
-<section class="panel panel--paper">
-  <div class="container panel__inner about-statements">
-    <div class="about-statement reveal">
-      <h2 class="about-statement__label">{s.about.missionLabel}</h2>
-      <p class="about-statement__text">{s.about.mission}</p>
-    </div>
-    <div class="about-statement reveal">
-      <h2 class="about-statement__label">{s.about.visionLabel}</h2>
-      <p class="about-statement__text">{s.about.vision}</p>
+<!-- Mission and vision, as a matched pair. -->
+<section class="section section--sunken">
+  <div class="container">
+    <div class="about-statements">
+      <div class="about-statement reveal">
+        <p class="eyebrow">{s.about.missionLabel}</p>
+        <p class="about-statement__text">{s.about.mission}</p>
+      </div>
+      <div class="about-statement reveal">
+        <p class="eyebrow">{s.about.visionLabel}</p>
+        <p class="about-statement__text">{s.about.vision}</p>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- How. Three commitments as a sequence you go down, never a card grid. -->
-<section class="panel panel--sunken">
-  <div class="container panel__inner">
-    <h2 class="heading reveal">{s.about.howHeading}</h2>
-    <ol class="spine">
+<!-- HOW. Three commitments, as parallel rows. -->
+<section class="section">
+  <div class="container">
+    <div class="section__head reveal">
+      <p class="eyebrow">{s.about.howEyebrow}</p>
+      <h2 class="section__heading">{s.about.howHeading}</h2>
+    </div>
+    <ul class="about-list stagger">
       {
         howItems.map((item) => (
-          <li class="spine__step reveal">
-            <span class="spine__marker">
-              <GirihTile name="pentagon" state="set" size={28} />
+          <li class="about-list__item reveal">
+            <span class="about-list__mark" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6"></path></svg>
             </span>
             <div>
-              <h3 class="spine__title">{item.title}</h3>
-              <p class="spine__body">{item.body}</p>
+              <h3 class="about-list__title">{item.title}</h3>
+              <p class="about-list__body">{item.body}</p>
             </div>
           </li>
         ))
       }
-    </ol>
+    </ul>
   </div>
 </section>
 
-<!-- What we found. The one place the site carries numbers, so it carries its
-     qualifier in the same breath. -->
-<section class="panel panel--paper">
-  <div class="container panel__inner">
-    <h2 class="heading reveal">{s.about.evidenceHeading}</h2>
-    <p class="about-evidence reveal">{s.about.evidenceBody}</p>
-    <p class="about-qualifier reveal">{s.about.evidenceQualifier}</p>
-    <p class="about-where reveal">{s.about.whereBody}</p>
-  </div>
-</section>
-
-<!-- What you never pay for, and what we refuse. -->
-<section class="panel panel--navy on-navy">
-  <div class="panel__pattern" aria-hidden="true">
-    <GirihField held={(row, col) => col - row < 4} animate={false} />
-  </div>
-
-  <div class="container panel__inner about-pay">
-    <div>
-      <h2 class="heading reveal">{s.about.payHeading}</h2>
-      <p class="lede reveal">{s.about.payBody}</p>
+<!-- The evidence. Never presented as anything but an early sample. -->
+<section class="section">
+  <div class="container about-evidence">
+    <div class="section__head reveal">
+      <p class="eyebrow">{s.about.evidenceEyebrow}</p>
+      <h2 class="section__heading">{s.about.evidenceHeading}</h2>
     </div>
+    <p class="about-evidence__body reveal">{s.about.evidenceBody}</p>
+    <p class="about-evidence__qualifier reveal">{s.about.evidenceQualifier}</p>
+  </div>
+</section>
 
-    <div class="plaque reveal">
-      <h3 class="about-refuse__heading">{s.about.refuseHeading}</h3>
-      <ul class="pieces">
-        {
-          refusals.map((line) => (
-            <li class="piece piece--open">
-              <GirihTile name="rhombus" state="open" size={24} />
-              <span class="piece__name">{line}</span>
-            </li>
-          ))
-        }
-      </ul>
+<!-- Where we sit, and what is never paid for. -->
+<section class="section section--sunken">
+  <div class="container about-pair">
+    <div class="reveal">
+      <p class="eyebrow">{s.about.whereEyebrow}</p>
+      <p class="about-pair__body">{s.about.whereBody}</p>
+    </div>
+    <div class="reveal">
+      <p class="eyebrow">{s.about.payEyebrow}</p>
+      <p class="about-pair__body">{s.about.payBody}</p>
     </div>
   </div>
 </section>
 
-<!-- The team. Name, role, a link out. No description line per person. -->
-<section class="panel panel--paper">
-  <div class="container panel__inner">
-    <h2 class="heading reveal">{s.about.teamHeading}</h2>
+<!-- The refusals. Short, plain, and deliberately unadorned. -->
+<section class="section">
+  <div class="container">
+    <div class="section__head reveal">
+      <h2 class="section__heading">{s.about.refuseHeading}</h2>
+    </div>
+    <ul class="about-refusals stagger">
+      {
+        refusals.map((line) => (
+          <li class="about-refusals__item reveal">
+            <span class="about-refusals__mark" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+            </span>
+            <span>{line}</span>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>
+
+<!-- The team. Name, role, and a link out. No description line per person. -->
+<section class="section section--sunken">
+  <div class="container">
+    <div class="section__head reveal">
+      <p class="eyebrow">{s.about.teamEyebrow}</p>
+      <h2 class="section__heading">{s.about.teamHeading}</h2>
+    </div>
     <ul class="about-team stagger">
       {
         team.map((member) => {
           const name = locale === 'ar' ? member.nameAr : member.name;
           const role = locale === 'ar' ? member.roleAr : member.role;
           return (
-            <li class="about-team__member reveal">
+            <li class="about-team__card reveal">
               <img
                 class="about-team__photo"
                 src={`/team/${member.slug}.jpg`}
@@ -174,8 +200,8 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
                 rel="noopener noreferrer"
                 aria-label={s.about.linkedinLabel.replace('{name}', name)}
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d={LINKEDIN_PATH} />
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d={LINKEDIN_PATH}></path>
                 </svg>
               </a>
             </li>
@@ -186,13 +212,12 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
   </div>
 </section>
 
-<section class="panel panel--navy panel--closing on-navy">
-  <div class="panel__pattern panel__pattern--centred" aria-hidden="true">
-    <GirihField held={() => true} radius={120} />
-  </div>
-  <div class="container panel__inner closing">
-    <h2 class="heading reveal">{s.home.closing.heading}</h2>
-    <div class="actions">
+<!-- Closing call to action, matching the home page's. -->
+<section class="section section--closing">
+  <div class="container">
+    <div class="closing reveal">
+      <div class="closing__bg" aria-hidden="true"></div>
+      <h2>{s.home.closing.heading}</h2>
       <a class="button button--primary button--arrow" href={`${base}/signup/`}>
         <span>{s.actions.signup}</span>
         <svg class="button__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"></path></svg>
@@ -202,100 +227,310 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
 </section>
 
 <style>
-  .about-head {
-    padding-block: 0;
-  }
-
+  /* ---- WHY: the one large moment ---- */
   .about-why {
     position: relative;
-    padding-block: var(--space-32) var(--space-24);
+    padding-block: var(--space-16) var(--space-12);
+    overflow-x: clip;
   }
 
-  .about-hud {
-    margin-block-start: var(--space-10);
+  .about-why__grid {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
   }
 
+  .about-why__copy {
+    flex: 1 1 34rem;
+  }
+
+  .about-why__figure {
+    flex: 0 0 auto;
+  }
+
+  /* Deliberately one step below the proof and how-it-works h1: this page opens
+     with a belief, not a claim, and it should not shout louder than they do.
+     Fluid on the same principle though, so it grows through the tablet range
+     instead of holding one size from 832px to a 27in monitor. */
+  .about-why__heading {
+    margin-block-start: var(--space-5);
+    font-size: clamp(var(--text-3xl), 1.8vw + 1.1rem, var(--text-4xl));
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-tight);
+    /* Long enough to carry weight, short enough to stay one thought per line. */
+    max-inline-size: 22ch;
+  }
+
+  .about-why__rule {
+    margin-block-start: var(--space-6);
+    inline-size: var(--space-16);
+    block-size: 4px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-accent);
+    transform: scaleX(1);
+    transform-origin: 0 50%;
+    transition: transform var(--duration-slower) var(--ease-out);
+  }
+
+  :global([dir='rtl']) .about-why__rule {
+    transform-origin: 100% 50%;
+  }
+
+  :global(html.reveal-ready) .about-why__rule.reveal:not(.is-visible) {
+    transform: scaleX(0);
+  }
+
+  .about-why__body {
+    margin-block-start: var(--space-6);
+    font-size: var(--text-lg);
+    line-height: 1.7;
+    color: var(--color-text-muted);
+    max-inline-size: 58ch;
+  }
+
+  /* The mascot is decoration here, and the first thing dropped on a phone:
+     the belief is what has to land, and it lands faster without him. */
+  @media (max-width: 51.99rem) {
+    .about-why__figure { display: none; }
+    .about-why { padding-block: var(--space-10) var(--space-8); }
+  }
+
+  /* ---- Mission and vision ---- */
   .about-statements {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-16);
-  }
-
-  .about-statement__label {
-    font-size: var(--text-sm);
-    font-weight: var(--weight-semibold);
-    color: var(--color-accent-ink);
-  }
-
-  .about-statement__text {
-    margin-block-start: var(--space-4);
-    font-size: var(--text-2xl);
-    font-weight: var(--weight-medium);
-    line-height: 1.4;
-    text-wrap: balance;
-  }
-
-  .about-evidence {
-    margin-block-start: var(--space-8);
-    font-size: var(--text-lg);
-    line-height: 1.65;
-    color: var(--color-text-muted);
-    max-inline-size: var(--measure);
-  }
-
-  .about-qualifier {
-    margin-block-start: var(--space-4);
-    padding-inline-start: var(--space-4);
-    border-inline-start: 1px solid var(--color-border-accent);
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
-    max-inline-size: 48ch;
-  }
-
-  .about-where {
-    margin-block-start: var(--space-10);
-    color: var(--color-text-muted);
-    max-inline-size: var(--measure);
-    line-height: 1.65;
-  }
-
-  .about-pay {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: var(--space-16);
-    align-items: start;
-  }
-
-  .about-refuse__heading {
-    margin-block-end: var(--space-5);
-    font-size: var(--text-xl);
-    font-weight: var(--weight-semibold);
-  }
-
-  .about-team {
-    list-style: none;
-    margin: var(--space-12) 0 0;
-    padding: 0;
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: var(--space-8);
   }
 
-  .about-team__member {
-    display: grid;
-    justify-items: start;
-    gap: var(--space-2);
+  @media (max-width: 51.99rem) {
+    .about-statements { grid-template-columns: 1fr; gap: var(--space-6); }
   }
 
-  /* A girih decagon clip would crop the faces badly at this size, so the photo
-     keeps a soft rectangle and the gold hairline carries the world instead. */
-  .about-team__photo {
-    inline-size: 100%;
-    aspect-ratio: 1;
-    object-fit: cover;
-    border-radius: var(--radius-lg);
+  /* Still two quotations of intent rather than two more cards, but the rule
+     moved from the reading-start edge to the top.
+     A 3px coloured bar down one side is the single most recognisable tell of a
+     generated interface, and here it was also redundant: the `.eyebrow` above
+     each statement already carries a gold tick, so the gold was being spent
+     twice to say one thing. A hairline across the top of the column is the
+     older editorial device for binding a label to the text beneath it, it
+     needs no mirroring in Arabic, and it lets the eyebrow keep the gold to
+     itself. */
+  .about-statement {
+    border-block-start: 1px solid var(--color-border-strong);
+    padding-block-start: var(--space-5);
+  }
+
+  .about-statement__text {
+    margin-block-start: var(--space-3);
+    font-size: var(--text-xl);
+    font-weight: var(--weight-medium);
+    line-height: 1.5;
+  }
+
+  /* ---- HOW: parallel rows ---- */
+  .about-list,
+  .about-refusals {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    max-inline-size: 46rem;
+  }
+
+  .about-list__item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-4);
+  }
+
+  .about-list__mark {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 36px;
+    block-size: 36px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-accent-tint);
+    /* Gold on a gold tint is the tightest pairing on the site: at
+       --color-accent-hover it measured 2.9:1, under the 3:1 floor for a glyph
+       that is the only thing in the circle. */
+    color: var(--color-accent-ink);
+  }
+
+  .about-list__title {
+    font-size: var(--text-lg);
+    font-weight: var(--weight-semibold);
+    margin-block-end: var(--space-2);
+  }
+
+  .about-list__body {
+    color: var(--color-text-muted);
+    line-height: 1.6;
+  }
+
+  /* ---- WHAT: numbered, because the order is real ---- */
+  .about-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+    max-inline-size: 46rem;
+  }
+
+  .about-steps__item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-4);
+  }
+
+  .about-steps__num {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 36px;
+    block-size: 36px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-accent);
+    color: var(--color-text-on-gold);
+    font-weight: var(--weight-semibold);
+  }
+
+  .about-steps__text {
+    font-size: var(--text-lg);
+    line-height: 1.6;
+    padding-block-start: var(--space-1);
+  }
+
+  .about-steps__text strong {
+    font-weight: var(--weight-semibold);
+  }
+
+  /* ---- Evidence ---- */
+  .about-evidence__body {
+    margin-block-start: var(--space-5);
+    font-size: var(--text-lg);
+    line-height: 1.7;
+    max-inline-size: 52rem;
+  }
+
+  /* The qualifier is not fine print: it is the reason the numbers above are
+     allowed to be shown at all, so it sits in a box rather than a footnote. */
+  /* The sand fill and the radius already separate this from the paragraph
+     above it; the 3px side bar was a second, louder answer to a question the
+     fill had answered, and a straight 3px edge fights a 12px corner radius
+     anyway. Fill only, which also matches how NoticeBox marks a "read this". */
+  .about-evidence__qualifier {
+    margin-block-start: var(--space-5);
+    padding: var(--space-4) var(--space-5);
+    background-color: var(--color-surface-sunken);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    max-inline-size: 52rem;
+  }
+
+  /* ---- Where we sit / what is never paid for ---- */
+  .about-pair {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-10);
+  }
+
+  @media (max-width: 51.99rem) {
+    .about-pair { grid-template-columns: 1fr; gap: var(--space-8); }
+  }
+
+  .about-pair__body {
+    margin-block-start: var(--space-3);
+    line-height: 1.7;
+    color: var(--color-text-muted);
+  }
+
+  /* ---- Refusals ---- */
+  .about-refusals { gap: var(--space-4); }
+
+  .about-refusals__item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--text-lg);
+    font-weight: var(--weight-medium);
+  }
+
+  .about-refusals__mark {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 28px;
+    block-size: 28px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-surface-sunken);
+    color: var(--color-text);
+  }
+
+  /* ---- Team ---- */
+  .about-team {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-6);
+  }
+
+  @media (max-width: 63.99rem) {
+    .about-team { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  @media (max-width: 26rem) {
+    .about-team { grid-template-columns: 1fr; }
+  }
+
+  .about-team__card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--space-2);
+    background-color: var(--color-surface);
     border: 1px solid var(--color-border);
-    margin-block-end: var(--space-3);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6) var(--space-4);
+  }
+
+  /* Matches the lift the home page cards already had; these were the only cards
+     on the site that stayed inert under the pointer. Both classes in the
+     selector so it outweighs `html.reveal-ready .reveal` in global.css. */
+  .about-team__card.reveal {
+    transition:
+      opacity var(--duration-slow) var(--ease-out),
+      transform var(--duration-base) var(--ease-out),
+      box-shadow var(--duration-base) var(--ease-out),
+      border-color var(--duration-base) var(--ease-out);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .about-team__card:hover {
+      transform: translateY(calc(-3px * var(--motion-scale)));
+      box-shadow: var(--shadow-md);
+      border-color: var(--color-border-strong);
+    }
+  }
+
+  .about-team__photo {
+    inline-size: 96px;
+    block-size: 96px;
+    border-radius: var(--radius-full);
+    object-fit: cover;
+    margin-block-end: var(--space-2);
+    background-color: var(--color-surface-sunken);
   }
 
   .about-team__name {
@@ -307,46 +542,25 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
     color: var(--color-text-muted);
   }
 
+  /* A real link at the touch floor, not a decorative glyph. */
   .about-team__link {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-inline-size: 44px;
-    min-block-size: 44px;
-    margin-inline-start: calc(-1 * var(--space-3));
-    color: var(--color-text-muted);
-    border-radius: var(--radius-sm);
-  }
-
-  .about-team__link:hover {
+    inline-size: 44px;
+    block-size: 44px;
+    margin-block-start: var(--space-1);
+    border-radius: var(--radius-full);
     color: var(--color-text);
+    transition:
+      background-color var(--duration-fast) var(--ease-hover),
+      color var(--duration-fast) var(--ease-hover);
   }
 
-  @media (max-width: 63.99rem) {
-    .about-statements,
-    .about-pay {
-      grid-template-columns: minmax(0, 1fr);
-      gap: var(--space-10);
-    }
-
-    .about-team {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-
-  @media (max-width: 51.99rem) {
-    .about-why {
-      padding-block: var(--space-20) var(--space-16);
-    }
-
-    .about-statement__text {
-      font-size: var(--text-xl);
-    }
-  }
-
-  @media (max-width: 29.99rem) {
-    .about-team {
-      grid-template-columns: minmax(0, 1fr);
+  @media (hover: hover) and (pointer: fine) {
+    .about-team__link:hover {
+      background-color: var(--color-surface-sunken);
+      color: var(--color-accent-ink);
     }
   }
 </style>

@@ -20,30 +20,6 @@ motion is RTL-aware, and **reduced motion** removes movement while keeping opaci
 > and the animated-Hud requirement in the next section remains open. Read the skill before adding motion;
 > read this file to know what is currently on the page.
 
-## The girih layer (added 2026-08-19 with the visual-world replacement)
-
-The site's one **authored** motion moment, in the sense the craft rules mean it: a single
-orchestrated behaviour rather than hover effects scattered across the page.
-
-| # | Interaction | Trigger | What happens | Token |
-|---|---|---|---|---|
-| G1 | Girih field lays in | field's `.reveal` ancestor enters view | each rosette settles into place: `opacity` 0 → 1 and `scale(0.88)` → 1, staggered along the lattice diagonal by `--cell-delay` (55ms per step) | `--duration-slower` / `--duration-story`, `--ease-out` |
-| G2 | Spine strap draws | step enters view | the gold strap between two markers grows `scaleY(0)` → `1` from its top edge | `--duration-story`, `--ease-out` |
-| G3 | Strap link extends | hover | the gold rule after the label grows from 24px to 40px | `--duration-base`, `--ease-out` |
-| G4 | FAQ tile turns | `<details>` opens | the rhombus marker rotates 90deg into place | `--duration-base`, `--ease-out` |
-| G5 | Gold marker wipe | `.mark` enters view | highlighter stroke wipes in under the phrase, `background-size` 0 → 100% | `--duration-story`, `--ease-out` |
-
-**Why a `<use>` instance and not a per-strap draw.** The field's rosettes share one
-`<defs>` definition, so their internals cannot be styled per cell. The stagger therefore
-moves each tile *as a whole*, which is what laying a tile looks like anyway, and it is
-the reason the whole pattern is a few kilobytes rather than 874KB of duplicated paths.
-
-**Reduced motion.** G1 and G2 read `--motion-scale`, so the scale collapses to 1, the
-delay to 0, and the fades keep running at full duration. G3, G4 and G5 drop their
-transitions entirely in the `prefers-reduced-motion` block. Nothing is ever left hidden:
-`.reveal` only gates a hidden state once JavaScript is ready, so a visitor without it
-sees every pattern finished.
-
 ## Global (`src/styles/global.css`)
 
 | # | Interaction | Trigger | What happens | Token |

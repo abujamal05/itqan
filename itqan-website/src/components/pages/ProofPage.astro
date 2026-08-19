@@ -1,19 +1,7 @@
 ---
-/**
- * Proof.
- *
- * The page a sceptic reads before creating an account, so it shows the whole
- * evidence chain rather than a summary of it. Hud is absent from this file
- * entirely and that is a hard rule: every block here is a judgement about a
- * person, and the mascot never stands beside one.
- *
- * The worked example is a real table, not a card grid. A reader comparing five
- * rows on three columns needs a table, and dressing one up as cards would cost
- * them the comparison the page exists to offer.
- */
+/* The proof page earns the sign up before the sign up.
+   Brand rule: no mascot anywhere on this page. It is an evidence surface. */
 import Badge from '../Badge.astro';
-import GirihField from '../GirihField.astro';
-import GirihTile from '../GirihTile.astro';
 import { t, type Locale } from '../../i18n';
 
 interface Props {
@@ -23,250 +11,312 @@ interface Props {
 const { locale } = Astro.props;
 const s = t(locale);
 const base = `/${locale}`;
-
-/* A row whose skill is unmet is an open piece; everything else is held. The
-   copy carries the same distinction in words, so the tile is reinforcement and
-   never the only carrier. */
-const isHeld = (confidence: string, skill: string) =>
-  confidence === 'strong' && skill !== s.proof.example.rows[3].skill;
 ---
 
-<section class="panel panel--navy on-navy proof-head">
-  <div class="panel__pattern reveal">
-    <GirihField held={(row, col) => col + row < 8} radius={110} />
-  </div>
+<div class="container">
+  <header class="page-head reveal">
+    <p class="eyebrow">{s.proof.eyebrow}</p>
+    <h1>{s.proof.heading}</h1>
+    <div class="page-head__rule" aria-hidden="true"></div>
+    <p class="page-head__intro">{s.proof.intro}</p>
+  </header>
 
-  <div class="container panel__inner">
-    <div class="page-head">
-      <h1 class="title reveal">{s.proof.heading}</h1>
-      <p class="page-head__intro reveal">{s.proof.intro}</p>
+  <section class="proof-example">
+    <div class="section__head reveal">
+      <h2>{s.proof.example.heading}</h2>
     </div>
-  </div>
-</section>
+    <p class="proof-example__intro reveal">{s.proof.example.intro}</p>
 
-<!-- The worked example. -->
-<section class="panel panel--paper">
-  <div class="container panel__inner">
-    <h2 class="heading reveal">{s.proof.example.heading}</h2>
-    <p class="lede reveal">{s.proof.example.intro}</p>
+    <div class="proof-rows">
+      {
+        s.proof.example.rows.map((row) => (
+          <article class="proof-row reveal">
+            <div class="proof-row__head">
+              <div class="proof-row__pair">
+                <div class="proof-row__side">
+                  <span class="proof-row__label">{s.proof.example.courseLabel}</span>
+                  <span class="proof-row__value"><bdi>{row.course}</bdi></span>
+                </div>
 
-    <div class="table-scroll reveal">
-      <table class="proof-table">
-        <thead>
-          <tr>
-            <th scope="col">{s.proof.example.courseLabel}</th>
-            <th scope="col">{s.proof.example.skillLabel}</th>
-            <th scope="col">{s.proof.example.whyLabel}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {
-            s.proof.example.rows.map((row) => {
-              const held = isHeld(row.confidence, row.skill);
-              return (
-                <tr>
-                  {/* The flex and grid boxes are INSIDE the cells, never on them:
-                      a th or td given display:flex stops being a table cell and
-                      drops out of the table's column layout entirely. */}
-                  <th scope="row">
-                    <span class="proof-table__piece">
-                      <GirihTile
-                        name={held ? 'pentagon' : 'rhombus'}
-                        state={held ? 'set' : 'open'}
-                        size={24}
-                      />
-                      <span>{row.course}</span>
-                    </span>
-                  </th>
-                  <td>
-                    <span class="proof-table__stand">
-                      <span class="proof-table__verdict">{row.skill}</span>
-                      {/* The badge marks CONFIDENCE IN THE READING, not match
-                          strength, so it is shown only where the reading is
-                          uncertain. Rendering "Strong match" beside a "Not yet"
-                          verdict said two contradictory things about the same
-                          row, and on the one page a sceptic reads closely. An
-                          unlabelled row is a plain statement; a labelled one is
-                          asking to be confirmed. */}
-                      {row.confidence !== 'strong' && <Badge kind="suggested" locale={locale} />}
-                    </span>
-                  </td>
-                  <td class="proof-table__why">{row.why}</td>
-                </tr>
-              );
-            })
-          }
-        </tbody>
-      </table>
+                <div class="proof-row__connector" aria-hidden="true">
+                  <svg viewBox="0 0 80 24" width="80" height="24" fill="none" preserveAspectRatio="none">
+                    <line class="draw-stroke" x1="5" y1="12" x2="60" y2="12" pathLength="1" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"></line>
+                    <path class="draw-stroke" d="M53 6l9 6-9 6" pathLength="1" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                    <circle cx="5" cy="12" r="3.5" fill="currentColor"></circle>
+                  </svg>
+                </div>
+
+                <div class="proof-row__side">
+                  <span class="proof-row__label">{s.proof.example.skillLabel}</span>
+                  <span class="proof-row__value proof-row__value--skill"><bdi>{row.skill}</bdi></span>
+                </div>
+              </div>
+              {/* The badge marks CONFIDENCE IN THE READING, not match strength, so
+                  it appears only where the reading is uncertain. Rendering
+                  "Strong match" beside the "Not yet" verdict on the Power BI row
+                  said two contradictory things about one row, on the page a
+                  sceptic reads closest. An unlabelled row is a plain statement;
+                  a labelled one is asking to be confirmed. */}
+              {row.confidence !== 'strong' && <Badge kind="suggested" locale={locale} />}
+            </div>
+            <div class="proof-row__why">
+              <span class="proof-row__label">{s.proof.example.whyLabel}</span>
+              <p>{row.why}</p>
+            </div>
+          </article>
+        ))
+      }
     </div>
-
     <p class="proof-note">{s.proof.example.note}</p>
-  </div>
-</section>
+  </section>
 
-<!-- How a recommendation is justified. -->
-<section class="panel panel--sunken">
-  <div class="container panel__inner">
-    <h2 class="heading reveal">{s.proof.how.heading}</h2>
-    <div class="proof-prose reveal">
-      <p>{s.proof.how.p1}</p>
-      <p>{s.proof.how.p2}</p>
-    </div>
-  </div>
-</section>
+  <section class="proof-how reveal">
+    <h2>{s.proof.how.heading}</h2>
+    <p>{s.proof.how.p1}</p>
+    <p>{s.proof.how.p2}</p>
+  </section>
 
-<!-- The limits. The page's most important block, so it gets the navy register
-     rather than a grey footnote at the bottom. -->
-<section class="panel panel--navy on-navy">
-  <div class="panel__pattern" aria-hidden="true">
-    <GirihField held={(row, col) => col - row < 1} animate={false} />
-  </div>
-
-  <div class="container panel__inner">
-    <h2 class="heading reveal">{s.proof.limits.heading}</h2>
-    <ul class="limits reveal">
+  <section class="proof-limits reveal">
+    <h2>{s.proof.limits.heading}</h2>
+    <ul>
       {
         s.proof.limits.items.map((item) => (
-          <li class="limits__item">
-            <GirihTile name="rhombus" state="open" size={22} />
+          <li>
+            <span class="proof-limits__mark" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path></svg>
+            </span>
             <span>{item}</span>
           </li>
         ))
       }
     </ul>
+  </section>
 
-    <div class="actions">
-      <a class="button button--primary button--arrow" href={`${base}/signup/`}>
-        <span>{s.actions.signup}</span>
-        <svg class="button__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"></path></svg>
-      </a>
-    </div>
+  <div class="page-cta reveal">
+    <a class="button button--primary button--arrow" href={`${base}/signup/`}>
+      <span>{s.actions.signup}</span>
+      <svg class="button__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"></path></svg>
+    </a>
   </div>
-</section>
+</div>
 
 <style>
-  .proof-head {
-    padding-block: 0;
+  /* .page-head and its rule/intro now live in global.css — this block was
+     duplicated verbatim across four page components. */
+
+  h2 {
+    font-size: var(--text-3xl);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+    margin-block-end: var(--space-4);
   }
 
-  /* A table this wide cannot reflow into something readable on a phone, so it
-     scrolls inside its own box and the page never scrolls sideways. */
-  .table-scroll {
-    margin-block-start: var(--space-10);
-    overflow-x: auto;
+  .proof-example__intro {
+    color: var(--color-text-muted);
+    font-size: var(--text-lg);
+    margin-block-end: var(--space-8);
+  }
+
+  .proof-rows {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    max-inline-size: 52rem;
+  }
+
+  .proof-row {
+    background-color: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
-    background-color: var(--color-surface);
-    box-shadow: var(--shadow-sm), var(--rim-light);
+    padding: var(--space-6);
   }
 
-  .proof-table {
-    inline-size: 100%;
-    border-collapse: collapse;
-    min-inline-size: 46rem;
-    text-align: start;
+  /* Both classes, so this outweighs `html.reveal-ready .reveal` in global.css —
+     otherwise the reveal's transition list wins and the hover shadow snaps. */
+  .proof-row.reveal {
+    transition:
+      opacity var(--duration-slow) var(--ease-out),
+      transform var(--duration-slow) var(--ease-out),
+      box-shadow var(--duration-base) var(--ease-out),
+      border-color var(--duration-base) var(--ease-out);
   }
 
-  .proof-table th,
-  .proof-table td {
-    text-align: start;
-    vertical-align: top;
-    padding: var(--space-5);
-    border-block-end: 1px solid var(--color-border);
+  @media (hover: hover) and (pointer: fine) {
+    .proof-row:hover {
+      box-shadow: var(--shadow-md);
+      border-color: var(--color-border-strong);
+    }
   }
 
-  .proof-table thead th {
-    font-size: var(--text-sm);
-    font-weight: var(--weight-semibold);
-    color: var(--color-text-muted);
-    background-color: var(--color-surface-sunken);
-    white-space: nowrap;
+  .proof-row__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    flex-wrap: wrap;
   }
 
-  .proof-table tbody tr:last-child th,
-  .proof-table tbody tr:last-child td {
-    border-block-end: none;
-  }
-
-  .proof-table__piece {
+  .proof-row__pair {
     display: flex;
     align-items: center;
     gap: var(--space-3);
+    flex-wrap: nowrap;
+    min-inline-size: 0;
+  }
+
+  .proof-row__side {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-inline-size: 0;
+  }
+
+  .proof-row__label {
+    font-size: var(--text-xs);
     font-weight: var(--weight-medium);
-    white-space: nowrap;
+    color: var(--color-text-muted);
   }
 
-  .proof-table__stand {
-    display: grid;
-    gap: var(--space-2);
-    justify-items: start;
-  }
-
-  /* Column widths, so the three do not fight over the same space. The why
-     column carries the reasoning and gets the room; the other two are short and
-     fixed. */
-  .proof-table th:first-child {
-    inline-size: 22%;
-  }
-
-  .proof-table th:nth-child(2) {
-    inline-size: 20%;
-  }
-
-  .proof-table__verdict {
+  .proof-row__value {
     font-weight: var(--weight-semibold);
   }
 
-  .proof-table__why {
+  .proof-row__value--skill {
+    background-color: var(--color-accent-tint);
+    border-radius: var(--radius-sm);
+    padding: var(--space-1) var(--space-3);
+    align-self: flex-start;
+  }
+
+  /* Same drawn connector motif as the home translation card. */
+  .proof-row__connector {
+    color: var(--color-accent);
+    inline-size: 64px;
+    flex: 0 0 auto;
+  }
+
+  .proof-row__connector svg {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+  }
+
+  :global([dir='rtl']) .proof-row__connector svg {
+    transform: scaleX(-1);
+  }
+
+  .proof-row__why {
+    margin-block-start: var(--space-4);
+    padding-block-start: var(--space-4);
+    border-block-start: 1px solid var(--color-border);
+  }
+
+  .proof-row__why p {
+    margin-block-start: var(--space-1);
     color: var(--color-text-muted);
-    min-inline-size: 22rem;
     line-height: 1.6;
   }
 
   .proof-note {
-    margin-block-start: var(--space-5);
+    margin-block-start: var(--space-4);
     font-size: var(--text-sm);
     color: var(--color-text-muted);
-    max-inline-size: var(--measure);
   }
 
-  .proof-prose {
-    display: grid;
-    gap: var(--space-5);
-    margin-block-start: var(--space-8);
-    color: var(--color-text-muted);
-    max-inline-size: var(--measure);
-    font-size: var(--text-lg);
-    line-height: 1.65;
+  .proof-how {
+    padding-block: var(--space-16) 0;
+    max-inline-size: 44rem;
   }
 
-  .limits {
-    list-style: none;
-    margin: var(--space-10) 0 0;
-    padding: 0;
-    display: grid;
-    gap: var(--space-5);
-    max-inline-size: 56rem;
-  }
-
-  .limits__item {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: var(--space-4);
-    align-items: start;
-    padding-block-end: var(--space-5);
-    border-block-end: 1px solid var(--color-border);
+  .proof-how p {
     line-height: 1.6;
   }
 
-  .limits__item:last-child {
-    border-block-end: none;
-    padding-block-end: 0;
+  .proof-how p + p {
+    margin-block-start: var(--space-4);
   }
 
-  @media (max-width: 51.99rem) {
-    .proof-prose {
-      font-size: var(--text-base);
+  .proof-limits {
+    margin-block-start: var(--space-16);
+    background-color: var(--color-surface-sunken);
+    border-radius: var(--radius-lg);
+    padding: var(--space-10);
+    max-inline-size: 46rem;
+  }
+
+  .proof-limits ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .proof-limits li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--space-3);
+    align-items: start;
+    line-height: 1.6;
+  }
+
+  .proof-limits__mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: var(--space-6);
+    block-size: var(--space-6);
+    margin-block-start: 2px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-accent-tint);
+    color: var(--color-text);
+    flex: 0 0 auto;
+  }
+
+  /* Mobile: stack the match as a clear vertical group — verdict on top, then
+     course, a downward connector, and the skill. Proximity keeps them read as
+     one unit; the connector rotates to point down the reading flow. */
+  @media (max-width: 39.99rem) {
+    .proof-row__head {
+      flex-direction: column-reverse;
+      align-items: flex-start;
+      gap: var(--space-4);
     }
+
+    .proof-row__pair {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--space-3);
+      inline-size: 100%;
+    }
+
+    /* Square cell so the rotated arrow fits its own layout box; at 40x12 it
+       overhung by 14px top and bottom and touched the rows either side. */
+    .proof-row__connector {
+      inline-size: 40px;
+      block-size: 40px;
+      align-self: flex-start;
+      margin-inline-start: var(--space-4);
+      display: grid;
+      place-items: center;
+    }
+
+    .proof-row__connector svg {
+      inline-size: 40px;
+      transform: rotate(90deg);
+    }
+
+    /* Points DOWN in Arabic too. The extra scaleX(-1) applied before the
+       rotation and turned the arrow back up the page. */
+    :global([dir='rtl']) .proof-row__connector svg {
+      transform: rotate(90deg);
+    }
+  }
+
+  .page-cta {
+    padding-block: var(--space-16);
+    display: flex;
+    justify-content: center;
   }
 </style>

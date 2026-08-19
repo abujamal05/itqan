@@ -97,11 +97,13 @@
   "home": {
     "hero": {
       "heading": "You already hold most of the pattern.",
-      "sub": "Itqan names the pieces you are missing, in the order that closes them fastest, against openings that exist right now."
+      "sub": "Itqan names the pieces you are missing, in the order that closes them fastest, against openings that exist right now.",
+      "ctaSecondary": "See the proof"
     },
     "pain": {
       "heading": "It is not you. It is the guessing.",
-      "body": "A hundred applications. No answers. Nobody telling you which piece to cut first."
+      "body": "A hundred applications. No answers. Nobody telling you which piece to cut first.",
+      "eyebrow": "Where the time goes"
     },
     "build": {
       "heading": "Four questions, in order.",
@@ -122,7 +124,9 @@
           "title": "Jobs you can apply to now",
           "body": "Live openings matched to that position, each carrying its reason and a source you can open."
         }
-      ]
+      ],
+      "link": "How it works, step by step",
+      "eyebrow": "What Itqan does"
     },
     "openEdge": {
       "heading": "The open edge is the point.",
@@ -153,7 +157,8 @@
           "state": "open"
         }
       ],
-      "note": "An illustrative example. Inside Itqan each piece links to the live opening it was read from, with the date it was found."
+      "note": "An illustrative example. Inside Itqan each piece links to the live opening it was read from, with the date it was found.",
+      "eyebrow": "Evidence"
     },
     "faq": {
       "heading": "Before you start.",
@@ -174,7 +179,8 @@
           "q": "What if I do not know what job I want?",
           "a": "That is the common case, and it is the first thing Itqan works on. You choose between real options instead of guessing."
         }
-      ]
+      ],
+      "eyebrow": "Questions"
     },
     "closing": {
       "heading": "See where you stand.",
@@ -203,7 +209,8 @@
         "title": "You get the path and the jobs",
         "body": "The courses that close the distance, in order, and the openings you can apply to today. Each carries its reason and a source you can open."
       }
-    ]
+    ],
+    "eyebrow": "The method"
   },
   "proof": {
     "title": "Proof",
@@ -264,7 +271,8 @@
         "What you upload is a starting point, not the whole picture of you.",
         "It reads Arabic and English. Other languages, not yet."
       ]
-    }
+    },
+    "eyebrow": "See for yourself"
   },
   "signup": {
     "title": "Create your free account",
@@ -297,7 +305,8 @@
     "summaryHeading": "A few fields need attention",
     "serverError": "We could not create the account just now. Try again in a moment.",
     "haveAccount": "Already have an account?",
-    "loginLink": "Log in"
+    "loginLink": "Log in",
+    "eyebrow": "Free account"
   },
   "login": {
     "title": "Log in",
@@ -318,7 +327,8 @@
     "serverError": "We could not log you in just now. Try again in a moment.",
     "forgot": "Forgot your password?",
     "noAccount": "New to Itqan?",
-    "signupLink": "Create a free account"
+    "signupLink": "Create a free account",
+    "eyebrow": "Your account"
   },
   "forgot": {
     "title": "Password reset",
@@ -429,14 +439,16 @@
           "What is the official email and postal address?"
         ]
       }
-    ]
+    ],
+    "eyebrow": "Your data"
   },
   "terms": {
     "title": "Terms",
     "metaDescription": "Itqan's terms of use.",
     "heading": "Terms of use",
     "notice": "This page is under construction.",
-    "body": "The core of the service is free, your account is yours, and your data is handled as the privacy page describes."
+    "body": "The core of the service is free, your account is yours, and your data is handled as the privacy page describes.",
+    "eyebrow": "The basics"
   },
   "notfound": {
     "title": "Page not found",
@@ -477,6 +489,12 @@
     "refuse3": "We will not promise you a job.",
     "refuse4": "We will not publish an accuracy figure we have not measured.",
     "teamHeading": "Four roles, clearly owned.",
-    "linkedinLabel": "{name} on LinkedIn"
+    "linkedinLabel": "{name} on LinkedIn",
+    "eyebrow": "Who we are",
+    "howEyebrow": "How we do it",
+    "evidenceEyebrow": "What we found",
+    "whereEyebrow": "Where we sit",
+    "payEyebrow": "What you will never pay for",
+    "teamEyebrow": "The team"
   }
 }

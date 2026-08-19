@@ -15,7 +15,7 @@ const links = [
 ];
 ---
 
-<footer class="site-footer on-navy">
+<footer class="site-footer">
   <div class="container footer-grid">
     <div class="footer-brand">
       <img
@@ -54,13 +54,11 @@ const links = [
 </footer>
 
 <style>
-  /* The page closes on a navy panel, so a sand footer under it read as the site
-     ending twice. Navy carries straight through to the bottom edge and the
-     closing rosette is the last pattern rather than the last-but-one. */
   .site-footer {
-    background-color: var(--navy-950);
-    border-block-start: 1px solid var(--color-border-accent);
-    padding-block: var(--space-16) var(--space-8);
+    margin-block-start: var(--space-20);
+    border-block-start: 1px solid var(--color-border);
+    background-color: var(--color-surface-sunken);
+    padding-block: var(--space-12) var(--space-8);
   }
 
   .footer-grid {
@@ -77,14 +75,15 @@ const links = [
     height: auto;
   }
 
-  /* The footer ground is navy in BOTH themes, so the reversed lockup is correct
-     in both. The theme-driven swap that used to live here put the full-colour
-     mark on a dark surface in light mode, which is a brand misuse. */
-  .footer-mark--light {
+  .footer-mark--dark {
     display: none;
   }
 
-  .footer-mark--dark {
+  :global([data-theme='dark']) .footer-mark--light {
+    display: none;
+  }
+
+  :global([data-theme='dark']) .footer-mark--dark {
     display: block;
   }
 
@@ -118,7 +117,7 @@ const links = [
   }
 
   .footer-legal {
-    margin-block-start: var(--space-10);
+    margin-block-start: var(--space-8);
     padding-block-start: var(--space-6);
     border-block-start: 1px solid var(--color-border);
     color: var(--color-text-muted);

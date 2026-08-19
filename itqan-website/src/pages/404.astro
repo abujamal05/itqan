@@ -7,7 +7,6 @@
 import '../styles/tokens.css';
 import '../styles/global.css';
 import Hud from '../components/Hud.astro';
-import GirihField from '../components/GirihField.astro';
 import { t } from '../i18n';
 
 const ar = t('ar');
@@ -49,11 +48,7 @@ const en = t('en');
     </script>
   </head>
   <body>
-    <main class="notfound on-navy">
-      <div class="notfound__pattern" aria-hidden="true">
-        <GirihField held={(row, col) => (row + col) % 3 !== 0} radius={110} animate={false} />
-      </div>
-
+    <main class="notfound">
       <div class="notfound__inner" data-lang="ar" lang="ar" dir="rtl">
         <a class="notfound__brand" href="/ar/" aria-label={ar.a11y.homeLink}>
           <img class="notfound__mark notfound__mark--light" src="/logos/lockup-horizontal.webp" alt="" width="480" height="311" />
@@ -86,51 +81,12 @@ const en = t('en');
 </html>
 
 <style>
-  /* A missing page is the world's own vocabulary for itself: a pattern with a
-     piece absent. The field behind this one is deliberately gapped rather than
-     complete, and the content stands in the gap. */
   .notfound {
-    position: relative;
-    isolation: isolate;
     min-block-size: 100dvh;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: var(--space-8);
-    background-color: var(--navy-900);
-    background-image: var(--gradient-navy);
-    overflow: hidden;
-  }
-
-  .notfound__pattern {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    opacity: 0.7;
-    pointer-events: none;
-    -webkit-mask-image: radial-gradient(56% 62% at 50% 50%, transparent 22%, black 58%, transparent 92%);
-    mask-image: radial-gradient(56% 62% at 50% 50%, transparent 22%, black 58%, transparent 92%);
-  }
-
-  /* Same scrim job as the panels: the body line is muted ink, and muted ink over
-     strapwork is the first thing to become unreadable. */
-  .notfound::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    background: radial-gradient(
-      36% 40% at 50% 50%,
-      var(--navy-900) 0%,
-      color-mix(in srgb, var(--navy-900) 72%, transparent) 52%,
-      transparent 80%
-    );
-  }
-
-  .notfound__inner {
-    position: relative;
-    z-index: 1;
   }
 
   .notfound__inner {
@@ -161,21 +117,21 @@ const en = t('en');
     block-size: auto;
   }
 
-  /* Navy ground in both themes, so the reversed lockup is correct in both. The
-     theme-driven swap this replaces would have put the full-colour mark on a
-     dark surface in light mode, which is a brand misuse. */
-  .notfound__mark--light {
+  .notfound__mark--dark {
     display: none;
   }
 
-  .notfound__mark--dark {
+  :global([data-theme='dark']) .notfound__mark--light {
+    display: none;
+  }
+
+  :global([data-theme='dark']) .notfound__mark--dark {
     display: block;
   }
 
   .notfound h1 {
-    font-size: var(--text-5xl);
+    font-size: var(--text-3xl);
     font-weight: var(--weight-bold);
-    line-height: var(--leading-tight);
   }
 
   .notfound p {
