@@ -1,8 +1,8 @@
 {
   "site": {
     "name": "Itqan",
-    "strapline": "Know where you stand, and the shortest path to the job you want.",
-    "description": "Itqan shows what you already hold, what the role you want still needs, and the shortest way to close it. Against openings that exist right now, in Arabic and English."
+    "strapline": "Stop guessing your next step.",
+    "description": "Career intelligence for graduates and career switchers across MENA. See where you stand, what to aim for, and the shortest way there. Arabic and English."
   },
   "a11y": {
     "skip": "Skip to content",
@@ -80,24 +80,24 @@
       },
       {
         "id": "outside",
-        "q": "My degree is not from Oman. Does that work?",
+        "q": "My degree is not from the region. Does that work?",
         "keywords": "outside oman abroad foreign international degree university visa sponsor gulf english expat",
-        "a": "Yes. Itqan is built for Arabic and English equally, and it reads qualifications from outside the Gulf. Where it is unsure it says so and asks you to confirm.",
+        "a": "Yes. Itqan handles Arabic and English equally, and it reads qualifications from outside MENA. Where it is unsure it says so and asks you to confirm.",
         "slug": "proof",
         "linkLabel": "A worked example"
       }
     ]
   },
   "footer": {
-    "tagline": "Know where you stand, and the shortest path to the job you want.",
+    "tagline": "Career intelligence for graduates and career switchers across MENA.",
     "privacy": "Privacy",
     "terms": "Terms",
     "rights": "© Itqan 2026"
   },
   "home": {
     "hero": {
-      "heading": "You have more than your CV shows.",
-      "sub": "Itqan tells you where you stand, which role to aim for, and the shortest way there. Measured against jobs that are open right now.",
+      "heading": "Stop guessing your next step.",
+      "sub": "Career intelligence for graduates and career switchers across MENA. Where you stand, what to aim for, and the shortest way there.",
       "ctaSecondary": "See the proof"
     },
     "pain": {
@@ -110,19 +110,19 @@
       "steps": [
         {
           "title": "Where you stand",
-          "body": "Bring what you already have. Itqan reads it and names your position in the words the market uses."
+          "body": "Upload what you already have. Itqan reads it and tells you what it adds up to, in the words employers actually use."
         },
         {
-          "title": "Which role to aim for",
-          "body": "Know it already? Say so. If not, Itqan suggests the roles your position already supports."
+          "title": "What to aim for",
+          "body": "Know the role you want? Say so. If you do not, Itqan shows you the ones you are already close to."
         },
         {
           "title": "The shortest path",
-          "body": "Real courses and certifications that close the distance, in the order that closes it fastest."
+          "body": "The courses that close the gap, ordered so the fastest wins come first."
         },
         {
-          "title": "Jobs you can apply to now",
-          "body": "Live openings matched to that position, each carrying its reason and a source you can open."
+          "title": "Jobs open now",
+          "body": "Real openings that match, each with the reason it fits and a link to the source."
         }
       ],
       "link": "How it works, step by step",
@@ -130,7 +130,7 @@
     },
     "openEdge": {
       "heading": "What a fit actually looks like.",
-      "body": "Itqan shows what you already have, what the role still asks for, and why it says so. Anything it cannot evidence stays marked for you to confirm, never filled in to look complete.",
+      "body": "Itqan shows what you have, what the role wants, and why it says so. Anything it cannot prove stays flagged for you to confirm.",
       "setLabel": "You have this",
       "openLabel": "Not yet",
       "link": "See a full worked example",
@@ -157,7 +157,7 @@
           "state": "open"
         }
       ],
-      "note": "An illustrative example. Inside Itqan each piece links to the live opening it was read from, with the date it was found.",
+      "note": "An illustrative example. Inside Itqan, every skill links to the opening it was read from, with the date it was found.",
       "eyebrow": "Evidence"
     },
     "faq": {
@@ -165,19 +165,19 @@
       "items": [
         {
           "q": "Is it really free?",
-          "a": "The parts that get you into work are free and stay free: where you stand, your path, your job matches and the advisor. A premium tier covers extended use of the AI."
+          "a": "The parts that get you hired are free and stay free: where you stand, your path, your job matches and the advisor. A paid tier covers heavier use of the AI."
         },
         {
           "q": "What do you need from me?",
-          "a": "Whatever you already have. A CV, certificates, an academic record. The more it has, the sharper the fit."
+          "a": "Whatever you already have. A CV, certificates, an academic record. The more it reads, the sharper the match."
         },
         {
           "q": "Do you find real jobs, or just give advice?",
-          "a": "Real openings that exist right now, each with the reason it fits. Itqan does not promise you a job. It shows you where you have a real chance."
+          "a": "Real openings, live right now, each with the reason it fits. Itqan will not promise you a job. It shows you where you have a genuine shot."
         },
         {
           "q": "What if I do not know what job I want?",
-          "a": "That is the common case, and it is the first thing Itqan works on. You choose between real options instead of guessing."
+          "a": "That is the normal case, and it is the first thing Itqan works on. You pick from real options instead of guessing."
         }
       ],
       "eyebrow": "Questions"
@@ -465,14 +465,14 @@
     "title": "Who we are",
     "metaDescription": "Why we built Itqan. We show you where you stand, the shortest path to the job you want, and the real jobs that fit you today.",
     "whyHeading": "Nobody tells you how far it is.",
-    "whyBody": "You know roughly where you want to end up. That distance should be visible from the start, not discovered after a year of applying and hearing nothing.",
+    "whyBody": "You know roughly where you want to end up. That distance should be clear from day one, not discovered after a year of applying and hearing nothing back.",
     "missionLabel": "Our mission",
-    "mission": "We show you where you stand, the shortest path to the job you want, and the real jobs that fit you today.",
+    "mission": "We show you where you stand, the shortest path to the job you want, and the jobs that fit you today.",
     "visionLabel": "Our vision",
     "vision": "A world where nobody has to guess their next step.",
     "howHeading": "Three things we hold to.",
     "how1Title": "We measure against the real market.",
-    "how1Body": "Live Gulf demand and what those openings currently ask for, not a generic checklist.",
+    "how1Body": "Live demand across MENA and what those openings ask for today, not a generic checklist.",
     "how2Title": "We show our working.",
     "how2Body": "Every recommendation carries its reason and a real source you can open.",
     "how3Title": "We never sell your results.",
@@ -480,7 +480,7 @@
     "evidenceHeading": "We asked graduates in Oman.",
     "evidenceBody": "Roughly two thirds had read a job posting and could not tell whether something they had done counted as the skill being asked for. Nearly nine in ten were blocked by postings demanding experience they did not have. Nearly half of those rejected could not say why.",
     "evidenceQualifier": "An early sample, drawn from the graduates we are launching to. We are widening it.",
-    "whereBody": "We are embedded at UTAS, which is both our first pilot and where our survey came from. We start in Oman, then Saudi Arabia and the wider Gulf.",
+    "whereBody": "We are embedded at UTAS, our first pilot and where the survey came from. We start in Oman, then Saudi Arabia, then the wider region.",
     "payHeading": "What you will never pay for.",
     "payBody": "Where you stand, your path, your job matches and the advisor are free and stay free. A premium tier covers extended use of the AI, never the parts that get you hired.",
     "refuseHeading": "And what we refuse.",
