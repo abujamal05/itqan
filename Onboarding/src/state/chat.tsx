@@ -44,6 +44,11 @@ interface ChatValue {
    * deliberate confirm in the view — Hud's proposal alone never calls it.
    */
   rerun: () => Promise<void>;
+  /** Called when a full re-run reaches the confirm step, so the view can
+   *  navigate. Kept as a callback rather than a router import: this module is
+   *  state, and state that navigates is state that cannot be tested. */
+  onAwaitingConfirmation?: () => void;
+  setOnAwaitingConfirmation: (fn: (() => void) | undefined) => void;
   /** The re-run's stage while one is in flight, else null. */
   rerunStage: string | null;
   /** 0..1, for a determinate meter — never a timer. */
@@ -199,6 +204,8 @@ export function ChatProvider({ api, children }: { api: ItqanApi; children: React
    *
    * So this holds the job itself and polls the same endpoint onboarding polls.
    */
+  const [onAwaitingConfirmation, setOnAwaitingConfirmation] =
+    useState<(() => void) | undefined>(undefined);
   const [rerunStage, setRerunStage] = useState<string | null>(null);
   const [rerunProgress, setRerunProgress] = useState(0);
   const [resultsVersion, setResultsVersion] = useState(0);
@@ -229,6 +236,15 @@ export function ChatProvider({ api, children }: { api: ItqanApi; children: React
       }
       setRerunProgress(job.progress);
       setRerunStage(job.stage);
+      if (job.stage === 'awaiting_confirmation') {
+        /* A FULL re-run stops here on purpose: the documents have been read
+           again and the person has to check what was extracted before anything
+           is matched. That screen is the product's first trust moment, so the
+           re-run ends by handing them to it rather than quietly finishing. */
+        setRerunStage(null);
+        onAwaitingConfirmation?.();
+        return;
+      }
       if (job.stage === 'done' || job.stage === 'failed') {
         /* Bumped so the results screens refetch. Their `useAsync` deps key off
            this, which is what makes the dashboard reflect the new run instead
@@ -237,7 +253,7 @@ export function ChatProvider({ api, children }: { api: ItqanApi; children: React
         return;
       }
     }
-  }, [api]);
+  }, [api, onAwaitingConfirmation]);
 
   const open = useCallback(
     (id: string) => {
@@ -276,11 +292,13 @@ export function ChatProvider({ api, children }: { api: ItqanApi; children: React
       threadId, messages, threads, loading, pending, failed, writingId, verdicts,
       ask, retryMessage, retry, rate, rerun, open, reset, doneWriting,
       rerunStage, rerunProgress, resultsVersion,
+      onAwaitingConfirmation, setOnAwaitingConfirmation,
     }),
     [
       threadId, messages, threads, loading, pending, failed, writingId, verdicts,
       ask, retryMessage, retry, rate, rerun, open, reset, doneWriting,
       rerunStage, rerunProgress, resultsVersion,
+      onAwaitingConfirmation, setOnAwaitingConfirmation,
     ],
   );
 

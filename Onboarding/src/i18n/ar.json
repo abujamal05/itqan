@@ -333,5 +333,8 @@
   "chat.attach": "أرفق ملفاً",
   "chat.removeFile": "أزل {name}",
   "chat.tooBig": "حجم {name} يتجاوز 5 ميغابايت. اختر ملفاً أصغر.",
-  "chat.disclaimer": "هود ذكاء اصطناعي وقد يخطئ. تحقق من إجاباته."
+  "chat.disclaimer": "هود ذكاء اصطناعي وقد يخطئ. تحقق من إجاباته.",
+  "profile.doc.remove": "إزالة هذا المستند",
+  "profile.doc.removeConfirm": "إزالة؟",
+  "profile.doc.removing": "جارٍ الإزالة…"
 }

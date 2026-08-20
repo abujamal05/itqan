@@ -39,6 +39,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check, ChevronDown, Plus, Target } from 'lucide-react';
 import { useI18n } from '../i18n';
+import { skillCase } from '../lib/skillCase';
 import { useChat } from '../state/chat';
 import { useApi } from '../state/api';
 import { useAsync } from '../lib/useAsync';
@@ -313,7 +314,7 @@ export function Dashboard() {
                     {data.standings.map((s) => (
                       <li key={s.name} className="skill">
                         <div className="skill__head">
-                          <span className="skill__name"><bdi>{s.name}</bdi></span>
+                          <span className="skill__name"><bdi>{skillCase(s.name)}</bdi></span>
                           <span className="skill__state" data-held={s.held || undefined}>
                             {s.held
                               ? <><Check size={14} aria-hidden="true" />{t('dash.held')}</>

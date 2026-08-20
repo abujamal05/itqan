@@ -24,6 +24,7 @@ import {
   User as UserIcon, X,
 } from 'lucide-react';
 import { useI18n } from '../i18n';
+import { skillCase } from '../lib/skillCase';
 import { useApi } from '../state/api';
 import { useAuth } from '../state/auth';
 import { useAsync } from '../lib/useAsync';
@@ -533,7 +534,7 @@ export function Profile() {
         <div className="stack stack--sm">
           {p.skills?.length ? (
             <div className="row" style={{ gap: 'var(--space-2)' }}>
-              {p.skills.map((skill) => <Chip key={skill}>{skill}</Chip>)}
+              {p.skills.map((skill) => <Chip key={skill}>{skillCase(skill)}</Chip>)}
             </div>
           ) : (
             <p className="text-sm muted">{t('profile.noSkills')}</p>
@@ -554,6 +555,7 @@ export function Profile() {
                 <li key={d.id} className="profile__row">
                   <span className="profile__label">{t(`doc.${d.kind}`)}</span>
                   <span className="profile__value"><bdi>{d.fileName}</bdi></span>
+                  <DeleteDocument id={d.id} onDeleted={reload} />
                 </li>
               ))}
             </ul>
@@ -628,5 +630,64 @@ export function Profile() {
         </p>
       )}
     </div>
+  );
+}
+
+
+/**
+ * Remove one document, from the list and from the server's disk.
+ *
+ * TWO TAPS, not one, and this is a deliberate reading of "an X that deletes it".
+ * The file is somebody's CV, the delete is irreversible, and the control sits in
+ * a row they are otherwise only reading — so a mis-tap would destroy something
+ * they cannot get back without finding the original again.
+ *
+ * It is still one control and no dialog: the X becomes a short confirm in place,
+ * and moving the pointer away puts it back. That costs a deliberate user one
+ * extra tap and saves an accidental one entirely.
+ */
+function DeleteDocument({ id, onDeleted }: { id: string; onDeleted: () => void }) {
+  const { t } = useI18n();
+  const api = useApi();
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  if (busy) return <span className="text-sm muted">{t('profile.doc.removing')}</span>;
+
+  if (confirming) {
+    return (
+      <span className="doc-remove">
+        <button
+          type="button"
+          className="doc-remove__yes"
+          onClick={async () => {
+            setBusy(true);
+            try {
+              await api.deleteDocument(id);
+              onDeleted();
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          {t('profile.doc.removeConfirm')}
+        </button>
+        <button type="button" className="doc-remove__no" onClick={() => setConfirming(false)}>
+          {t('action.cancel')}
+        </button>
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className="doc-remove__x"
+      aria-label={t('profile.doc.remove')}
+      title={t('profile.doc.remove')}
+      onClick={() => setConfirming(true)}
+    >
+      <X size={16} aria-hidden="true" />
+    </button>
   );
 }
