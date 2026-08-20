@@ -33,9 +33,13 @@ const s = t(locale);
 const base = `/${locale}`;
 
 /**
- * The team, from itqan-pitch/build/team.json. Photos are the pre-cropped 720px
- * squares in public/team; the originals run from 400x400 to 720x1280 and a
- * centre crop beheads the tall ones, so they are never re-cropped here.
+ * The team, from itqan-pitch/build/team.json.
+ *
+ * The files in public/team ARE 720x720 squares, all four of them, verified
+ * rather than assumed: the comment that used to sit here warned about tall
+ * originals and centre crops, which is not true of what is on disk and sent
+ * the last person looking in the wrong direction. The cropping bug was in the
+ * CSS, and it is documented at .about-team__photo.
  */
 const team = [
   { slug: 'ahmad', name: 'Ahmad Faraj', nameAr: 'أحمد فرج', role: 'Business Developer', roleAr: 'مطوّر أعمال', url: 'https://www.linkedin.com/in/abujamal/' },
@@ -117,10 +121,6 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
       }
     </ul>
 
-    <p class="stats__note reveal">
-      <Icon name="ph:warning" width="16" height="16" aria-hidden="true" />
-      <span>{s.about.stats.note}</span>
-    </p>
   </div>
 </section>
 
@@ -161,8 +161,7 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
             ))
           }
         </ul>
-        <p class="refuse__pay">{s.about.payBody}</p>
-      </div>
+        </div>
     </div>
   </div>
 </section>
@@ -208,10 +207,6 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
       }
     </ul>
 
-    <p class="about-where reveal">
-      <Icon name="ph:map-pin" width="16" height="16" aria-hidden="true" />
-      <span>{s.about.whereBody}</span>
-    </p>
   </div>
 </section>
 
@@ -367,28 +362,6 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
     line-height: 1.55;
   }
 
-  /* The qualifier is attached to the data, not buried at the foot of the page.
-     A number without its sample size is the thing this product exists to argue
-     against. */
-  .stats__note {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--space-3);
-    margin-block-start: var(--space-10);
-    padding: var(--space-4) var(--space-5);
-    border: 1px dashed var(--color-border-strong);
-    border-radius: var(--radius-md);
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
-    max-inline-size: 64ch;
-  }
-
-  .stats__note :global(svg) {
-    flex: 0 0 auto;
-    margin-block-start: 2px;
-    color: var(--color-accent-ink);
-  }
-
   /* ---- 3. What we hold to, and what it rules out ---- */
   .hold {
     display: grid;
@@ -470,15 +443,6 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
     color: var(--color-danger);
   }
 
-  .refuse__pay {
-    margin-block-start: var(--space-6);
-    padding-block-start: var(--space-5);
-    border-block-start: 1px solid var(--color-border);
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
-    line-height: 1.6;
-  }
-
   /* ---- 4. Team ---- */
   .about-team {
     list-style: none;
@@ -495,10 +459,21 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
     gap: var(--space-1);
   }
 
+  /* `block-size: auto` is load-bearing, not tidiness.
+     The img carries width="720" height="720", and that height attribute is a
+     presentational hint that fixes the used height. `aspect-ratio` only governs
+     when one axis is auto, so with inline-size:100% the box rendered 258x720 —
+     a 2.8:1 tower — and object-fit:cover then cropped a tall slice out of a
+     SQUARE photo, cutting the tops off people's heads. The attributes stay,
+     because they are what reserves the right box before the image decodes. */
   .about-team__photo {
     inline-size: 100%;
+    block-size: auto;
     aspect-ratio: 1;
     object-fit: cover;
+    /* Bias upward: in a head-and-shoulders photo the face sits above centre, so
+       a centred crop is the one that clips a forehead. */
+    object-position: 50% 30%;
     border-radius: var(--radius-lg);
     border: 1px solid var(--color-border);
     margin-block-end: var(--space-3);
@@ -526,22 +501,6 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
 
   .about-team__link:hover {
     color: var(--color-text);
-  }
-
-  .about-where {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--space-3);
-    margin-block-start: var(--space-10);
-    color: var(--color-text-muted);
-    max-inline-size: 62ch;
-    line-height: 1.6;
-  }
-
-  .about-where :global(svg) {
-    flex: 0 0 auto;
-    margin-block-start: 3px;
-    color: var(--color-accent-ink);
   }
 
   /* ---- 5. Close ---- */

@@ -71,6 +71,20 @@ img, svg, video { max-width: 100%; height: auto; display: block; }
 :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; border-radius: var(--radius-sm); }
 :focus:not(:focus-visible) { outline: none; }
 
+/* Programmatic landmark focus draws no ring.
+   `RouteFocus` moves focus to #main on every navigation so assistive tech starts
+   at the new screen. Chrome then applies its :focus-visible heuristic, which
+   carries over the "last input was the keyboard" state from whatever the user
+   just typed or submitted — so signing in painted a 2px rectangle around the
+   ENTIRE dashboard, which then vanished on the first click. It looked like a
+   selection artefact and was reported as one.
+
+   Safe to suppress because tabindex="-1" is not in the tab order: nobody can
+   land here by tabbing, and the only two ways in are this route change and the
+   skip link, neither of which needs a box drawn round the whole page. Every
+   real control keeps its ring; this targets landmark containers only. */
+[tabindex='-1']:focus { outline: none; }
+
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;

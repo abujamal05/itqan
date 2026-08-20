@@ -101,36 +101,36 @@
       "ctaSecondary": "See the proof"
     },
     "pain": {
-      "heading": "It is not you. It is the guessing.",
-      "body": "A hundred applications. No replies. And nobody telling you what to fix first.",
+      "heading": "The problem was never you. It was having to guess.",
+      "body": "You send a hundred applications, hear nothing back, and still have no idea which part of your profile is holding you up.",
       "eyebrow": "Where the time goes"
     },
     "build": {
-      "heading": "Four questions, in order.",
+      "heading": "Itqan answers four questions, in the order they matter.",
       "steps": [
         {
-          "title": "Where you stand",
-          "body": "Upload what you already have. Itqan reads it and tells you what it adds up to, in the words employers actually use."
+          "title": "Where you stand today",
+          "body": "Upload whatever you already have and Itqan reads it, then tells you what it adds up to in the words employers are actually using."
         },
         {
-          "title": "What to aim for",
-          "body": "Know the role you want? Say so. If you do not, Itqan shows you the ones you are already close to."
+          "title": "Which role to aim for",
+          "body": "If you already know the job you want, name it. If you do not, Itqan shows you the roles your background is closest to right now."
         },
         {
-          "title": "The shortest path",
-          "body": "The courses that close the gap, ordered so the fastest wins come first."
+          "title": "The shortest path there",
+          "body": "The courses that close the gap between the two, ordered so the ones that move you furthest come first."
         },
         {
-          "title": "Jobs open now",
-          "body": "Real openings that match, each with the reason it fits and a link to the source."
+          "title": "The jobs you can apply to now",
+          "body": "Openings that are live today and actually match, each one carrying the reason it fits and a link to where it came from."
         }
       ],
       "link": "How it works, step by step",
       "eyebrow": "What Itqan does"
     },
     "openEdge": {
-      "heading": "What a fit actually looks like.",
-      "body": "Itqan shows what you have, what the role wants, and why it says so. Anything it cannot prove stays flagged for you to confirm.",
+      "heading": "This is what a real match looks like, in full.",
+      "body": "Itqan shows you what you already have, what the role is asking for, and the reason behind every line of it. Anything it cannot evidence stays flagged for you to confirm rather than quietly filled in.",
       "setLabel": "You have this",
       "openLabel": "Not yet",
       "link": "See a full worked example",
@@ -165,49 +165,49 @@
       "items": [
         {
           "q": "Is it really free?",
-          "a": "The parts that get you hired are free and stay free: where you stand, your path, your job matches and the advisor. A paid tier covers heavier use of the AI."
+          "a": "The parts that get you hired are free and they stay free: where you stand, your path, your job matches and the advisor. A paid tier covers heavier use of the AI, and nothing you need to find work sits behind it."
         },
         {
           "q": "What do you need from me?",
-          "a": "Whatever you already have. A CV, certificates, an academic record. The more it reads, the sharper the match."
+          "a": "Whatever you already have, whether that is a CV, a set of certificates or an academic record. The more Itqan can read, the sharper the match it can make."
         },
         {
           "q": "Do you find real jobs, or just give advice?",
-          "a": "Real openings, live right now, each with the reason it fits. Itqan will not promise you a job. It shows you where you have a genuine shot."
+          "a": "Real openings that are live right now, each one with the reason it fits you. Itqan does not promise you a job, it helps you improve your chances of getting one."
         },
         {
           "q": "What if I do not know what job I want?",
-          "a": "That is the normal case, and it is the first thing Itqan works on. You pick from real options instead of guessing."
+          "a": "That is where most people start, and it is the first thing Itqan works on. You end up choosing between real options instead of guessing at them."
         }
       ],
       "eyebrow": "Questions"
     },
     "closing": {
-      "heading": "See where you stand.",
-      "body": "A name, an email, a password. That is the whole sign up."
+      "heading": "Find out where you actually stand.",
+      "body": "It takes a name, an email and a password. That is the whole sign up."
     }
   },
   "hiw": {
     "title": "How Itqan works",
     "metaDescription": "Four steps from what you already have to the shortest path to the job you want.",
-    "intro": "Four steps. No magic in any of them.",
+    "intro": "Four steps, and there is no magic hidden in any of them.",
     "confirmTag": "You confirm",
     "steps": [
       {
         "title": "You bring what you already have",
-        "body": "A CV, certificates, an academic record. Not a form with twenty fields."
+        "body": "A CV, your certificates, an academic record, whatever exists. Not a form with twenty empty fields waiting for you."
       },
       {
         "title": "Itqan tells you where you stand",
-        "body": "It shows everything it read, exactly as it read it, and you correct anything wrong. A position you checked yourself is worth more than one you were handed."
+        "body": "It shows you everything it read, exactly as it read it, and you correct anything that is wrong. A position you checked yourself is worth more than one you were handed."
       },
       {
         "title": "You choose the role to aim for",
-        "body": "If you know it, say it. If you do not, Itqan suggests roles your position already supports."
+        "body": "If you know it, say so. If you do not, Itqan suggests the roles your background already supports and you pick from real options."
       },
       {
         "title": "You get the path and the jobs",
-        "body": "The courses that close the distance, in order, and the openings you can apply to today. Each carries its reason and a source you can open."
+        "body": "The courses that close the distance, in order, and the openings you can apply to today. Each one carries its reason and a source you can open yourself."
       }
     ],
     "eyebrow": "The method"
@@ -215,8 +215,8 @@
   "proof": {
     "title": "Proof",
     "metaDescription": "A full worked example of how Itqan judges a position against a real role, with its limits stated plainly.",
-    "heading": "Do not take our word for it.",
-    "intro": "The reasoning itself, so you can judge it before creating an account.",
+    "heading": "Do not take our word for any of it.",
+    "intro": "This is the reasoning itself, laid out so you can judge whether it holds up before you create an account.",
     "example": {
       "heading": "One role, read against one person",
       "intro": "What a Junior Data Analyst opening asks for, and where this person stands on each piece.",
@@ -464,8 +464,8 @@
   "about": {
     "title": "Who we are",
     "metaDescription": "Why we built Itqan. We show you where you stand, the shortest path to the job you want, and the real jobs that fit you today.",
-    "whyHeading": "Nobody tells you how far it is.",
-    "whyBody": "You know roughly where you want to end up. That distance should be clear from day one, not discovered after a year of applying and hearing nothing back.",
+    "whyHeading": "Nobody ever tells you how far away it is.",
+    "whyBody": "You have a rough idea of where you want to end up. What nobody gives you is the distance, and you should be able to see that from the first day rather than work it out after a year of applying and hearing nothing back.",
     "missionLabel": "Our mission",
     "mission": "We show you where you stand, the shortest path to the job you want, and the jobs that fit you today.",
     "visionLabel": "Our vision",
@@ -486,7 +486,7 @@
     "refuseHeading": "And what we refuse.",
     "refuse1": "We will not sell a place in your results.",
     "refuse2": "We will not invent a course or a job that does not exist.",
-    "refuse3": "We will not promise you a job.",
+    "refuse3": "We do not promise you a job, we only help you increase your chances of getting it.",
     "refuse4": "We will not publish an accuracy figure we have not measured.",
     "teamHeading": "Four roles, clearly owned.",
     "linkedinLabel": "{name} on LinkedIn",
@@ -497,7 +497,7 @@
     "payEyebrow": "What you will never pay for",
     "teamEyebrow": "The team",
     "stats": {
-      "heading": "What we found when we asked",
+      "heading": "What we found when we asked graduates in Oman",
       "items": [
         {
           "prefix": "roughly",
@@ -520,7 +520,7 @@
       ],
       "note": "Approximate figures from an early sample of graduates and final year students in Oman. We are widening it, and we will publish the exact numbers when the sample is large enough to carry them."
     },
-    "holdHeading": "What we hold to",
+    "holdHeading": "The standards we hold ourselves to",
     "statsAria": "Survey finding"
   }
 }
