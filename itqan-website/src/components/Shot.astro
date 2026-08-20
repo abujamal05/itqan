@@ -1,0 +1,88 @@
+---
+/**
+ * A real screen from the product, framed.
+ *
+ * This replaces the grey "Illustration: ..." placeholder boxes. On a product
+ * whose entire pitch is "we show our working", a marketing page that shows a
+ * placeholder where the product should be is arguing against itself.
+ *
+ * The images are captured by `Onboarding/scripts/capture-app-shots.mjs` against
+ * the running app with a seeded account, so they cannot drift into fiction.
+ * Re-run it after any app redesign.
+ *
+ * The frame is a plain rounded surface with a top bar, not a skeuomorphic
+ * browser or phone: a fake chrome invites the reader to look at the chrome.
+ */
+interface Props {
+  /** File stem in /public/app, without extension. */
+  name: 'dashboard' | 'jobs' | 'courses' | 'dashboard-mobile';
+  /** Described for screen readers; never decorative, these carry the argument. */
+  alt: string;
+  /** Intrinsic size of the capture, so the browser reserves the right box. */
+  width?: number;
+  height?: number;
+  loading?: 'lazy' | 'eager';
+  class?: string;
+}
+
+const {
+  name,
+  alt,
+  width = 2400,
+  height = 1800,
+  loading = 'lazy',
+  class: className = '',
+} = Astro.props;
+---
+
+<figure class:list={['shot', className]}>
+  <div class="shot__bar" aria-hidden="true">
+    <span></span><span></span><span></span>
+  </div>
+  <img
+    class="shot__img"
+    src={`/app/${name}.webp`}
+    alt={alt}
+    width={width}
+    height={height}
+    loading={loading}
+    decoding="async"
+  />
+</figure>
+
+<style>
+  .shot {
+    margin: 0;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    box-shadow: var(--shadow-lg), var(--rim-light);
+    overflow: hidden;
+    /* The capture is 4:3; declaring it here stops the card collapsing to nothing
+       before the image decodes and shoving the section below it around. */
+    display: flex;
+    flex-direction: column;
+  }
+
+  .shot__bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    background-color: var(--color-surface-sunken);
+    border-block-end: 1px solid var(--color-border);
+  }
+
+  .shot__bar span {
+    inline-size: 9px;
+    block-size: 9px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-border-strong);
+  }
+
+  .shot__img {
+    inline-size: 100%;
+    block-size: auto;
+    display: block;
+  }
+</style>

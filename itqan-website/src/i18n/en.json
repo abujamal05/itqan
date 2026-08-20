@@ -1,7 +1,7 @@
 {
   "site": {
     "name": "Itqan",
-    "strapline": "You already hold most of the pattern.",
+    "strapline": "Know where you stand, and the shortest path to the job you want.",
     "description": "Itqan shows what you already hold, what the role you want still needs, and the shortest way to close it. Against openings that exist right now, in Arabic and English."
   },
   "a11y": {
@@ -89,20 +89,20 @@
     ]
   },
   "footer": {
-    "tagline": "You already hold most of the pattern.",
+    "tagline": "Know where you stand, and the shortest path to the job you want.",
     "privacy": "Privacy",
     "terms": "Terms",
     "rights": "© Itqan 2026"
   },
   "home": {
     "hero": {
-      "heading": "You already hold most of the pattern.",
-      "sub": "Itqan names the pieces you are missing, in the order that closes them fastest, against openings that exist right now.",
+      "heading": "You have more than your CV shows.",
+      "sub": "Itqan tells you where you stand, which role to aim for, and the shortest way there. Measured against jobs that are open right now.",
       "ctaSecondary": "See the proof"
     },
     "pain": {
       "heading": "It is not you. It is the guessing.",
-      "body": "A hundred applications. No answers. Nobody telling you which piece to cut first.",
+      "body": "A hundred applications. No replies. And nobody telling you what to fix first.",
       "eyebrow": "Where the time goes"
     },
     "build": {
@@ -129,10 +129,10 @@
       "eyebrow": "What Itqan does"
     },
     "openEdge": {
-      "heading": "The open edge is the point.",
-      "body": "A piece Itqan cannot evidence stays an outline, labelled for you to confirm. It is never filled in to look complete.",
-      "setLabel": "Held",
-      "openLabel": "Missing",
+      "heading": "What a fit actually looks like.",
+      "body": "Itqan shows what you already have, what the role still asks for, and why it says so. Anything it cannot evidence stays marked for you to confirm, never filled in to look complete.",
+      "setLabel": "You have this",
+      "openLabel": "Not yet",
       "link": "See a full worked example",
       "roleLabel": "What a Junior Data Analyst opening asks for",
       "pieces": [
@@ -184,7 +184,7 @@
     },
     "closing": {
       "heading": "See where you stand.",
-      "body": "A name, an email, a password."
+      "body": "A name, an email, a password. That is the whole sign up."
     }
   },
   "hiw": {
@@ -495,6 +495,32 @@
     "evidenceEyebrow": "What we found",
     "whereEyebrow": "Where we sit",
     "payEyebrow": "What you will never pay for",
-    "teamEyebrow": "The team"
+    "teamEyebrow": "The team",
+    "stats": {
+      "heading": "What we found when we asked",
+      "items": [
+        {
+          "prefix": "roughly",
+          "figure": "2 in 3",
+          "value": 66,
+          "label": "could not tell whether something they had already done counted as the skill a posting asked for"
+        },
+        {
+          "prefix": "nearly",
+          "figure": "9 in 10",
+          "value": 88,
+          "label": "were blocked by postings demanding experience they did not have"
+        },
+        {
+          "prefix": "nearly",
+          "figure": "1 in 2",
+          "value": 48,
+          "label": "of those who were rejected could not say why"
+        }
+      ],
+      "note": "Approximate figures from an early sample of graduates and final year students in Oman. We are widening it, and we will publish the exact numbers when the sample is large enough to carry them."
+    },
+    "holdHeading": "What we hold to",
+    "statsAria": "Survey finding"
   }
 }

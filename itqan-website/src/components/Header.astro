@@ -1,4 +1,5 @@
 ---
+import { Icon } from 'astro-icon/components';
 import ThemeToggle from './ThemeToggle.astro';
 import LangToggle from './LangToggle.astro';
 import { t, isLocale, defaultLocale, type Locale } from '../i18n';
@@ -48,9 +49,7 @@ const isCurrent = (href: string) => path === href || path === href.replace(/\/$/
         <li class="site-nav__auth">
           <a class="button button--primary button--arrow" href={`${base}/signup/`}>
             <span>{strings.actions.register}</span>
-            <svg class="button__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M5 12h14m-6-6 6 6-6 6"></path>
-            </svg>
+            <Icon class="button__arrow" name="ph:arrow-right" width="16" height="16" aria-hidden="true" />
           </a>
         </li>
       </ul>
@@ -65,9 +64,7 @@ const isCurrent = (href: string) => path === href || path === href.replace(/\/$/
       <a class="button button--ghost header-auth" href={`${base}/login/`}>{strings.actions.login}</a>
       <a class="button button--primary button--arrow header-auth" href={`${base}/signup/`}>
         <span>{strings.actions.register}</span>
-        <svg class="button__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M5 12h14m-6-6 6 6-6 6"></path>
-        </svg>
+        <Icon class="button__arrow" name="ph:arrow-right" width="16" height="16" aria-hidden="true" />
       </a>
       <button
         class="icon-button menu-button"
@@ -78,12 +75,8 @@ const isCurrent = (href: string) => path === href || path === href.replace(/\/$/
         data-label-close={strings.a11y.menuClose}
         aria-label={strings.a11y.menuOpen}
       >
-        <svg class="menu-button__open" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-          <path d="M4 7h16M4 12h16M4 17h16"></path>
-        </svg>
-        <svg class="menu-button__close" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-          <path d="M6 6l12 12M18 6L6 18"></path>
-        </svg>
+        <Icon class="menu-button__open" name="ph:list" width="22" height="22" aria-hidden="true" />
+        <Icon class="menu-button__close" name="ph:x" width="22" height="22" aria-hidden="true" />
       </button>
     </div>
   </div>
