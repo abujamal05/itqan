@@ -39,6 +39,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check, ChevronDown, Plus, Target } from 'lucide-react';
 import { useI18n } from '../i18n';
+import { skillCase } from '../lib/skillCase';
+import { useChat } from '../state/chat';
 import { useApi } from '../state/api';
 import { useAsync } from '../lib/useAsync';
 import { useOnboarding } from '../state/onboarding';
@@ -82,6 +84,8 @@ function standingOf(
 
 export function Dashboard() {
   const { t, locale, formatNumber } = useI18n();
+  // A re-run finishing must be visible here without a manual reload.
+  const { resultsVersion } = useChat();
   const api = useApi();
   const { profile } = useOnboarding();
   const { user } = useAuth();
@@ -91,14 +95,14 @@ export function Dashboard() {
   // reads the FINISHED run, so it has to re-fetch the moment one exists rather
   // than making the user reload a page that was correct when it loaded.
   const { data, loading, error, reload } = useAsync((s) => api.getDashboard(s),
-                                                   [api, locale, settled]);
+                                                   [api, locale, settled, resultsVersion]);
   /**
    * Courses are their own request because `DashboardData` does not carry them.
    * Its failure is deliberately NOT the page's failure: the dashboard is still
    * worth reading without a course shelf, so this section simply does not render
    * rather than taking the readiness score down with it.
    */
-  const { data: courses } = useAsync((s) => api.getCourses(s), [api, locale, settled]);
+  const { data: courses } = useAsync((s) => api.getCourses(s), [api, locale, settled, resultsVersion]);
   /**
    * The target role. Not in `DashboardData` — readiness is measured against a
    * target the payload never names, which is why the score had nothing to be a
@@ -109,7 +113,7 @@ export function Dashboard() {
    * Same fire-and-forget pattern as the courses fetch: no target, no banner.
    */
   const { data: stored, reload: reloadProfile } = useAsync((s) => api.getProfile(s),
-                                                          [api, locale, settled]);
+                                                          [api, locale, settled, resultsVersion]);
 
   // Closed by default: the skills are the card's DETAIL, not its point.
   const [showAllSkills, setShowAllSkills] = useState(false);
@@ -310,7 +314,7 @@ export function Dashboard() {
                     {data.standings.map((s) => (
                       <li key={s.name} className="skill">
                         <div className="skill__head">
-                          <span className="skill__name"><bdi>{s.name}</bdi></span>
+                          <span className="skill__name"><bdi>{skillCase(s.name)}</bdi></span>
                           <span className="skill__state" data-held={s.held || undefined}>
                             {s.held
                               ? <><Check size={14} aria-hidden="true" />{t('dash.held')}</>

@@ -333,5 +333,8 @@
   "chat.attach": "Attach a file",
   "chat.removeFile": "Remove {name}",
   "chat.tooBig": "{name} is over 5MB. Pick a smaller file.",
-  "chat.disclaimer": "Hud is AI and can make mistakes. Please double-check responses."
+  "chat.disclaimer": "Hud is AI and can make mistakes. Please double-check responses.",
+  "profile.doc.remove": "Remove this document",
+  "profile.doc.removeConfirm": "Remove?",
+  "profile.doc.removing": "Removing…"
 }

@@ -6,6 +6,7 @@ import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTML
 import { useId } from 'react';
 import { AlertCircle, Check, HelpCircle, Info, Plus, X } from 'lucide-react';
 import { useI18n } from '../i18n';
+import { skillCase } from '../lib/skillCase';
 
 /* ------------------------------------------------------------------ Button */
 
@@ -133,7 +134,10 @@ export function GapChip({ children }: { children: ReactNode }) {
   return (
     <span className="chip chip--gap">
       <Plus size={14} aria-hidden="true" />
-      {children}
+      {/* Cased here rather than at each call site: every gap and every
+          `unlocks` entry comes through this component, so one place decides how
+          a skill is written. See `skillCase` for why this is not CSS. */}
+      {typeof children === 'string' ? skillCase(children) : children}
     </span>
   );
 }

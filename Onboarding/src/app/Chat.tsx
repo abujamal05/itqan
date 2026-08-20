@@ -37,10 +37,20 @@ export function Chat() {
   const { t } = useI18n();
   const { threadId: param } = useParams();
   const navigate = useNavigate();
+
   const {
     threadId, messages, loading, pending, failed, writingId, verdicts,
     ask, retryMessage, retry, rate, rerun, open, reset, doneWriting,
+    setOnAwaitingConfirmation,
   } = useChat();
+
+  /* A full re-run ends at the confirm step, and the person belongs there rather
+     than on a finished-looking chat card. Registered here because this is the
+     layer that owns navigation. */
+  useEffect(() => {
+    setOnAwaitingConfirmation(() => () => navigate('/confirm'));
+    return () => setOnAwaitingConfirmation(undefined);
+  }, [navigate, setOnAwaitingConfirmation]);
 
   const thread = useRef<HTMLOListElement>(null);
   const count = messages.length;

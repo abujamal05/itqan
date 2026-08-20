@@ -161,11 +161,20 @@ export function createHttpApi(): ItqanApi {
       // `confirm: true` is required by the server and is sent only from the
       // confirm step — it is not a formality: at one re-run a week, a credit
       // spent by accident is the user's entire allowance gone.
-      return req<{ jobId: string }>('/assistant/rerun', {
+      /* `mode: 'full'` — re-READ the documents, not just re-match.
+         The server then stops at `awaiting_confirmation` and the person checks
+         their details before anything is matched, which is the whole point of
+         re-running after uploading a corrected CV. Without this it silently got
+         `match`, which re-ranked against the same extraction and looked like
+         nothing had happened. */
+      return req<{ jobId: string; awaitingConfirmation?: boolean }>('/assistant/rerun', {
         method: 'POST',
-        body: JSON.stringify({ confirm: true }),
+        body: JSON.stringify({ confirm: true, mode: 'full' }),
         signal,
       });
+    },
+    async deleteDocument(id, signal) {
+      await req<void>(`/documents/${encodeURIComponent(id)}`, { method: 'DELETE', signal });
     },
     listThreads(signal) {
       // No threads yet is a normal state on a new account, not a failure.

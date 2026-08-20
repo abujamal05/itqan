@@ -25,6 +25,7 @@
 import { useState } from 'react';
 import { Check, Copy, Paperclip, RefreshCw, ThumbsDown, ThumbsUp } from 'lucide-react';
 import { useI18n } from '../i18n';
+import { useChat } from '../state/chat';
 import type { ChatMessage, ChatVerdict } from '../api';
 import { Logo } from './Logo';
 import { MatchCard } from './MatchCard';
@@ -255,10 +256,29 @@ function RerunProposal({
   busy: boolean;
 }) {
   const { t, formatNumber } = useI18n();
+  const { rerunStage, rerunProgress } = useChat();
   const [confirming, setConfirming] = useState(false);
   const [spending, setSpending] = useState(false);
 
-  if (spending) return <p className="rerun__note">{t('chat.rerun.started')}</p>;
+  // The server has settled it; stop showing a meter for finished work.
+  const running = spending && rerunStage !== null && rerunStage !== 'done'
+    && rerunStage !== 'failed';
+
+  /* The meter, not a sentence. "Re-running your matching" with nothing moving
+     underneath it is the state this whole change exists to remove: a person
+     cannot tell it apart from a button that did nothing. */
+  if (running) {
+    return (
+      <div className="rerun__running">
+        <p className="rerun__note">{t('chat.rerun.started')}</p>
+        <div className="meter" role="progressbar" aria-valuemin={0} aria-valuemax={100}
+             aria-valuenow={Math.round(rerunProgress * 100)}
+             aria-label={t('chat.rerun.started')}>
+          <span className="meter__fill" style={{ inlineSize: `${Math.max(4, rerunProgress * 100)}%` }} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rerun">

@@ -1537,6 +1537,15 @@
 
 .rerun__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 
+/* A re-run in flight. The meter is the point: a sentence with nothing moving
+   under it is indistinguishable from a button that did nothing, which is the
+   state this replaced. */
+.rerun__running {
+  display: flex; flex-direction: column; gap: var(--space-2);
+  margin-block-start: var(--space-3);
+}
+.rerun__running .rerun__note { margin-block-start: 0; }
+
 .rerun__note {
   margin-block-start: var(--space-3);
   font-size: var(--text-sm); color: var(--color-text-muted);
@@ -1733,3 +1742,32 @@
 }
 .recents__item:hover { background: var(--color-surface-sunken); color: var(--color-text); }
 .recents__item[aria-current="page"] { background: var(--color-accent-tint); color: var(--color-text); }
+
+
+/* ------------------------------------------------------ remove a document -- */
+
+/* Quiet until hovered. This control destroys a file the person uploaded, so it
+   should be findable and not inviting — the opposite weight from a primary
+   action. The confirm below is where it becomes visible. */
+.doc-remove__x {
+  margin-inline-start: auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  inline-size: 32px; block-size: 32px;
+  border: 0; border-radius: var(--radius-full);
+  background: transparent; color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-hover),
+              color var(--duration-fast) var(--ease-hover);
+}
+.doc-remove__x:hover { background: var(--color-surface-sunken, transparent); color: var(--color-text); }
+
+.doc-remove { margin-inline-start: auto; display: inline-flex; gap: var(--space-2); }
+
+.doc-remove__yes,
+.doc-remove__no {
+  border: 1px solid var(--color-border); border-radius: var(--radius-full);
+  padding-block: var(--space-1); padding-inline: var(--space-3);
+  background: var(--color-surface); font: inherit; font-size: var(--text-sm);
+  cursor: pointer;
+}
+.doc-remove__yes { border-color: var(--color-border-accent); color: var(--color-text); }
