@@ -1,5 +1,7 @@
 ---
+import { Icon } from 'astro-icon/components';
 import Hud from '../Hud.astro';
+import Shot from '../Shot.astro';
 import { t, type Locale } from '../../i18n';
 
 interface Props {
@@ -10,12 +12,14 @@ const { locale } = Astro.props;
 const s = t(locale);
 const base = `/${locale}`;
 
-// Stroke icons (24x24), one per question, so meaning never rides on colour alone.
+/* One Phosphor duotone icon per question. Duotone is the point: it carries navy
+   AND gold, so the icon uses the brand palette instead of being a grey stroke.
+   Meaning never rides on the icon alone; each sits above its own heading. */
 const stepIcons = [
-  'M12 15V4M8 8l4-4 4 4M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3', // where you stand: upload
-  'M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17ZM12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7ZM12 11.5v.01', // which role: target
-  'M4 13l3.5 3.5L14 10M14 6h6M14 11h6M14 16h4', // the shortest path: ordered plan
-  'M4 8.5h16V19H4zM9 8.5V6.5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M4 12.5h16', // jobs now: briefcase
+  'ph:file-text-duotone',      // where you stand: what you already have
+  'ph:target-duotone',         // which role to aim for
+  'ph:path-duotone',           // the shortest path
+  'ph:briefcase-duotone',      // jobs you can apply to now
 ];
 ---
 
@@ -26,10 +30,14 @@ const stepIcons = [
       <h1 class="hero__title reveal">{s.home.hero.heading}</h1>
       <div class="hero__rule reveal" aria-hidden="true"></div>
       <p class="hero__sub reveal">{s.home.hero.sub}</p>
+      {/* The pain used to be a section of its own holding one sentence. It reads
+          better here, immediately under the promise it is the counterweight to,
+          and it buys the page a whole section back. */}
+      <p class="hero__pain reveal">{s.home.pain.body}</p>
       <div class="hero__actions reveal">
         <a class="button button--primary button--arrow" href={`${base}/signup/`}>
           <span>{s.actions.signup}</span>
-          <svg class="button__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"></path></svg>
+          <Icon class="button__arrow" name="ph:arrow-right" width="16" height="16" aria-hidden="true" />
         </a>
         <a class="button button--secondary" href={`${base}/proof/`}>{s.home.hero.ctaSecondary}</a>
       </div>
@@ -37,18 +45,6 @@ const stepIcons = [
     <div class="hero__figure reveal">
       <Hud pose="flying-in" then="idle" size="lg" eager />
     </div>
-  </div>
-</section>
-
-<!-- 2. The pain. One statement rather than three cards: the copy was cut to a
-     single line and inventing two more to refill the grid would be padding. -->
-<section class="section">
-  <div class="container">
-    <div class="section__head reveal">
-      <p class="eyebrow">{s.home.pain.eyebrow}</p>
-      <h2 class="section__heading">{s.home.pain.heading}</h2>
-    </div>
-    <p class="pain__body reveal">{s.home.pain.body}</p>
   </div>
 </section>
 
@@ -65,9 +61,7 @@ const stepIcons = [
         s.home.build.steps.map((step, i) => (
           <li class="steps__item reveal">
             <span class="steps__node">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d={stepIcons[i]} />
-              </svg>
+              <Icon name={stepIcons[i]} width="28" height="28" aria-hidden="true" />
             </span>
             <h3>{step.title}</h3>
             <p>{step.body}</p>
@@ -78,7 +72,7 @@ const stepIcons = [
     <p class="section__link reveal">
       <a class="link-arrow" href={`${base}/how-it-works/`}>
         <span>{s.home.build.link}</span>
-        <svg class="button__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"></path></svg>
+        <Icon class="button__arrow" name="ph:arrow-right" width="16" height="16" aria-hidden="true" />
       </a>
     </p>
   </div>
@@ -103,12 +97,12 @@ const stepIcons = [
               <span class="fitlist__name"><bdi>{piece.name}</bdi></span>
               {piece.state === 'set' ? (
                 <span class="fitlist__state fitlist__state--held">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"></path></svg>
+                  <Icon name="ph:check" width="14" height="14" aria-hidden="true" />
                   {s.home.openEdge.setLabel}
                 </span>
               ) : (
                 <span class="fitlist__state fitlist__state--open">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"></path></svg>
+                  <Icon name="ph:minus" width="14" height="14" aria-hidden="true" />
                   {s.home.openEdge.openLabel}
                 </span>
               )}
@@ -118,6 +112,15 @@ const stepIcons = [
       </ul>
     </div>
     <p class="example__note">{s.home.openEdge.note}</p>
+
+    {/* The real screen, beside the explanation of it. A marketing page that
+        describes a product without showing it is asking to be taken on faith,
+        which is the opposite of what this one is arguing. */}
+    <Shot
+      name="dashboard"
+      alt={s.home.build.steps[0].body}
+      class="example__shot reveal"
+    />
   </div>
 </section>
 
@@ -135,18 +138,13 @@ const stepIcons = [
             <details class="faq-item reveal">
               <summary>
                 <span>{item.q}</span>
-                <svg class="faq-item__chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="m6 9 6 6 6-6"></path>
-                </svg>
+                <Icon class="faq-item__chevron" name="ph:caret-down" width="20" height="20" aria-hidden="true" />
               </summary>
               <p class="faq-item__body">{item.a}</p>
             </details>
           ))
         }
       </div>
-    </div>
-    <div class="faq__aside">
-      <Hud pose="idle" size="md" loop />
     </div>
   </div>
 </section>
@@ -161,13 +159,29 @@ const stepIcons = [
       <p class="closing__body">{s.home.closing.body}</p>
       <a class="button button--primary button--arrow" href={`${base}/signup/`}>
         <span>{s.actions.signup}</span>
-        <svg class="button__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"></path></svg>
+        <Icon class="button__arrow" name="ph:arrow-right" width="16" height="16" aria-hidden="true" />
       </a>
     </div>
   </div>
 </section>
 
 <style>
+  /* The pain sits under the promise it answers, quieter than the sub above it
+     so the reading order stays heading -> promise -> pain -> action. */
+  .hero__pain {
+    margin-block-start: var(--space-4);
+    font-weight: var(--weight-medium);
+    color: var(--color-text);
+    max-inline-size: 44ch;
+  }
+
+  /* The product screen is wide; it gets the full measure rather than being
+     squeezed beside the card that explains it. */
+  .example__shot {
+    margin-block-start: var(--space-10);
+    max-inline-size: 56rem;
+  }
+
   /* ---- The pain ----
      One statement, not a card grid. The copy here was cut to a single line, and
      three cards holding one sentence between them would be a grid kept for its
@@ -816,47 +830,16 @@ const stepIcons = [
     }
   }
 
-  /* ---- FAQ ---- */
+  /* ---- FAQ ----
+     Single column now. The aside held a mascot that shared a screen with the
+     closing section's mascot, and with it gone the questions get the full
+     measure instead of a column of empty space where the bird used to be. */
   .faq__grid {
-    display: flex;
-    gap: var(--space-12);
-    align-items: flex-start;
+    display: block;
   }
 
   .faq__main {
-    flex: 1 1 36rem;
-  }
-
-  .faq__aside {
-    flex: 0 0 auto;
-    position: sticky;
-    inset-block-start: var(--space-16);
-  }
-
-  /* Scales with the viewport instead of sitting at a fixed 180px, which read
-     as a stamp next to a full column of questions on a large monitor. The
-     floor keeps him above the 120px where he becomes visual noise. */
-  .faq__aside :global(.hud) {
-    inline-size: clamp(11rem, 16vw, 20rem);
-  }
-
-  /* He faces the questions, not away from them. The artwork looks toward the
-     inline-end by default, and the aside sits after the content, so in LTR he
-     needs mirroring. In RTL the column order flips and he already faces in. */
-  .faq__aside :global(.hud__video),
-  .faq__aside :global(.hud__poster) {
-    transform: scaleX(-1);
-  }
-
-  :global([dir='rtl']) .faq__aside :global(.hud__video),
-  :global([dir='rtl']) .faq__aside :global(.hud__poster) {
-    transform: none;
-  }
-
-  @media (max-width: 51.99rem) {
-    .faq__aside {
-      display: none;
-    }
+    max-inline-size: 52rem;
   }
 
   .faq__list {

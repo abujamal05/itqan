@@ -8,7 +8,9 @@ const base = `/${locale}`;
 const links = [
   { href: `${base}/how-it-works/`, label: strings.nav.howItWorks },
   { href: `${base}/proof/`, label: strings.nav.proof },
-  { href: `${base}/signup/`, label: strings.actions.signup },
+  /* The footer is a link list, not a pitch. `actions.signup` is the full
+     call to action and reads as a sentence among six one-word links. */
+  { href: `${base}/signup/`, label: strings.actions.register },
   { href: `${base}/login/`, label: strings.actions.login },
   { href: `${base}/privacy/`, label: strings.footer.privacy },
   { href: `${base}/terms/`, label: strings.footer.terms },

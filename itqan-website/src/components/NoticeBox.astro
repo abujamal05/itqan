@@ -1,24 +1,11 @@
 ---
+import { Icon } from 'astro-icon/components';
 /** Visible notice for content that is deliberately not final:
     lawyer placeholders, stubs, drafts. */
 ---
 
 <div class="notice-box" role="note">
-  <svg
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    aria-hidden="true"
-  >
-    <circle cx="12" cy="12" r="9"></circle>
-    <path d="M12 8v5"></path>
-    <circle cx="12" cy="16.5" r="0.5" fill="currentColor"></circle>
-  </svg>
+  <Icon name="ph:info" width="20" height="20" aria-hidden="true" />
   <div class="notice-box__body">
     <slot />
   </div>

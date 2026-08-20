@@ -1,6 +1,7 @@
 ---
+import { Icon } from 'astro-icon/components';
 import Hud from '../Hud.astro';
-import Placeholder from '../Placeholder.astro';
+import Shot from '../Shot.astro';
 import { t, type Locale } from '../../i18n';
 
 interface Props {
@@ -12,10 +13,10 @@ const s = t(locale);
 const base = `/${locale}`;
 
 const stepIcons = [
-  'M12 15V4M8 8l4-4 4 4M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3', // share: upload
-  'M4 12.5l4.5 4.5L20 5.5', // confirm: check
-  'M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17ZM12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7ZM12 11.5v.01', // match: target
-  'M4 13l3.5 3.5L14 10M14 6h6M14 11h6M14 16h4', // gaps: plan/list
+  'ph:file-text-duotone',   // you bring what you have
+  'ph:seal-check-duotone',  // you confirm what it read
+  'ph:target-duotone',      // you choose the role
+  'ph:path-duotone',        // you get the path and the jobs
 ];
 ---
 
@@ -34,9 +35,7 @@ const stepIcons = [
         <li class:list={['hiw__step', 'reveal', { 'hiw__step--confirm': i === 1 }]}>
           <div class="hiw__marker">
             <span class="hiw__node">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d={stepIcons[i]} />
-              </svg>
+              <Icon name={stepIcons[i]} width="28" height="28" aria-hidden="true" />
             </span>
           </div>
           <div class="hiw__body">
@@ -46,7 +45,7 @@ const stepIcons = [
                 {
                   i === 1 && (
                     <span class="hiw__tag">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"></path></svg>
+                      <Icon name="ph:check" width="13" height="13" aria-hidden="true" />
                       {s.hiw.confirmTag}
                     </span>
                   )
@@ -55,11 +54,19 @@ const stepIcons = [
               <h2>{step.title}</h2>
               <p class="hiw__step-body">{step.body}</p>
             </div>
+            {/* Real product screens, not grey placeholder boxes: the page is
+                describing four steps and can simply show three of them.
+
+                Exactly ONE mascot, on step two. Steps two and three used to
+                carry one each and they are adjacent in a vertical timeline, so
+                both were on screen together at every desktop height. Step two
+                keeps him because it is the confirmation moment, where the
+                product is asking rather than concluding. */}
             <div class="hiw__visual">
-              {i === 0 && <Placeholder label={s.ph.stepShare} width={640} height={480} />}
+              {i === 0 && <Shot name="upload" alt={s.hiw.steps[0].body} />}
               {i === 1 && <Hud pose="thinking" size="md" loop />}
-              {i === 2 && <Hud pose="analyzing" size="md" loop />}
-              {i === 3 && <Placeholder label={s.ph.stepPlan} width={640} height={480} />}
+              {i === 2 && <Shot name="questions-role" alt={s.hiw.steps[2].body} />}
+              {i === 3 && <Shot name="jobs" alt={s.hiw.steps[3].body} />}
             </div>
           </div>
         </li>
@@ -70,7 +77,7 @@ const stepIcons = [
   <div class="page-cta reveal">
     <a class="button button--primary button--arrow" href={`${base}/signup/`}>
       <span>{s.actions.signup}</span>
-      <svg class="button__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"></path></svg>
+      <Icon class="button__arrow" name="ph:arrow-right" width="16" height="16" aria-hidden="true" />
     </a>
   </div>
 </div>

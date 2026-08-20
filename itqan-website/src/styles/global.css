@@ -634,3 +634,18 @@ html.reveal-ready .reveal:not(.is-visible) .draw-stroke {
   white-space: nowrap;
   border: 0;
 }
+
+/* ---- One mascot per screen, structurally --------------------------------------
+   Hud is fenced by WHERE he may appear; this enforces HOW MANY may be visible at
+   once, which the fence never covered.
+
+   The chat panel greets with its own Hud. When it is open over a page that also
+   places one (the home hero, the about opening, the confirmation step), both are
+   on screen together. The page's mascot yields to the panel's, because the panel
+   is the surface the visitor just asked for.
+
+   `visibility` rather than `display`: the mascot is decoration and aria-hidden
+   already, and collapsing its box would reflow the layout underneath the panel. */
+body:has(.hudchat[data-open='true']) main .hud {
+  visibility: hidden;
+}

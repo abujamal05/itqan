@@ -1,27 +1,27 @@
 ---
 /**
- * Who we are.
+ * Who we are. FIVE sections, down from eight.
  *
- * Structured Why -> How -> What (Sinek's golden circle), deliberately and in
- * that order. Most about pages open with what the company does, which is the
- * least persuasive thing they have; this one opens with the belief, because the
- * belief is what keeps a sceptical graduate reading past the first screen.
+ * What was cut and why:
+ *  - "What Itqan does" repeated the home page's four steps. Said once, on home.
+ *  - Mission and vision were a section of their own holding two sentences; they
+ *    now sit under the opening statement, which is where a reader looks for them.
+ *  - "Where we sit" was a paragraph of institutional detail (UTAS, MTCIT, Khuta)
+ *    that answers a question no job seeker is asking. Reduced to one line.
+ *  - "How we do it" and "What we refuse" were two sections making one argument:
+ *    here is the standard we hold, here is what that rules out. Now one section,
+ *    two columns.
  *
- * Two things the layout is doing on purpose:
+ * The survey is the page's centre of gravity now, because it is the only real
+ * evidence on it. It is rendered as three meters rather than a paragraph, and
+ * every figure is a ratio in words: the sample only supports "roughly two
+ * thirds", so printing "67%" would be inventing precision the data has not got.
  *
- *  - The WHY is the only full-width, large-type moment on the page. Everything
- *    after it is quieter and more structured, so the page reads as an argument
- *    that settles rather than a brochure that keeps shouting.
- *  - The three HOW statements and the three WHAT statements are set as parallel
- *    rows, not cards. Cards would make them feel like features to compare; they
- *    are commitments and a sequence, which read better as a list you go down.
- *
- * NOT here, on purpose: any section about reading transcripts or CVs. That was
- * the old "translation engine" pitch and it creeps back in every time someone
- * touches this page. Reading the documents is one step inside step one. The
- * destination and the distance are the story; the documents are plumbing.
+ * ONE Hud, in the opening section, and none below it.
  */
+import { Icon } from 'astro-icon/components';
 import Hud from '../Hud.astro';
+import Shot from '../Shot.astro';
 import { t, type Locale } from '../../i18n';
 
 interface Props {
@@ -33,9 +33,13 @@ const s = t(locale);
 const base = `/${locale}`;
 
 /**
- * The team, from itqan-pitch/build/team.json. Photos are the pre-cropped 720px
- * squares copied to public/team; the originals run from 400x400 to 720x1280 and
- * a centre crop beheads the tall ones, so they are never re-cropped here.
+ * The team, from itqan-pitch/build/team.json.
+ *
+ * The files in public/team ARE 720x720 squares, all four of them, verified
+ * rather than assumed: the comment that used to sit here warned about tall
+ * originals and centre crops, which is not true of what is on disk and sent
+ * the last person looking in the wrong direction. The cropping bug was in the
+ * CSS, and it is documented at .about-team__photo.
  */
 const team = [
   { slug: 'ahmad', name: 'Ahmad Faraj', nameAr: 'أحمد فرج', role: 'Business Developer', roleAr: 'مطوّر أعمال', url: 'https://www.linkedin.com/in/abujamal/' },
@@ -44,28 +48,16 @@ const team = [
   { slug: 'gheath', name: 'Gheath Wahab', nameAr: 'غياث وهاب', role: 'Software Engineer', roleAr: 'مهندس برمجيات', url: 'https://www.linkedin.com/in/gheath-wahab/' },
 ];
 
-/**
- * LinkedIn's own mark, inlined.
- *
- * The brief pointed at Simple Icons, but that set no longer carries LinkedIn:
- * it was removed after a trademark request, so `npm i simple-icons` installs
- * 3,453 icons and not this one. This is LinkedIn's actual mark rather than an
- * approximation, drawn in currentColor so it reads as a neutral monochrome on
- * both themes, which the brief allows and which avoids recolouring a trademark
- * into Itqan's palette.
- */
-const LINKEDIN_PATH = 'M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z';
-
-const howItems = [
-  { title: s.about.how1Title, body: s.about.how1Body },
-  { title: s.about.how2Title, body: s.about.how2Body },
-  { title: s.about.how3Title, body: s.about.how3Body },
+const holds = [
+  { icon: 'ph:chart-bar-duotone', title: s.about.how1Title, body: s.about.how1Body },
+  { icon: 'ph:seal-check-duotone', title: s.about.how2Title, body: s.about.how2Body },
+  { icon: 'ph:shield-check-duotone', title: s.about.how3Title, body: s.about.how3Body },
 ];
 
 const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.refuse4];
 ---
 
-<!-- WHY. The belief, and the only large-type moment on the page. -->
+<!-- 1. The belief, with mission and vision folded in beneath it. -->
 <section class="about-why">
   <div class="container about-why__grid">
     <div class="about-why__copy">
@@ -73,115 +65,122 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
       <h1 class="about-why__heading reveal">{s.about.whyHeading}</h1>
       <div class="about-why__rule reveal" aria-hidden="true"></div>
       <p class="about-why__body reveal">{s.about.whyBody}</p>
+
+      <dl class="about-mv reveal">
+        <div>
+          <dt>{s.about.missionLabel}</dt>
+          <dd>{s.about.mission}</dd>
+        </div>
+        <div>
+          <dt>{s.about.visionLabel}</dt>
+          <dd>{s.about.vision}</dd>
+        </div>
+      </dl>
     </div>
+
     <div class="about-why__figure reveal">
       <Hud pose="idle" size="lg" loop eager />
     </div>
   </div>
 </section>
 
-<!-- Mission and vision, as a matched pair. -->
+<!-- 2. The evidence. The page's centre of gravity, and the only real data on it.
+        Meters rather than a paragraph, because a proportion is a shape. -->
 <section class="section section--sunken">
   <div class="container">
-    <div class="about-statements">
-      <div class="about-statement reveal">
-        <p class="eyebrow">{s.about.missionLabel}</p>
-        <p class="about-statement__text">{s.about.mission}</p>
-      </div>
-      <div class="about-statement reveal">
-        <p class="eyebrow">{s.about.visionLabel}</p>
-        <p class="about-statement__text">{s.about.vision}</p>
-      </div>
+    <div class="section__head reveal">
+      <p class="eyebrow">{s.about.evidenceEyebrow}</p>
+      <h2 class="section__heading">{s.about.stats.heading}</h2>
     </div>
+
+    <ul class="stats stagger">
+      {
+        s.about.stats.items.map((item) => (
+          <li class="stat reveal">
+            {/* The accessible name carries the whole finding as a sentence, so a
+                screen reader never has to reassemble it from a figure and a
+                fragment sitting in different elements. */}
+            <div
+              class="stat__figure"
+              role="img"
+              aria-label={`${item.prefix} ${item.figure} ${item.label}`}
+            >
+              <span class="stat__prefix" aria-hidden="true">{item.prefix}</span>
+              <span class="stat__value" aria-hidden="true">{item.figure}</span>
+            </div>
+
+            {/* The meter encodes the approximation; the number behind it is never
+                printed, because the sample does not support that precision. */}
+            <div class="meter" aria-hidden="true">
+              <div class="meter__fill" style={`--fill: ${item.value}%`}></div>
+            </div>
+
+            <p class="stat__label" aria-hidden="true">{item.label}</p>
+          </li>
+        ))
+      }
+    </ul>
+
   </div>
 </section>
 
-<!-- HOW. Three commitments, as parallel rows. -->
+<!-- 3. The standard we hold, and what it rules out. One argument, two columns. -->
 <section class="section">
   <div class="container">
     <div class="section__head reveal">
       <p class="eyebrow">{s.about.howEyebrow}</p>
-      <h2 class="section__heading">{s.about.howHeading}</h2>
+      <h2 class="section__heading">{s.about.holdHeading}</h2>
     </div>
-    <ul class="about-list stagger">
-      {
-        howItems.map((item) => (
-          <li class="about-list__item reveal">
-            <span class="about-list__mark" aria-hidden="true">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6"></path></svg>
-            </span>
-            <div>
-              <h3 class="about-list__title">{item.title}</h3>
-              <p class="about-list__body">{item.body}</p>
-            </div>
-          </li>
-        ))
-      }
-    </ul>
-  </div>
-</section>
 
-<!-- The evidence. Never presented as anything but an early sample. -->
-<section class="section">
-  <div class="container about-evidence">
-    <div class="section__head reveal">
-      <p class="eyebrow">{s.about.evidenceEyebrow}</p>
-      <h2 class="section__heading">{s.about.evidenceHeading}</h2>
-    </div>
-    <p class="about-evidence__body reveal">{s.about.evidenceBody}</p>
-    <p class="about-evidence__qualifier reveal">{s.about.evidenceQualifier}</p>
-  </div>
-</section>
+    <div class="hold">
+      <ul class="hold__list stagger">
+        {
+          holds.map((item) => (
+            <li class="hold__item reveal">
+              <span class="hold__icon" aria-hidden="true">
+                <Icon name={item.icon} width="24" height="24" />
+              </span>
+              <div>
+                <h3 class="hold__title">{item.title}</h3>
+                <p class="hold__body">{item.body}</p>
+              </div>
+            </li>
+          ))
+        }
+      </ul>
 
-<!-- Where we sit, and what is never paid for. -->
-<section class="section section--sunken">
-  <div class="container about-pair">
-    <div class="reveal">
-      <p class="eyebrow">{s.about.whereEyebrow}</p>
-      <p class="about-pair__body">{s.about.whereBody}</p>
-    </div>
-    <div class="reveal">
-      <p class="eyebrow">{s.about.payEyebrow}</p>
-      <p class="about-pair__body">{s.about.payBody}</p>
+      <div class="refuse reveal">
+        <h3 class="refuse__heading">{s.about.refuseHeading}</h3>
+        <ul class="refuse__list">
+          {
+            refusals.map((line) => (
+              <li>
+                <Icon name="ph:x" width="16" height="16" aria-hidden="true" />
+                <span>{line}</span>
+              </li>
+            ))
+          }
+        </ul>
+        </div>
     </div>
   </div>
 </section>
 
-<!-- The refusals. Short, plain, and deliberately unadorned. -->
-<section class="section">
-  <div class="container">
-    <div class="section__head reveal">
-      <h2 class="section__heading">{s.about.refuseHeading}</h2>
-    </div>
-    <ul class="about-refusals stagger">
-      {
-        refusals.map((line) => (
-          <li class="about-refusals__item reveal">
-            <span class="about-refusals__mark" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
-            </span>
-            <span>{line}</span>
-          </li>
-        ))
-      }
-    </ul>
-  </div>
-</section>
-
-<!-- The team. Name, role, and a link out. No description line per person. -->
+<!-- 4. The team, and where we sit, together: both answer "who is behind this". -->
 <section class="section section--sunken">
   <div class="container">
     <div class="section__head reveal">
       <p class="eyebrow">{s.about.teamEyebrow}</p>
       <h2 class="section__heading">{s.about.teamHeading}</h2>
     </div>
+
     <ul class="about-team stagger">
       {
         team.map((member) => {
           const name = locale === 'ar' ? member.nameAr : member.name;
           const role = locale === 'ar' ? member.roleAr : member.role;
           return (
-            <li class="about-team__card reveal">
+            <li class="about-team__member reveal">
               <img
                 class="about-team__photo"
                 src={`/team/${member.slug}.jpg`}
@@ -200,65 +199,53 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
                 rel="noopener noreferrer"
                 aria-label={s.about.linkedinLabel.replace('{name}', name)}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d={LINKEDIN_PATH}></path>
-                </svg>
+                <Icon name="ph:linkedin-logo" width="18" height="18" aria-hidden="true" />
               </a>
             </li>
           );
         })
       }
     </ul>
+
   </div>
 </section>
 
-<!-- Closing call to action, matching the home page's. -->
-<section class="section section--closing">
-  <div class="container">
-    <div class="closing reveal">
-      <div class="closing__bg" aria-hidden="true"></div>
-      <h2>{s.home.closing.heading}</h2>
+<!-- 5. The product itself, then the one action. Showing the thing beats another
+        paragraph about it. -->
+<section class="section">
+  <div class="container about-close">
+    <div class="about-close__copy reveal">
+      <h2 class="section__heading">{s.home.closing.heading}</h2>
+      <p class="about-close__body">{s.home.closing.body}</p>
       <a class="button button--primary button--arrow" href={`${base}/signup/`}>
         <span>{s.actions.signup}</span>
-        <svg class="button__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"></path></svg>
+        <Icon class="button__arrow" name="ph:arrow-right" width="16" height="16" aria-hidden="true" />
       </a>
     </div>
+    <Shot name="dashboard" alt={s.about.mission} class="reveal" />
   </div>
 </section>
 
 <style>
-  /* ---- WHY: the one large moment ---- */
+  /* ---- 1. The opening ---- */
   .about-why {
-    position: relative;
-    padding-block: var(--space-16) var(--space-12);
-    overflow-x: clip;
+    padding-block: var(--space-20) var(--space-16);
   }
 
   .about-why__grid {
-    display: flex;
-    align-items: center;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: var(--space-12);
+    align-items: center;
   }
 
-  .about-why__copy {
-    flex: 1 1 34rem;
-  }
-
-  .about-why__figure {
-    flex: 0 0 auto;
-  }
-
-  /* Deliberately one step below the proof and how-it-works h1: this page opens
-     with a belief, not a claim, and it should not shout louder than they do.
-     Fluid on the same principle though, so it grows through the tablet range
-     instead of holding one size from 832px to a 27in monitor. */
   .about-why__heading {
-    margin-block-start: var(--space-5);
-    font-size: clamp(var(--text-3xl), 1.8vw + 1.1rem, var(--text-4xl));
+    margin-block-start: var(--space-3);
+    font-size: clamp(var(--text-4xl), 2.6vw + 1.25rem, var(--text-5xl));
     font-weight: var(--weight-bold);
     line-height: var(--leading-tight);
-    /* Long enough to carry weight, short enough to stay one thought per line. */
-    max-inline-size: 22ch;
+    max-inline-size: 20ch;
+    text-wrap: balance;
   }
 
   .about-why__rule {
@@ -267,215 +254,196 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
     block-size: 4px;
     border-radius: var(--radius-full);
     background-color: var(--color-accent);
-    transform: scaleX(1);
-    transform-origin: 0 50%;
-    transition: transform var(--duration-slower) var(--ease-out);
-  }
-
-  :global([dir='rtl']) .about-why__rule {
-    transform-origin: 100% 50%;
-  }
-
-  :global(html.reveal-ready) .about-why__rule.reveal:not(.is-visible) {
-    transform: scaleX(0);
   }
 
   .about-why__body {
     margin-block-start: var(--space-6);
     font-size: var(--text-lg);
-    line-height: 1.7;
+    line-height: 1.6;
     color: var(--color-text-muted);
-    max-inline-size: 58ch;
+    max-inline-size: 54ch;
   }
 
-  /* The mascot is decoration here, and the first thing dropped on a phone:
-     the belief is what has to land, and it lands faster without him. */
-  @media (max-width: 51.99rem) {
-    .about-why__figure { display: none; }
-    .about-why { padding-block: var(--space-10) var(--space-8); }
-  }
-
-  /* ---- Mission and vision ---- */
-  .about-statements {
+  /* Mission and vision, as a definition list because that is what they are.
+     They used to occupy a whole band for two sentences. */
+  .about-mv {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-8);
+    margin-block-start: var(--space-10);
+    padding-block-start: var(--space-8);
+    border-block-start: 1px solid var(--color-border);
   }
 
-  @media (max-width: 51.99rem) {
-    .about-statements { grid-template-columns: 1fr; gap: var(--space-6); }
+  .about-mv dt {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    color: var(--color-accent-ink);
   }
 
-  /* Still two quotations of intent rather than two more cards, but the rule
-     moved from the reading-start edge to the top.
-     A 3px coloured bar down one side is the single most recognisable tell of a
-     generated interface, and here it was also redundant: the `.eyebrow` above
-     each statement already carries a gold tick, so the gold was being spent
-     twice to say one thing. A hairline across the top of the column is the
-     older editorial device for binding a label to the text beneath it, it
-     needs no mirroring in Arabic, and it lets the eyebrow keep the gold to
-     itself. */
-  .about-statement {
-    border-block-start: 1px solid var(--color-border-strong);
-    padding-block-start: var(--space-5);
-  }
-
-  .about-statement__text {
-    margin-block-start: var(--space-3);
-    font-size: var(--text-xl);
+  .about-mv dd {
+    margin: var(--space-2) 0 0;
     font-weight: var(--weight-medium);
     line-height: 1.5;
   }
 
-  /* ---- HOW: parallel rows ---- */
-  .about-list,
-  .about-refusals {
+  /* ---- 2. The survey ----
+     Three ratios against a whole, so each is a meter with a figure, not a pie
+     and not a one-bar chart. One hue throughout: these are three readings of
+     the same thing, not three competing identities, so a categorical palette
+     would invent a distinction the data does not have. */
+  .stats {
     list-style: none;
     margin: 0;
     padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-6);
-    max-inline-size: 46rem;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-8);
   }
 
-  .about-list__item {
+  .stat {
     display: flex;
-    align-items: flex-start;
+    flex-direction: column;
     gap: var(--space-4);
   }
 
-  .about-list__mark {
-    flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    inline-size: 36px;
-    block-size: 36px;
-    border-radius: var(--radius-full);
-    background-color: var(--color-accent-tint);
-    /* Gold on a gold tint is the tightest pairing on the site: at
-       --color-accent-hover it measured 2.9:1, under the 3:1 floor for a glyph
-       that is the only thing in the circle. */
-    color: var(--color-accent-ink);
+  .stat__figure {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    flex-wrap: wrap;
   }
 
-  .about-list__title {
-    font-size: var(--text-lg);
-    font-weight: var(--weight-semibold);
-    margin-block-end: var(--space-2);
-  }
-
-  .about-list__body {
+  .stat__prefix {
+    font-size: var(--text-sm);
     color: var(--color-text-muted);
-    line-height: 1.6;
   }
 
-  /* ---- WHAT: numbered, because the order is real ---- */
-  .about-steps {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-5);
-    max-inline-size: 46rem;
+  /* Ink, not gold. The figure is text and wears a text colour; the gold lives in
+     the meter beside it, which is the mark. */
+  .stat__value {
+    font-size: var(--text-5xl);
+    font-weight: var(--weight-bold);
+    line-height: 1;
+    letter-spacing: -0.02em;
   }
 
-  .about-steps__item {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--space-4);
+  :global([dir='rtl']) .stat__value {
+    letter-spacing: 0;
   }
 
-  .about-steps__num {
-    flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    inline-size: 36px;
-    block-size: 36px;
+  .meter {
+    block-size: 8px;
+    border-radius: var(--radius-full);
+    background-color: color-mix(in srgb, var(--color-text) 10%, transparent);
+    overflow: hidden;
+  }
+
+  .meter__fill {
+    inline-size: var(--fill);
+    block-size: 100%;
     border-radius: var(--radius-full);
     background-color: var(--color-accent);
-    color: var(--color-text-on-gold);
-    font-weight: var(--weight-semibold);
+    transform-origin: 0 50%;
+    transform: scaleX(1);
+    transition: transform var(--duration-slower) var(--ease-out);
   }
 
-  .about-steps__text {
-    font-size: var(--text-lg);
-    line-height: 1.6;
-    padding-block-start: var(--space-1);
+  :global([dir='rtl']) .meter__fill {
+    transform-origin: 100% 50%;
   }
 
-  .about-steps__text strong {
-    font-weight: var(--weight-semibold);
+  :global(html.reveal-ready) .stat.reveal:not(.is-visible) .meter__fill {
+    transform: scaleX(0);
   }
 
-  /* ---- Evidence ---- */
-  .about-evidence__body {
-    margin-block-start: var(--space-5);
-    font-size: var(--text-lg);
-    line-height: 1.7;
-    max-inline-size: 52rem;
-  }
-
-  /* The qualifier is not fine print: it is the reason the numbers above are
-     allowed to be shown at all, so it sits in a box rather than a footnote. */
-  /* The sand fill and the radius already separate this from the paragraph
-     above it; the 3px side bar was a second, louder answer to a question the
-     fill had answered, and a straight 3px edge fights a 12px corner radius
-     anyway. Fill only, which also matches how NoticeBox marks a "read this". */
-  .about-evidence__qualifier {
-    margin-block-start: var(--space-5);
-    padding: var(--space-4) var(--space-5);
-    background-color: var(--color-surface-sunken);
-    border-radius: var(--radius-md);
-    color: var(--color-text);
-    font-size: var(--text-sm);
-    max-inline-size: 52rem;
-  }
-
-  /* ---- Where we sit / what is never paid for ---- */
-  .about-pair {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-10);
-  }
-
-  @media (max-width: 51.99rem) {
-    .about-pair { grid-template-columns: 1fr; gap: var(--space-8); }
-  }
-
-  .about-pair__body {
-    margin-block-start: var(--space-3);
-    line-height: 1.7;
+  .stat__label {
     color: var(--color-text-muted);
+    line-height: 1.55;
   }
 
-  /* ---- Refusals ---- */
-  .about-refusals { gap: var(--space-4); }
-
-  .about-refusals__item {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    font-size: var(--text-lg);
-    font-weight: var(--weight-medium);
+  /* ---- 3. What we hold to, and what it rules out ---- */
+  .hold {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: var(--space-12);
+    align-items: start;
   }
 
-  .about-refusals__mark {
-    flex: 0 0 auto;
+  .hold__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-8);
+  }
+
+  .hold__item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--space-4);
+    align-items: start;
+  }
+
+  .hold__icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    inline-size: 28px;
-    block-size: 28px;
-    border-radius: var(--radius-full);
-    background-color: var(--color-surface-sunken);
+    inline-size: var(--space-12);
+    block-size: var(--space-12);
+    border-radius: var(--radius-md);
+    background-color: var(--color-accent-tint);
     color: var(--color-text);
+    flex: 0 0 auto;
   }
 
-  /* ---- Team ---- */
+  .hold__title {
+    font-size: var(--text-xl);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+  }
+
+  .hold__body {
+    margin-block-start: var(--space-2);
+    color: var(--color-text-muted);
+    line-height: 1.6;
+  }
+
+  .refuse {
+    padding: var(--space-6);
+    border-radius: var(--radius-lg);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-sm), var(--rim-light);
+  }
+
+  .refuse__heading {
+    font-size: var(--text-lg);
+    font-weight: var(--weight-semibold);
+  }
+
+  .refuse__list {
+    list-style: none;
+    margin: var(--space-5) 0 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .refuse__list li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--space-3);
+    align-items: start;
+    line-height: 1.5;
+  }
+
+  .refuse__list :global(svg) {
+    margin-block-start: 4px;
+    color: var(--color-danger);
+  }
+
+  /* ---- 4. Team ---- */
   .about-team {
     list-style: none;
     margin: 0;
@@ -485,52 +453,30 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
     gap: var(--space-6);
   }
 
-  @media (max-width: 63.99rem) {
-    .about-team { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .about-team__member {
+    display: grid;
+    justify-items: start;
+    gap: var(--space-1);
   }
 
-  @media (max-width: 26rem) {
-    .about-team { grid-template-columns: 1fr; }
-  }
-
-  .about-team__card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: var(--space-2);
-    background-color: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    padding: var(--space-6) var(--space-4);
-  }
-
-  /* Matches the lift the home page cards already had; these were the only cards
-     on the site that stayed inert under the pointer. Both classes in the
-     selector so it outweighs `html.reveal-ready .reveal` in global.css. */
-  .about-team__card.reveal {
-    transition:
-      opacity var(--duration-slow) var(--ease-out),
-      transform var(--duration-base) var(--ease-out),
-      box-shadow var(--duration-base) var(--ease-out),
-      border-color var(--duration-base) var(--ease-out);
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    .about-team__card:hover {
-      transform: translateY(calc(-3px * var(--motion-scale)));
-      box-shadow: var(--shadow-md);
-      border-color: var(--color-border-strong);
-    }
-  }
-
+  /* `block-size: auto` is load-bearing, not tidiness.
+     The img carries width="720" height="720", and that height attribute is a
+     presentational hint that fixes the used height. `aspect-ratio` only governs
+     when one axis is auto, so with inline-size:100% the box rendered 258x720 —
+     a 2.8:1 tower — and object-fit:cover then cropped a tall slice out of a
+     SQUARE photo, cutting the tops off people's heads. The attributes stay,
+     because they are what reserves the right box before the image decodes. */
   .about-team__photo {
-    inline-size: 96px;
-    block-size: 96px;
-    border-radius: var(--radius-full);
+    inline-size: 100%;
+    block-size: auto;
+    aspect-ratio: 1;
     object-fit: cover;
-    margin-block-end: var(--space-2);
-    background-color: var(--color-surface-sunken);
+    /* Bias upward: in a head-and-shoulders photo the face sits above centre, so
+       a centred crop is the one that clips a forehead. */
+    object-position: 50% 30%;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    margin-block-end: var(--space-3);
   }
 
   .about-team__name {
@@ -542,25 +488,112 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
     color: var(--color-text-muted);
   }
 
-  /* A real link at the touch floor, not a decorative glyph. */
   .about-team__link {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    inline-size: 44px;
-    block-size: 44px;
-    margin-block-start: var(--space-1);
-    border-radius: var(--radius-full);
-    color: var(--color-text);
-    transition:
-      background-color var(--duration-fast) var(--ease-hover),
-      color var(--duration-fast) var(--ease-hover);
+    min-inline-size: 44px;
+    min-block-size: 44px;
+    margin-inline-start: calc(-1 * var(--space-3));
+    color: var(--color-text-muted);
+    border-radius: var(--radius-sm);
   }
 
-  @media (hover: hover) and (pointer: fine) {
-    .about-team__link:hover {
-      background-color: var(--color-surface-sunken);
-      color: var(--color-accent-ink);
+  .about-team__link:hover {
+    color: var(--color-text);
+  }
+
+  /* ---- 5. Close ---- */
+  .about-close {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: var(--space-12);
+    align-items: center;
+  }
+
+  .about-close__body {
+    margin-block: var(--space-4) var(--space-8);
+    color: var(--color-text-muted);
+    font-size: var(--text-lg);
+  }
+
+  /* ---- Adaptation ----
+     The two-column pairs collapse in a deliberate order: the mascot goes first
+     because it is decoration, then the data columns, and the stat row stays
+     readable at every step rather than squeezing three meters into a phone. */
+  @media (max-width: 63.99rem) {
+    .about-why__grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-8);
+    }
+
+    .about-why__figure {
+      order: -1;
+    }
+
+    .hold,
+    .about-close {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-10);
+    }
+
+    .stats {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-8);
+    }
+
+    /* On one column the figure and its meter read better side by side than
+       stacked: the meter becomes a row-length comparison down the page. */
+    .stat {
+      display: grid;
+      grid-template-columns: minmax(7rem, auto) minmax(0, 1fr);
+      column-gap: var(--space-6);
+      row-gap: var(--space-3);
+      align-items: center;
+    }
+
+    .stat__figure {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0;
+    }
+
+    .stat .meter {
+      grid-column: 2;
+    }
+
+    .stat__label {
+      grid-column: 2;
+      grid-row: 2;
+    }
+
+    .about-team {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 39.99rem) {
+    .about-mv {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-6);
+    }
+
+    .stat {
+      grid-template-columns: minmax(0, 1fr);
+      row-gap: var(--space-3);
+    }
+
+    .stat .meter,
+    .stat__label {
+      grid-column: 1;
+    }
+
+    .stat__label {
+      grid-row: auto;
+    }
+
+    .stat__value {
+      font-size: var(--text-4xl);
     }
   }
 </style>
