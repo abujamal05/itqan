@@ -2,9 +2,12 @@
 
 React + TypeScript + Vite. Arabic first, RTL native, bilingual, responsive, light and dark.
 
-This is the **signed in half** of Itqan. The marketing site (`itqan-website`) is the other half and owns
-the front door: the landing pages, and log in and sign up. This app owns everything after that: the
-onboarding flow and the dashboard.
+This is the **signed in half** of Itqan, a career navigator for job seekers and job switchers. It answers
+four questions in order, and every screen serves one: where you stand, which role to aim for, the
+shortest path there, and the jobs you can apply to now.
+
+The marketing site (`itqan-website`) is the other half and owns the front door: the landing pages, and
+log in and sign up. **[`CLAUDE.md`](CLAUDE.md) holds the locked rules and the verification discipline.**
 
 > **Read this before a demo.** §6 says exactly what is real and what is simulated. It is the section a
 > judge's questions will land on, and being straight about it is the whole brand.
@@ -52,16 +55,20 @@ The order is the product argument, not just a flow.
    arrive and each lands as a row saying what Itqan thinks it is, correctable in one tap. The kind is
    guessed from the filename, because people name these files predictably. **The CV is the one required
    document**; everything else adds evidence. Hud is present here in his `analyzing` pose.
-2. **Questions** (`/questions`) — asked *during* the pipeline wait, one at a time, so the wait does
-   work instead of being dead time. Four questions: course pricing, work arrangement, preferred role,
-   and whether to show adjacent roles. Every answer is optional; they only re-rank results, so refusing
-   to answer never blocks anyone from their own documents.
+2. **Questions** (`/questions`) — asked *during* the pipeline wait, one at a time, so the wait does work
+   instead of being dead time. Five, or three: course pricing, work arrangement, **whether they know
+   what job they want**, and then the role itself and adjacent roles. Answering "not yet" to the middle
+   one ends the questions there, because the two after it are about a role that has not been chosen, and
+   routes the user to Hud after the confirm screen rather than to a dashboard measuring progress towards
+   nothing. Every answer is optional; they only re-rank results.
 3. **Confirm** (`/confirm`) — the extracted details, editable. **Nothing downstream runs until the user
    confirms.** This is the first trust moment and the consent checkpoint. Anything the extraction was
    unsure about is labelled "Suggested — confirm" rather than stated as fact.
-4. **Dashboard** (`/dashboard`) — where you stand, your highest yield skills, skills to unlock, then job
-   postings. The readiness number never appears alone; it carries a sentence and a "how this is worked
-   out" disclosure.
+4. **Dashboard** (`/dashboard`) — where you stand on one side and the role you are heading for on the
+   other, then the journey, the skills to unlock and the postings. The readiness number never appears
+   alone: it carries a sentence, a "how this is worked out" disclosure, and, when no goal is set, a
+   plain statement that it is a general reading plus a way to fix that. Skills sit behind one closed
+   disclosure carrying all of them.
 5. **Courses** (`/courses`) and **Job postings** (`/jobs`) — browsable, filterable, each item carrying
    its evidence and a real source link.
 
@@ -329,8 +336,9 @@ backgrounded tab and bouncing meant the screen "did not load" on exactly the dev
 
 ## 10. Verified
 
-Screenshots time out on this machine (the browser pane does not composite), so verification was done
-through DOM geometry and computed styles. That is stated rather than implied.
+Verification is DOM geometry and computed styles **plus** rendered screenshots. An earlier version of
+this section claimed screenshots time out on this machine; they do not. A capture fails only when it
+addresses a background tab, because the pane composites the fronted one only. See `CLAUDE.md`.
 
 - Signed up and logged in **through the site's own forms**; both journeys walked end to end. Logout
   returns to the site's login page in the right language and clears the session.
@@ -350,13 +358,13 @@ through DOM geometry and computed styles. That is stated rather than implied.
   The design system needs a muted step that clears 4.5 on paper.
 - `components.md` specifies gold text for ghost buttons, contradicting the locked "gold is never body
   text on light". The locked rule was followed; worth reconciling upstream.
-- ~~The August 2026 palette revision has not been applied here.~~ **It has.** `src/styles/tokens.css`
-  reads `--gold: #F39F1C` and carries the rederived ramp; the retired `#D08C2F` is nowhere in the
-  source. This line claimed the opposite until 2026-08-17, and it was wrong for long enough that a
-  session believed it over the file. Left visible rather than deleted so the correction is legible.
 - `react-router-dom@7.18.1` carries a high advisory for **RSC mode**, which is not reachable in library
   mode.
 - Saved roles are component state; persisting them needs a real endpoint.
+- Likes, dislikes and their reasons persist through `/api/preferences/feedback`, which is contracted in
+  `../BACKEND.md` and stubbed in dev but **not built**. Nothing reaches a ranker until it is.
+- The re-match credit balance is only exposed inside a chat message, so other surfaces can state the
+  cost but not the remaining balance.
 - Rubik loads from the Google Fonts CDN. Self host before production.
 - In production the real API must implement the contract in `src/api/types.ts`. `dev/site-plugin.ts` does
   not ship, and `api/` is Vercel only.

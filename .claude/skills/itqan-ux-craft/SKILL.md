@@ -113,7 +113,7 @@ Visuals for each live in `itqan-design-system/references/components.md`. Missing
 
 ## 7. Responsive strategy (Itqan-specific)
 Itqan is a **responsive web app**, mobile-accessible but with a deliberate exception: its two core tasks —
-**transcript upload and gap-analysis visualisation — are desktop-favoured** and must be full-fidelity on a
+**document upload and gap-analysis visualisation — are desktop-favoured** and must be full-fidelity on a
 large screen (uploading a PDF and reading a multi-axis gap chart are painful on a phone). **Job browsing is
 the mobile-favoured surface.** So: design mobile-first for browse/notify, desktop-first for upload/analysis,
 and make both work everywhere.

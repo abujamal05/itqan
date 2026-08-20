@@ -106,10 +106,10 @@ Shows one job matched to the graduate. Must contain, in order for RTL reading (t
 - selected: `--weight-medium`, underline or fill `--color-accent`; **plus** `aria-selected` — not colour alone.
 - high-frequency, so speed transitions up (`--duration-fast`).
 
-## Transcript Upload + Confirm (Itqan-specific, the first trust moment)
+## Document Upload + Confirm (Itqan-specific, the first trust moment)
 
 - Upload zone: large drop target, clear accepted formats, desktop-optimised (uploading a PDF on mobile is friction).
-- Parse → **confirmation screen**: the extracted course list, editable inline, shown before anything downstream runs. Make correction obvious and low-effort. This screen doubles as the consent checkpoint — surface the consent control here, not buried.
+- Parse → **confirmation screen**: everything that was read, editable inline, shown before anything downstream runs. Make correction obvious and low-effort. This screen doubles as the consent checkpoint — surface the consent control here, not buried.
 - States to design explicitly: empty (nothing uploaded), loading (parsing — show progress, users tolerate ~30s only when they see work happening), partial (some lines low-confidence — flag them for review), error (unreadable scan — offer re-upload/retake, never a dead end), ideal (clean parse, confirm to proceed).
 - **Hud is forbidden on the confirmation screen** — it is the first trust moment and a mascot beside an
   extracted-data table reframes evidence as a guess. He is welcome on the empty and error states.

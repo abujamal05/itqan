@@ -3,6 +3,11 @@
 Every HTTP call either half of Itqan makes, what it sends, what it must get back,
 and which ones do not exist yet.
 
+Product truth lives in [`PRODUCT.md`](PRODUCT.md); this file is the contract only.
+Note that `"transcript"` as a document `kind` and `translating` as a pipeline
+stage are API identifiers, not positioning. Itqan reads whatever the user has, and
+the CV is the required document.
+
 Two front ends talk to one API:
 
 - **the marketing site** (`itqan-website/`, static Astro) — only the sign up, log

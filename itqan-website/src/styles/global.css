@@ -350,6 +350,13 @@ html.reveal-ready .stagger > :nth-child(4) {
   transition-delay: 120ms;
 }
 
+/* The home page's step row carries four questions now, and its first child is
+   the connecting thread, so the last item is the fifth child and was falling
+   off the end of the stagger. */
+html.reveal-ready .stagger > :nth-child(5) {
+  transition-delay: 160ms;
+}
+
 /* The reveal's own reduce override is gone: --motion-scale already zeroes the
    rise, and the fade it used to destroy is the part worth keeping. */
 

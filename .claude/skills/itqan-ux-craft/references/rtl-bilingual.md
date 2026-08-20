@@ -1,6 +1,6 @@
 # RTL & Bilingual Engineering (Itqan)
 
-Itqan is Arabic-first and bilingual, and its core content — transcripts and job postings — is inherently
+Itqan is Arabic-first and bilingual, and its core content — uploaded documents and job postings — is inherently
 mixed-direction (Arabic course titles beside English terms like SQL, React, "Data Engineer"). Getting
 this wrong is *immediately* visible to native speakers and erodes trust, which is the one thing Itqan
 cannot spend. This is craft, not translation.

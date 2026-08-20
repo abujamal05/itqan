@@ -3,20 +3,33 @@
 Everything built so far, why it was built that way, what is still open, and how to attach the real
 agents and database. Written to be read cold by someone who was not here.
 
-Two audiences:
-
-- **Engineers** — sections 1 to 8, then **section 9, the agent and database integration guide**,
-  which is the one that matters most.
-- **Whoever maintains the Itqan brief and brand docs** — **section 11** lists every contradiction,
-  stale entry and open decision found while building, written so it can be handed to Claude as-is.
+Read sections 1 to 8 for how it is built, then **section 9, the agent and database integration
+guide**, which is the one that matters most. Section 11 lists what is still open.
 
 ---
 
 ## 1. What this repo is
 
-Itqan is an Arabic-native career intelligence platform for graduates in Oman and the Gulf. It attacks
-one problem: a graduate cannot translate "Database Systems II" into the word a recruiter searches
-for, "SQL". Itqan reads your documents and does that translation, showing its working.
+Itqan is an Arabic native career navigator for **job seekers and job switchers** in Oman and the Gulf.
+
+It attacks confusion and lost time. People apply to hundreds of roles that were never a fit, cannot tell
+which are worth the evening, and have nobody telling them what to fix first. Itqan answers four
+questions in order:
+
+1. **Where do I stand today?**
+2. **Which role should I aim for?**
+3. **What is the shortest path there?** In real courses and certifications.
+4. **Which jobs can I apply to now?** Matched to that position and the stated preferences.
+
+Every answer is measured against live regional demand and what those openings currently ask for, and
+carries its reason and a real source you can open.
+
+**It is not a translation engine.** Turning "Database Systems II" into "SQL" is one step inside question
+one. An earlier pitch led with it and the framing still resurfaces in copy; the product is the position,
+the goal, the path and the fit.
+
+**Pricing.** The parts that get someone into work are free and stay free: where they stand, the path, the
+job matches and the advisor. A premium tier covers extended use of the AI.
 
 The repo holds **two deployed products** that are halves of one thing:
 
@@ -378,38 +391,22 @@ If a service cannot fill these fields honestly, **fix the service, not the type.
 
 ### 9.3 Endpoint reference
 
-Auth and the bridge live on the **site**; everything else on the **app**.
+**[`BACKEND.md`](BACKEND.md) is the contract and the only copy of it.** Every call either front end
+makes, what it sends, what it must return, which routes do not exist yet, and the reasoning behind the
+awkward ones. It used to be restated here and the two drifted, which is the failure mode a second copy
+always has.
 
-| Method & path | Project | Request | Response |
-|---|---|---|---|
-| `POST /api/placeholder/login` | site | FormData `email`, `password` | `200` + session cookie, or `401` |
-| `POST /api/placeholder/signup` | site | FormData `name`, `email`, `password`, `consent` | `200` + cookie, `409` taken, `400` invalid |
-| `GET /api/handoff` | site | session cookie | `302` to app with `?t=<signed token>` |
-| `POST /api/auth/forgot-password` | site | FormData `email` | **always** `200`, **always** the same body |
-| `POST /api/auth/reset-password` | site | FormData `token`, `password` | `200`, or `400`/`410` for a dead token |
-| `GET /api/session[?t=…]` | app | cookie, or handoff token | `Session` or `401` |
-| `POST /api/logout` | app | — | `200`, clears cookie |
-| `GET/PUT/DELETE /api/onboarding/progress` | app | `OnboardingProgress` | resumable progress |
-| `POST /api/documents` | app | multipart: `file`, `kind` | `UploadedDocument` |
-| `POST /api/analysis` | app | `{ documentIds: string[] }` | `{ jobId }` |
-| `GET /api/analysis/:jobId` | app | — | `AnalysisJob` (poll) |
-| `POST /api/profile` | app | `ConfirmedProfile` | `{ ok: true }`, marks onboarded |
-| `GET /api/profile` | app | — | `StoredProfile`, or `204` if nothing confirmed yet |
-| `PUT /api/profile` | app | `ConfirmedProfile` | `{ ok: true }`, a correction, does **not** re-onboard |
-| `GET /api/dashboard` | app | — | `DashboardData` |
-| `GET /api/jobs` | app | — | `JobMatch[]` |
-| `GET /api/courses` | app | — | `Course[]` |
+Two rules from it are worth repeating because they are easy to get backwards:
 
-**The two recovery endpoints have a rule the others do not.** `POST /api/auth/forgot-password` must
-answer `200` with an identical body whether or not the address has an account, and must take the same
-time either way. Anything else turns the form into a way to discover who is registered. The page is
-already worded for it ("if that address has an account, a link is on its way"); the backend has to
-match. `POST /api/auth/reset-password` is the opposite: it must be **honest** about a dead token, and
-answer `400` or `410` so the page can say the link expired instead of pretending the reset worked.
+- **`POST /api/auth/forgot-password` must answer `200` with an identical body and in the same time**
+  whether or not the address has an account. Anything else turns the form into a way to discover who is
+  registered. The page is already worded for it.
+- **`POST /api/auth/reset-password` must be honest about a dead token** and answer `400` or `410`, so
+  the page can say the link expired rather than pretending the reset worked.
 
 Language: the app sends an `itqan_locale` cookie (`ar`/`en`). **Services return already-localised
-strings** — job titles, "why this match", course names, journey labels, the readiness note. The UI
-never translates service content; it only formats numbers and dates.
+strings** — job titles, "why this match", course names, journey labels, the readiness note. The UI never
+translates service content; it only formats numbers and dates.
 
 ### 9.4 What is faked today and must become real
 
@@ -487,9 +484,10 @@ field needs a real `confidence` and, where possible, an `evidence` string naming
 document it came from ("Transcript header"). Dates OCR worst in practice; the UI already treats a
 low-confidence date as normal rather than exceptional.
 
-**2. Translate** — the core product. Turns "Database Systems II" into "SQL". Each `Skill` keeps
-`fromCourse`, which is what lets the confirm screen show provenance and the job cards build an
-evidence chain.
+**2. Translate** — the agent's internal name, and one step, not the product. Turns "Database Systems II"
+into "SQL". Each `Skill` keeps `fromCourse`, which is what lets the confirm screen show provenance and
+the job cards build an evidence chain. The stage name survives in `AnalysisStage` and the DB enum; the
+user-facing label for it is "Understanding your background".
 
 **3. Match** — ranks real postings and courses against confirmed skills, filtered by `Preferences`.
 `score` is 0..1; anything below `TRUST_THRESHOLD` (0.85) renders as "Suggested — confirm"
@@ -552,110 +550,10 @@ polling an asset URL for a `200` is not a deploy check — it always succeeds. P
 
 ---
 
-## 11. For the brief and the brand docs
+## 11. Open items
 
-Everything below was found while building. It is written to be handed to Claude to update the Itqan
-brief and brand documents. Nothing here was silently "fixed" in the docs — the code went one way and
-the discrepancy was recorded.
-
-### 11.1 Contradictions inside the current documents
-
-**a. The "retired ochre" contradiction.** `itqan-brand`'s review checklist says *"No retired ochre
-`#D08C2F` anywhere — grep before shipping"*, while `tokens.css` line 16 defines that exact value as
-`--gold: #D08C2F; /* brand gold */` and builds the whole gold ramp from it. These cannot both be
-true. The code follows the tokens. **Someone must decide which document is wrong**; if the ochre
-really is retired, the entire palette needs revisiting.
-
-**b. `components.md` versus the locked colour rule.** The component spec says ghost buttons use
-`--color-accent` (gold) as their text. The design system separately locks *"gold is never body text
-on light"*. Gold on paper measures **2.65:1**, far under the 4.5 floor. The locked rule was followed
-and ghost buttons use text colour. **`components.md` should be corrected.**
-
-**c. `--color-text-muted` fails WCAG AA on two of three surfaces.** Measured:
-
-| Surface | Ratio | Verdict |
-|---|---|---|
-| `--color-surface` (white) | 4.58:1 | passes |
-| `--color-bg` (paper) | **4.32:1** | fails |
-| `--color-surface-sunken` (sand) | **3.70:1** | fails |
-
-Tokens are locked, so muted is used only inside white cards and everything on paper or sand takes
-full text colour. **The design system needs a muted step that clears 4.5:1 on paper.** This is the
-single most useful token-level fix available.
-
-**d. The brief's scope boundary versus what was built.** The brief states *"Itqan is a translation
-engine — not a job board, not a course shop."* The product now has a job postings page and a courses
-page, both requested. They are framed as evidence-linked recommendations with live sources, not as a
-marketplace, and the courses page states plainly that Itqan earns nothing from them. **The brief's
-scope sentence should be reworded** to match, or the pages reconsidered.
-
-**e. "Everything is free" versus course prices.** The brief says everything is free, no pricing ever.
-That is true of *Itqan*, but third-party courses have prices and the courses page now shows them
-prominently. These are not really in tension, but the brief should say so explicitly: **Itqan is
-free; courses it points to may not be, and their cost is always shown up front.**
-
-> **Resolved differently, 2026-08-18.** The premise changed rather than the tension: Itqan now has a
-> free tier and a premium tier for extended AI use, so "everything is free, no pricing ever" is simply
-> retired. The surviving claim is narrower and stronger — the account is free and nobody pays to get
-> hired. See `itqan-website/CLAUDE.md`.
-
-### 11.2 Stale entries in the brief's open-decisions list
-
-- **"Three of four Hud poses TBD (scanning, celebrating, empathetic)."** Seven poses have shipped and
-  are in use: `idle`, `waving`, `flying-in`, `thinking`, `analyzing`, `celebrating`, `error`. This
-  entry is out of date.
-- **Reference files are cited but do not exist.** `itqan-brand/SKILL.md` points to
-  `references/voice-writing.md`, `logo-program.md`, `hud-mascot.md`, `audience.md`,
-  `trust-architecture.md` and `delivery-pitfalls.md`. **None are installed** — only the SKILL.md
-  summaries. The same is true of the review skill's own `audit.py` and `rulebook.md`. Work proceeded
-  from the summaries. Either write the files or remove the pointers.
-- **Layout grid still TBD.** `72rem` was a working assumption. It now has documented large-display
-  steps (84rem above 1600px, 96rem above 1920px) because a 27-inch monitor showed the page as a
-  narrow ribbon. Worth promoting to a real decision.
-- **UI icon style system TBD.** `lucide-react` was chosen as a neutral, tree-shakeable line set
-  precisely *because* the brief marks this undecided and says not to invent. Confirm or replace.
-
-### 11.3 Asset defects that need the artwork owner, not code
-
-**a. The mascot's eyes are holes in the alpha channel.** Measured on a decoded video frame, the alpha
-across the eye reads `251 (cream) → 0 → 232 (navy pupil)`. The eye highlight is **cut out**, not
-painted. Whatever is behind Hud shows through it: on paper it looks like a white highlight and reads
-correctly, which is why it went unnoticed for so long; on the dark canvas the eye fills with
-near-black, and behind a coloured glow it takes the glow's colour.
-
-Worked around in CSS by flooding the holes with paper via a blurred drop-shadow in both themes (3px
-was the measured minimum that fills the hole completely; at 1px the pixel only reached 188,188,189).
-**The real fix is to re-export the mascot with the eyes painted opaque.** Then the workaround drops
-back to a 1px dark-mode keyline.
-
-**b. WebM alpha does not work in WebKit.** Every browser on iPhone and iPad plus Safari on macOS
-decodes the WebM but discards the alpha channel, painting every transparent pixel solid black. There
-is no feature query for this, so the engine is identified up front — `navigator.vendor` is
-`Apple Computer, Inc.` on every WebKit browser and nothing else, which also catches Chrome and
-Firefox on iOS — and those browsers get the transparent PNG and never request the clip at all. Three
-further failures are caught at runtime and fall back the same way: playback that never starts (Low
-Power Mode, a data saver, a refused autoplay), a decode error, and a frame that comes back opaque on
-any engine that regresses. **The real fix is to ship an HEVC-with-alpha companion file** alongside
-each `.webm`; the detection can then be deleted rather than tuned.
-
-Both are one job for whoever owns the mascot artwork.
-
-### 11.4 Product decisions taken during the build
-
-Recorded so the brief can absorb or overturn them.
-
-| Decision | Reasoning |
-|---|---|
-| **No country flags for language choice** | A flag names a country, not a language. Arabic is not Oman's alone and English is not Britain's; a Union Jack shown to a graduate from Egypt or Pakistan says the product was not built for them. Each language appears in its own script. |
-| **Language is not an onboarding step** | Choosing a language is a preference, not work, and three steps reads as less commitment than four. |
-| **Questions asked during the pipeline wait** | Four agents take real time. Asking something useful converts dead time into signal, and the wait costs nothing. |
-| **Dashboard order set by the client** | Where you stand → highest-yield skills → skills to unlock → job postings. This puts the readiness score above concrete capability, which runs against the brand's capability-first rule. The *framing* was kept protective: the number never appears alone, and gaps are never a danger colour. **Flagged as a live tension**, easily reverted. |
-| **`interests` and `notes` replaced by `Preferences`** | Every field in the four questions is something the matching agent can filter or rank on directly. A free tag cloud was not. |
-| **Journey roadmap at the end of the dashboard** | Restored from the original design, where it sat. It is orientation, not an action, so it follows the day's content. |
-| **No hamburger menu** | A drawer hiding three destinations costs a tap and a mental model to save nothing. |
-| **Course images dropped** | They were decorative, pushed the decision content below the fold on mobile, and a stock photo cannot say whether a course is worth eight hours. |
-
-### 11.5 Still open
+Everything below is genuinely unresolved. Contradictions found during the build that have since been
+settled are not recorded here; the code and the skills are the record.
 
 - **Forgot-password** is built and verified end to end against stubbed endpoints, and is **unlinked**
   until the backend can send an email. See section 5 for why, and 9.3 for the two endpoints it needs.
@@ -670,29 +568,11 @@ Recorded so the brief can absorb or overturn them.
   means touching the site's forms and `config.ts` together.
 - **No accuracy figure may be published** until measured against real documents. The brief blocks
   this and the UI states no figure anywhere.
-
----
-
-## 12. Commit history
-
-```
-(newest last read: this branch, design/palette-and-life-layer)
-
-54165c8  Add the dashboard profile section (task 6)
-ccf3e93  Re-upload CV or transcript from the sidebar (task 8)
-ebffb59  Keep the chosen theme and language through onboarding (task 5)
-b4be683  Add the "Who we are" page (task 3)
-42160a0  Four onboarding and auth fixes (tasks 9, 4, 1, 2)
-b31145c  Add VPS deploy workflow and wire the single-host build config
-
-(earlier, on main)
-
-c8f0753  Rework the hero, the onboarding questions and the mascot compositing
-912f85f  Address twelve review findings across the site and the app
-ff10feb  Fix two layouts that broke on narrow screens
-bccfc92  Fix the sidebar cutting off partway down the page
-3bfa6e7  Make authentication work across the two Vercel deployments
-```
-
-Each message states the root cause rather than the symptom. They are worth reading in order to
-understand why the auth design is shaped the way it is.
+- **The Arabic site copy is a version behind.** The English pages were repositioned in August 2026 and
+  the Arabic was deliberately left; it still sells the retired framing. Two strings on the legal pages
+  were updated because they described a structure that no longer renders. Arabic is the default locale,
+  so this is the next content job.
+- **The mascot's eyes are holes in the alpha channel**, filled at render time by a double paper
+  drop-shadow in CSS. The real fix is re-exporting the artwork with opaque eyes.
+- **WebM alpha does not work in WebKit**, so every browser on iOS and Safari on macOS needs the HEVC
+  companion file. Both are shipped; the contract is in `Hud.astro`.
