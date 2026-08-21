@@ -20,8 +20,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight, Camera, Check, FileText, GraduationCap, Pencil, Sparkles, Target,
-  User as UserIcon, X,
+  ArrowRight, Bot, Camera, Check, FileText, GraduationCap, Pencil, Sparkles,
+  Target, User as UserIcon, X,
 } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useApi } from '../state/api';
@@ -30,11 +30,13 @@ import { useAsync } from '../lib/useAsync';
 import {
   Button, Card, Chip, ErrorState, InputField, LoadingBlock,
 } from '../components/ui';
-import type { ConfirmedProfile, Preferences, StoredProfile } from '../api';
-import { emptyPreferences } from '../api';
+import type { ConfirmedProfile, Preferences, StoredProfile, Usage } from '../api';
+import { emptyPreferences, REQUIRED_KIND } from '../api';
 import {
   MIN_AGE, birthDateProblem, earliestBirthDate, isoDate, latestBirthDate,
 } from '../lib/age';
+import { fileSize } from '../lib/fileSize';
+import { UsageMeters } from '../components/UsageMeters';
 
 /* ------------------------------------------------------------------ parts -- */
 
@@ -236,10 +238,26 @@ interface MissingItem {
 }
 
 export function Profile() {
-  const { t, locale, formatDate } = useI18n();
+  const { t, locale, formatDate, formatNumber } = useI18n();
   const api = useApi();
   const { user } = useAuth();
   const { data, loading, error, reload } = useAsync((s) => api.getProfile(s), [api, locale]);
+
+  /**
+   * The AI allowance. Its own request, and its own failure.
+   *
+   * Deliberately NOT folded into the profile fetch: `GET /api/usage` does not
+   * exist in production yet (BACKEND.md §4), and a 404 there must not take the
+   * whole profile screen down with it. Null — whether the route is missing, the
+   * request failed, or it simply has not landed — renders no section at all,
+   * which is the honest state. Zeros would be a figure nobody measured.
+   */
+  const [usage, setUsage] = useState<Usage | null>(null);
+  useEffect(() => {
+    const ac = new AbortController();
+    api.getUsage(ac.signal).then(setUsage).catch(() => setUsage(null));
+    return () => ac.abort();
+  }, [api, locale]);
 
   const [editing, setEditing] = useState<EditKey | null>(null);
   const [saving, setSaving] = useState(false);
@@ -546,20 +564,48 @@ export function Profile() {
       </Section>
 
       {/* Documents. */}
+      {/* ---- Documents ------------------------------------------------------
+          REPLACE, NOT DELETE, and that is a data limit rather than a design
+          preference. `DELETE /api/documents/:id` does not exist (BACKEND.md §3),
+          so there is no honest way to offer removal — and a disabled delete
+          button on every row would be worse than none, advertising a capability
+          the product does not have.
+
+          What it says instead is true today and stays true afterwards: the CV
+          is the one document the pipeline cannot run without, so it is replaced
+          rather than removed. When the route lands, the extra documents gain a
+          remove control and the CV keeps this wording. */}
       <Section id="documents" title={t('profile.documents')} icon={FileText} editing={false}>
         <div className="stack stack--sm">
           {p.documents?.length ? (
-            <ul className="stack stack--sm">
+            <ul className="doclist">
               {p.documents.map((d) => (
-                <li key={d.id} className="profile__row">
-                  <span className="profile__label">{t(`doc.${d.kind}`)}</span>
-                  <span className="profile__value"><bdi>{d.fileName}</bdi></span>
+                <li key={d.id} className="doclist__item">
+                  <FileText size={16} className="doclist__icon" aria-hidden="true" />
+                  <span className="doclist__main">
+                    <span className="doclist__name"><bdi>{d.fileName}</bdi></span>
+                    <span className="doclist__meta">
+                      {t(`doc.${d.kind}`)}
+                      {Number.isFinite(d.sizeBytes) && d.sizeBytes > 0 && (
+                        <> · <span className="num">{fileSize(d.sizeBytes, t, formatNumber)}</span></>
+                      )}
+                    </span>
+                  </span>
+                  {/* The required one is marked, because "why can I not remove
+                      this" is answered better by a label than by a blocked
+                      action. */}
+                  {d.kind === REQUIRED_KIND && (
+                    <span className="doclist__tag">{t('profile.docRequired')}</span>
+                  )}
                 </li>
               ))}
             </ul>
           ) : (
             <p className="text-sm muted">{t('profile.noDocuments')}</p>
           )}
+
+          <p className="text-sm">{t('profile.docsCvRequired')}</p>
+
           {/* Says the consequence before the action, not after it. Replacing a
               document re-runs the pipeline and rewrites the skills, courses and
               matches this person may have spent time reading — that is worth
@@ -574,6 +620,24 @@ export function Profile() {
           </div>
         </div>
       </Section>
+
+      {/* ---- AI usage --------------------------------------------------------
+          THEIR consumption, not the price list. What each tier includes is
+          general information and belongs on a page of its own; what belongs
+          here is the one thing only this screen can tell them — how much of
+          their own allowance is left, and when it comes back.
+
+          `GET /api/usage` is not built in production yet (BACKEND.md §4), so
+          the section renders nothing at all rather than zeros: a meter reading
+          "0 of 30" when the truth is unknown is a fabricated statistic, and
+          this product's rules forbid those outright. The dev stub implements
+          the documented contract and counts real sends, so the meters move when
+          you actually use Hud. */}
+      {usage && (
+        <Section id="ai" title={t('profile.aiTitle')} icon={Bot} editing={false}>
+          <UsageMeters usage={usage} />
+        </Section>
+      )}
 
       {/* Preferences: the four onboarding answers, editable because they are
           the user's opinion rather than an extraction. */}

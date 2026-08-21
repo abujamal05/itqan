@@ -351,5 +351,21 @@
   "a11y.closeDialog": "إغلاق",
   "a11y.mapZoomIn": "تكبير",
   "a11y.mapZoomOut": "تصغير",
-  "a11y.mapRecentre": "ارجع لمكانك"
+  "a11y.mapRecentre": "ارجع لمكانك",
+  "file.kb": "{n} كيلوبايت",
+  "file.mb": "{n} ميجابايت",
+  "profile.docRequired": "مطلوبة",
+  "profile.docsCvRequired": "سيرتك الذاتية هي المستند الوحيد اللي ما يشتغل إتقان بدونه، عشان كذا تُستبدل بدل ما تُحذف.",
+  "profile.aiTitle": "استخدامك للذكاء الاصطناعي",
+  "profile.aiRescans": "إعادة قراءة المستندات",
+  "profile.aiMessages": "رسائل مع Hud - هود",
+  "profile.aiUsedOf": "{used} من {limit}",
+  "profile.aiLeft": "باقي {n}",
+  "profile.aiNoneLeft": "ما بقي شي",
+  "profile.aiUnlimited": "بلا حد",
+  "profile.aiResetsDay": "ترجع إلى {limit} بكرة",
+  "profile.aiResetsWeek": "ترجع إلى {limit} في {date}",
+  "profile.aiUsageUnavailable": "استخدامك غير متاح حالياً.",
+  "profile.aiPlanFree": "الاشتراك المجاني",
+  "profile.aiPlanPaid": "الاشتراك المدفوع"
 }

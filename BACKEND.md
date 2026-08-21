@@ -669,17 +669,47 @@ the front end keeps owning the wording in both languages.
 ideally `isPrimary: boolean` so primacy is a server fact rather than something
 the client infers from sort order.
 
-### 4. AI usage — `GET /api/usage`
+### 4. AI usage — `GET /api/usage`  and  `User.plan`
 
+**The limits are decided** (product owner, 2026-08-21). There are two, they are
+measured in different units, and they reset on different clocks:
+
+| | Free | Paid |
+|---|---|---|
+| Document rescans | 1 a week | 3 a week |
+| Messages with Hud | 30 a day | 90 a day |
+
+The paid tier's rescan figure is taken as **per week**, mirroring the free
+tier's period — it was given as "3 document rescans" without one. Worth
+confirming before this is built.
+
+**The front end is built** (`components/UsageMeters.tsx`, on the profile screen)
+and `dev/site-plugin.ts` implements this contract, counting real sends so the
+meters move when Hud is actually used. In production the call 404s until this
+ships, and the section renders NOTHING rather than zeros — a meter reading
+"0 of 30" when the truth is unknown is a fabricated statistic.
+
+The tier comparison above is not on that screen: it is general information and
+belongs on a plan page of its own. Settings shows only what is specific to this
+person.
+
+```jsonc
+GET /api/usage -> {
+  "plan": "free",
+  "rescans":  { "used": 1,  "limit": 1,  "period": "week", "resetsAt": "2026-08-24T00:00:00Z" },
+  "messages": { "used": 12, "limit": 30, "period": "day",  "resetsAt": "2026-08-22T00:00:00Z" }
+}
 ```
-GET /api/usage -> { used: number, limit: number | null, unit: "runs", periodEnd: "…" }
-```
 
-`limit: null` means unlimited, and the UI renders no meter for it. **A raw number
-with nothing to compare it against tells a job seeker nothing**, so if there is no
-limit this section should not ship at all.
-
-The unit needs deciding before the UI can be honest: tokens are meaningless to
-this audience, so `runs` (a pipeline run or a chat exchange) is the suggestion.
-Whatever it is, it has to be the same unit the premium tier is sold in, or the
-screen and the pricing page will disagree.
+- **Two counters, not one.** A single `used`/`limit` pair cannot express a weekly
+  allowance and a daily one at the same time, which is what the product sells.
+- `resetsAt` rather than a duration, so the UI can say when it comes back in
+  both languages without doing calendar arithmetic against an unknown timezone.
+- `limit: null` means unlimited, and the UI renders no meter for that row.
+- **`User.plan: "free" | "paid"` is needed regardless of the usage route.**
+  Without it the settings screen cannot say which column is the user's, which is
+  exactly why it currently presents free-versus-paid rather than "your plan".
+- The server owns enforcement. When a limit is reached, the rescan and chat
+  routes should refuse with `429` and a machine-readable reason
+  (`{ error: "rescan_limit" | "message_limit", resetsAt }`) so the front end
+  keeps owning the wording in both languages — the same rule as `409 last_cv`.

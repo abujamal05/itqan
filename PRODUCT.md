@@ -55,6 +55,13 @@ Success for the marketing site is one thing only: a stranger creates a free acco
 the job matches and the advisor. A premium tier covers extended use of the AI. Never write an absolute
 like "free forever" or "no payment at any point"; they were true of an earlier model and are not now.
 
+"Extended use" is two allowances, decided 2026-08-21. Free is **one document rescan a week and 30
+messages a day** with Hud; paid is **three rescans a week and 90 messages a day**. The paid tier raises
+only these — it does not put any of the four answers behind a payment. The profile screen shows a person their own
+consumption against these limits, never the price list — the tier comparison belongs on a plan page of
+its own. The contract behind it is [`BACKEND.md`](BACKEND.md) §4; where it is unavailable, no screen may
+show a usage number at all.
+
 ## Positioning
 
 Itqan does not attack unemployment in the aggregate. It attacks the **distance between where someone is

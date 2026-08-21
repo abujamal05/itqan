@@ -351,5 +351,21 @@
   "a11y.closeDialog": "Close",
   "a11y.mapZoomIn": "Zoom in",
   "a11y.mapZoomOut": "Zoom out",
-  "a11y.mapRecentre": "Back to where you are"
+  "a11y.mapRecentre": "Back to where you are",
+  "file.kb": "{n} KB",
+  "file.mb": "{n} MB",
+  "profile.docRequired": "Required",
+  "profile.docsCvRequired": "Your CV is the one document Itqan cannot work without, so it is replaced rather than removed.",
+  "profile.aiTitle": "Your AI usage",
+  "profile.aiRescans": "Document rescans",
+  "profile.aiMessages": "Messages with Hud - هود",
+  "profile.aiUsedOf": "{used} of {limit}",
+  "profile.aiLeft": "{n} left",
+  "profile.aiNoneLeft": "None left",
+  "profile.aiUnlimited": "Unlimited",
+  "profile.aiResetsDay": "Resets to {limit} tomorrow",
+  "profile.aiResetsWeek": "Resets to {limit} on {date}",
+  "profile.aiUsageUnavailable": "Your usage is not available right now.",
+  "profile.aiPlanFree": "Free plan",
+  "profile.aiPlanPaid": "Paid plan"
 }

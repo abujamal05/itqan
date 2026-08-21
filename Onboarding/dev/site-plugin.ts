@@ -116,6 +116,34 @@ const CHAT_TURN_MS = 900;
 
 /** One re-run a week, as production allows. Spent, it stops being offered. */
 let rerunCredits = 1;
+
+/**
+ * The AI allowances, per account.
+ *
+ * The free tier is one document rescan a week and 30 messages a day; the paid
+ * tier is three and 90 (BACKEND.md §4). Counted here rather than faked, so the
+ * meters on the profile screen move when you actually use the thing — a stub
+ * that returned a constant would have let a broken counter ship.
+ *
+ * `rescans` deliberately shares its meaning with `rerunCredits` above: both are
+ * the weekly re-read. They are separate variables only because that one predates
+ * this and gates the chat proposal.
+ */
+const PLAN_LIMITS = {
+  free: { rescans: 1, messages: 30 },
+  paid: { rescans: 3, messages: 90 },
+} as const;
+
+const messagesUsed = new Map<string, number>();
+const rescansUsed = new Map<string, number>();
+
+/** Midnight tonight, and next Monday — when each counter goes back to zero. */
+function resetsAt(period: 'day' | 'week'): string {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + (period === 'day' ? 1 : ((8 - d.getDay()) % 7) || 7));
+  return d.toISOString();
+}
 const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /**
@@ -562,6 +590,28 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
         if (url === '/api/jobs') return json(res, 200, jobs(locale));
         if (url === '/api/courses') return json(res, 200, courses(locale));
 
+        /* What this account has used of its AI allowance. Everyone is on the
+           free tier here: there is no plan field on the account yet, which is
+           the other half of BACKEND.md §4. */
+        if (url === '/api/usage' && req.method === 'GET') {
+          const plan = 'free' as const;
+          return json(res, 200, {
+            plan,
+            rescans: {
+              used: rescansUsed.get(me.id) ?? 0,
+              limit: PLAN_LIMITS[plan].rescans,
+              period: 'week',
+              resetsAt: resetsAt('week'),
+            },
+            messages: {
+              used: messagesUsed.get(me.id) ?? 0,
+              limit: PLAN_LIMITS[plan].messages,
+              period: 'day',
+              resetsAt: resetsAt('day'),
+            },
+          });
+        }
+
         /* Recommendation feedback. Append-only: the history is the signal, and
            the current verdict is derived from it rather than stored twice. */
         if (url === '/api/preferences/feedback') {
@@ -628,6 +678,12 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           /* A question OR a file is enough. Requiring text alongside an
              attachment would make "here, read this" impossible to express. */
           if (!question && !attachments.length) return json(res, 400, { error: 'empty_question' });
+
+          /* Counted after the validity check, before the answer: a rejected
+             empty question costs nothing, and a question that was asked costs
+             one whether or not the user likes the answer. */
+          messagesUsed.set(me.id, (messagesUsed.get(me.id) ?? 0) + 1);
+
           await pause(CHAT_TURN_MS);
 
           const thread = openThread(me.id, String(sent.threadId ?? ''), question || attachments[0].fileName);
@@ -686,6 +742,7 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           }
           if (rerunCredits <= 0) return json(res, 429, { error: 'rerun_limit_reached' });
           rerunCredits -= 1;
+          rescansUsed.set(me.id, (rescansUsed.get(me.id) ?? 0) + 1);
           return json(res, 200, { jobId: `job_rerun_${Date.now().toString(36)}` });
         }
 

@@ -24,6 +24,7 @@ import {
   AlertCircle, Check, FileText, Image as ImageIcon, Paperclip, RotateCw, Upload as UploadIcon, X,
 } from 'lucide-react';
 import { useI18n } from '../i18n';
+import { fileSize } from '../lib/fileSize';
 import { DOCUMENT_KINDS, REQUIRED_KIND, normaliseKind } from '../api';
 import type { DocumentKind, UploadedDocument } from '../api';
 import { useApi } from '../state/api';
@@ -260,7 +261,7 @@ export function DocumentUpload({
                   ))}
                 </select>
                 <span className="doc__size num">
-                  {formatNumber(Math.max(1, Math.round(i.sizeBytes / 1024)))} KB
+                  {fileSize(i.sizeBytes, t, formatNumber)}
                 </span>
               </div>
 
