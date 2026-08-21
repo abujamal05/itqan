@@ -134,12 +134,20 @@ export function CareerGoal({
 
   return (
     <div className="goal">
+      {/* STACKED, not a row. This was a wide three-part line — icon, label and
+          role all on one baseline — which stretched the card it sits in into a
+          long rectangle with air in the middle of it and nothing to fill it.
+          Icon, then a small label, then the role reads as one object at any
+          width, and it lets the card be as narrow as its contents. */}
       <div className="goal__text">
-        <span className="eyebrow">{t('dash.targetLabel')}</span>
+        <span className="goal__icon" aria-hidden="true">
+          <Target size={20} />
+        </span>
+        <span className="goal__label">{t('dash.targetLabel')}</span>
+
         {role ? (
           <>
             <p className="goal__role">
-              <Target size={17} aria-hidden="true" />
               <strong><bdi>{role}</bdi></strong>
             </p>
             {/* Never dropped. The label is the whole difference between the
@@ -148,11 +156,13 @@ export function CareerGoal({
           </>
         ) : (
           <>
-            {/* A state, not a blank. `goal__role--finding` drops the gold and
-                the weight: this is not a verdict, it is an open question. */}
+            {/* ONE WORD. Not knowing yet is the most common place this product's
+                users stand in, and the previous four-word sentence made it look
+                like an unfinished field rather than a state. Same shape and
+                position as a named role, quieter weight, so the slot never reads
+                as empty or as a warning. */}
             <p className="goal__role goal__role--finding">
-              <Target size={17} aria-hidden="true" />
-              <span>{t('dash.goalFinding')}</span>
+              <span>{t('dash.goalExploring')}</span>
             </p>
             {/* The one place on this page that points at Hud, and it earns it:
                 he is where a role actually gets found, and this is the only

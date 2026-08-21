@@ -17,13 +17,17 @@
     "lighthouse": "node scripts/lighthouse.mjs"
   },
   "dependencies": {
+    "@xyflow/react": "^12.11.3",
+    "d3-shape": "^3.2.0",
     "lucide-react": "^1.26.0",
+    "motion": "^13.1.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.18.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.0",
+    "@types/d3-shape": "^3.1.8",
     "@types/node": "^26.1.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",

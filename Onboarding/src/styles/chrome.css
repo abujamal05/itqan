@@ -441,134 +441,11 @@
    about a person, and it is what made the section read as fixed and rigid.
    `auto` columns with the current stage on `1.4fr` let the one that matters take
    the room, and the finished ones shrink to what they need. */
-.journey {
-  position: relative;
-  display: flex; flex-wrap: wrap; align-items: stretch;
-  gap: var(--space-3);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-6) var(--space-5);
-  list-style: none; margin: 0;
-}
-
-/* ---- The thread ----------------------------------------------------------
-   ONE SHARED VALUE drives the whole geometry: where a marker's centre sits
-   inside its own stage. Everything else is derived from it, so nothing can
-   drift out of alignment when a padding changes.
-
-     --rail-y = stage padding-block-start + stage border + half the marker
-
-   The rail is drawn PER STAGE, spanning that stage's own width, which is why
-   it always passes through that stage's own marker no matter how wide the
-   stage is. A single track across the whole list cannot do this: the current
-   stage is deliberately wider than the others, so marker centres are not
-   evenly spaced and no constant inset lands on them. That is exactly how the
-   previous version failed — measured in the browser at 12px above the markers,
-   109px of bare line at each end, and a fill overshooting its marker by 45px.
-
-   Half-rails on the ends so the line starts and stops at a marker rather than
-   at the panel's padding. Colour carries progress: a stage that is done or
-   current has an accent rail behind it, upcoming stays a hairline. */
-.journey { --rail-y: calc(var(--space-3) + 1px + 18px); }
-
-.journey__rail {
-  position: absolute;
-  z-index: 0;
-  inset-block-start: calc(var(--rail-y) - 1px);
-  /* Half the gap PLUS the stage's own border. Absolute insets resolve against
-     the padding box, so `gap / -2` alone stopped 1px short at each end and left
-     a visible 2px break in the middle of every join — clearly a dotted line
-     rather than a continuous one once rendered. */
-  inset-inline: calc((var(--space-3) / -2) - 1px);
-  block-size: 2px;
-  background: var(--color-border);
-}
-.journey__stage:first-child .journey__rail { inset-inline-start: 50%; }
-.journey__stage:last-child  .journey__rail { inset-inline-end: 50%; }
-.journey__stage:only-child  .journey__rail { display: none; }
-
-.journey__stage[data-state='done'] .journey__rail,
-.journey__stage[data-state='current'] .journey__rail {
-  background: var(--color-border-accent);
-}
-
-.journey__stage {
-  position: relative; z-index: 1;
-  flex: 1 1 8rem; min-inline-size: 0;
-  display: flex; flex-direction: column; align-items: center;
-  gap: var(--space-2); text-align: center;
-  padding: var(--space-3) var(--space-2);
-  border-radius: var(--radius-md);
-  border: 1px solid transparent;
-  transition: background-color var(--duration-base) var(--ease-hover),
-              border-color var(--duration-base) var(--ease-hover);
-}
-
-/* The one stage that matters gets the room, the surface and the weight.
-   Its surface is drawn on a pseudo-element rather than on the stage itself, so
-   it can sit ABOVE the rail. The rail is a child of the stage, so a background
-   on the stage paints underneath it — and the gold line ran straight across
-   the "you are here" card like a skewer. Now the card interrupts the path,
-   which is what standing on it should look like. */
-.journey__stage[data-state='current'] {
-  flex-grow: 1.4;
-  border-color: transparent;
-}
-.journey__stage[data-state='current']::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  border-radius: var(--radius-md);
-  /* OPAQUE BASE, then the tint on top. `background: var(--color-accent-tint)`
-     alone did NOT occlude the rail, because that token is 16% alpha in both
-     themes — so the gold thread read straight through the card it was supposed
-     to be interrupted by, and z-index: 1 above the rail bought nothing. It was
-     visible in light mode and glaring in dark, where the rail is `--gold-400`
-     on navy. Compositing the same tint over an opaque surface keeps the
-     intended colour and actually hides what is behind it.
-     This also fixes the LAST stage: once "applying for jobs" becomes current,
-     it is this card the thread was cutting through. */
-  background-color: var(--color-surface);
-  background-image: linear-gradient(var(--color-accent-tint), var(--color-accent-tint));
-  border: 1px solid var(--color-border-accent);
-}
-/* Content rides above the card it sits on. */
-.journey__stage > .journey__marker,
-.journey__stage > .journey__body,
-.journey__stage > .sr-only { position: relative; z-index: 2; }
-/* Finished work recedes. It is context, not the answer. */
-.journey__stage[data-state='done'] { opacity: 0.85; }
-.journey__stage[data-state='upcoming'] { opacity: 0.7; }
-
-.journey__marker {
-  inline-size: 36px; block-size: 36px; border-radius: var(--radius-full);
-  display: grid; place-items: center;
-  background: var(--color-surface);
-  border: 2px solid var(--color-border);
-  color: var(--color-text);
-  flex: 0 0 auto;
-}
-.journey__dot {
-  inline-size: 8px; block-size: 8px; border-radius: var(--radius-full);
-  background: var(--color-border-strong);
-}
-.journey__stage[data-state='done'] .journey__marker {
-  background: var(--color-accent); border-color: var(--color-accent);
-  color: var(--color-text-on-gold);
-}
-.journey__stage[data-state='current'] .journey__marker {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 4px var(--color-accent-tint);
-}
-.journey__stage[data-state='current'] .journey__dot { background: var(--color-accent); }
-
-.journey__body { display: flex; flex-direction: column; gap: var(--space-1); min-inline-size: 0; }
-.journey__label { font-size: var(--text-sm); font-weight: var(--weight-medium); }
-.journey__stage[data-state='upcoming'] .journey__label { font-weight: var(--weight-regular); }
-.journey__stage[data-state='current'] .journey__label { font-weight: var(--weight-semibold); }
-.journey__detail { font-size: var(--text-xs); color: var(--color-text-muted); }
+/* ---- The journey's captions ------------------------------------------------
+   The journey ITSELF is a React Flow canvas now (`components/map/`, styled in
+   `map.css`), so the hand-built curve, its track and fill, and the absolutely
+   positioned stage markers that used to live here are gone. What remains is the
+   text around the map, which is ordinary product chrome. */
 .journey__count { font-size: var(--text-sm); color: var(--color-text-muted); }
 
 /* The destination. A track with no endpoint is a progress bar; this is what
@@ -580,6 +457,15 @@
 }
 .journey__target svg { color: var(--color-accent-ink); flex: 0 0 auto; }
 
+/* The low-readiness variant of the same caption. Same shape, different news:
+   the destination is still named, it is just not the postings page yet. */
+.journey__building {
+  display: flex; align-items: center; gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+.journey__building svg { color: var(--color-accent-ink); flex: 0 0 auto; }
+
 /* The same pairing in the readiness block, so the two read as one statement. */
 .target {
   display: flex; align-items: center; gap: var(--space-2);
@@ -587,86 +473,3 @@
 }
 .target svg { color: var(--color-accent-ink); flex: 0 0 auto; }
 .target__hint { color: var(--color-text-muted); font-style: normal; }
-
-/* ---- The one stage that leads somewhere ----------------------------------
-   Only the final stage links, to the postings page (Journey.tsx, STAGE_LINKS).
-   The anchor holds just the label so the accessible name is the stage name,
-   and `::after` stretches the hit area over the whole stage — a 14px text link
-   inside a 120px card is a target nobody finds on a phone. z-index 3 puts it
-   above the current stage's card (1) and its content (2); nothing else in the
-   panel is interactive, so it cannot swallow another control. */
-.journey__go {
-  display: inline-flex; align-items: center; gap: var(--space-2);
-  color: inherit; text-decoration: none;
-  font-size: var(--text-sm); font-weight: var(--weight-medium);
-}
-.journey__go::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  border-radius: var(--radius-md);
-}
-.journey__go .go {
-  color: var(--color-accent-ink);
-  flex: 0 0 auto;
-  transition: transform var(--duration-base) var(--ease-hover);
-}
-/* Travel is a transform on an inline icon, so it costs no layout, and the
-   distance rides --motion-scale like everything else here. */
-.journey__go:hover .go { transform: translateX(calc(3px * var(--motion-scale))); }
-[dir='rtl'] .journey__go .go { transform: scaleX(-1); }
-[dir='rtl'] .journey__go:hover .go { transform: scaleX(-1) translateX(calc(3px * var(--motion-scale))); }
-
-/* A linked stage says so before it is clicked: it lifts out of the "upcoming"
-   dimming on hover, and the label underlines. Both are state changes on an
-   element the user is already pointing at, so neither needs to shout. */
-.journey__stage[data-linked] { cursor: pointer; }
-.journey__stage[data-linked]:hover { opacity: 1; }
-.journey__stage[data-linked]:hover .journey__label { text-decoration: underline; }
-.journey__stage[data-linked]:hover .journey__marker { border-color: var(--color-border-accent); }
-/* The ring goes on the STAGE, not on the stretched anchor: the anchor's box is
-   the label, so a focus ring on it outlined two words in the middle of a card
-   the keyboard user had just landed on. */
-.journey__stage:has(.journey__go:focus-visible) {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
-}
-.journey__go:focus-visible { outline: none; }
-
-/* Phones: the track runs downward and the stages become rows. The thread has to
-   move with it — as a horizontal rule at 42px it would cut across the column. */
-@media (max-width: 40rem) {
-  .journey { flex-direction: column; gap: var(--space-2); }
-  .journey__stage {
-    flex: 0 0 auto;
-    flex-direction: row; align-items: center; text-align: start;
-    gap: var(--space-3);
-  }
-  .journey__stage[data-state='current'] { flex-grow: 0; }
-  .journey__body { flex: 1; }
-
-  /* The rail turns vertical and runs down the marker column. Same principle:
-     it spans this stage's own block extent and passes through this stage's own
-     marker, so a row that grows because its label wrapped keeps its line
-     attached. --rail-x is the inline twin of --rail-y. */
-  .journey { --rail-x: calc(var(--space-2) + 1px + 18px); }
-  .journey__rail {
-    inset-block: calc(var(--space-2) / -2);
-    inset-inline: auto;
-    inset-inline-start: calc(var(--rail-x) - 1px);
-    inline-size: 2px; block-size: auto;
-  }
-  /* The inline reset is load-bearing. The desktop end-cap rules set
-     `inset-inline-start/end: 50%` at specificity (0,3,0), which outranks the
-     mobile `.journey__rail` rule at (0,1,0) — so without clearing them here the
-     first stage's rail sat at half the row's WIDTH instead of on the marker
-     column. Measured: 113px off at 375px, first stage only. */
-  .journey__stage:first-child .journey__rail,
-  .journey__stage:last-child  .journey__rail {
-    inset-inline-start: calc(var(--rail-x) - 1px);
-    inset-inline-end: auto;
-  }
-  .journey__stage:first-child .journey__rail { inset-block-start: 50%; inset-block-end: calc(var(--space-2) / -2); }
-  .journey__stage:last-child  .journey__rail { inset-block-end: 50%; inset-block-start: calc(var(--space-2) / -2); }
-}

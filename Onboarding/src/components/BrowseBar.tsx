@@ -11,6 +11,7 @@
  * Filters are chips rather than a select: there are few of them, they are
  * togglable in one tap, and their state is visible without opening anything.
  */
+import type { ReactNode } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { Chip } from './ui';
@@ -30,7 +31,14 @@ export function BrowseBar<T extends string>({
   refreshing: boolean;
   refreshLabel: string;
   /** Result of the last check, announced politely rather than as an alert. */
-  status: string | null;
+  /**
+   * ReactNode, not string: some statuses have to OFFER something rather than
+   * only announce it — marking a course done says the score has not moved and
+   * needs to link to the CV upload that would move it. A live region can hold a
+   * link perfectly well; making the caller flatten it to text is what forces
+   * the useful half out.
+   */
+  status: ReactNode;
 }) {
   const { t } = useI18n();
 

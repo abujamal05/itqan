@@ -537,3 +537,190 @@ deployment avoids it entirely, and the front end is configured for both
 | all chat routes | one Vercel function, `api/chat/[...path].js` — see the note in §1.4 |
 | `POST /api/placeholder/{signup,login}` | exists — **rename before launch** |
 | everything else in §2 | contracted, stubbed in dev, needs a real implementation |
+
+---
+
+## Pending: dashboard, courses, documents and settings (added 2026-08-21)
+
+Front-end work in progress needs these. **None is built.** Each entry says what
+the UI expects and why, so the shape is decided here rather than in a hurry
+later.
+
+### 1. Course completion  — `POST /api/courses/:id/complete`
+
+```
+POST   /api/courses/:id/complete   -> { ok: true, completedAt: "…" }
+DELETE /api/courses/:id/complete   -> { ok: true }        // undo
+```
+
+The course path marks a course done and greys it out **without removing it** —
+seeing what you have finished is the progress signal, so a completed course must
+keep coming back in `GET /api/courses` with a `completedAt: string | null`.
+
+**It must not touch readiness.** Marking a course done is a claim by the user,
+not evidence, and readiness is evidence-derived. The UI says so explicitly and
+then offers the CV re-upload as the way to make it count. A service that quietly
+raised the score here would make the number mean two different things.
+
+### 1b. Course ordering — `Course.priority`  **(required, blocking)**
+
+The course path is a route, not a list: the first item is meant to be the single
+thing that moves the user furthest toward being able to apply. Today that cannot
+be expressed. `Course` carries no ordering field and `gaps` is a bare
+`string[]`, so nothing says which gap matters most or which course closes it.
+
+**Until this exists the UI renders whatever order the API returns**, unsorted and
+unranked. That is deliberate: sorting by hours or by price would invent a
+priority the data does not carry, and a path whose first step is merely the
+shortest course is worse than an unordered one, because it looks authoritative.
+
+Two fields close it:
+
+```jsonc
+// Course
+"priority": 1,              // 1 = do this first. Dense, stable, 1-based.
+"closesGap": "power-bi"     // which gap this course actually closes
+```
+
+- `priority` must be a total order over the returned set, not a bucket. Ties
+  force the UI to break them arbitrarily, which is the thing this field exists
+  to prevent.
+- `closesGap` lets the path label each step with the gap it removes, which is
+  what makes the sequence legible as a route rather than a queue.
+- Ordering is **per target role**. A course that is first for Data Analyst is not
+  first for IT Support, so this cannot be a static property of the course.
+
+Related: `gaps: string[]` should become objects carrying the same id, so a gap on
+the dashboard and a course on the path can be matched without string comparison
+on a display name that is localised.
+
+### 1c. Course prerequisites — `Course.requires`  (needed for the `locked` state)
+
+The course map renders five states: `completed`, `current`, `recommended`,
+`available` and `locked`. **Four are derived from real data. `locked` is never
+populated**, because nothing in the API can justify it — `Course` carries no
+prerequisites, so no course can honestly be said to require another.
+
+That is a deliberate hole, not an oversight. Marking a course locked on a guess
+would make the map assert a product rule that does not exist, and "locked" here
+is a UI state, never a gate: nothing in Itqan stops a person opening a course
+they want. A locked node means *the skills this builds on are not evidenced
+yet*, which is information.
+
+```jsonc
+// Course
+"requires": ["sql-basics"]   // skill ids, not course ids
+```
+
+Skill ids rather than course ids on purpose: the requirement is that the user
+can DO something, and that can be satisfied by evidence in their documents, by
+another course, or by work history. Keying on courses would lock someone out of
+a course whose prerequisite they already meet.
+
+Until this ships, `states()` in `components/map/CoursesMap.tsx` returns the
+other four and the locked styling sits unused in `CourseNode`.
+
+### 1d. Marking a course done is stored in the BROWSER right now
+
+`POST /api/courses/:id/complete` (§1) does not exist, so `state/completed.ts`
+keeps completions in `localStorage`, keyed by user id. **This is not the truth
+and the UI does not pretend it is** — completing a course does not move
+readiness, and the confirmation says so and links to the CV re-upload instead.
+
+When the route lands, `Course.completedAt` from the API becomes authoritative
+and that module becomes a cache of pending writes. Nothing else changes: it is
+already the only thing on the courses page that knows what "completed" means.
+
+### 2. Re-reading a document without redoing the profile
+
+The pipeline today is `queued → reading → translating → awaiting_confirmation →
+matching → done`, and `PUT /api/profile` "must not re-run the pipeline". There is
+no path between those two, which is exactly what "update the profile, do not redo
+it from scratch" needs.
+
+**Suggested:** a mode flag on the existing analysis route rather than a new
+pipeline.
+
+```
+POST /api/analysis  { "documentIds": ["…"], "mode": "merge" } -> { jobId }
+```
+
+- `mode: "replace"` (default) is today's behaviour.
+- `mode: "merge"` re-reads and returns **only what changed**: new skills, and
+  skills whose confidence moved. Existing confirmed values are not discarded, and
+  the confirmation screen shows only the delta so the user is not asked to
+  re-approve a profile they already approved.
+
+That keeps the human confirmation checkpoint, which is the thing that must not be
+routed around.
+
+### 3. Deleting a document — `DELETE /api/documents/:id`
+
+```
+DELETE /api/documents/:id  -> { ok: true } | 409 { error: "last_cv" }
+```
+
+**The front end is built.** `api.deleteDocument` and the two-tap remove control
+on the profile screen came from `amin-dev`; the last-CV rule was added when that
+work met the documents list from `design/website-overhaul`. Neither half had it
+alone, which is worth noting: the branch with the control had no rule, and the
+branch with the rule had no control.
+
+The UI hides the remove control on the only CV — a "Required" tag sits where it
+would have been, because a disabled button invites a click and then refuses it.
+**The server must enforce it too**: the client rule is a courtesy, `cv` is the
+one document the pipeline cannot run without, and a stale build of the app must
+not be a way in. Return `409` with a machine-readable reason rather than a
+message, so the front end keeps owning the wording in both languages.
+
+`dev/site-plugin.ts` implements this route and the `409 last_cv` refusal, so the
+rule is developed against rather than assumed. **Production still needs both.**
+
+`UploadedDocument` also needs an `uploadedAt` so "the first CV" is orderable, and
+ideally `isPrimary: boolean` so primacy is a server fact rather than something
+the client infers from sort order.
+
+### 4. AI usage — `GET /api/usage`  and  `User.plan`
+
+**The limits are decided** (product owner, 2026-08-21). There are two, they are
+measured in different units, and they reset on different clocks:
+
+| | Free | Paid |
+|---|---|---|
+| Document rescans | 1 a week | 3 a week |
+| Messages with Hud | 30 a day | 90 a day |
+
+The paid tier's rescan figure is taken as **per week**, mirroring the free
+tier's period — it was given as "3 document rescans" without one. Worth
+confirming before this is built.
+
+**The front end is built** (`components/UsageMeters.tsx`, on the profile screen)
+and `dev/site-plugin.ts` implements this contract, counting real sends so the
+meters move when Hud is actually used. In production the call 404s until this
+ships, and the section renders NOTHING rather than zeros — a meter reading
+"0 of 30" when the truth is unknown is a fabricated statistic.
+
+The tier comparison above is not on that screen: it is general information and
+belongs on a plan page of its own. Settings shows only what is specific to this
+person.
+
+```jsonc
+GET /api/usage -> {
+  "plan": "free",
+  "rescans":  { "used": 1,  "limit": 1,  "period": "week", "resetsAt": "2026-08-24T00:00:00Z" },
+  "messages": { "used": 12, "limit": 30, "period": "day",  "resetsAt": "2026-08-22T00:00:00Z" }
+}
+```
+
+- **Two counters, not one.** A single `used`/`limit` pair cannot express a weekly
+  allowance and a daily one at the same time, which is what the product sells.
+- `resetsAt` rather than a duration, so the UI can say when it comes back in
+  both languages without doing calendar arithmetic against an unknown timezone.
+- `limit: null` means unlimited, and the UI renders no meter for that row.
+- **`User.plan: "free" | "paid"` is needed regardless of the usage route.**
+  Without it the settings screen cannot say which column is the user's, which is
+  exactly why it currently presents free-versus-paid rather than "your plan".
+- The server owns enforcement. When a limit is reached, the rescan and chat
+  routes should refuse with `429` and a machine-readable reason
+  (`{ error: "rescan_limit" | "message_limit", resetsAt }`) so the front end
+  keeps owning the wording in both languages — the same rule as `409 last_cv`.

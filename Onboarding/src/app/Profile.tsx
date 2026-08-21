@@ -20,8 +20,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight, Camera, Check, FileText, GraduationCap, Pencil, Sparkles, Target,
-  User as UserIcon, X,
+  ArrowRight, Bot, Camera, Check, FileText, GraduationCap, Pencil, Sparkles,
+  Target, User as UserIcon, X,
 } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { skillCase } from '../lib/skillCase';
@@ -31,11 +31,13 @@ import { useAsync } from '../lib/useAsync';
 import {
   Button, Card, Chip, ErrorState, InputField, LoadingBlock,
 } from '../components/ui';
-import type { ConfirmedProfile, Preferences, StoredProfile } from '../api';
-import { emptyPreferences } from '../api';
+import type { ConfirmedProfile, Preferences, StoredProfile, Usage } from '../api';
+import { emptyPreferences, REQUIRED_KIND } from '../api';
 import {
   MIN_AGE, birthDateProblem, earliestBirthDate, isoDate, latestBirthDate,
 } from '../lib/age';
+import { fileSize } from '../lib/fileSize';
+import { UsageMeters } from '../components/UsageMeters';
 
 /* ------------------------------------------------------------------ parts -- */
 
@@ -237,10 +239,26 @@ interface MissingItem {
 }
 
 export function Profile() {
-  const { t, locale, formatDate } = useI18n();
+  const { t, locale, formatDate, formatNumber } = useI18n();
   const api = useApi();
   const { user } = useAuth();
   const { data, loading, error, reload } = useAsync((s) => api.getProfile(s), [api, locale]);
+
+  /**
+   * The AI allowance. Its own request, and its own failure.
+   *
+   * Deliberately NOT folded into the profile fetch: `GET /api/usage` does not
+   * exist in production yet (BACKEND.md §4), and a 404 there must not take the
+   * whole profile screen down with it. Null — whether the route is missing, the
+   * request failed, or it simply has not landed — renders no section at all,
+   * which is the honest state. Zeros would be a figure nobody measured.
+   */
+  const [usage, setUsage] = useState<Usage | null>(null);
+  useEffect(() => {
+    const ac = new AbortController();
+    api.getUsage(ac.signal).then(setUsage).catch(() => setUsage(null));
+    return () => ac.abort();
+  }, [api, locale]);
 
   const [editing, setEditing] = useState<EditKey | null>(null);
   const [saving, setSaving] = useState(false);
@@ -546,22 +564,59 @@ export function Profile() {
         </div>
       </Section>
 
-      {/* Documents. */}
+      {/* ---- Documents ------------------------------------------------------
+          BOTH HALVES OF THE MERGE, and the rule that was missing from each.
+
+          `main` gained a working remove control; this branch gained a row that
+          says what the document actually is — name, kind and size, not just a
+          kind label. Neither had the rule the product needs: the CV is the one
+          document the pipeline cannot run without, so the LAST one cannot be
+          removed. It is replaced instead, which is what the button below does.
+
+          The protected row shows a "Required" tag WHERE the remove control
+          would have been, rather than a disabled X. A blocked control invites a
+          click and then refuses it; a label answers "why can I not remove this"
+          before the question is asked. A second CV makes the first deletable
+          again, and both rows get their control back.
+
+          The client rule is a courtesy. The server must enforce it too — see
+          BACKEND.md §3 — because a stale build of this app is not a way in. */}
       <Section id="documents" title={t('profile.documents')} icon={FileText} editing={false}>
         <div className="stack stack--sm">
           {p.documents?.length ? (
-            <ul className="stack stack--sm">
-              {p.documents.map((d) => (
-                <li key={d.id} className="profile__row">
-                  <span className="profile__label">{t(`doc.${d.kind}`)}</span>
-                  <span className="profile__value"><bdi>{d.fileName}</bdi></span>
-                  <DeleteDocument id={d.id} onDeleted={reload} />
-                </li>
-              ))}
+            <ul className="doclist">
+              {p.documents.map((d) => {
+                /* Counted over the WHOLE list, not this row: what protects a CV
+                   is being the only one, and that is a fact about the set. */
+                const lastCv = d.kind === REQUIRED_KIND
+                  && p.documents.filter((o) => o.kind === REQUIRED_KIND).length === 1;
+
+                return (
+                  <li key={d.id} className="doclist__item">
+                    <FileText size={16} className="doclist__icon" aria-hidden="true" />
+                    <span className="doclist__main">
+                      <span className="doclist__name"><bdi>{d.fileName}</bdi></span>
+                      <span className="doclist__meta">
+                        {t(`doc.${d.kind}`)}
+                        {Number.isFinite(d.sizeBytes) && d.sizeBytes > 0 && (
+                          <> · <span className="num">{fileSize(d.sizeBytes, t, formatNumber)}</span></>
+                        )}
+                      </span>
+                    </span>
+
+                    {lastCv
+                      ? <span className="doclist__tag">{t('profile.docRequired')}</span>
+                      : <DeleteDocument id={d.id} onDeleted={reload} />}
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <p className="text-sm muted">{t('profile.noDocuments')}</p>
           )}
+
+          <p className="text-sm">{t('profile.docsCvRequired')}</p>
+
           {/* Says the consequence before the action, not after it. Replacing a
               document re-runs the pipeline and rewrites the skills, courses and
               matches this person may have spent time reading — that is worth
@@ -576,6 +631,24 @@ export function Profile() {
           </div>
         </div>
       </Section>
+
+      {/* ---- AI usage --------------------------------------------------------
+          THEIR consumption, not the price list. What each tier includes is
+          general information and belongs on a page of its own; what belongs
+          here is the one thing only this screen can tell them — how much of
+          their own allowance is left, and when it comes back.
+
+          `GET /api/usage` is not built in production yet (BACKEND.md §4), so
+          the section renders nothing at all rather than zeros: a meter reading
+          "0 of 30" when the truth is unknown is a fabricated statistic, and
+          this product's rules forbid those outright. The dev stub implements
+          the documented contract and counts real sends, so the meters move when
+          you actually use Hud. */}
+      {usage && (
+        <Section id="ai" title={t('profile.aiTitle')} icon={Bot} editing={false}>
+          <UsageMeters usage={usage} />
+        </Section>
+      )}
 
       {/* Preferences: the four onboarding answers, editable because they are
           the user's opinion rather than an extraction. */}

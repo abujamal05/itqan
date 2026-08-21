@@ -14,7 +14,7 @@
 import type {
   AnalysisJob, ChatMessage, ChatThread, ChatThreadSummary, ConfirmProfileResult,
   ConfirmedProfile, Course, DashboardData, Feedback, FeedbackState, ItqanApi,
-  JobMatch, OnboardingProgress, Session, StoredProfile, UploadedDocument,
+  JobMatch, OnboardingProgress, Session, StoredProfile, UploadedDocument, Usage,
 } from './types';
 import { emptyFeedback } from './types';
 import { takeHandoffToken } from '../lib/site';
@@ -156,6 +156,7 @@ export function createHttpApi(): ItqanApi {
     getDashboard(signal) { return req<DashboardData>('/dashboard', { signal }); },
     getJobs(signal) { return req<JobMatch[]>('/jobs', { signal }); },
     getCourses(signal) { return req<Course[]>('/courses', { signal }); },
+    getUsage(signal) { return req<Usage>('/usage', { signal }); },
 
     rerunMatching(signal) {
       // `confirm: true` is required by the server and is sent only from the

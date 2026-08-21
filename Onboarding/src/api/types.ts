@@ -311,6 +311,36 @@ export interface Course {
   source: Source;
 }
 
+/**
+ * One AI allowance and how much of it is gone.
+ *
+ * TWO COUNTERS, NOT ONE, and they are separate types of thing measured on
+ * separate clocks: document rescans reset weekly, messages with Hud reset
+ * daily. A single used/limit pair cannot express that, and the product sells
+ * both — see BACKEND.md §4.
+ */
+export interface UsageCounter {
+  used: number;
+  /** Null means unlimited, and the UI renders no meter for it. */
+  limit: number | null;
+  period: 'day' | 'week';
+  /** ISO. WHEN it goes back to zero, not how long until — a duration would
+   *  make the browser do calendar arithmetic in an unknown timezone. */
+  resetsAt: string;
+}
+
+/**
+ * What this person has used of their AI allowance.
+ *
+ * Server-owned, and the server enforces it too: the rescan and chat routes
+ * refuse with 429 once a counter is spent. This is for showing, not gating.
+ */
+export interface Usage {
+  plan: 'free' | 'paid';
+  rescans: UsageCounter;
+  messages: UsageCounter;
+}
+
 export interface SkillStanding {
   name: string;
   /** 0..1 how well evidenced this is by the documents. */
@@ -605,6 +635,8 @@ export interface ItqanApi {
   getDashboard(signal?: AbortSignal): Promise<DashboardData>;
   getJobs(signal?: AbortSignal): Promise<JobMatch[]>;
   getCourses(signal?: AbortSignal): Promise<Course[]>;
+  /** Not built yet in production — BACKEND.md §4. Callers must tolerate a 404. */
+  getUsage(signal?: AbortSignal): Promise<Usage>;
 
   /**
    * PENDING BACKEND — Hud's chat. See BACKEND.md §1.4 for the full contract.

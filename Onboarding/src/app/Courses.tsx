@@ -16,8 +16,19 @@
  *
  * Recommended courses sort first, because a list ordered by nothing in
  * particular asks the user to do the ranking the product exists to do.
+ *
+ * THE PAGE IS A MAP NOW, at every width. The grid is gone: a route is the
+ * honest shape for "the shortest path there", and a three-column grid that
+ * became one column on a phone was a list claiming to be a plan. What the map
+ * cannot hold — the source, the retrieval date, the feedback and replace
+ * controls — moved into `CourseSheet`, which opens from any node and renders
+ * the same `CourseCard` unchanged. Nothing about a course is implemented twice.
+ *
+ * The filters survive and reshape the path rather than filtering a list. A
+ * route through the free courses only is still a coherent route.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { useChat } from '../state/chat';
 import { useApi } from '../state/api';
@@ -25,7 +36,10 @@ import { useAsync } from '../lib/useAsync';
 import { useOnboarding } from '../state/onboarding';
 import { useRunInFlight } from '../components/PipelineProgress';
 import { Card, EmptyState, ErrorState, LoadingBlock } from '../components/ui';
-import { CourseCard } from '../components/CourseCard';
+import { CoursesMap } from '../components/map/CoursesMap';
+import { CourseSheet } from '../components/map/CourseSheet';
+import { useCompletedCourses } from '../state/completed';
+import { useAuth } from '../state/auth';
 import type { Course } from '../api';
 import { BrowseBar } from '../components/BrowseBar';
 import type { FilterDef } from '../components/BrowseBar';
@@ -37,14 +51,19 @@ export function Courses() {
   // A re-run finishing must be visible here without a manual reload.
   const { resultsVersion } = useChat();
   const api = useApi();
+  const { user } = useAuth();
   const { settled } = useOnboarding();
+  /* Local, and honest about it: `POST /api/courses/:id/complete` does not
+     exist yet. See `state/completed.ts` and BACKEND.md §1. */
+  const { completed, toggle } = useCompletedCourses(user?.id);
+  const [open, setOpen] = useState<Course | null>(null);
   const inFlight = useRunInFlight();
   // Re-fetch when the run lands; see the same note in Dashboard.tsx.
   const { data, loading, error, reload } = useAsync((s) => api.getCourses(s),
                                                    [api, locale, settled, resultsVersion]);
   const [filter, setFilter] = useState<Filter>('all');
   const [refreshing, setRefreshing] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
+  const [status, setStatus] = useState<ReactNode>(null);
 
   /**
    * The list as the USER has it, once they start replacing entries.
@@ -65,6 +84,25 @@ export function Courses() {
     // screen reader without moving focus away from the grid.
     setStatus(t('fb.replaced'));
   }, [data, t]);
+
+  /**
+   * Mark a course finished.
+   *
+   * It does NOT move readiness, and the message says why. Readiness is derived
+   * from evidence in the documents; a course the user says they finished is a
+   * claim, and quietly raising the score on a claim would make the number mean
+   * two different things. The honest offer is the CV re-upload, which turns the
+   * claim into evidence — so that is what the status line points at.
+   */
+  const markDone = useCallback((course: Course) => {
+    toggle(course.id, true);
+    setStatus(
+      <>
+        {t('courses.doneNoted')}{' '}
+        <Link to="/documents">{t('courses.updateCv')}</Link>
+      </>,
+    );
+  }, [toggle, t]);
 
   const filters: FilterDef<Filter>[] = [
     { id: 'all', label: t('browse.all') },
@@ -143,17 +181,25 @@ export function Courses() {
             ? <EmptyState title={t('state.workingTitle')} body={t('state.workingSub')} />
             : <EmptyState title={t('courses.empty')} body={t('courses.emptySub')} />
           : (
-            <div className="grid grid--3">
-              {shown.map((c) => (
-                <CourseCard
-                  key={c.id}
-                  course={c}
-                  onReplace={(next) => replaceCourse(c.id, next)}
-                />
-              ))}
-            </div>
+            <>
+              <CoursesMap
+                courses={shown}
+                completed={completed}
+                onOpen={setOpen}
+                onDone={markDone}
+              />
+              <p className="map__hint">{t('courses.mapHint')}</p>
+            </>
           )
       )}
+
+      <CourseSheet
+        course={open}
+        done={open ? completed.has(open.id) : false}
+        onClose={() => setOpen(null)}
+        onReplace={replaceCourse}
+        onDone={markDone}
+      />
     </div>
   );
 }
