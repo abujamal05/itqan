@@ -333,5 +333,10 @@
   "chat.attach": "Attach a file",
   "chat.removeFile": "Remove {name}",
   "chat.tooBig": "{name} is over 5MB. Pick a smaller file.",
-  "chat.disclaimer": "Hud is AI and can make mistakes. Please double-check responses."
+  "chat.disclaimer": "Hud is AI and can make mistakes. Please double-check responses.",
+  "dash.goalExploring": "Exploring",
+  "journey.building": "Building your skills",
+  "journey.buildingBody": "Start with the first course below. Job matches show up here once your skills cover enough of what these roles are asking for.",
+  "dash.lowMatchesTitle": "Not yet, and that is fine",
+  "dash.lowMatchesBody": "There is nothing here worth your time applying to today. The courses below are ordered so the first one moves you furthest."
 }

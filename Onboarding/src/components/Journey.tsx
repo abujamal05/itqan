@@ -5,30 +5,34 @@
  * answers it from the service, not from which screen was last opened: a stage is
  * done when the work finished, not when a page was visited.
  *
- * WHY IT NO LONGER LOOKS LIKE A STEPPER. It was an `auto-fit` grid of equal
- * columns: every stage the same width, the same weight, the same centred
- * treatment, whether it had already happened or was the one thing the user
- * should be looking at. That is a diagram of a process rather than an answer
- * about a person, and it is what made the section feel fixed and rigid. Now the
- * three states are three different sizes: done collapses to a compact marker and
- * label, CURRENT is a raised card carrying its detail, and upcoming sits quiet
- * behind it. The one stage that matters is the one you see first.
+ * WHY IT WINDS. It was a straight rail through evenly weighted stages, which
+ * reads as a progress bar with words under it. A path that turns is a path
+ * somebody is walking, and the turns are where this product actually asks
+ * something of the person: read, confirm, learn, apply. The curve is generated
+ * by `d3-shape` rather than written out by hand — a Catmull-Rom spline through
+ * the marker centres, so the line is guaranteed to pass through every node it
+ * connects at any stage count.
  *
- * The gold thread that runs behind the stages is the marketing site's motif —
- * the same drawn line that ties the three steps together on the home page and
- * runs down the how-it-works timeline. Reusing it here is deliberate: the site
- * and the product should feel like one thing, and this is the one place in the
- * app where a continuous path is literally what is being described. It fills only
- * as far as the user has actually got.
+ * GEOMETRY IS NORMALISED, NOT MEASURED. The stages are positioned at the same
+ * 0..1 coordinates the curve is generated from, so the line cannot drift off the
+ * markers the way the previous absolutely-positioned track did — measured then
+ * at 12px above the markers, 109px of bare line at each end, and a fill
+ * overshooting its own marker by 45px. Nothing here reads the DOM.
  *
  * Three states, and none of them is carried by colour alone. Done has a check,
  * current has a filled ring plus `aria-current`, upcoming is an open outline;
  * each also states its condition in words for a screen reader. That matters more
  * here than usual, because a progress track drawn only in gold and grey is
  * exactly the kind of thing that vanishes for a colour-blind reader.
+ *
+ * THE LOW-READINESS PATH. Under `LOW_READINESS`, the last milestone stops being
+ * "applying for jobs" and stops linking there, because sending someone to a page
+ * of roles they cannot get is not kindness. It becomes the building stage, and
+ * the section says what to do next instead of what is missing.
  */
-import { ArrowRight, Check, Flag } from 'lucide-react';
+import { ArrowRight, Check, Flag, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { line, curveCatmullRom } from 'd3-shape';
 import { useI18n } from '../i18n';
 import type { JourneyStage } from '../api';
 
@@ -38,38 +42,91 @@ import type { JourneyStage } from '../api';
  * Only the last one does today, and that is deliberate rather than unfinished:
  * "reading your documents" has no page to be the destination of, and a stage
  * that navigates somewhere unhelpful is worse than one that does not navigate.
- * Applying for jobs is the exception because the postings page IS that stage.
  *
  * Keyed by the SERVICE's stage id, and applied only to the final stage, so a
  * pipeline that grows a step in the middle cannot silently turn it into a link.
  */
 const STAGE_LINKS: Record<string, string> = { jobs: '/jobs' };
 
-export function Journey({ stages, target }: { stages: JourneyStage[]; target?: string }) {
-  const { t, formatNumber } = useI18n();
+/**
+ * At or below this, the journey ends at building rather than at applying.
+ *
+ * A product decision, not a display one, which is why it is a named constant
+ * next to the component that acts on it rather than a bare 30 inside a
+ * condition. `readiness` is 0..100 and agent-computed.
+ */
+export const LOW_READINESS = 30;
+
+/** Design-space box the curve is generated in. Ratio matters, not the units. */
+const BOX = { w: 1000, h: 260 };
+
+/**
+ * How far the first and last markers sit from the edges, in 0..1.
+ *
+ * Not zero, and not `0.5 / count`. A stage is a centred label roughly 11rem
+ * wide translated back by half its own width, so a marker at the very edge puts
+ * half that label outside the panel — which is exactly what it did: the last
+ * stage was clipped and the page grew a horizontal scrollbar.
+ */
+const EDGE_PAD = 0.16;
+
+/**
+ * Marker positions in 0..1, then scaled into BOX.
+ *
+ * The wave alternates so consecutive stages sit on opposite sides of the middle,
+ * which is what gives the line something to curve around. First and last are
+ * pulled toward the centre so the path enters and leaves level rather than
+ * climbing out of frame.
+ */
+const pointsFor = (count: number, rtl: boolean) =>
+  Array.from({ length: count }, (_, i) => {
+    const t =
+      count === 1 ? 0.5 : EDGE_PAD + (i / (count - 1)) * (1 - EDGE_PAD * 2);
+    const x = rtl ? 1 - t : t;
+    /* Ends level, middles alternating. The amplitude is deliberately modest:
+       the wave has to leave vertical room for a two line label under every
+       marker, and a taller wave buys drama at the cost of the words. */
+    const edge = i === 0 || i === count - 1;
+    const y = edge ? 0.5 : i % 2 === 1 ? 0.26 : 0.74;
+    return { x, y };
+  });
+
+export function Journey({
+  stages,
+  target,
+  readiness,
+}: {
+  stages: JourneyStage[];
+  target?: string;
+  /** 0..100. Below LOW_READINESS the destination changes; see the note above. */
+  readiness?: number;
+}) {
+  const { t, formatNumber, locale } = useI18n();
   if (stages.length === 0) return null;
 
+  const rtl = locale === 'ar';
   const currentIndex = stages.findIndex((s) => s.state === 'current');
   const done = stages.filter((s) => s.state === 'done').length;
   const complete = currentIndex === -1 && done === stages.length;
+  const low = typeof readiness === 'number' && readiness <= LOW_READINESS;
 
-  /**
-   * How far the thread is drawn, 0..1 — as a fraction of the MARKER-TO-MARKER
-   * span, which is what the CSS now scales.
-   *
-   * The previous version computed the same fraction but the CSS stretched the
-   * track across the full padding box, roughly 200px wider than the span
-   * between the first and last marker. Measured in the browser: the fill
-   * overshot its own marker by 45px, with 109px of bare track hanging off each
-   * end. The fix is not an offset — stage widths differ, so no constant
-   * corrects it — it is making the track BE the marker-to-marker span. See the
-   * geometry note in chrome.css.
-   */
+  /** How far the line is drawn, 0..1, as a fraction of the marker-to-marker span. */
   const reached = complete
     ? 1
     : stages.length > 1
       ? Math.max(0, currentIndex === -1 ? done - 1 : currentIndex) / (stages.length - 1)
       : 0;
+
+  const pts = pointsFor(stages.length, rtl);
+
+  /* d3 owns the curve maths. `alpha(0.5)` is the centripetal parametrisation,
+     which is the one that cannot produce cusps or self-intersections between
+     control points — the failure a plain cardinal spline shows when two markers
+     land close together. */
+  const curve = line<{ x: number; y: number }>()
+    .x((p) => p.x * BOX.w)
+    .y((p) => p.y * BOX.h)
+    .curve(curveCatmullRom.alpha(0.5))(pts) ?? '';
 
   return (
     <section className="stack" aria-labelledby="journey-title">
@@ -84,73 +141,94 @@ export function Journey({ stages, target }: { stages: JourneyStage[]; target?: s
         </span>
       </div>
 
-      <ol className="journey" data-reached={reached}>
-        {stages.map((s, i) => {
-          // Last stage only. See STAGE_LINKS.
-          const to = i === stages.length - 1 ? STAGE_LINKS[s.id] : undefined;
-          return (
-          <li
-            key={s.id}
-            className="journey__stage"
-            data-state={s.state}
-            data-linked={to ? '' : undefined}
-            /* The one stage a screen reader should land on as "you are here". */
-            aria-current={s.state === 'current' ? 'step' : undefined}
-          >
-            {/* The rail runs through THIS stage's own marker, so it is correct
-                whatever width the stage takes. A single absolutely positioned
-                track across the whole list cannot be: the current stage is
-                wider than the others, so the marker centres are not evenly
-                spaced and no constant inset lands on them. Measured on the
-                previous version: 12px above the markers, 109px of bare line at
-                each end, fill overshooting its marker by 45px. */}
-            <span className="journey__rail" aria-hidden="true" />
+      <div className="journey" data-low={low ? '' : undefined}>
+        {/* Decorative: every stage below states its own position in words, so
+            the line carries no information a screen reader needs. */}
+        <svg
+          className="journey__curve"
+          viewBox={`0 0 ${BOX.w} ${BOX.h}`}
+          preserveAspectRatio="none"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path className="journey__track" d={curve} />
+          {/* pathLength=1 makes the fill a plain 0..1 fraction, independent of
+              how long the generated path actually is. */}
+          <path
+            className="journey__fill"
+            d={curve}
+            pathLength={1}
+            style={{ strokeDashoffset: 1 - reached }}
+          />
+        </svg>
 
-            <span className="journey__marker">
-              {s.state === 'done'
-                ? <Check size={16} aria-hidden="true" />
-                : <span className="journey__dot" aria-hidden="true" />}
-            </span>
+        <ol className="journey__stages">
+          {stages.map((s, i) => {
+            const isLast = i === stages.length - 1;
+            /* Under LOW_READINESS the destination stops being a link: a page of
+               roles they cannot get is not a helpful place to send someone. */
+            const to = isLast && !low ? STAGE_LINKS[s.id] : undefined;
+            const label = isLast && low ? t('journey.building') : s.label;
+            const p = pts[i];
 
-            <span className="journey__body">
-              {/* A linked stage puts the LABEL in the anchor, and the anchor
-                  stretches over the whole stage through `.journey__go::after`.
-                  Wrapping the <li> in a link instead would put the rail and the
-                  marker inside the accessible name, and a stage that reads as
-                  "check mark Applying for jobs Next milestone Still to come" is
-                  not a link label anyone can act on. */}
-              {to ? (
-                <Link className="journey__go" to={to}>
-                  <span className="journey__label">{s.label}</span>
-                  <ArrowRight size={14} aria-hidden="true" className="go" />
-                </Link>
-              ) : (
-                <span className="journey__label">{s.label}</span>
-              )}
-              {/* Only the current stage carries its detail into the layout. On
-                  the others it is a tooltip's worth of information competing
-                  with the one line the user needs. */}
-              {s.detail && <span className="journey__detail">{s.detail}</span>}
-            </span>
+            return (
+              <li
+                key={s.id}
+                className="journey__stage"
+                data-state={s.state}
+                /* Which side of the curve the label sits on. A marker above the
+                   midline puts its label ABOVE itself, so the descending line
+                   passes under the words instead of straight through them —
+                   which is exactly what it did on the first render. */
+                data-side={p.y < 0.5 ? 'up' : 'down'}
+                data-linked={to ? '' : undefined}
+                style={{ left: `${p.x * 100}%`, top: `${p.y * 100}%` }}
+                aria-current={s.state === 'current' ? 'step' : undefined}
+              >
+                <span className="journey__marker">
+                  {s.state === 'done'
+                    ? <Check size={16} aria-hidden="true" />
+                    : <span className="journey__dot" aria-hidden="true" />}
+                </span>
 
-            {/* Spoken, never drawn: the visual state is already obvious. */}
-            <span className="sr-only">{t(`journey.state.${s.state}`)}</span>
-          </li>
-          );
-        })}
-      </ol>
+                <span className="journey__body">
+                  {to ? (
+                    <Link className="journey__go" to={to}>
+                      <span className="journey__label">{label}</span>
+                      <ArrowRight size={14} aria-hidden="true" className="go" />
+                    </Link>
+                  ) : (
+                    <span className="journey__label">{label}</span>
+                  )}
+                  {s.detail && <span className="journey__detail">{s.detail}</span>}
+                </span>
 
-      {/* Where the road goes. A progress track with no destination is a
-          progress bar; naming the target is what makes it a journey, and it is
-          the same target the readiness score above is measured against. */}
-      {target && (
-        <p className="journey__target">
-          <Flag size={15} aria-hidden="true" />
-          <span>{t('journey.towards')} <strong><bdi>{target}</bdi></strong></span>
+                {/* Spoken, never drawn: the visual state is already obvious. */}
+                <span className="sr-only">{t(`journey.state.${s.state}`)}</span>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+
+      {/* What to do next, not what is missing. This replaces the destination
+          line rather than sitting beside it, so the section still makes exactly
+          one statement about where the user is headed. */}
+      {low ? (
+        <p className="journey__building">
+          <Sparkles size={15} aria-hidden="true" />
+          <span>{t('journey.buildingBody')}</span>
         </p>
+      ) : (
+        target && (
+          <p className="journey__target">
+            <Flag size={15} aria-hidden="true" />
+            <span>{t('journey.towards')} <strong><bdi>{target}</bdi></strong></span>
+          </p>
+        )
       )}
 
-      {complete && <p className="text-sm">{t('journey.complete')}</p>}
+      {complete && !low && <p className="text-sm">{t('journey.complete')}</p>}
     </section>
   );
 }

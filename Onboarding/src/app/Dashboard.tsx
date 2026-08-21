@@ -48,7 +48,7 @@ import { CareerGoal } from '../components/CareerGoal';
 import type { Course } from '../api';
 import { MatchCard } from '../components/MatchCard';
 import { CourseCard } from '../components/CourseCard';
-import { Journey } from '../components/Journey';
+import { Journey, LOW_READINESS } from '../components/Journey';
 import { useRunInFlight } from '../components/PipelineProgress';
 
 /** How much of each list the dashboard shows before handing off to its page.
@@ -194,6 +194,17 @@ export function Dashboard() {
   const topCourses = (editedCourses ?? courses ?? []).slice(0, CARDS_SHOWN);
   const topMatches = data.topMatches.slice(0, CARDS_SHOWN);
 
+  /**
+   * Below this the matches are withheld deliberately.
+   *
+   * A product decision, and an uncomfortable one: PRODUCT.md's second principle
+   * is capability before deficit, and an empty matches area is a deficit. It is
+   * kept honest by never rendering a bare empty state — the block below says
+   * what to do next and points at the ordered course path, so the user leaves
+   * this section with an action rather than a verdict.
+   */
+  const lowReadiness = data.readiness <= LOW_READINESS;
+
   // What the user named beats what the agents guessed; the suggestion is only
   // ever a fallback, and it is labelled as a suggestion when it is used.
   // `target` is still needed here for the journey's destination line; the
@@ -329,7 +340,7 @@ export function Dashboard() {
       </section>
 
       {/* 2. How far along you are — the bridge from the score to the target. */}
-      <Journey stages={data.journey} target={target} />
+      <Journey stages={data.journey} target={target} readiness={data.readiness} />
 
       {/* "Your highest yield skills" used to sit here. Removed: it restated the
           `held` rows of the standings list ~200px above it, in a second visual
@@ -410,7 +421,18 @@ export function Dashboard() {
             <ArrowRight size={16} aria-hidden="true" className="go" />
           </Link>
         </div>
-        {topMatches.length === 0 ? (
+        {lowReadiness ? (
+          /* Not an empty state, and not a list of roles they cannot get. The
+             action points at the course path, which is ordered so the first
+             item is the one that moves them furthest. */
+          <Card>
+            <EmptyState
+              title={t('dash.lowMatchesTitle')}
+              body={t('dash.lowMatchesBody')}
+              action={<Link className="btn btn--primary" to="/courses">{t('dash.startNextStep')}</Link>}
+            />
+          </Card>
+        ) : topMatches.length === 0 ? (
           <Card>
             <EmptyState
               title={t('dash.emptyMatches')}

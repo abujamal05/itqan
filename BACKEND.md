@@ -537,3 +537,80 @@ deployment avoids it entirely, and the front end is configured for both
 | all chat routes | one Vercel function, `api/chat/[...path].js` — see the note in §1.4 |
 | `POST /api/placeholder/{signup,login}` | exists — **rename before launch** |
 | everything else in §2 | contracted, stubbed in dev, needs a real implementation |
+
+---
+
+## Pending: dashboard, courses, documents and settings (added 2026-08-21)
+
+Front-end work in progress needs these. **None is built.** Each entry says what
+the UI expects and why, so the shape is decided here rather than in a hurry
+later.
+
+### 1. Course completion  — `POST /api/courses/:id/complete`
+
+```
+POST   /api/courses/:id/complete   -> { ok: true, completedAt: "…" }
+DELETE /api/courses/:id/complete   -> { ok: true }        // undo
+```
+
+The course path marks a course done and greys it out **without removing it** —
+seeing what you have finished is the progress signal, so a completed course must
+keep coming back in `GET /api/courses` with a `completedAt: string | null`.
+
+**It must not touch readiness.** Marking a course done is a claim by the user,
+not evidence, and readiness is evidence-derived. The UI says so explicitly and
+then offers the CV re-upload as the way to make it count. A service that quietly
+raised the score here would make the number mean two different things.
+
+### 2. Re-reading a document without redoing the profile
+
+The pipeline today is `queued → reading → translating → awaiting_confirmation →
+matching → done`, and `PUT /api/profile` "must not re-run the pipeline". There is
+no path between those two, which is exactly what "update the profile, do not redo
+it from scratch" needs.
+
+**Suggested:** a mode flag on the existing analysis route rather than a new
+pipeline.
+
+```
+POST /api/analysis  { "documentIds": ["…"], "mode": "merge" } -> { jobId }
+```
+
+- `mode: "replace"` (default) is today's behaviour.
+- `mode: "merge"` re-reads and returns **only what changed**: new skills, and
+  skills whose confidence moved. Existing confirmed values are not discarded, and
+  the confirmation screen shows only the delta so the user is not asked to
+  re-approve a profile they already approved.
+
+That keeps the human confirmation checkpoint, which is the thing that must not be
+routed around.
+
+### 3. Deleting a document — `DELETE /api/documents/:id`
+
+```
+DELETE /api/documents/:id  -> { ok: true } | 409 { error: "last_cv" }
+```
+
+The UI blocks deleting the only CV, but **the server must enforce it too**: the
+client rule is a courtesy, and `cv` is the one document the pipeline cannot run
+without. Return `409` with a machine-readable reason rather than a message, so
+the front end keeps owning the wording in both languages.
+
+`UploadedDocument` also needs an `uploadedAt` so "the first CV" is orderable, and
+ideally `isPrimary: boolean` so primacy is a server fact rather than something
+the client infers from sort order.
+
+### 4. AI usage — `GET /api/usage`
+
+```
+GET /api/usage -> { used: number, limit: number | null, unit: "runs", periodEnd: "…" }
+```
+
+`limit: null` means unlimited, and the UI renders no meter for it. **A raw number
+with nothing to compare it against tells a job seeker nothing**, so if there is no
+limit this section should not ship at all.
+
+The unit needs deciding before the UI can be honest: tokens are meaningless to
+this audience, so `runs` (a pipeline run or a chat exchange) is the suggestion.
+Whatever it is, it has to be the same unit the premium tier is sold in, or the
+screen and the pricing page will disagree.

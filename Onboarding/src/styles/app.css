@@ -954,22 +954,40 @@
    Deliberately NOT a card. It is the second half of the readiness statement,
    and boxing it would make it read as a separate widget that happens to sit
    nearby. A start-edge hairline ties it to the block without adding a surface. */
+/* Stacked, and sized to its contents. The row version forced the card that
+   holds it into a long rectangle with a gap in the middle; three short lines in
+   a column read as one object and let the card close up around them. */
 .goal {
   display: flex; align-items: flex-start; gap: var(--space-2);
   flex: 0 1 auto; min-inline-size: 0;
-  padding-inline-start: var(--space-5);
+  padding-inline-start: var(--space-6);
   border-inline-start: 1px solid var(--color-border);
 }
+.goal__icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  inline-size: var(--space-10); block-size: var(--space-10);
+  border-radius: var(--radius-md);
+  background-color: var(--color-accent-tint);
+  color: var(--color-accent-ink);
+  margin-block-end: var(--space-2);
+}
+/* Deliberately small: it names the number below it and should never compete
+   with the role, which is the thing being read. */
+.goal__label {
+  font-size: var(--text-xs); font-weight: var(--weight-semibold);
+  letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+:lang(ar) .goal__label { letter-spacing: 0; text-transform: none; }
 /* `flex: 1` so the menu is pushed to the inline END once the goal block goes
    full width on a phone. Without it the trigger sat immediately after the
    words, floating in the middle of an otherwise empty row. On desktop the block
    is sized to its content, so this changes nothing there. */
 .goal__text { display: flex; flex-direction: column; gap: var(--space-1); min-inline-size: 0; flex: 1 1 auto; }
 .goal__role {
-  display: flex; align-items: center; gap: var(--space-2);
-  font-size: var(--text-lg);
+  font-size: var(--text-xl); line-height: var(--leading-tight);
+  margin-block-start: var(--space-1);
 }
-.goal__role svg { color: var(--color-accent-ink); flex: 0 0 auto; }
 .goal__role strong { font-weight: var(--weight-semibold); }
 /* Not knowing yet is a normal place to be, so it is not styled as a warning or
    as an empty slot: same shape, quieter colour, regular weight. */

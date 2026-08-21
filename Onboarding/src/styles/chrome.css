@@ -441,104 +441,84 @@
    about a person, and it is what made the section read as fixed and rigid.
    `auto` columns with the current stage on `1.4fr` let the one that matters take
    the room, and the finished ones shrink to what they need. */
+/* ---- The winding path -----------------------------------------------------
+   The stages are absolutely positioned at the SAME normalised coordinates the
+   curve is generated from (Journey.tsx, `pointsFor`), so the line passes
+   through every marker by construction rather than by a measured offset. That
+   is what the previous per-stage rail was working around, and why this cannot
+   drift: nothing here reads the DOM.
+
+   The old `.journey__rail` and its `--rail-y` geometry are gone with it. */
 .journey {
   position: relative;
-  display: flex; flex-wrap: wrap; align-items: stretch;
-  gap: var(--space-3);
+  overflow: hidden;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: var(--space-6) var(--space-5);
-  list-style: none; margin: 0;
+  padding: var(--space-8) var(--space-6);
 }
 
-/* ---- The thread ----------------------------------------------------------
-   ONE SHARED VALUE drives the whole geometry: where a marker's centre sits
-   inside its own stage. Everything else is derived from it, so nothing can
-   drift out of alignment when a padding changes.
-
-     --rail-y = stage padding-block-start + stage border + half the marker
-
-   The rail is drawn PER STAGE, spanning that stage's own width, which is why
-   it always passes through that stage's own marker no matter how wide the
-   stage is. A single track across the whole list cannot do this: the current
-   stage is deliberately wider than the others, so marker centres are not
-   evenly spaced and no constant inset lands on them. That is exactly how the
-   previous version failed — measured in the browser at 12px above the markers,
-   109px of bare line at each end, and a fill overshooting its marker by 45px.
-
-   Half-rails on the ends so the line starts and stops at a marker rather than
-   at the panel's padding. Colour carries progress: a stage that is done or
-   current has an accent rail behind it, upcoming stays a hairline. */
-.journey { --rail-y: calc(var(--space-3) + 1px + 18px); }
-
-.journey__rail {
+.journey__curve {
   position: absolute;
-  z-index: 0;
-  inset-block-start: calc(var(--rail-y) - 1px);
-  /* Half the gap PLUS the stage's own border. Absolute insets resolve against
-     the padding box, so `gap / -2` alone stopped 1px short at each end and left
-     a visible 2px break in the middle of every join — clearly a dotted line
-     rather than a continuous one once rendered. */
-  inset-inline: calc((var(--space-3) / -2) - 1px);
-  block-size: 2px;
-  background: var(--color-border);
+  inset: var(--space-8) var(--space-6);
+  inline-size: calc(100% - var(--space-6) * 2);
+  block-size: calc(100% - var(--space-8) * 2);
+  overflow: visible;
+  pointer-events: none;
 }
-.journey__stage:first-child .journey__rail { inset-inline-start: 50%; }
-.journey__stage:last-child  .journey__rail { inset-inline-end: 50%; }
-.journey__stage:only-child  .journey__rail { display: none; }
 
-.journey__stage[data-state='done'] .journey__rail,
-.journey__stage[data-state='current'] .journey__rail {
-  background: var(--color-border-accent);
+/* `preserveAspectRatio: none` stretches the viewBox to the box, so the stroke
+   would stretch with it and read thicker horizontally than vertically.
+   `vector-effect` keeps it an honest 2px in both axes. */
+.journey__track,
+.journey__fill {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.journey__track { stroke: var(--color-border); }
+.journey__fill {
+  stroke: var(--color-border-accent);
+  stroke-dasharray: 1;
+  transition: stroke-dashoffset var(--duration-slower) var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .journey__fill { transition: none; }
+}
+
+.journey__stages {
+  position: relative;
+  list-style: none; margin: 0; padding: 0;
+  /* Holds the box the percentages resolve against. The ratio matches the SVG's
+     viewBox so the two coordinate systems agree. */
+  aspect-ratio: 1000 / 260;
+  min-block-size: 13rem;
 }
 
 .journey__stage {
-  position: relative; z-index: 1;
-  flex: 1 1 8rem; min-inline-size: 0;
+  position: absolute;
+  z-index: 1;
+  transform: translate(-50%, -50%);
+  inline-size: min(10rem, 24%);
   display: flex; flex-direction: column; align-items: center;
   gap: var(--space-2); text-align: center;
-  padding: var(--space-3) var(--space-2);
-  border-radius: var(--radius-md);
-  border: 1px solid transparent;
-  transition: background-color var(--duration-base) var(--ease-hover),
-              border-color var(--duration-base) var(--ease-hover);
 }
 
-/* The one stage that matters gets the room, the surface and the weight.
-   Its surface is drawn on a pseudo-element rather than on the stage itself, so
-   it can sit ABOVE the rail. The rail is a child of the stage, so a background
-   on the stage paints underneath it — and the gold line ran straight across
-   the "you are here" card like a skewer. Now the card interrupts the path,
-   which is what standing on it should look like. */
+/* The current stage is the one thing on this panel the eye should find first,
+   so it gets a surface rather than only a heavier font. */
 .journey__stage[data-state='current'] {
-  flex-grow: 1.4;
-  border-color: transparent;
-}
-.journey__stage[data-state='current']::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  border-radius: var(--radius-md);
-  /* OPAQUE BASE, then the tint on top. `background: var(--color-accent-tint)`
-     alone did NOT occlude the rail, because that token is 16% alpha in both
-     themes — so the gold thread read straight through the card it was supposed
-     to be interrupted by, and z-index: 1 above the rail bought nothing. It was
-     visible in light mode and glaring in dark, where the rail is `--gold-400`
-     on navy. Compositing the same tint over an opaque surface keeps the
-     intended colour and actually hides what is behind it.
-     This also fixes the LAST stage: once "applying for jobs" becomes current,
-     it is this card the thread was cutting through. */
-  background-color: var(--color-surface);
-  background-image: linear-gradient(var(--color-accent-tint), var(--color-accent-tint));
+  background: var(--color-accent-wash);
   border: 1px solid var(--color-border-accent);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-2);
+  inline-size: min(11rem, 27%);
 }
-/* Content rides above the card it sits on. */
-.journey__stage > .journey__marker,
-.journey__stage > .journey__body,
-.journey__stage > .sr-only { position: relative; z-index: 2; }
-/* Finished work recedes. It is context, not the answer. */
+/* Label above the marker when the marker sits above the midline: the curve then
+   runs beneath the words rather than through them. */
+.journey__stage[data-side='up'] { flex-direction: column-reverse; }
+
 .journey__stage[data-state='done'] { opacity: 0.85; }
 .journey__stage[data-state='upcoming'] { opacity: 0.7; }
 
@@ -634,39 +614,41 @@
 }
 .journey__go:focus-visible { outline: none; }
 
-/* Phones: the track runs downward and the stages become rows. The thread has to
-   move with it — as a horizontal rule at 42px it would cut across the column. */
+/* Phones: a four point wave across 375px gives each stage ~90px, which is not
+   enough for a label. The curve is dropped entirely and the stages become an
+   ordinary vertical list with a straight rail down the marker column — the
+   winding path is a desktop affordance, and pretending otherwise would cost
+   legibility to keep a decoration. */
 @media (max-width: 40rem) {
-  .journey { flex-direction: column; gap: var(--space-2); }
+  .journey__curve { display: none; }
+
+  .journey__stages {
+    aspect-ratio: auto;
+    min-block-size: 0;
+    display: flex; flex-direction: column; gap: var(--space-2);
+  }
+
   .journey__stage {
-    flex: 0 0 auto;
+    position: static;
+    transform: none;
+    inline-size: auto;
     flex-direction: row; align-items: center; text-align: start;
     gap: var(--space-3);
   }
-  .journey__stage[data-state='current'] { flex-grow: 0; }
+  .journey__stage[data-state='current'] { inline-size: auto; }
+  .journey__stage[data-side='up'] { flex-direction: row; }
   .journey__body { flex: 1; }
 
-  /* The rail turns vertical and runs down the marker column. Same principle:
-     it spans this stage's own block extent and passes through this stage's own
-     marker, so a row that grows because its label wrapped keeps its line
-     attached. --rail-x is the inline twin of --rail-y. */
-  .journey { --rail-x: calc(var(--space-2) + 1px + 18px); }
-  .journey__rail {
-    inset-block: calc(var(--space-2) / -2);
-    inset-inline: auto;
-    inset-inline-start: calc(var(--rail-x) - 1px);
-    inline-size: 2px; block-size: auto;
+  /* One rail for the whole column, behind the markers. It can be a single
+     absolute track here because the rows are the same width and the marker
+     column is a fixed inline offset — the thing that was never true of the
+     horizontal layout. */
+  .journey__stages::before {
+    content: '';
+    position: absolute;
+    inset-block: var(--space-4);
+    inset-inline-start: calc(var(--space-2) + 1px + 18px);
+    inline-size: 2px;
+    background: var(--color-border);
   }
-  /* The inline reset is load-bearing. The desktop end-cap rules set
-     `inset-inline-start/end: 50%` at specificity (0,3,0), which outranks the
-     mobile `.journey__rail` rule at (0,1,0) — so without clearing them here the
-     first stage's rail sat at half the row's WIDTH instead of on the marker
-     column. Measured: 113px off at 375px, first stage only. */
-  .journey__stage:first-child .journey__rail,
-  .journey__stage:last-child  .journey__rail {
-    inset-inline-start: calc(var(--rail-x) - 1px);
-    inset-inline-end: auto;
-  }
-  .journey__stage:first-child .journey__rail { inset-block-start: 50%; inset-block-end: calc(var(--space-2) / -2); }
-  .journey__stage:last-child  .journey__rail { inset-block-end: 50%; inset-block-start: calc(var(--space-2) / -2); }
 }
