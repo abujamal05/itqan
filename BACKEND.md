@@ -562,6 +562,38 @@ not evidence, and readiness is evidence-derived. The UI says so explicitly and
 then offers the CV re-upload as the way to make it count. A service that quietly
 raised the score here would make the number mean two different things.
 
+### 1b. Course ordering — `Course.priority`  **(required, blocking)**
+
+The course path is a route, not a list: the first item is meant to be the single
+thing that moves the user furthest toward being able to apply. Today that cannot
+be expressed. `Course` carries no ordering field and `gaps` is a bare
+`string[]`, so nothing says which gap matters most or which course closes it.
+
+**Until this exists the UI renders whatever order the API returns**, unsorted and
+unranked. That is deliberate: sorting by hours or by price would invent a
+priority the data does not carry, and a path whose first step is merely the
+shortest course is worse than an unordered one, because it looks authoritative.
+
+Two fields close it:
+
+```jsonc
+// Course
+"priority": 1,              // 1 = do this first. Dense, stable, 1-based.
+"closesGap": "power-bi"     // which gap this course actually closes
+```
+
+- `priority` must be a total order over the returned set, not a bucket. Ties
+  force the UI to break them arbitrarily, which is the thing this field exists
+  to prevent.
+- `closesGap` lets the path label each step with the gap it removes, which is
+  what makes the sequence legible as a route rather than a queue.
+- Ordering is **per target role**. A course that is first for Data Analyst is not
+  first for IT Support, so this cannot be a static property of the course.
+
+Related: `gaps: string[]` should become objects carrying the same id, so a gap on
+the dashboard and a course on the path can be matched without string comparison
+on a display name that is localised.
+
 ### 2. Re-reading a document without redoing the profile
 
 The pipeline today is `queued → reading → translating → awaiting_confirmation →

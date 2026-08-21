@@ -32,7 +32,7 @@
  */
 import { ArrowRight, Check, Flag, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { line, curveCatmullRom } from 'd3-shape';
+import { line, curveBasis } from 'd3-shape';
 import { useI18n } from '../i18n';
 import type { JourneyStage } from '../api';
 
@@ -63,33 +63,46 @@ const BOX = { w: 1000, h: 260 };
 /**
  * How far the first and last markers sit from the edges, in 0..1.
  *
- * Not zero, and not `0.5 / count`. A stage is a centred label roughly 11rem
- * wide translated back by half its own width, so a marker at the very edge puts
- * half that label outside the panel — which is exactly what it did: the last
- * stage was clipped and the page grew a horizontal scrollbar.
+ * A stage is a centred label translated back by half its own width, so a marker
+ * at the very edge puts half that label outside the panel.
  */
 const EDGE_PAD = 0.16;
 
+/** How far the wave rises and falls from the midline, in 0..1. */
+const AMPLITUDE = 0.2;
+
+/** Samples used to draw the wave. Enough that straight segments are invisible. */
+const SAMPLES = 160;
+
 /**
- * Marker positions in 0..1, then scaled into BOX.
+ * The wave, as a cosine.
  *
- * The wave alternates so consecutive stages sit on opposite sides of the middle,
- * which is what gives the line something to curve around. First and last are
- * pulled toward the centre so the path enters and leaves level rather than
- * climbing out of frame.
+ * WHY NOT A SPLINE THROUGH THE MARKERS. That was the first attempt and it looked
+ * hand drawn, for two compounding reasons. A Catmull-Rom through four unevenly
+ * placed control points overshoots between them, so the curve bulged on one side
+ * of a marker and pinched on the other; and the SVG stretches its viewBox to the
+ * panel (`preserveAspectRatio: none`), which scales those bulges horizontally by
+ * a different factor than vertically and turns an uneven curve into a lumpy one.
+ *
+ * A cosine has neither problem. It is regular by construction, so there is
+ * nothing to overshoot, and stretching a cosine horizontally yields a cosine.
+ * The period is set so consecutive markers land exactly half a period apart,
+ * which puts every marker on an extreme — alternating above and below the
+ * midline — and the curve through them is then guaranteed to be the same shape
+ * between every pair.
  */
-const pointsFor = (count: number, rtl: boolean) =>
-  Array.from({ length: count }, (_, i) => {
-    const t =
-      count === 1 ? 0.5 : EDGE_PAD + (i / (count - 1)) * (1 - EDGE_PAD * 2);
-    const x = rtl ? 1 - t : t;
-    /* Ends level, middles alternating. The amplitude is deliberately modest:
-       the wave has to leave vertical room for a two line label under every
-       marker, and a taller wave buys drama at the cost of the words. */
-    const edge = i === 0 || i === count - 1;
-    const y = edge ? 0.5 : i % 2 === 1 ? 0.26 : 0.74;
-    return { x, y };
+const waveY = (t: number, step: number) =>
+  0.5 - AMPLITUDE * Math.cos((Math.PI * (t - EDGE_PAD)) / step);
+
+/** Marker positions in 0..1. Markers sit ON the wave, by evaluating it. */
+const pointsFor = (count: number, rtl: boolean) => {
+  const span = 1 - EDGE_PAD * 2;
+  const step = count > 1 ? span / (count - 1) : span;
+  return Array.from({ length: count }, (_, i) => {
+    const t = count === 1 ? 0.5 : EDGE_PAD + i * step;
+    return { x: rtl ? 1 - t : t, y: count === 1 ? 0.5 : waveY(t, step), step };
   });
+};
 
 export function Journey({
   stages,
@@ -118,15 +131,22 @@ export function Journey({
       : 0;
 
   const pts = pointsFor(stages.length, rtl);
+  const span = 1 - EDGE_PAD * 2;
+  const step = stages.length > 1 ? span / (stages.length - 1) : span;
 
-  /* d3 owns the curve maths. `alpha(0.5)` is the centripetal parametrisation,
-     which is the one that cannot produce cusps or self-intersections between
-     control points — the failure a plain cardinal spline shows when two markers
-     land close together. */
-  const curve = line<{ x: number; y: number }>()
-    .x((p) => p.x * BOX.w)
-    .y((p) => p.y * BOX.h)
-    .curve(curveCatmullRom.alpha(0.5))(pts) ?? '';
+  /* d3 turns the samples into the path. `curveBasis` smooths whatever tiny
+     faceting 160 samples still leave, and because the samples already describe a
+     cosine there is nothing for it to distort. */
+  const curve =
+    stages.length > 1
+      ? line<number>()
+          .x((k) => {
+            const t = EDGE_PAD + (k / SAMPLES) * span;
+            return (rtl ? 1 - t : t) * BOX.w;
+          })
+          .y((k) => waveY(EDGE_PAD + (k / SAMPLES) * span, step) * BOX.h)
+          .curve(curveBasis)(Array.from({ length: SAMPLES + 1 }, (_, k) => k)) ?? ''
+      : '';
 
   return (
     <section className="stack" aria-labelledby="journey-title">
