@@ -48,7 +48,7 @@ import { CareerGoal } from '../components/CareerGoal';
 import type { Course } from '../api';
 import { MatchCard } from '../components/MatchCard';
 import { CourseCard } from '../components/CourseCard';
-import { Journey, LOW_READINESS } from '../components/Journey';
+import { JourneyMap, LOW_READINESS } from '../components/map/JourneyMap';
 import { useRunInFlight } from '../components/PipelineProgress';
 
 /** How much of each list the dashboard shows before handing off to its page.
@@ -340,7 +340,7 @@ export function Dashboard() {
       </section>
 
       {/* 2. How far along you are — the bridge from the score to the target. */}
-      <Journey stages={data.journey} target={target} readiness={data.readiness} />
+      <JourneyMap stages={data.journey} target={target} readiness={data.readiness} />
 
       {/* "Your highest yield skills" used to sit here. Removed: it restated the
           `held` rows of the standings list ~200px above it, in a second visual

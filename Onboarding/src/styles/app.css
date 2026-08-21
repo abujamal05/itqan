@@ -1205,13 +1205,17 @@
   box-shadow: var(--shadow-lg), var(--rim-light-dark);
 }
 
-/* The journey panel is the second half of the same expressive moment, so it
-   shares the ground rather than reverting to a flat white card. */
-.journey {
-  background: var(--color-surface-warm) !important;
+/* The journey map is the second half of the same expressive moment, so it
+   shares the ground rather than reverting to a flat white card. It is the map
+   CANVAS that carries this now — the panel it used to sit in is gone. */
+.map--journey .map__canvas {
+  --map-fade: var(--color-surface-warm);
+  background-color: var(--map-fade);
   box-shadow: var(--shadow-sm), var(--rim-light);
 }
-[data-theme='dark'] .journey { box-shadow: var(--shadow-sm), var(--rim-light-dark); }
+[data-theme='dark'] .map--journey .map__canvas {
+  box-shadow: var(--shadow-sm), var(--rim-light-dark);
+}
 
 /* Display scale. The doc calls a page whose largest text is 36px "a page that
    reads like a form" and asks for 3:1 headline-to-body minimum; this page was

@@ -441,114 +441,11 @@
    about a person, and it is what made the section read as fixed and rigid.
    `auto` columns with the current stage on `1.4fr` let the one that matters take
    the room, and the finished ones shrink to what they need. */
-/* ---- The winding path -----------------------------------------------------
-   The stages are absolutely positioned at the SAME normalised coordinates the
-   curve is generated from (Journey.tsx, `pointsFor`), so the line passes
-   through every marker by construction rather than by a measured offset. That
-   is what the previous per-stage rail was working around, and why this cannot
-   drift: nothing here reads the DOM.
-
-   The old `.journey__rail` and its `--rail-y` geometry are gone with it. */
-.journey {
-  position: relative;
-  overflow: hidden;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-8) var(--space-6);
-}
-
-.journey__curve {
-  position: absolute;
-  inset: var(--space-8) var(--space-6);
-  inline-size: calc(100% - var(--space-6) * 2);
-  block-size: calc(100% - var(--space-8) * 2);
-  overflow: visible;
-  pointer-events: none;
-}
-
-/* `preserveAspectRatio: none` stretches the viewBox to the box, so the stroke
-   would stretch with it and read thicker horizontally than vertically.
-   `vector-effect` keeps it an honest 2px in both axes. */
-.journey__track,
-.journey__fill {
-  fill: none;
-  stroke-width: 2;
-  stroke-linecap: round;
-  vector-effect: non-scaling-stroke;
-}
-.journey__track { stroke: var(--color-border); }
-.journey__fill {
-  stroke: var(--color-border-accent);
-  stroke-dasharray: 1;
-  transition: stroke-dashoffset var(--duration-slower) var(--ease-out);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .journey__fill { transition: none; }
-}
-
-.journey__stages {
-  position: relative;
-  list-style: none; margin: 0; padding: 0;
-  /* Holds the box the percentages resolve against. The ratio matches the SVG's
-     viewBox so the two coordinate systems agree. */
-  aspect-ratio: 1000 / 260;
-  min-block-size: 13rem;
-}
-
-.journey__stage {
-  position: absolute;
-  z-index: 1;
-  transform: translate(-50%, -50%);
-  inline-size: min(10rem, 24%);
-  display: flex; flex-direction: column; align-items: center;
-  gap: var(--space-2); text-align: center;
-}
-
-/* The current stage is the one thing on this panel the eye should find first,
-   so it gets a surface rather than only a heavier font. */
-.journey__stage[data-state='current'] {
-  background: var(--color-accent-wash);
-  border: 1px solid var(--color-border-accent);
-  border-radius: var(--radius-md);
-  padding: var(--space-3) var(--space-2);
-  inline-size: min(11rem, 27%);
-}
-/* Label above the marker when the marker sits above the midline: the curve then
-   runs beneath the words rather than through them. */
-.journey__stage[data-side='up'] { flex-direction: column-reverse; }
-
-.journey__stage[data-state='done'] { opacity: 0.85; }
-.journey__stage[data-state='upcoming'] { opacity: 0.7; }
-
-.journey__marker {
-  inline-size: 36px; block-size: 36px; border-radius: var(--radius-full);
-  display: grid; place-items: center;
-  background: var(--color-surface);
-  border: 2px solid var(--color-border);
-  color: var(--color-text);
-  flex: 0 0 auto;
-}
-.journey__dot {
-  inline-size: 8px; block-size: 8px; border-radius: var(--radius-full);
-  background: var(--color-border-strong);
-}
-.journey__stage[data-state='done'] .journey__marker {
-  background: var(--color-accent); border-color: var(--color-accent);
-  color: var(--color-text-on-gold);
-}
-.journey__stage[data-state='current'] .journey__marker {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 4px var(--color-accent-tint);
-}
-.journey__stage[data-state='current'] .journey__dot { background: var(--color-accent); }
-
-.journey__body { display: flex; flex-direction: column; gap: var(--space-1); min-inline-size: 0; }
-.journey__label { font-size: var(--text-sm); font-weight: var(--weight-medium); }
-.journey__stage[data-state='upcoming'] .journey__label { font-weight: var(--weight-regular); }
-.journey__stage[data-state='current'] .journey__label { font-weight: var(--weight-semibold); }
-.journey__detail { font-size: var(--text-xs); color: var(--color-text-muted); }
+/* ---- The journey's captions ------------------------------------------------
+   The journey ITSELF is a React Flow canvas now (`components/map/`, styled in
+   `map.css`), so the hand-built curve, its track and fill, and the absolutely
+   positioned stage markers that used to live here are gone. What remains is the
+   text around the map, which is ordinary product chrome. */
 .journey__count { font-size: var(--text-sm); color: var(--color-text-muted); }
 
 /* The destination. A track with no endpoint is a progress bar; this is what
@@ -560,6 +457,15 @@
 }
 .journey__target svg { color: var(--color-accent-ink); flex: 0 0 auto; }
 
+/* The low-readiness variant of the same caption. Same shape, different news:
+   the destination is still named, it is just not the postings page yet. */
+.journey__building {
+  display: flex; align-items: center; gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+.journey__building svg { color: var(--color-accent-ink); flex: 0 0 auto; }
+
 /* The same pairing in the readiness block, so the two read as one statement. */
 .target {
   display: flex; align-items: center; gap: var(--space-2);
@@ -567,88 +473,3 @@
 }
 .target svg { color: var(--color-accent-ink); flex: 0 0 auto; }
 .target__hint { color: var(--color-text-muted); font-style: normal; }
-
-/* ---- The one stage that leads somewhere ----------------------------------
-   Only the final stage links, to the postings page (Journey.tsx, STAGE_LINKS).
-   The anchor holds just the label so the accessible name is the stage name,
-   and `::after` stretches the hit area over the whole stage — a 14px text link
-   inside a 120px card is a target nobody finds on a phone. z-index 3 puts it
-   above the current stage's card (1) and its content (2); nothing else in the
-   panel is interactive, so it cannot swallow another control. */
-.journey__go {
-  display: inline-flex; align-items: center; gap: var(--space-2);
-  color: inherit; text-decoration: none;
-  font-size: var(--text-sm); font-weight: var(--weight-medium);
-}
-.journey__go::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  border-radius: var(--radius-md);
-}
-.journey__go .go {
-  color: var(--color-accent-ink);
-  flex: 0 0 auto;
-  transition: transform var(--duration-base) var(--ease-hover);
-}
-/* Travel is a transform on an inline icon, so it costs no layout, and the
-   distance rides --motion-scale like everything else here. */
-.journey__go:hover .go { transform: translateX(calc(3px * var(--motion-scale))); }
-[dir='rtl'] .journey__go .go { transform: scaleX(-1); }
-[dir='rtl'] .journey__go:hover .go { transform: scaleX(-1) translateX(calc(3px * var(--motion-scale))); }
-
-/* A linked stage says so before it is clicked: it lifts out of the "upcoming"
-   dimming on hover, and the label underlines. Both are state changes on an
-   element the user is already pointing at, so neither needs to shout. */
-.journey__stage[data-linked] { cursor: pointer; }
-.journey__stage[data-linked]:hover { opacity: 1; }
-.journey__stage[data-linked]:hover .journey__label { text-decoration: underline; }
-.journey__stage[data-linked]:hover .journey__marker { border-color: var(--color-border-accent); }
-/* The ring goes on the STAGE, not on the stretched anchor: the anchor's box is
-   the label, so a focus ring on it outlined two words in the middle of a card
-   the keyboard user had just landed on. */
-.journey__stage:has(.journey__go:focus-visible) {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
-}
-.journey__go:focus-visible { outline: none; }
-
-/* Phones: a four point wave across 375px gives each stage ~90px, which is not
-   enough for a label. The curve is dropped entirely and the stages become an
-   ordinary vertical list with a straight rail down the marker column — the
-   winding path is a desktop affordance, and pretending otherwise would cost
-   legibility to keep a decoration. */
-@media (max-width: 40rem) {
-  .journey__curve { display: none; }
-
-  .journey__stages {
-    aspect-ratio: auto;
-    min-block-size: 0;
-    display: flex; flex-direction: column; gap: var(--space-2);
-  }
-
-  .journey__stage {
-    position: static;
-    transform: none;
-    inline-size: auto;
-    flex-direction: row; align-items: center; text-align: start;
-    gap: var(--space-3);
-  }
-  .journey__stage[data-state='current'] { inline-size: auto; }
-  .journey__stage[data-side='up'] { flex-direction: row; }
-  .journey__body { flex: 1; }
-
-  /* One rail for the whole column, behind the markers. It can be a single
-     absolute track here because the rows are the same width and the marker
-     column is a fixed inline offset — the thing that was never true of the
-     horizontal layout. */
-  .journey__stages::before {
-    content: '';
-    position: absolute;
-    inset-block: var(--space-4);
-    inset-inline-start: calc(var(--space-2) + 1px + 18px);
-    inline-size: 2px;
-    background: var(--color-border);
-  }
-}
