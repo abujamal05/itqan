@@ -21,7 +21,6 @@
  */
 import { Icon } from 'astro-icon/components';
 import Hud from '../Hud.astro';
-import Shot from '../Shot.astro';
 import { t, type Locale } from '../../i18n';
 
 interface Props {
@@ -57,34 +56,47 @@ const holds = [
 const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.refuse4];
 ---
 
-<!-- 1. The belief, with mission and vision folded in beneath it. -->
+<!-- 1. The belief. One idea, and the only display-scale type on the page
+     until the mission band below it. -->
 <section class="about-why">
   <div class="container about-why__grid">
     <div class="about-why__copy">
-      <p class="eyebrow reveal">{s.about.eyebrow}</p>
-      <h1 class="about-why__heading reveal">{s.about.whyHeading}</h1>
-      <div class="about-why__rule reveal" aria-hidden="true"></div>
-      <p class="about-why__body reveal">{s.about.whyBody}</p>
-
-      <dl class="about-mv reveal">
-        <div>
-          <dt>{s.about.missionLabel}</dt>
-          <dd>{s.about.mission}</dd>
-        </div>
-        <div>
-          <dt>{s.about.visionLabel}</dt>
-          <dd>{s.about.vision}</dd>
-        </div>
-      </dl>
+      <p class="eyebrow" data-enter>{s.about.eyebrow}</p>
+      <h1 class="about-why__heading" data-enter>{s.about.whyHeading}</h1>
+      <div class="about-why__rule" aria-hidden="true" data-enter></div>
+      <p class="about-why__body" data-enter>{s.about.whyBody}</p>
     </div>
 
-    <div class="about-why__figure reveal">
+    <div class="about-why__figure" data-enter>
       <Hud pose="idle" size="lg" loop eager />
     </div>
   </div>
 </section>
 
-<!-- 2. The evidence. The page's centre of gravity, and the only real data on it.
+<!-- 2. What we are for. Its own section now, and the page's one moment of
+     scale: navy is the most emphatic surface the palette has, and two sentences
+     that are meant to outlive every other line on the site have earned it. -->
+<section class="mv">
+  <div class="container mv__inner">
+    <p class="mv__eyebrow reveal">{s.about.mvHeading}</p>
+
+    <div class="mv__pair stagger">
+      <figure class="mv__item reveal">
+        <figcaption class="mv__label">{s.about.missionLabel}</figcaption>
+        <blockquote class="mv__text">{s.about.mission}</blockquote>
+      </figure>
+
+      <span class="mv__rule reveal" aria-hidden="true"></span>
+
+      <figure class="mv__item reveal">
+        <figcaption class="mv__label">{s.about.visionLabel}</figcaption>
+        <blockquote class="mv__text">{s.about.vision}</blockquote>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- 3. The evidence. The page's centre of gravity, and the only real data on it.
         Meters rather than a paragraph, because a proportion is a shape. -->
 <section class="section section--sunken">
   <div class="container">
@@ -124,7 +136,7 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
   </div>
 </section>
 
-<!-- 3. The standard we hold, and what it rules out. One argument, two columns. -->
+<!-- 4. The standard we hold, and what it rules out. One argument, two columns. -->
 <section class="section">
   <div class="container">
     <div class="section__head reveal">
@@ -166,7 +178,7 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
   </div>
 </section>
 
-<!-- 4. The team, and where we sit, together: both answer "who is behind this". -->
+<!-- 5. The team, and where we sit, together: both answer "who is behind this". -->
 <section class="section section--sunken">
   <div class="container">
     <div class="section__head reveal">
@@ -210,21 +222,19 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
   </div>
 </section>
 
-<!-- 5. The product itself, then the one action. Showing the thing beats another
-        paragraph about it. -->
-<section class="section">
-  <div class="container about-close">
-    <div class="about-close__copy reveal">
-      <h2 class="section__heading">{s.home.closing.heading}</h2>
-      <p class="about-close__body">{s.home.closing.body}</p>
-      <a class="button button--primary button--arrow" href={`${base}/signup/`}>
-        <span>{s.actions.signup}</span>
-        <Icon class="button__arrow" name="ph:arrow-right" width="16" height="16" aria-hidden="true" />
-      </a>
-    </div>
-    <Shot name="dashboard" alt={s.about.mission} class="reveal" />
-  </div>
-</section>
+<!-- The standing action. A div rather than a <section>, matching /proof and
+     /how-it-works: the call to action is chrome every page carries, not an idea
+     this one is making, and counting it as a section would push About to six.
+     The dashboard screenshot went with it — home already shows that screen, and
+     repeating it here says nothing new. -->
+<div class="container page-cta reveal">
+  <h2 class="section__heading">{s.home.closing.heading}</h2>
+  <p class="page-cta__body">{s.home.closing.body}</p>
+  <a class="button button--primary button--arrow" href={`${base}/signup/`}>
+    <span>{s.actions.signup}</span>
+    <Icon class="button__arrow" name="ph:arrow-right" width="16" height="16" aria-hidden="true" />
+  </a>
+</div>
 
 <style>
   /* ---- 1. The opening ---- */
@@ -360,6 +370,183 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
   .stat__label {
     color: var(--color-text-muted);
     line-height: 1.55;
+  }
+
+  /* ---- Motion ----
+     Each section arrives differently, so the page reads as composed rather than
+     as one effect applied five times. All of it hangs off the existing
+     `.reveal` / `.is-visible` contract, and all of it multiplies by
+     `--motion-scale`, which reduced motion collapses to zero: the travel goes,
+     the fades stay at full duration. */
+
+  /* The opening rule draws itself, the same gesture the page-head rule makes on
+     every other page, so About opens in the site's own handwriting. */
+  .about-why__rule {
+    transform: scaleX(1);
+    transform-origin: 0 50%;
+    transition: transform var(--duration-story) var(--ease-out-expo);
+  }
+
+  :global([dir='rtl']) .about-why__rule {
+    transform-origin: 100% 50%;
+  }
+
+  :global(html.motion-ready) .about-why__rule {
+    transform: scaleX(0);
+  }
+
+  /* The standards settle: the row arrives, then its chip lands a beat later.
+     Two steps rather than one is what makes a list feel assembled instead of
+     dropped in. */
+  .hold__icon {
+    transform: scale(calc(1 - 0.18 * var(--motion-scale)));
+    opacity: 0.6;
+    transition:
+      transform var(--duration-slower) var(--ease-out-expo) 120ms,
+      opacity var(--duration-slower) var(--ease-out) 120ms;
+  }
+
+  .hold__item.is-visible .hold__icon {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  /* Faces come in slightly closer than they end up. A small scale on a portrait
+     reads as the photo settling rather than as a card sliding, which is the
+     difference between warm and mechanical here. */
+  .about-team__photo {
+    transform: scale(calc(1 + 0.04 * var(--motion-scale)));
+    transition: transform var(--duration-story) var(--ease-out-expo);
+  }
+
+  .about-team__member.is-visible .about-team__photo {
+    transform: scale(1);
+  }
+
+  /* A quiet lift on hover, pointer devices only: on touch there is no hover
+     state and the transition just delays the tap. */
+  @media (hover: hover) and (pointer: fine) {
+    .about-team__member {
+      transition: transform var(--duration-base) var(--ease-out);
+    }
+
+    .about-team__member:hover {
+      transform: translateY(calc(-4px * var(--motion-scale)));
+    }
+  }
+
+  /* The two statements arrive from slightly further than a normal reveal, and
+     slower. This is the page's one moment of scale and the motion should agree
+     with that rather than treating it like another paragraph. */
+  :global(html.reveal-ready) .mv__item.reveal {
+    transition-duration: var(--duration-story);
+    transition-timing-function: var(--ease-out-expo);
+  }
+
+  :global(html.reveal-ready) .mv__item.reveal:not(.is-visible) {
+    transform: translateY(calc(40px * var(--motion-scale)));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hold__icon,
+    .about-team__photo,
+    .about-why__rule {
+      transition: opacity var(--duration-slower) var(--ease-out);
+      transform: none;
+    }
+  }
+
+  /* ---- 2. What we are for ----
+     The page's one moment of scale. Navy is the most emphatic surface in the
+     palette and `--color-surface-inverse` exists for exactly this: a navy panel
+     inside a light page. Two sentences meant to outlive everything else on the
+     site have earned it, and nothing else on this page competes.
+
+     The type is set at display size and the measure kept short, because the
+     grandeur is supposed to come from scale and air rather than from decoration. */
+  .mv {
+    margin-block: var(--space-24);
+    padding-block: var(--space-32);
+    background-color: var(--color-surface-inverse);
+    color: var(--color-text-on-navy);
+  }
+
+  .mv__inner {
+    display: grid;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .mv__eyebrow {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    color: var(--gold-300);
+    margin-block-end: var(--space-12);
+  }
+
+  /* `start`, not `center`. The two statements are different lengths, and
+     centring them vertically put "Our mission" and "Our vision" on different
+     lines, which made a matched pair look like two unrelated blocks. The rule
+     between them is centred on its own instead. */
+  .mv__pair {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: var(--space-16);
+    align-items: start;
+  }
+
+  .mv__rule {
+    align-self: center;
+  }
+
+  .mv__item {
+    margin: 0;
+    display: grid;
+    gap: var(--space-5);
+    justify-items: center;
+  }
+
+  .mv__label {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    color: var(--gold-300);
+  }
+
+  .mv__text {
+    margin: 0;
+    font-size: var(--text-3xl);
+    font-weight: var(--weight-medium);
+    line-height: 1.35;
+    text-wrap: balance;
+    max-inline-size: 20ch;
+  }
+
+  /* A drawn divider between the two, not a border: it grows from the middle as
+     the pair arrives, which is what ties them together as one statement. */
+  .mv__rule {
+    inline-size: 1px;
+    block-size: var(--space-20);
+    background-color: color-mix(in srgb, var(--paper) 28%, transparent);
+    transform: scaleY(1);
+    transition: transform var(--duration-story) var(--ease-out-expo);
+  }
+
+  :global(html.reveal-ready) .mv__rule.reveal:not(.is-visible) {
+    transform: scaleY(0);
+  }
+
+  /* ---- The standing action ---- */
+  .page-cta {
+    display: grid;
+    justify-items: center;
+    text-align: center;
+    gap: var(--space-4);
+    padding-block: var(--space-24);
+  }
+
+  .page-cta__body {
+    color: var(--color-text-muted);
+    margin-block-end: var(--space-4);
   }
 
   /* ---- 3. What we hold to, and what it rules out ---- */
@@ -503,20 +690,6 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
     color: var(--color-text);
   }
 
-  /* ---- 5. Close ---- */
-  .about-close {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
-    gap: var(--space-12);
-    align-items: center;
-  }
-
-  .about-close__body {
-    margin-block: var(--space-4) var(--space-8);
-    color: var(--color-text-muted);
-    font-size: var(--text-lg);
-  }
-
   /* ---- Adaptation ----
      The two-column pairs collapse in a deliberate order: the mascot goes first
      because it is decoration, then the data columns, and the stat row stays
@@ -531,8 +704,7 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
       order: -1;
     }
 
-    .hold,
-    .about-close {
+    .hold {
       grid-template-columns: minmax(0, 1fr);
       gap: var(--space-10);
     }
@@ -540,6 +712,33 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
     .stats {
       grid-template-columns: minmax(0, 1fr);
       gap: var(--space-8);
+    }
+
+    .mv {
+      margin-block: var(--space-16);
+      padding-block: var(--space-24);
+    }
+
+    .mv__pair {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-10);
+    }
+
+    /* Vertical rule turns horizontal when the pair stacks; a 1px column between
+       two stacked blocks is just a stray mark. */
+    .mv__rule {
+      inline-size: var(--space-16);
+      block-size: 1px;
+      justify-self: center;
+      transform: scaleX(1);
+    }
+
+    :global(html.reveal-ready) .mv__rule.reveal:not(.is-visible) {
+      transform: scaleX(0);
+    }
+
+    .mv__text {
+      font-size: var(--text-2xl);
     }
 
     /* On one column the figure and its meter read better side by side than

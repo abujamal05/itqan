@@ -20,6 +20,36 @@ motion is RTL-aware, and **reduced motion** removes movement while keeping opaci
 > and the animated-Hud requirement in the next section remains open. Read the skill before adding motion;
 > read this file to know what is currently on the page.
 
+## The motion layer (added 2026-08-21)
+
+`src/scripts/motion.ts` owns three things that have to agree with each other, so
+they live in one module rather than three.
+
+| # | Interaction | Trigger | What happens | Token / value |
+|---|---|---|---|---|
+| M1 | Site entrance | DOMContentLoaded | `[data-enter]` elements fade and rise 18px, staggered 75ms apart in reading order: header, then headline, rule, sub, pain, actions, mascot | 850ms, `--ease-out-expo` |
+| M2 | Scroll feel | always (pointer) | Lenis momentum smoothing; the page keeps weight and settles instead of stopping dead | 1.15s, exponential ease-out |
+| M3 | Scroll reveal | 15% of the element in view | opacity + 28px rise | `--duration-story`, `--ease-out-expo` |
+| M4 | Scroll cue | loop | the mouse wheel glyph ticks down 5px and pauses | 2.6s, `--ease-in-out` |
+
+**Why `motion/mini` and not `motion`.** The full entry point costs 28KB gzipped
+on a site whose whole JS budget was 2.8KB. `motion/mini` is the same `animate()`
+over the Web Animations API the browser already ships. `stagger` and `inView`
+are not imported at all: they are four lines and an IntersectionObserver
+respectively, written out locally rather than pulled in at ten times their
+weight. Measured total is **11.4KB gzipped per page**, of which ~8.6KB is the
+motion layer.
+
+**Reduced motion.** Lenis does not start at all — smoothing IS movement the user
+did not ask for, and it is the most nauseating thing on a page for someone who
+set that preference. The entrance keeps its fade at full duration and drops the
+travel. M4 stops. M3 keeps the fade through `--motion-scale`.
+
+**The class contract is unchanged.** `.reveal` / `.is-visible` still drives the
+page-head rule, the gold marker, the survey meters and every `pathLength`
+stroke. Motion toggles the same class rather than replacing it, because driving
+those four from JS instead would have killed all four silently.
+
 ## Global (`src/styles/global.css`)
 
 | # | Interaction | Trigger | What happens | Token |

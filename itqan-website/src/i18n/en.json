@@ -97,13 +97,9 @@
   "home": {
     "hero": {
       "heading": "Stop guessing your next step.",
-      "sub": "Career intelligence for graduates and career switchers across MENA. Where you stand, what to aim for, and the shortest way there.",
-      "ctaSecondary": "See the proof"
-    },
-    "pain": {
-      "heading": "The problem was never you. It was having to guess.",
-      "body": "You send a hundred applications, hear nothing back, and still have no idea which part of your profile is holding you up.",
-      "eyebrow": "Where the time goes"
+      "sub": "Career intelligence for graduates and career switchers across MENA.",
+      "ctaSecondary": "See the proof",
+      "scrollCue": "Scroll to learn more"
     },
     "build": {
       "heading": "Itqan answers four questions, in the order they matter.",
@@ -214,54 +210,9 @@
   },
   "proof": {
     "title": "Proof",
-    "metaDescription": "A full worked example of how Itqan judges a position against a real role, with its limits stated plainly.",
+    "metaDescription": "Real screens from inside Itqan: the confirmation step that pauses the run, and job matches carrying their reason and their source.",
     "heading": "Do not take our word for any of it.",
-    "intro": "This is the reasoning itself, laid out so you can judge whether it holds up before you create an account.",
-    "example": {
-      "heading": "One role, read against one person",
-      "intro": "What a Junior Data Analyst opening asks for, and where this person stands on each piece.",
-      "courseLabel": "What the role asks for",
-      "skillLabel": "Where you stand",
-      "whyLabel": "Why we say that",
-      "rows": [
-        {
-          "course": "SQL",
-          "skill": "You have it",
-          "why": "Two of your database courses were built on writing queries and designing tables. That is what a posting means by SQL.",
-          "confidence": "strong"
-        },
-        {
-          "course": "Data analysis",
-          "skill": "You have it",
-          "why": "Your statistics work covers describing data, probability and reading results, which is the whole of what these postings ask for.",
-          "confidence": "strong"
-        },
-        {
-          "course": "Reporting",
-          "skill": "You have it",
-          "why": "The monthly reporting on your CV is this, under a different name. The market calls it reporting.",
-          "confidence": "strong"
-        },
-        {
-          "course": "Power BI",
-          "skill": "Not yet",
-          "why": "Nothing you gave shows it, and three of the openings tracked for this role ask for it by name. That puts it first on your path.",
-          "confidence": "strong"
-        },
-        {
-          "course": "Stakeholder communication",
-          "skill": "Maybe",
-          "why": "Your technical writing course points at it but does not evidence it on its own, so it is a suggestion until you confirm it.",
-          "confidence": "suggested"
-        }
-      ],
-      "note": "An illustrative example. Inside the product, each match links to a live posting with the date it was retrieved."
-    },
-    "how": {
-      "heading": "How a recommendation is justified",
-      "p1": "A recommendation is a chain with three links: where you stand, what the role asks for, and an opening that asks for it right now. Itqan shows the whole chain every time, under the name why this match.",
-      "p2": "When every link holds, it says so. When one is weaker, it is labelled a suggestion for you to confirm. It is never presented as fact."
-    },
+    "intro": "These are real screens from inside Itqan rather than pictures of what it might look like. Judge the mechanism for yourself before you create an account.",
     "limits": {
       "heading": "What Itqan cannot do yet",
       "items": [
@@ -272,7 +223,17 @@
         "It reads Arabic and English. Other languages, not yet."
       ]
     },
-    "eyebrow": "See for yourself"
+    "eyebrow": "See for yourself",
+    "confirm": {
+      "heading": "Itqan stops and waits for you.",
+      "body": "It reads your documents and then pauses. Everything it extracted is put in front of you with the place it was read from and how sure it is, and anything it could not evidence is marked for you to confirm rather than quietly kept. This screen is the only thing that decides what the rest of the product believes about you, and you are the one filling it in.",
+      "caption": "The confirmation step, part way through onboarding."
+    },
+    "match": {
+      "heading": "Every match carries its reason and its source.",
+      "body": "A recommendation is a chain with three links: where you stand, what the role asks for, and a posting that asks for it right now. Itqan shows the whole chain under the name why this match, points at the thing in your own documents that caused it, and links out to the live posting with the date it was found. When one link is weaker it says so instead of rounding up.",
+      "caption": "Job matches, each with why this match and a dated source."
+    }
   },
   "signup": {
     "title": "Create your free account",
@@ -465,7 +426,7 @@
     "title": "Who we are",
     "metaDescription": "Why we built Itqan. We show you where you stand, the shortest path to the job you want, and the real jobs that fit you today.",
     "whyHeading": "Nobody ever tells you how far away it is.",
-    "whyBody": "You have a rough idea of where you want to end up. What nobody gives you is the distance, and you should be able to see that from the first day rather than work it out after a year of applying and hearing nothing back.",
+    "whyBody": "You have a rough idea of where you want to end up. Nobody gives you the distance, and you should be able to see it from the first day.",
     "missionLabel": "Our mission",
     "mission": "We show you where you stand, the shortest path to the job you want, and the jobs that fit you today.",
     "visionLabel": "Our vision",
@@ -521,6 +482,7 @@
       "note": "Approximate figures from an early sample of graduates and final year students in Oman. We are widening it, and we will publish the exact numbers when the sample is large enough to carry them."
     },
     "holdHeading": "The standards we hold ourselves to",
-    "statsAria": "Survey finding"
+    "statsAria": "Survey finding",
+    "mvHeading": "What we are for"
   }
 }
