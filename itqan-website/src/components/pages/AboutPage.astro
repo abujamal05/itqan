@@ -61,12 +61,12 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
 <section class="about-why">
   <div class="container about-why__grid">
     <div class="about-why__copy">
-      <p class="eyebrow reveal">{s.about.eyebrow}</p>
-      <h1 class="about-why__heading reveal">{s.about.whyHeading}</h1>
-      <div class="about-why__rule reveal" aria-hidden="true"></div>
-      <p class="about-why__body reveal">{s.about.whyBody}</p>
+      <p class="eyebrow" data-enter>{s.about.eyebrow}</p>
+      <h1 class="about-why__heading" data-enter>{s.about.whyHeading}</h1>
+      <div class="about-why__rule" aria-hidden="true" data-enter></div>
+      <p class="about-why__body" data-enter>{s.about.whyBody}</p>
 
-      <dl class="about-mv reveal">
+      <dl class="about-mv" data-enter>
         <div>
           <dt>{s.about.missionLabel}</dt>
           <dd>{s.about.mission}</dd>
@@ -78,7 +78,7 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
       </dl>
     </div>
 
-    <div class="about-why__figure reveal">
+    <div class="about-why__figure" data-enter>
       <Hud pose="idle" size="lg" loop eager />
     </div>
   </div>

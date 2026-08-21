@@ -1,8 +1,29 @@
 ---
+/**
+ * Proof.
+ *
+ * FOUR sections, each making exactly one argument:
+ *   1. what this page is
+ *   2. the run pauses and waits for you          (the confirmation screen)
+ *   3. every match carries its reason and source (the job matches screen)
+ *   4. what it still cannot do
+ *
+ * WHAT WAS REMOVED AND WHY. The page used to lead with a fabricated Junior Data
+ * Analyst table labelled "An illustrative example". A page called Proof whose
+ * centrepiece is a mockup proves nothing, and for the sceptical user this page
+ * exists for it is worse than proving nothing: it invites him to notice that the
+ * evidence is invented. The prose section explaining the evidence chain went with
+ * it, because the screen beside it now makes that argument by showing instead of
+ * asserting, and a section is allowed one idea.
+ *
+ * The screens come from Onboarding/scripts/capture-app-shots.mjs, captured
+ * against the running product with a seeded account, so they cannot drift into
+ * fiction. Re-run it after any app redesign.
+ *
+ * Brand rule: no mascot anywhere on this page. It is an evidence surface.
+ */
 import { Icon } from 'astro-icon/components';
-/* The proof page earns the sign up before the sign up.
-   Brand rule: no mascot anywhere on this page. It is an evidence surface. */
-import Badge from '../Badge.astro';
+import Shot from '../Shot.astro';
 import { t, type Locale } from '../../i18n';
 
 interface Props {
@@ -15,77 +36,45 @@ const base = `/${locale}`;
 ---
 
 <div class="container">
-  <header class="page-head reveal">
+  <header class="page-head" data-enter>
     <p class="eyebrow">{s.proof.eyebrow}</p>
     <h1>{s.proof.heading}</h1>
     <div class="page-head__rule" aria-hidden="true"></div>
     <p class="page-head__intro">{s.proof.intro}</p>
   </header>
 
-  <section class="proof-example">
-    <div class="section__head reveal">
-      <h2>{s.proof.example.heading}</h2>
+  <!-- 2. The pause. The trust mechanism, shown running. -->
+  <section class="evidence reveal">
+    <div class="evidence__copy">
+      <h2>{s.proof.confirm.heading}</h2>
+      <p>{s.proof.confirm.body}</p>
     </div>
-    <p class="proof-example__intro reveal">{s.proof.example.intro}</p>
-
-    <div class="proof-rows">
-      {
-        s.proof.example.rows.map((row) => (
-          <article class="proof-row reveal">
-            <div class="proof-row__head">
-              <div class="proof-row__pair">
-                <div class="proof-row__side">
-                  <span class="proof-row__label">{s.proof.example.courseLabel}</span>
-                  <span class="proof-row__value"><bdi>{row.course}</bdi></span>
-                </div>
-
-                <div class="proof-row__connector" aria-hidden="true">
-                  <svg viewBox="0 0 80 24" width="80" height="24" fill="none" preserveAspectRatio="none">
-                    <line class="draw-stroke" x1="5" y1="12" x2="60" y2="12" pathLength="1" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"></line>
-                    <path class="draw-stroke" d="M53 6l9 6-9 6" pathLength="1" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
-                    <circle cx="5" cy="12" r="3.5" fill="currentColor"></circle>
-                  </svg>
-                </div>
-
-                <div class="proof-row__side">
-                  <span class="proof-row__label">{s.proof.example.skillLabel}</span>
-                  <span class="proof-row__value proof-row__value--skill"><bdi>{row.skill}</bdi></span>
-                </div>
-              </div>
-              {/* The badge marks CONFIDENCE IN THE READING, not match strength, so
-                  it appears only where the reading is uncertain. Rendering
-                  "Strong match" beside the "Not yet" verdict on the Power BI row
-                  said two contradictory things about one row, on the page a
-                  sceptic reads closest. An unlabelled row is a plain statement;
-                  a labelled one is asking to be confirmed. */}
-              {row.confidence !== 'strong' && <Badge kind="suggested" locale={locale} />}
-            </div>
-            <div class="proof-row__why">
-              <span class="proof-row__label">{s.proof.example.whyLabel}</span>
-              <p>{row.why}</p>
-            </div>
-          </article>
-        ))
-      }
-    </div>
-    <p class="proof-note">{s.proof.example.note}</p>
+    <figure class="evidence__figure">
+      <Shot name="confirm" alt={s.proof.confirm.body} />
+      <figcaption>{s.proof.confirm.caption}</figcaption>
+    </figure>
   </section>
 
-  <section class="proof-how reveal">
-    <h2>{s.proof.how.heading}</h2>
-    <p>{s.proof.how.p1}</p>
-    <p>{s.proof.how.p2}</p>
+  <!-- 3. The evidence chain, shown rather than described. -->
+  <section class="evidence evidence--flip reveal">
+    <div class="evidence__copy">
+      <h2>{s.proof.match.heading}</h2>
+      <p>{s.proof.match.body}</p>
+    </div>
+    <figure class="evidence__figure">
+      <Shot name="jobs" alt={s.proof.match.body} />
+      <figcaption>{s.proof.match.caption}</figcaption>
+    </figure>
   </section>
 
+  <!-- 4. The limits. Kept whole: it is the most load bearing block on the page. -->
   <section class="proof-limits reveal">
     <h2>{s.proof.limits.heading}</h2>
     <ul>
       {
         s.proof.limits.items.map((item) => (
           <li>
-            <span class="proof-limits__mark" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path></svg>
-            </span>
+            <Icon class="proof-limits__mark" name="ph:minus" width="16" height="16" aria-hidden="true" />
             <span>{item}</span>
           </li>
         ))
@@ -102,222 +91,115 @@ const base = `/${locale}`;
 </div>
 
 <style>
-  /* .page-head and its rule/intro now live in global.css — this block was
-     duplicated verbatim across four page components. */
-
   h2 {
     font-size: var(--text-3xl);
     font-weight: var(--weight-semibold);
     line-height: var(--leading-tight);
-    margin-block-end: var(--space-4);
+    text-wrap: balance;
   }
 
-  .proof-example__intro {
-    color: var(--color-text-muted);
-    font-size: var(--text-lg);
-    margin-block-end: var(--space-8);
-  }
-
-  .proof-rows {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-    max-inline-size: 52rem;
-  }
-
-  .proof-row {
-    background-color: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    padding: var(--space-6);
-  }
-
-  /* Both classes, so this outweighs `html.reveal-ready .reveal` in global.css —
-     otherwise the reveal's transition list wins and the hover shadow snaps. */
-  .proof-row.reveal {
-    transition:
-      opacity var(--duration-slow) var(--ease-out),
-      transform var(--duration-slow) var(--ease-out),
-      box-shadow var(--duration-base) var(--ease-out),
-      border-color var(--duration-base) var(--ease-out);
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    .proof-row:hover {
-      box-shadow: var(--shadow-md);
-      border-color: var(--color-border-strong);
-    }
-  }
-
-  .proof-row__head {
-    display: flex;
+  /* One claim, one screen proving it, side by side. The pair alternates down the
+     page so the eye is not tracking a single column of identical blocks, and the
+     gap is generous because these are two separate arguments rather than two
+     paragraphs of the same one. */
+  .evidence {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: var(--space-16);
     align-items: center;
-    justify-content: space-between;
-    gap: var(--space-4);
-    flex-wrap: wrap;
-  }
-
-  .proof-row__pair {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    flex-wrap: nowrap;
-    min-inline-size: 0;
-  }
-
-  .proof-row__side {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-1);
-    min-inline-size: 0;
-  }
-
-  .proof-row__label {
-    font-size: var(--text-xs);
-    font-weight: var(--weight-medium);
-    color: var(--color-text-muted);
-  }
-
-  .proof-row__value {
-    font-weight: var(--weight-semibold);
-  }
-
-  .proof-row__value--skill {
-    background-color: var(--color-accent-tint);
-    border-radius: var(--radius-sm);
-    padding: var(--space-1) var(--space-3);
-    align-self: flex-start;
-  }
-
-  /* Same drawn connector motif as the home translation card. */
-  .proof-row__connector {
-    color: var(--color-accent);
-    inline-size: 64px;
-    flex: 0 0 auto;
-  }
-
-  .proof-row__connector svg {
-    display: block;
-    inline-size: 100%;
-    block-size: auto;
-  }
-
-  :global([dir='rtl']) .proof-row__connector svg {
-    transform: scaleX(-1);
-  }
-
-  .proof-row__why {
-    margin-block-start: var(--space-4);
-    padding-block-start: var(--space-4);
+    padding-block: var(--space-24);
     border-block-start: 1px solid var(--color-border);
   }
 
-  .proof-row__why p {
-    margin-block-start: var(--space-1);
-    color: var(--color-text-muted);
-    line-height: 1.6;
+  .evidence--flip .evidence__copy {
+    order: 2;
   }
 
-  .proof-note {
+  .evidence__copy p {
+    margin-block-start: var(--space-5);
+    color: var(--color-text-muted);
+    line-height: 1.65;
+    font-size: var(--text-lg);
+    max-inline-size: 46ch;
+  }
+
+  .evidence__figure {
+    margin: 0;
+  }
+
+  .evidence__figure figcaption {
     margin-block-start: var(--space-4);
     font-size: var(--text-sm);
     color: var(--color-text-muted);
+    text-align: center;
   }
 
-  .proof-how {
-    padding-block: var(--space-16) 0;
-    max-inline-size: 44rem;
-  }
-
-  .proof-how p {
-    line-height: 1.6;
-  }
-
-  .proof-how p + p {
-    margin-block-start: var(--space-4);
-  }
-
+  /* ---- The limits ---- */
   .proof-limits {
-    margin-block-start: var(--space-16);
+    margin-block-start: var(--space-24);
     background-color: var(--color-surface-sunken);
     border-radius: var(--radius-lg);
-    padding: var(--space-10);
-    max-inline-size: 46rem;
+    padding: var(--space-12);
+    max-inline-size: 52rem;
   }
 
   .proof-limits ul {
-    margin: 0;
-    padding: 0;
     list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
+    margin: var(--space-8) 0 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-5);
   }
 
   .proof-limits li {
     display: grid;
-    grid-template-columns: auto 1fr;
-    gap: var(--space-3);
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--space-4);
     align-items: start;
-    line-height: 1.6;
+    line-height: 1.65;
+    color: var(--color-text-muted);
   }
 
-  .proof-limits__mark {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    inline-size: var(--space-6);
-    block-size: var(--space-6);
-    margin-block-start: 2px;
-    border-radius: var(--radius-full);
-    background-color: var(--color-accent-tint);
-    color: var(--color-text);
-    flex: 0 0 auto;
-  }
-
-  /* Mobile: stack the match as a clear vertical group — verdict on top, then
-     course, a downward connector, and the skill. Proximity keeps them read as
-     one unit; the connector rotates to point down the reading flow. */
-  @media (max-width: 39.99rem) {
-    .proof-row__head {
-      flex-direction: column-reverse;
-      align-items: flex-start;
-      gap: var(--space-4);
-    }
-
-    .proof-row__pair {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: var(--space-3);
-      inline-size: 100%;
-    }
-
-    /* Square cell so the rotated arrow fits its own layout box; at 40x12 it
-       overhung by 14px top and bottom and touched the rows either side. */
-    .proof-row__connector {
-      inline-size: 40px;
-      block-size: 40px;
-      align-self: flex-start;
-      margin-inline-start: var(--space-4);
-      display: grid;
-      place-items: center;
-    }
-
-    .proof-row__connector svg {
-      inline-size: 40px;
-      transform: rotate(90deg);
-    }
-
-    /* Points DOWN in Arabic too. The extra scaleX(-1) applied before the
-       rotation and turned the arrow back up the page. */
-    :global([dir='rtl']) .proof-row__connector svg {
-      transform: rotate(90deg);
-    }
+  .proof-limits :global(.proof-limits__mark) {
+    margin-block-start: 6px;
+    color: var(--color-accent-ink);
   }
 
   .page-cta {
-    padding-block: var(--space-16);
+    padding-block: var(--space-24);
     display: flex;
     justify-content: center;
+  }
+
+  /* ---- Adaptation ----
+     Below the two column width the pair stacks with the SCREEN first: on a phone
+     the image is what tells you which claim you are about to read, and putting a
+     wall of prose above it makes the reader scroll to find out. `order` covers
+     both variants at once, so the flipped section needs no rule of its own. */
+  @media (max-width: 63.99rem) {
+    .evidence,
+    .evidence--flip {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-8);
+      padding-block: var(--space-16);
+    }
+
+    .evidence__copy,
+    .evidence--flip .evidence__copy {
+      order: 2;
+    }
+
+    .evidence__figure {
+      order: 1;
+    }
+
+    .proof-limits {
+      margin-block-start: var(--space-16);
+      padding: var(--space-8);
+    }
+
+    .page-cta {
+      padding-block: var(--space-16);
+    }
   }
 </style>

@@ -27,14 +27,14 @@ const stepIcons = [
 <section class="hero">
   <div class="container hero__grid">
     <div class="hero__copy">
-      <h1 class="hero__title reveal">{s.home.hero.heading}</h1>
-      <div class="hero__rule reveal" aria-hidden="true"></div>
-      <p class="hero__sub reveal">{s.home.hero.sub}</p>
+      <h1 class="hero__title" data-enter>{s.home.hero.heading}</h1>
+      <div class="hero__rule" aria-hidden="true" data-enter></div>
+      <p class="hero__sub" data-enter>{s.home.hero.sub}</p>
       {/* The pain used to be a section of its own holding one sentence. It reads
           better here, immediately under the promise it is the counterweight to,
           and it buys the page a whole section back. */}
-      <p class="hero__pain reveal">{s.home.pain.body}</p>
-      <div class="hero__actions reveal">
+      <p class="hero__pain" data-enter>{s.home.pain.body}</p>
+      <div class="hero__actions" data-enter>
         <a class="button button--primary button--arrow" href={`${base}/signup/`}>
           <span>{s.actions.signup}</span>
           <Icon class="button__arrow" name="ph:arrow-right" width="16" height="16" aria-hidden="true" />
@@ -42,14 +42,22 @@ const stepIcons = [
         <a class="button button--secondary" href={`${base}/proof/`}>{s.home.hero.ctaSecondary}</a>
       </div>
     </div>
-    <div class="hero__figure reveal">
+    <div class="hero__figure" data-enter>
       <Hud pose="flying-in" then="idle" size="lg" eager />
     </div>
   </div>
+
+  {/* The scroll cue. A LINK, not a decorative div: it goes to the next section,
+      so a keyboard user gets the same shortcut the mouse user is being offered,
+      and Lenis animates the jump because it intercepts in-page anchors. */}
+  <a class="scroll-cue" href="#what-itqan-does" data-enter>
+    <Icon class="scroll-cue__mouse" name="ph:mouse-scroll" width="26" height="26" aria-hidden="true" />
+    <span>{s.home.hero.scrollCue}</span>
+  </a>
 </section>
 
 <!-- 3. The four questions, linked by the gold thread. -->
-<section class="section section--sunken">
+<section class="section section--sunken" id="what-itqan-does">
   <div class="container">
     <div class="section__head reveal">
       <p class="eyebrow">{s.home.build.eyebrow}</p>
@@ -182,6 +190,60 @@ const stepIcons = [
     max-inline-size: 56rem;
   }
 
+  /* ---- Scroll cue ----
+     Centred at the foot of the hero. The wheel ticks down and pauses, which is
+     the gesture it is describing; the whole thing is one slow loop rather than
+     a bouncing arrow, because a bounce reads as an alert and this is an
+     invitation. */
+  .scroll-cue {
+    position: absolute;
+    inset-block-end: var(--space-8);
+    inset-inline: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    inline-size: fit-content;
+    margin-inline: auto;
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-full);
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    text-decoration: none;
+    transition: color var(--duration-base) var(--ease-out);
+  }
+
+  .scroll-cue:hover {
+    color: var(--color-text);
+  }
+
+  .scroll-cue__mouse {
+    animation: cue-wheel 2.6s var(--ease-in-out) infinite;
+  }
+
+  @keyframes cue-wheel {
+    0%, 100% { transform: translateY(0); opacity: 0.75; }
+    45%      { transform: translateY(5px); opacity: 1; }
+  }
+
+  /* Every keyframe ships its own reduced-motion swap; the cue stays, it just
+     stops moving. Removing it would take away a navigation affordance. */
+  @media (prefers-reduced-motion: reduce) {
+    .scroll-cue__mouse {
+      animation: none;
+    }
+  }
+
+  /* On a short screen the hero is already tight and a cue pinned to the bottom
+     lands on the copy. It is an enhancement, not the only way down. */
+  @media (max-height: 34rem), (max-width: 39.99rem) {
+    .scroll-cue {
+      display: none;
+    }
+  }
+
   /* ---- The pain ----
      One statement, not a card grid. The copy here was cut to a single line, and
      three cards holding one sentence between them would be a grid kept for its
@@ -254,7 +316,20 @@ const stepIcons = [
   /* ---- Hero ---- */
   .hero {
     position: relative;
-    padding-block: var(--space-20) var(--space-16);
+    /* Tall enough for the LIGHT to finish, not just the copy.
+       The glow's two ellipses extend well past the text block, and at the old
+       auto height (514px on a 900px viewport) the section ended mid-gradient:
+       `overflow-x: clip` then sliced the bottom off with a hard horizontal edge
+       exactly where the sunken band below started. The floor gives the falloff
+       room to reach zero on its own.
+
+       svh, not vh: on mobile the dynamic toolbar changes vh mid-scroll and the
+       hero would resize under the reader's thumb. Capped in px so a tall
+       desktop monitor does not turn the first screen into empty space. */
+    min-block-size: min(88svh, 860px);
+    display: grid;
+    align-content: center;
+    padding-block: var(--space-20) var(--space-24);
     /* Clip only the horizontal bleed (which would add a scrollbar); let the glow
        fade downward past the section instead of hitting the hard rectangular
        edge `overflow: hidden` gave it. */

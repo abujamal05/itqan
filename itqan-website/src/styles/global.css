@@ -324,12 +324,15 @@ main {
    removed here so only the fade remains. */
 html.reveal-ready .reveal {
   opacity: 0;
-  /* Collapses to translateY(0) under reduced motion, leaving the fade intact —
-     which is exactly what the preference asks for. */
-  transform: translateY(calc(12px * var(--motion-scale)));
+  /* 28px on the expo curve, not 12px on a standard ease. The old pair was a
+     twitch: short enough to read as a glitch and fast enough that the eye never
+     tracked it, which is most of why the page felt bland while technically
+     "having animation". Collapses to translateY(0) under reduced motion, so the
+     fade survives on its own. */
+  transform: translateY(calc(28px * var(--motion-scale)));
   transition:
-    opacity var(--duration-slow) var(--ease-out),
-    transform var(--duration-slow) var(--ease-out);
+    opacity var(--duration-story) var(--ease-out-expo),
+    transform var(--duration-story) var(--ease-out-expo);
 }
 
 html.reveal-ready .reveal.is-visible {
@@ -339,22 +342,22 @@ html.reveal-ready .reveal.is-visible {
 
 /* Tight stagger for grouped cards; product restraint, 40ms steps. */
 html.reveal-ready .stagger > :nth-child(2) {
-  transition-delay: 40ms;
+  transition-delay: 90ms;
 }
 
 html.reveal-ready .stagger > :nth-child(3) {
-  transition-delay: 80ms;
+  transition-delay: 180ms;
 }
 
 html.reveal-ready .stagger > :nth-child(4) {
-  transition-delay: 120ms;
+  transition-delay: 270ms;
 }
 
 /* The home page's step row carries four questions now, and its first child is
    the connecting thread, so the last item is the fifth child and was falling
    off the end of the stagger. */
 html.reveal-ready .stagger > :nth-child(5) {
-  transition-delay: 160ms;
+  transition-delay: 360ms;
 }
 
 /* The reveal's own reduce override is gone: --motion-scale already zeroes the
@@ -648,4 +651,23 @@ html.reveal-ready .reveal:not(.is-visible) .draw-stroke {
    already, and collapsing its box would reflow the layout underneath the panel. */
 body:has(.hudchat[data-open='true']) main .hud {
   visibility: hidden;
+}
+
+/* ---- Entrance -----------------------------------------------------------------
+   `motion-ready` is set by the motion module and is what ENABLES the hidden
+   start state. Without JS the class never lands, every element renders at full
+   opacity, and the page is complete and static rather than blank. */
+html.motion-ready [data-enter] {
+  opacity: 0;
+}
+
+/* Lenis owns the scroll position while it is running, and a CSS smooth-scroll
+   on top of it makes anchors interpolate twice. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
 }

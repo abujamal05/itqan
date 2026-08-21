@@ -19,7 +19,7 @@ const isCurrent = (href: string) => path === href || path === href.replace(/\/$/
 ---
 
 <header class="site-header">
-  <div class="container header-row">
+  <div class="container header-row" data-enter>
     <!-- Icon-only mark: compact, and it swaps for dark surfaces (brand rule). -->
     <a class="brand" href={`${base}/`} aria-label={strings.a11y.homeLink}>
       <img class="brand-mark brand-mark--light" src="/logos/icon.webp" alt="" width="128" height="141" />

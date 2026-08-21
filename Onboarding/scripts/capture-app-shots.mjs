@@ -112,6 +112,31 @@ const run = async () => {
     await page.locator('.choice').first().waitFor();
     await shoot(page, 'questions-role');
 
+    /* The confirmation screen. This is the one the marketing site's /proof page
+       is built on: it shows every extracted value with its own confidence, and
+       the run is genuinely paused behind it. Answer out the remaining questions
+       and wait for the pipeline to reach awaiting_confirmation. */
+    for (let i = 0; i < 4; i += 1) {
+      const choice = page.locator('.choice').first();
+      if (await choice.count()) {
+        await choice.click();
+        await page.waitForTimeout(400);
+        continue;
+      }
+      const skip = page.getByRole('button', { name: /Skip/i }).first();
+      if (await skip.count()) {
+        await skip.click();
+        await page.waitForTimeout(400);
+      }
+    }
+    try {
+      await page.waitForURL(/\/app\/confirm/, { timeout: 25000 });
+      await page.locator('.card, .confirm, main').first().waitFor();
+      await shoot(page, 'confirm');
+    } catch {
+      console.log('  confirm               -> SKIPPED (pipeline did not reach awaiting_confirmation)');
+    }
+
     // Leave the fixture account exactly as the e2e suite expects to find it.
     await ctx.request.delete(`${BASE}/api/onboarding/progress`);
     await ctx.close();
