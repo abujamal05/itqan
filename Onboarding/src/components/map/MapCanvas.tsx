@@ -20,7 +20,8 @@
  * node's state in words. The canvas itself is `aria-hidden`, so assistive tech
  * gets the list and never the graph.
  */
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { Crosshair, Minus, Plus } from 'lucide-react';
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -59,6 +60,16 @@ interface MapCanvasProps {
   className?: string;
   /** Re-frame when this changes — e.g. the locale flipping the map's direction. */
   fitKey?: string | number;
+  /**
+   * Zoom in / zoom out / recentre, and their labels.
+   *
+   * Pinch and drag are the real gestures, so these are not the main way in.
+   * They exist because a pointer user with no trackpad has no other way to
+   * zoom, and because a "take me back" affordance is what stops a pannable
+   * canvas from being a place to get lost. Omitted on maps small enough that
+   * getting lost is not possible.
+   */
+  tools?: { zoomIn: string; zoomOut: string; recentre: string };
 }
 
 /** Margin fitView leaves around the graph, as a fraction of the graph's size. */
@@ -123,6 +134,44 @@ function Frame({
   return null;
 }
 
+function Tools({
+  labels,
+  focusNodeId,
+}: {
+  labels: { zoomIn: string; zoomOut: string; recentre: string };
+  focusNodeId?: string;
+}) {
+  const flow = useReactFlow();
+
+  /* Recentring goes back to the node the map OPENED on, not to the whole
+     graph: "where was I" is the question someone lost on a map is asking, and
+     fitting everything answers a different one. */
+  const recentre = useCallback(() => {
+    const node = focusNodeId ? flow.getNode(focusNodeId) : undefined;
+    if (!node) { flow.fitView({ padding: FIT_PADDING, duration: 400 }); return; }
+    const w = node.measured?.width ?? node.width ?? 0;
+    const h = node.measured?.height ?? node.height ?? 0;
+    flow.setCenter(node.position.x + w / 2, node.position.y + h / 2, { zoom: 1, duration: 400 });
+  }, [flow, focusNodeId]);
+
+  return (
+    <div className="map__tools">
+      <button className="map__tool" type="button" onClick={() => flow.zoomOut({ duration: 200 })}>
+        <Minus size={16} aria-hidden="true" />
+        <span className="sr-only">{labels.zoomOut}</span>
+      </button>
+      <button className="map__tool" type="button" onClick={() => flow.zoomIn({ duration: 200 })}>
+        <Plus size={16} aria-hidden="true" />
+        <span className="sr-only">{labels.zoomIn}</span>
+      </button>
+      <button className="map__tool" type="button" onClick={recentre}>
+        <Crosshair size={16} aria-hidden="true" />
+        <span className="sr-only">{labels.recentre}</span>
+      </button>
+    </div>
+  );
+}
+
 export function MapCanvas({
   nodes,
   edges,
@@ -134,11 +183,16 @@ export function MapCanvas({
   maxZoom = 1.6,
   className,
   fitKey,
+  tools,
 }: MapCanvasProps) {
   return (
-    <div className={className}>
-      <div className="map__canvas" aria-hidden="true">
-        <ReactFlowProvider>
+    /* The provider wraps the WHOLE component, not just the canvas, so the
+       controls can live outside the `aria-hidden` region and still reach the
+       flow instance. Inside it they would have been focusable but hidden from
+       assistive tech, which is the worst of both. */
+    <ReactFlowProvider>
+      <div className={className}>
+        <div className="map__canvas" aria-hidden="true">
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -162,11 +216,19 @@ export function MapCanvas({
           >
             <Frame fitKey={fitKey} focusNodeId={focusNodeId} fitFloor={fitFloor} />
           </ReactFlow>
-        </ReactFlowProvider>
-      </div>
+        </div>
 
-      {/* The same journey, in order, for anyone who is not looking at it. */}
-      <ol className="sr-only">{srList}</ol>
-    </div>
+        {tools && <Tools labels={tools} focusNodeId={focusNodeId} />}
+
+        {/* The same route, in order, for anyone who is not looking at it — and
+            the KEYBOARD path through the map, which is why it is not plain
+            `.sr-only`. The canvas is aria-hidden and its controls are removed
+            from the tab order, so if this list holds links and buttons they are
+            the only way to reach them. It reveals itself the moment anything
+            inside takes focus, so a sighted keyboard user can see what they are
+            operating instead of tabbing into an invisible control. */}
+        <ol className="map__list">{srList}</ol>
+      </div>
+    </ReactFlowProvider>
   );
 }

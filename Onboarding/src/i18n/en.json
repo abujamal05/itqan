@@ -338,5 +338,18 @@
   "journey.building": "Building your skills",
   "journey.buildingBody": "Start with the first course below. Job matches show up here once your skills cover enough of what these roles are asking for.",
   "dash.lowMatchesTitle": "Not yet, and that is fine",
-  "dash.lowMatchesBody": "There is nothing here worth your time applying to today. The courses below are ordered so the first one moves you furthest."
+  "dash.lowMatchesBody": "There is nothing here worth your time applying to today. The courses below are ordered so the first one moves you furthest.",
+  "courses.open": "Open",
+  "courses.markDone": "Mark as done",
+  "courses.stateCurrent": "Do this next",
+  "courses.stateCompleted": "Completed",
+  "courses.stateLocked": "Not yet",
+  "courses.stateAvailable": "Available",
+  "courses.doneNoted": "Marked as done. For it to count towards your readiness, upload your updated CV so Itqan can read the new skill from real evidence rather than take your word for it.",
+  "courses.updateCv": "Update your CV",
+  "courses.mapHint": "Drag the map to follow the path, and open any course to see everything about it.",
+  "a11y.closeDialog": "Close",
+  "a11y.mapZoomIn": "Zoom in",
+  "a11y.mapZoomOut": "Zoom out",
+  "a11y.mapRecentre": "Back to where you are"
 }

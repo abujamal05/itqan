@@ -45,6 +45,15 @@ interface SerpentineOptions {
   stepX: number;
   /** Distance between rows. */
   stepY: number;
+  /**
+   * How far alternate nodes rise and fall WITHIN a row.
+   *
+   * Without this a row is a straight line, and a user with three courses gets
+   * three cards in a row with a ruler drawn through them — which is a table,
+   * not a route. The wave means the path winds from the second node onward,
+   * however few there are, and it is what the turns at the row ends curve into.
+   */
+  amplitude: number;
   rtl: boolean;
 }
 
@@ -58,7 +67,7 @@ interface SerpentineOptions {
  */
 export function serpentine(
   count: number,
-  { perRow, stepX, stepY, rtl }: SerpentineOptions,
+  { perRow, stepX, stepY, amplitude, rtl }: SerpentineOptions,
 ): Placed[] {
   return Array.from({ length: count }, (_, i) => {
     const row = Math.floor(i / perRow);
@@ -66,7 +75,11 @@ export function serpentine(
     // Reverse every other row so the path snakes rather than jumping back.
     const along = row % 2 === 0 ? col : perRow - 1 - col;
     const x = along * stepX;
-    return { x: rtl ? -x : x, y: row * stepY };
+    /* Alternate up and down along the row. Keyed on the ABSOLUTE index, not on
+       the column, so the wave carries on across a row break instead of
+       resetting and putting two nodes at the same height either side of it. */
+    const wave = i % 2 === 0 ? -amplitude : amplitude;
+    return { x: rtl ? -x : x, y: row * stepY + wave };
   });
 }
 

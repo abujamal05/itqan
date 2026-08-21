@@ -49,8 +49,12 @@ export interface CourseNodeData extends Record<string, unknown> {
     recommended: string;
     locked: string;
     current: string;
+    available: string;
   };
   onDone?: () => void;
+  /** Open the full course, with its source, confidence and feedback controls.
+   *  The node is a summary; everything the grid card carried lives in there. */
+  onOpen: () => void;
   incoming: Position;
   outgoing: Position;
 }
@@ -71,6 +75,21 @@ function CourseNodeBase({ data }: NodeProps) {
     <div className="mapnode mapnode--course" data-state={d.state}>
       <Handle type="target" position={d.incoming} isConnectable={false} />
       <Handle type="source" position={d.outgoing} isConnectable={false} />
+
+      {/* The whole card opens the detail. A stretched button rather than a
+          click handler on the div: it keeps the node a real control with a real
+          accessible name, and it sits UNDER the explicit actions so it cannot
+          swallow them. `tabIndex={-1}` because the canvas is aria-hidden and
+          the keyboard path through the map is the list beneath it. */}
+      <button
+        className="mapnode__hit"
+        type="button"
+        onClick={d.onOpen}
+        tabIndex={-1}
+        aria-hidden="true"
+      >
+        <span className="sr-only">{d.title}</span>
+      </button>
 
       {badge && Icon && (
         <span className="mapnode__badge">

@@ -594,6 +594,43 @@ Related: `gaps: string[]` should become objects carrying the same id, so a gap o
 the dashboard and a course on the path can be matched without string comparison
 on a display name that is localised.
 
+### 1c. Course prerequisites — `Course.requires`  (needed for the `locked` state)
+
+The course map renders five states: `completed`, `current`, `recommended`,
+`available` and `locked`. **Four are derived from real data. `locked` is never
+populated**, because nothing in the API can justify it — `Course` carries no
+prerequisites, so no course can honestly be said to require another.
+
+That is a deliberate hole, not an oversight. Marking a course locked on a guess
+would make the map assert a product rule that does not exist, and "locked" here
+is a UI state, never a gate: nothing in Itqan stops a person opening a course
+they want. A locked node means *the skills this builds on are not evidenced
+yet*, which is information.
+
+```jsonc
+// Course
+"requires": ["sql-basics"]   // skill ids, not course ids
+```
+
+Skill ids rather than course ids on purpose: the requirement is that the user
+can DO something, and that can be satisfied by evidence in their documents, by
+another course, or by work history. Keying on courses would lock someone out of
+a course whose prerequisite they already meet.
+
+Until this ships, `states()` in `components/map/CoursesMap.tsx` returns the
+other four and the locked styling sits unused in `CourseNode`.
+
+### 1d. Marking a course done is stored in the BROWSER right now
+
+`POST /api/courses/:id/complete` (§1) does not exist, so `state/completed.ts`
+keeps completions in `localStorage`, keyed by user id. **This is not the truth
+and the UI does not pretend it is** — completing a course does not move
+readiness, and the confirmation says so and links to the CV re-upload instead.
+
+When the route lands, `Course.completedAt` from the API becomes authoritative
+and that module becomes a cache of pending writes. Nothing else changes: it is
+already the only thing on the courses page that knows what "completed" means.
+
 ### 2. Re-reading a document without redoing the profile
 
 The pipeline today is `queued → reading → translating → awaiting_confirmation →
