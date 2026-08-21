@@ -24,6 +24,7 @@ import {
   Target, User as UserIcon, X,
 } from 'lucide-react';
 import { useI18n } from '../i18n';
+import { skillCase } from '../lib/skillCase';
 import { useApi } from '../state/api';
 import { useAuth } from '../state/auth';
 import { useAsync } from '../lib/useAsync';
@@ -551,7 +552,7 @@ export function Profile() {
         <div className="stack stack--sm">
           {p.skills?.length ? (
             <div className="row" style={{ gap: 'var(--space-2)' }}>
-              {p.skills.map((skill) => <Chip key={skill}>{skill}</Chip>)}
+              {p.skills.map((skill) => <Chip key={skill}>{skillCase(skill)}</Chip>)}
             </div>
           ) : (
             <p className="text-sm muted">{t('profile.noSkills')}</p>
@@ -563,42 +564,52 @@ export function Profile() {
         </div>
       </Section>
 
-      {/* Documents. */}
       {/* ---- Documents ------------------------------------------------------
-          REPLACE, NOT DELETE, and that is a data limit rather than a design
-          preference. `DELETE /api/documents/:id` does not exist (BACKEND.md §3),
-          so there is no honest way to offer removal — and a disabled delete
-          button on every row would be worse than none, advertising a capability
-          the product does not have.
+          BOTH HALVES OF THE MERGE, and the rule that was missing from each.
 
-          What it says instead is true today and stays true afterwards: the CV
-          is the one document the pipeline cannot run without, so it is replaced
-          rather than removed. When the route lands, the extra documents gain a
-          remove control and the CV keeps this wording. */}
+          `main` gained a working remove control; this branch gained a row that
+          says what the document actually is — name, kind and size, not just a
+          kind label. Neither had the rule the product needs: the CV is the one
+          document the pipeline cannot run without, so the LAST one cannot be
+          removed. It is replaced instead, which is what the button below does.
+
+          The protected row shows a "Required" tag WHERE the remove control
+          would have been, rather than a disabled X. A blocked control invites a
+          click and then refuses it; a label answers "why can I not remove this"
+          before the question is asked. A second CV makes the first deletable
+          again, and both rows get their control back.
+
+          The client rule is a courtesy. The server must enforce it too — see
+          BACKEND.md §3 — because a stale build of this app is not a way in. */}
       <Section id="documents" title={t('profile.documents')} icon={FileText} editing={false}>
         <div className="stack stack--sm">
           {p.documents?.length ? (
             <ul className="doclist">
-              {p.documents.map((d) => (
-                <li key={d.id} className="doclist__item">
-                  <FileText size={16} className="doclist__icon" aria-hidden="true" />
-                  <span className="doclist__main">
-                    <span className="doclist__name"><bdi>{d.fileName}</bdi></span>
-                    <span className="doclist__meta">
-                      {t(`doc.${d.kind}`)}
-                      {Number.isFinite(d.sizeBytes) && d.sizeBytes > 0 && (
-                        <> · <span className="num">{fileSize(d.sizeBytes, t, formatNumber)}</span></>
-                      )}
+              {p.documents.map((d) => {
+                /* Counted over the WHOLE list, not this row: what protects a CV
+                   is being the only one, and that is a fact about the set. */
+                const lastCv = d.kind === REQUIRED_KIND
+                  && p.documents.filter((o) => o.kind === REQUIRED_KIND).length === 1;
+
+                return (
+                  <li key={d.id} className="doclist__item">
+                    <FileText size={16} className="doclist__icon" aria-hidden="true" />
+                    <span className="doclist__main">
+                      <span className="doclist__name"><bdi>{d.fileName}</bdi></span>
+                      <span className="doclist__meta">
+                        {t(`doc.${d.kind}`)}
+                        {Number.isFinite(d.sizeBytes) && d.sizeBytes > 0 && (
+                          <> · <span className="num">{fileSize(d.sizeBytes, t, formatNumber)}</span></>
+                        )}
+                      </span>
                     </span>
-                  </span>
-                  {/* The required one is marked, because "why can I not remove
-                      this" is answered better by a label than by a blocked
-                      action. */}
-                  {d.kind === REQUIRED_KIND && (
-                    <span className="doclist__tag">{t('profile.docRequired')}</span>
-                  )}
-                </li>
-              ))}
+
+                    {lastCv
+                      ? <span className="doclist__tag">{t('profile.docRequired')}</span>
+                      : <DeleteDocument id={d.id} onDeleted={reload} />}
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <p className="text-sm muted">{t('profile.noDocuments')}</p>
@@ -692,5 +703,64 @@ export function Profile() {
         </p>
       )}
     </div>
+  );
+}
+
+
+/**
+ * Remove one document, from the list and from the server's disk.
+ *
+ * TWO TAPS, not one, and this is a deliberate reading of "an X that deletes it".
+ * The file is somebody's CV, the delete is irreversible, and the control sits in
+ * a row they are otherwise only reading — so a mis-tap would destroy something
+ * they cannot get back without finding the original again.
+ *
+ * It is still one control and no dialog: the X becomes a short confirm in place,
+ * and moving the pointer away puts it back. That costs a deliberate user one
+ * extra tap and saves an accidental one entirely.
+ */
+function DeleteDocument({ id, onDeleted }: { id: string; onDeleted: () => void }) {
+  const { t } = useI18n();
+  const api = useApi();
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  if (busy) return <span className="text-sm muted">{t('profile.doc.removing')}</span>;
+
+  if (confirming) {
+    return (
+      <span className="doc-remove">
+        <button
+          type="button"
+          className="doc-remove__yes"
+          onClick={async () => {
+            setBusy(true);
+            try {
+              await api.deleteDocument(id);
+              onDeleted();
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          {t('profile.doc.removeConfirm')}
+        </button>
+        <button type="button" className="doc-remove__no" onClick={() => setConfirming(false)}>
+          {t('action.cancel')}
+        </button>
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className="doc-remove__x"
+      aria-label={t('profile.doc.remove')}
+      title={t('profile.doc.remove')}
+      onClick={() => setConfirming(true)}
+    >
+      <X size={16} aria-hidden="true" />
+    </button>
   );
 }

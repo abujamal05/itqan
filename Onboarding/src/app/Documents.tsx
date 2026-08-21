@@ -12,15 +12,24 @@
  * profile. Re-reading is an extraction, and every extraction in this product is
  * reviewed by the person before it is used — a new CV quietly rewriting someone's
  * skills behind their back is exactly the kind of thing that loses their trust.
+ *
+ * IT SHOWS WHAT IS ALREADY ON FILE, and that is not decoration. This screen used
+ * to judge the person by what they had uploaded in the last thirty seconds: its
+ * button was enabled only by a CV added in THIS session. So someone who onboarded
+ * with a CV and came back to add their transcript met a disabled button and
+ * "add your CV to continue" — while their CV sat on our disk. The screen could
+ * not keep the promise its own heading makes.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RefreshCw, ShieldCheck } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useOnboarding } from '../state/onboarding';
+import { useApi } from '../state/api';
+import { useAsync } from '../lib/useAsync';
 import { Button, Callout } from '../components/ui';
 import {
-  DocumentUpload, hasRequiredDocument, anyUploading,
+  DocumentUpload, hasRequiredDocument, anyUploading, itemsFromDocuments,
 } from '../components/DocumentUpload';
 import type { Item } from '../components/DocumentUpload';
 import { HttpError } from '../api/http';
@@ -29,10 +38,38 @@ export function Documents() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { beginReupload } = useOnboarding();
+  const api = useApi();
 
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // What the account already holds. A 404 here means nothing has been confirmed
+  // yet, which `getProfile` returns as null — an empty state, not an error.
+  const stored = useAsync((s) => api.getProfile(s), [api]);
+
+  /*
+   * Show the documents already on file, as finished rows.
+   *
+   * WITHOUT THIS the screen judged the person by what they had uploaded in the
+   * last thirty seconds: someone who onboarded with a CV and came back to add
+   * their transcript saw a disabled button and "add your CV to continue" — while
+   * we were holding their CV. The screen's own promise is "read my documents
+   * again", and it could not keep it.
+   *
+   * Merged by document id, exactly as `Upload.tsx` folds in documents restored
+   * from saved progress, so a file uploaded in this session is never duplicated
+   * by the fetch landing afterwards.
+   */
+  useEffect(() => {
+    const known = stored.data?.documents;
+    if (!known || known.length === 0) return;
+    setItems((cur) => {
+      const have = new Set(cur.map((i) => i.uploaded?.id).filter(Boolean));
+      const missing = known.filter((d) => !have.has(d.id));
+      return missing.length ? [...itemsFromDocuments(missing), ...cur] : cur;
+    });
+  }, [stored.data]);
 
   const ready = hasRequiredDocument(items);
   const uploading = anyUploading(items);

@@ -66,6 +66,13 @@ const accounts: Account[] = [
 const progress = new Map<string, unknown>();
 /** Confirmed profiles, so the profile screen can read one back. */
 const profiles = new Map<string, Record<string, unknown>>();
+/* Every document an account has uploaded, newest first — production's
+   `all_documents`. Kept per user rather than per onboarding attempt, because
+   that is the difference the Documents screen depends on: a transcript added
+   MONTHS after onboarding still belongs to the account, and a stub that forgets
+   it would make "add a transcript to an existing profile" look broken here while
+   working in production. */
+const uploads = new Map<string, Record<string, unknown>[]>();
 
 /** Hud's threads per account. */
 interface ChatThreadRow {
@@ -533,16 +540,59 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           // Any file named "unreadable" fails the pipeline, so the recovery
           // path is reachable without breaking a real file.
           if (/unreadable/i.test(fileName)) unreadable.add(id);
-          return json(res, 200, {
+          const doc = {
             id, fileName, mimeType: f.__mimetype ?? 'application/pdf',
             sizeBytes: Number(f.__size ?? 0), kind: f.kind ?? 'other',
-          });
+          };
+          uploads.set(me.id, [doc, ...(uploads.get(me.id) ?? [])]);
+          return json(res, 200, doc);
+        }
+
+        /* Removing a document, and the rule the client only asks nicely for.
+           THE LAST CV CANNOT GO. The UI hides the control on that row, but the
+           client rule is a courtesy — a stale build of the app must not be a
+           way in, so the refusal lives here as well and is the reason the front
+           end can keep its own check simple. `409` with a machine-readable
+           reason rather than a message, so the wording stays in the front end's
+           two languages. This mirrors BACKEND.md §3; production still needs it.
+
+           Removed from BOTH stores: `uploads` is this session's, `profiles` is
+           what a confirmed profile carries, and a document left in the second
+           would come straight back on the next fetch. */
+        if (url.startsWith('/api/documents/') && req.method === 'DELETE') {
+          const id = decodeURIComponent(url.slice('/api/documents/'.length));
+          const mine = uploads.get(me.id) ?? [];
+          const prof = profiles.get(me.id) as { documents?: Record<string, unknown>[] } | undefined;
+          const onFile = [...mine, ...(prof?.documents ?? [])];
+
+          const doomed = onFile.find((d) => d.id === id);
+          if (!doomed) return json(res, 404, { error: 'not_found' });
+
+          const cvs = onFile.filter((d) => d.kind === 'cv');
+          if (doomed.kind === 'cv' && cvs.length <= 1) {
+            return json(res, 409, { error: 'last_cv' });
+          }
+
+          uploads.set(me.id, mine.filter((d) => d.id !== id));
+          if (prof?.documents) prof.documents = prof.documents.filter((d) => d.id !== id);
+          return json(res, 200, { ok: true });
         }
 
         if (url === '/api/analysis' && req.method === 'POST') {
           const f = parseBody(await body(req), req.headers['content-type'] ?? '');
           const ids: string[] = Array.isArray((f as never as { documentIds: string[] }).documentIds)
             ? (f as never as { documentIds: string[] }).documentIds : [];
+          /* The rule production enforces, mirrored so the screen is developed
+             against it: a request without a CV is fine when the ACCOUNT has one,
+             and refused only when there is no CV anywhere. Without this the stub
+             accepted everything and the transcript-only path could not be tested
+             here at all. */
+          const onFile = [...(uploads.get(me.id) ?? []),
+                          ...(((profiles.get(me.id)?.documents ?? []) as Record<string, unknown>[]))];
+          const inRequest = onFile.filter((d) => ids.includes(d.id as string));
+          const haveCv = inRequest.some((d) => d.kind === 'cv')
+            || onFile.some((d) => d.kind === 'cv');
+          if (!haveCv) return json(res, 400, { error: 'cv_required' });
           const jobId = `job_${Date.now().toString(36)}`;
           jobs_.set(jobId, { started: Date.now(), bad: ids.some((d) => unreadable.has(d)) });
           return json(res, 200, { jobId });
@@ -782,7 +832,15 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
         if (url === '/api/profile' && req.method === 'GET') {
           const stored = profiles.get(me.id);
           if (!stored) return json(res, 404, { error: 'no_profile' });
-          return json(res, 200, { ...stored, email: me.email });
+          // Everything uploaded since, merged over what onboarding recorded —
+          // production reads `all_documents` here, not one run's inputs.
+          const seeded = (stored.documents as Record<string, unknown>[] | undefined) ?? [];
+          const since = uploads.get(me.id) ?? [];
+          const seen = new Set(since.map((d) => d.id));
+          return json(res, 200, {
+            ...stored, email: me.email,
+            documents: [...since, ...seeded.filter((d) => !seen.has(d.id))],
+          });
         }
 
         /* Edits from the profile screen. Distinct from POST: this one does NOT

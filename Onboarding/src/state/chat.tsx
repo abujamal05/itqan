@@ -44,6 +44,17 @@ interface ChatValue {
    * deliberate confirm in the view — Hud's proposal alone never calls it.
    */
   rerun: () => Promise<void>;
+  /** Called when a full re-run reaches the confirm step, so the view can
+   *  navigate. Kept as a callback rather than a router import: this module is
+   *  state, and state that navigates is state that cannot be tested. */
+  onAwaitingConfirmation?: () => void;
+  setOnAwaitingConfirmation: (fn: (() => void) | undefined) => void;
+  /** The re-run's stage while one is in flight, else null. */
+  rerunStage: string | null;
+  /** 0..1, for a determinate meter — never a timer. */
+  rerunProgress: number;
+  /** Bumped when a re-run lands, so results screens refetch. */
+  resultsVersion: number;
   /** Loads a saved conversation. */
   open: (id: string) => void;
   /** Starts a fresh one. The old one stays on the server. */
@@ -180,17 +191,69 @@ export function ChatProvider({ api, children }: { api: ItqanApi; children: React
     [api, threadId],
   );
 
+  /**
+   * Re-run, and WATCH it.
+   *
+   * The previous version fired and forgot, on the assumption that the progress
+   * bar in AppLayout would pick the job up. It cannot: that bar reads
+   * `useOnboarding()`, and App.tsx mounts the onboarding provider with
+   * `enabled={!!user && !user.onboarded}` — so for everyone who can reach this
+   * screen it is switched off. The jobId came back and was dropped, and a
+   * confirmed re-run produced no visible change whatsoever, which is
+   * indistinguishable from a button that does not work.
+   *
+   * So this holds the job itself and polls the same endpoint onboarding polls.
+   */
+  const [onAwaitingConfirmation, setOnAwaitingConfirmation] =
+    useState<(() => void) | undefined>(undefined);
+  const [rerunStage, setRerunStage] = useState<string | null>(null);
+  const [rerunProgress, setRerunProgress] = useState(0);
+  const [resultsVersion, setResultsVersion] = useState(0);
+
   const rerun = useCallback(async () => {
-    /* Deliberately quiet about the outcome here. The run is a background job
-       the rest of the app already watches — the progress bar in AppLayout picks
-       it up — so announcing it twice would put a second, drifting account of
-       the same work on screen. */
+    setRerunStage('matching');
+    setRerunProgress(0);
+    let jobId: string;
     try {
-      await api.rerunMatching();
+      ({ jobId } = await api.rerunMatching());
     } catch {
+      setRerunStage(null);
       setFailed(true);
+      return;
     }
-  }, [api]);
+
+    /* Poll until it settles. The worker is a background thread on the server,
+       exactly like the onboarding run, so the client learns about it the same
+       way — by asking, not by guessing from a timer. */
+    for (;;) {
+      await new Promise((r) => setTimeout(r, 700));
+      let job;
+      try {
+        job = await api.getAnalysis(jobId);
+      } catch {
+        setRerunStage(null);
+        return;
+      }
+      setRerunProgress(job.progress);
+      setRerunStage(job.stage);
+      if (job.stage === 'awaiting_confirmation') {
+        /* A FULL re-run stops here on purpose: the documents have been read
+           again and the person has to check what was extracted before anything
+           is matched. That screen is the product's first trust moment, so the
+           re-run ends by handing them to it rather than quietly finishing. */
+        setRerunStage(null);
+        onAwaitingConfirmation?.();
+        return;
+      }
+      if (job.stage === 'done' || job.stage === 'failed') {
+        /* Bumped so the results screens refetch. Their `useAsync` deps key off
+           this, which is what makes the dashboard reflect the new run instead
+           of showing the old one until someone reloads by hand. */
+        if (job.stage === 'done') setResultsVersion((v) => v + 1);
+        return;
+      }
+    }
+  }, [api, onAwaitingConfirmation]);
 
   const open = useCallback(
     (id: string) => {
@@ -228,10 +291,14 @@ export function ChatProvider({ api, children }: { api: ItqanApi; children: React
     () => ({
       threadId, messages, threads, loading, pending, failed, writingId, verdicts,
       ask, retryMessage, retry, rate, rerun, open, reset, doneWriting,
+      rerunStage, rerunProgress, resultsVersion,
+      onAwaitingConfirmation, setOnAwaitingConfirmation,
     }),
     [
       threadId, messages, threads, loading, pending, failed, writingId, verdicts,
       ask, retryMessage, retry, rate, rerun, open, reset, doneWriting,
+      rerunStage, rerunProgress, resultsVersion,
+      onAwaitingConfirmation, setOnAwaitingConfirmation,
     ],
   );
 

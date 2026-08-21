@@ -660,10 +660,21 @@ routed around.
 DELETE /api/documents/:id  -> { ok: true } | 409 { error: "last_cv" }
 ```
 
-The UI blocks deleting the only CV, but **the server must enforce it too**: the
-client rule is a courtesy, and `cv` is the one document the pipeline cannot run
-without. Return `409` with a machine-readable reason rather than a message, so
-the front end keeps owning the wording in both languages.
+**The front end is built.** `api.deleteDocument` and the two-tap remove control
+on the profile screen came from `amin-dev`; the last-CV rule was added when that
+work met the documents list from `design/website-overhaul`. Neither half had it
+alone, which is worth noting: the branch with the control had no rule, and the
+branch with the rule had no control.
+
+The UI hides the remove control on the only CV — a "Required" tag sits where it
+would have been, because a disabled button invites a click and then refuses it.
+**The server must enforce it too**: the client rule is a courtesy, `cv` is the
+one document the pipeline cannot run without, and a stale build of the app must
+not be a way in. Return `409` with a machine-readable reason rather than a
+message, so the front end keeps owning the wording in both languages.
+
+`dev/site-plugin.ts` implements this route and the `409 last_cv` refusal, so the
+rule is developed against rather than assumed. **Production still needs both.**
 
 `UploadedDocument` also needs an `uploadedAt` so "the first CV" is orderable, and
 ideally `isPrimary: boolean` so primacy is a server fact rather than something

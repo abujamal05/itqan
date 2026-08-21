@@ -17,6 +17,7 @@
  */
 import { useCallback, useMemo, useState } from 'react';
 import { useI18n } from '../i18n';
+import { useChat } from '../state/chat';
 import { useApi } from '../state/api';
 import { useAsync } from '../lib/useAsync';
 import { useOnboarding } from '../state/onboarding';
@@ -31,12 +32,14 @@ type Filter = 'all' | 'strong' | 'saved';
 
 export function Jobs() {
   const { t, locale, formatNumber } = useI18n();
+  // A re-run finishing must be visible here without a manual reload.
+  const { resultsVersion } = useChat();
   const api = useApi();
   const { settled } = useOnboarding();
   const inFlight = useRunInFlight();
   // Re-fetch when the run lands; see the same note in Dashboard.tsx.
   const { data, loading, error, reload } = useAsync((s) => api.getJobs(s),
-                                                   [api, locale, settled]);
+                                                   [api, locale, settled, resultsVersion]);
   const [filter, setFilter] = useState<Filter>('all');
   const [saved, setSaved] = useState<string[]>([]);
   const [refreshing, setRefreshing] = useState(false);

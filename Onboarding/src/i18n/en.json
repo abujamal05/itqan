@@ -367,5 +367,8 @@
   "profile.aiResetsWeek": "Resets to {limit} on {date}",
   "profile.aiUsageUnavailable": "Your usage is not available right now.",
   "profile.aiPlanFree": "Free plan",
-  "profile.aiPlanPaid": "Paid plan"
+  "profile.aiPlanPaid": "Paid plan",
+  "profile.doc.remove": "Remove this document",
+  "profile.doc.removeConfirm": "Remove?",
+  "profile.doc.removing": "Removing…"
 }

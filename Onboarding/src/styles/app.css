@@ -1559,6 +1559,15 @@
 
 .rerun__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 
+/* A re-run in flight. The meter is the point: a sentence with nothing moving
+   under it is indistinguishable from a button that did nothing, which is the
+   state this replaced. */
+.rerun__running {
+  display: flex; flex-direction: column; gap: var(--space-2);
+  margin-block-start: var(--space-3);
+}
+.rerun__running .rerun__note { margin-block-start: 0; }
+
 .rerun__note {
   margin-block-start: var(--space-3);
   font-size: var(--text-sm); color: var(--color-text-muted);
@@ -1766,7 +1775,13 @@
 .doclist__item {
   display: flex;
   align-items: center;
+  /* WRAPS, because the remove control changes width. The quiet state is a 32px
+     X; the confirm state is two buttons, and on a narrow row that stole the
+     space from the filename and broke "transcript.pdf" across three lines. The
+     confirm drops to its own line instead of crushing the thing it is about. */
+  flex-wrap: wrap;
   gap: var(--space-3);
+  row-gap: var(--space-2);
   padding: var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -1775,7 +1790,7 @@
 
 .doclist__icon { color: var(--color-text-muted); flex: 0 0 auto; }
 
-.doclist__main { display: flex; flex-direction: column; gap: 2px; min-inline-size: 0; flex: 1; }
+.doclist__main { display: flex; flex-direction: column; gap: 2px; min-inline-size: 0; flex: 1 1 11rem; }
 
 /* A filename is one long unbroken token more often than not, and left to
    itself it pushes the required tag off the row on a phone. */
@@ -1795,97 +1810,6 @@
   color: var(--color-accent-ink);
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
-}
-
-/* ---- The stored documents list --------------------------------------------
-   A row per document: what it is called, what kind it is, how big it is, and
-   whether it is the one the pipeline cannot run without. There is no remove
-   control because there is no route behind one (BACKEND.md §3); the required
-   tag answers "why can I not delete this" better than a disabled button would. */
-.doclist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
-
-.doclist__item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background-color: var(--color-surface-sunken);
-}
-
-.doclist__icon { color: var(--color-text-muted); flex: 0 0 auto; }
-
-.doclist__main { display: flex; flex-direction: column; gap: 2px; min-inline-size: 0; flex: 1; }
-
-/* A filename is one long unbroken token more often than not, and left to
-   itself it pushes the required tag off the row on a phone. */
-.doclist__name {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  overflow-wrap: anywhere;
-}
-
-.doclist__meta { font-size: var(--text-xs); color: var(--color-text-muted); }
-
-.doclist__tag {
-  flex: 0 0 auto;
-  padding: 2px var(--space-2);
-  border-radius: var(--radius-full);
-  background-color: var(--color-accent-tint);
-  color: var(--color-accent-ink);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-}
-
-/* ---- The AI allowance table -----------------------------------------------
-   Two measures across two tiers. Product register: precise, quiet, no fills.
-   `display` is never set on the cells — putting flex or grid on a <th> or <td>
-   removes it from the table formatting context and collapses the whole table,
-   which has already happened once on the proof page. Boxes go INSIDE cells. */
-.allowance {
-  inline-size: 100%;
-  border-collapse: collapse;
-  font-size: var(--text-sm);
-}
-
-.allowance th,
-.allowance td {
-  padding: var(--space-2) var(--space-3);
-  text-align: start;
-  border-block-end: 1px solid var(--color-border);
-}
-
-.allowance thead th {
-  font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.allowance tbody th {
-  font-weight: var(--weight-regular);
-  color: var(--color-text);
-  /* The label column takes what is left. Without this the browser splits the
-     width evenly and "1 a week" wrapped after "1 a", which reads as two
-     different figures. */
-  inline-size: 100%;
-}
-
-/* A quantity is one word, whatever the grammar says. */
-.allowance td { white-space: nowrap; }
-
-.allowance tbody tr:last-child th,
-.allowance tbody tr:last-child td { border-block-end: 0; }
-
-/* The paid column is the one being compared TO, so it carries the emphasis —
-   a tint rather than a gold fill, which would make an upsell the loudest thing
-   on a settings screen. */
-.allowance th:last-child,
-.allowance td:last-child {
-  background-color: var(--color-accent-wash);
-  font-weight: var(--weight-medium);
 }
 
 /* ---- AI usage meters ------------------------------------------------------
@@ -1941,3 +1865,31 @@
 .usage__bar[data-spent] > i { background: var(--color-text-muted); }
 
 .usage__note { font-size: var(--text-xs); color: var(--color-text-muted); }
+
+/* ------------------------------------------------------ remove a document -- */
+
+/* Quiet until hovered. This control destroys a file the person uploaded, so it
+   should be findable and not inviting — the opposite weight from a primary
+   action. The confirm below is where it becomes visible. */
+.doc-remove__x {
+  margin-inline-start: auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  inline-size: 32px; block-size: 32px;
+  border: 0; border-radius: var(--radius-full);
+  background: transparent; color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-hover),
+              color var(--duration-fast) var(--ease-hover);
+}
+.doc-remove__x:hover { background: var(--color-surface-sunken, transparent); color: var(--color-text); }
+
+.doc-remove { margin-inline-start: auto; display: inline-flex; gap: var(--space-2); }
+
+.doc-remove__yes,
+.doc-remove__no {
+  border: 1px solid var(--color-border); border-radius: var(--radius-full);
+  padding-block: var(--space-1); padding-inline: var(--space-3);
+  background: var(--color-surface); font: inherit; font-size: var(--text-sm);
+  cursor: pointer;
+}
+.doc-remove__yes { border-color: var(--color-border-accent); color: var(--color-text); }

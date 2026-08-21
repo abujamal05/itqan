@@ -659,7 +659,11 @@ export interface ItqanApi {
    * cost someone their whole week. The model proposes, the user disposes, the
    * server executes.
    */
-  rerunMatching(signal?: AbortSignal): Promise<{ jobId: string }>;
+  rerunMatching(
+    signal?: AbortSignal,
+  ): Promise<{ jobId: string; awaitingConfirmation?: boolean }>;
+  /** Removes one uploaded document, from the list AND from the server's disk. */
+  deleteDocument(id: string, signal?: AbortSignal): Promise<void>;
 
   listThreads(signal?: AbortSignal): Promise<ChatThreadSummary[]>;
   /** A thread with no messages is a normal answer, not an error. */

@@ -367,5 +367,8 @@
   "profile.aiResetsWeek": "ترجع إلى {limit} في {date}",
   "profile.aiUsageUnavailable": "استخدامك غير متاح حالياً.",
   "profile.aiPlanFree": "الاشتراك المجاني",
-  "profile.aiPlanPaid": "الاشتراك المدفوع"
+  "profile.aiPlanPaid": "الاشتراك المدفوع",
+  "profile.doc.remove": "إزالة هذا المستند",
+  "profile.doc.removeConfirm": "إزالة؟",
+  "profile.doc.removing": "جارٍ الإزالة…"
 }
