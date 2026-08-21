@@ -97,14 +97,9 @@
   "home": {
     "hero": {
       "heading": "Stop guessing your next step.",
-      "sub": "Career intelligence for graduates and career switchers across MENA. Where you stand, what to aim for, and the shortest way there.",
+      "sub": "Career intelligence for graduates and career switchers across MENA.",
       "ctaSecondary": "See the proof",
       "scrollCue": "Scroll to learn more"
-    },
-    "pain": {
-      "heading": "The problem was never you. It was having to guess.",
-      "body": "You send a hundred applications, hear nothing back, and still have no idea which part of your profile is holding you up.",
-      "eyebrow": "Where the time goes"
     },
     "build": {
       "heading": "Itqan answers four questions, in the order they matter.",
@@ -431,7 +426,7 @@
     "title": "Who we are",
     "metaDescription": "Why we built Itqan. We show you where you stand, the shortest path to the job you want, and the real jobs that fit you today.",
     "whyHeading": "Nobody ever tells you how far away it is.",
-    "whyBody": "You have a rough idea of where you want to end up. What nobody gives you is the distance, and you should be able to see that from the first day rather than work it out after a year of applying and hearing nothing back.",
+    "whyBody": "You have a rough idea of where you want to end up. Nobody gives you the distance, and you should be able to see it from the first day.",
     "missionLabel": "Our mission",
     "mission": "We show you where you stand, the shortest path to the job you want, and the jobs that fit you today.",
     "visionLabel": "Our vision",
@@ -487,6 +482,7 @@
       "note": "Approximate figures from an early sample of graduates and final year students in Oman. We are widening it, and we will publish the exact numbers when the sample is large enough to carry them."
     },
     "holdHeading": "The standards we hold ourselves to",
-    "statsAria": "Survey finding"
+    "statsAria": "Survey finding",
+    "mvHeading": "What we are for"
   }
 }

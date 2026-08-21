@@ -30,10 +30,6 @@ const stepIcons = [
       <h1 class="hero__title" data-enter>{s.home.hero.heading}</h1>
       <div class="hero__rule" aria-hidden="true" data-enter></div>
       <p class="hero__sub" data-enter>{s.home.hero.sub}</p>
-      {/* The pain used to be a section of its own holding one sentence. It reads
-          better here, immediately under the promise it is the counterweight to,
-          and it buys the page a whole section back. */}
-      <p class="hero__pain" data-enter>{s.home.pain.body}</p>
       <div class="hero__actions" data-enter>
         <a class="button button--primary button--arrow" href={`${base}/signup/`}>
           <span>{s.actions.signup}</span>
@@ -174,15 +170,6 @@ const stepIcons = [
 </section>
 
 <style>
-  /* The pain sits under the promise it answers, quieter than the sub above it
-     so the reading order stays heading -> promise -> pain -> action. */
-  .hero__pain {
-    margin-block-start: var(--space-4);
-    font-weight: var(--weight-medium);
-    color: var(--color-text);
-    max-inline-size: 44ch;
-  }
-
   /* The product screen is wide; it gets the full measure rather than being
      squeezed beside the card that explains it. */
   .example__shot {
