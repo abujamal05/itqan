@@ -347,11 +347,11 @@
   "courses.stateAvailable": "Available",
   "courses.doneNoted": "Marked as done. For it to count towards your readiness, upload your updated CV so Itqan can read the new skill from real evidence rather than take your word for it.",
   "courses.updateCv": "Update your CV",
-  "courses.mapHint": "Drag the map to follow the path, and open any course to see everything about it.",
+  "courses.mapHint": "Use the arrows to move along the path, or drag the map. Open any course to see everything about it.",
   "a11y.closeDialog": "Close",
   "a11y.mapZoomIn": "Zoom in",
   "a11y.mapZoomOut": "Zoom out",
-  "a11y.mapRecentre": "Back to where you are",
+  "a11y.mapRecentre": "See the whole path",
   "file.kb": "{n} KB",
   "file.mb": "{n} MB",
   "profile.docRequired": "Required",
@@ -370,5 +370,12 @@
   "profile.aiPlanPaid": "Paid plan",
   "profile.doc.remove": "Remove this document",
   "profile.doc.removeConfirm": "Remove?",
-  "profile.doc.removing": "Removing…"
+  "profile.doc.removing": "Removing…",
+  "a11y.mapNext": "Next course",
+  "a11y.mapPrev": "Previous course",
+  "jobs.lowTitle": "Not yet, and that is fine",
+  "jobs.lowBody": "Nothing on this list is worth your time applying to today. The courses on your path are ordered so the first one moves you furthest towards being able to.",
+  "jobs.showAnyway": "Show them anyway",
+  "jobs.lowShown": "These are shown at your request. Your readiness is still low for them, so treat a rejection as information about timing rather than about you.",
+  "jobs.seePath": "See your path"
 }

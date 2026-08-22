@@ -123,7 +123,6 @@ export function CoursesMap({ courses, completed, onDone, onOpen }: CoursesMapPro
         url: c.source.url,
         labels,
         onDone: st[i] === 'completed' ? undefined : () => onDone(c),
-        onOpen: () => onOpen(c),
         /* The pair swaps in Arabic for the same reason the coordinates are
            negated: the journey travels the other way. */
         incoming: rtl ? trail : lead,
@@ -180,6 +179,18 @@ export function CoursesMap({ courses, completed, onDone, onOpen }: CoursesMapPro
         zoomIn: t('a11y.mapZoomIn'),
         zoomOut: t('a11y.mapZoomOut'),
         recentre: t('a11y.mapRecentre'),
+        next: t('a11y.mapNext'),
+        prev: t('a11y.mapPrev'),
+      }}
+      /* The arrows walk the route in path order, so "next" always means the
+         next course rather than whatever happens to be to the right — which is
+         the opposite direction on every second row of a serpentine. */
+      stops={order.map((c) => c.id)}
+      /* The whole card opens the detail — the source, the retrieval date and
+         the feedback controls a node has no room for. */
+      onNodeOpen={(id) => {
+        const c = order.find((x) => x.id === id);
+        if (c) onOpen(c);
       }}
       srList={order.map((c, i) => (
         <li key={c.id}>

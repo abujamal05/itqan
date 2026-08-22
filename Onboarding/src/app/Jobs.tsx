@@ -16,6 +16,7 @@
  * rather than do it.
  */
 import { useCallback, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { useChat } from '../state/chat';
 import { useApi } from '../state/api';
@@ -23,7 +24,8 @@ import { useAsync } from '../lib/useAsync';
 import { useOnboarding } from '../state/onboarding';
 import { useRunInFlight } from '../components/PipelineProgress';
 import { isStrong } from '../api';
-import { Card, EmptyState, ErrorState, LoadingBlock } from '../components/ui';
+import { Callout, Card, EmptyState, ErrorState, LoadingBlock } from '../components/ui';
+import { LOW_READINESS } from '../components/map/JourneyMap';
 import { MatchCard } from '../components/MatchCard';
 import { BrowseBar } from '../components/BrowseBar';
 import type { FilterDef } from '../components/BrowseBar';
@@ -40,6 +42,23 @@ export function Jobs() {
   // Re-fetch when the run lands; see the same note in Dashboard.tsx.
   const { data, loading, error, reload } = useAsync((s) => api.getJobs(s),
                                                    [api, locale, settled, resultsVersion]);
+  /**
+   * Readiness, for the one reason this page needs it.
+   *
+   * THE TWO SCREENS WERE CONTRADICTING EACH OTHER. The dashboard withheld the
+   * matches under `LOW_READINESS` and said nothing here was worth applying to
+   * today — and then this page listed all of them anyway, one tap away. Either
+   * the advice was wrong or the list was; a product whose two screens disagree
+   * is not trusted on either.
+   *
+   * The same gate now applies here. It is a WITHHOLD, not a block: the advice
+   * is stated, and "Show them anyway" reveals the list, because these are the
+   * user's own matches and a career tool that hides someone's options from them
+   * has stopped being on their side.
+   */
+  const { data: dash } = useAsync((s) => api.getDashboard(s), [api, locale, settled, resultsVersion]);
+  const [revealed, setRevealed] = useState(false);
+  const low = typeof dash?.readiness === 'number' && dash.readiness <= LOW_READINESS;
   const [filter, setFilter] = useState<Filter>('all');
   const [saved, setSaved] = useState<string[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -104,13 +123,40 @@ export function Jobs() {
             // An empty list during a run means "not yet", not "nothing exists".
             ? <EmptyState title={t('state.workingTitle')} body={t('state.workingSub')} />
             : <EmptyState title={t('jobs.empty')} body={t('jobs.emptySub')} />
-          : (
-            <div className="grid grid--2">
-              {shown.map((j) => (
-                <MatchCard key={j.id} job={j} saved={saved.includes(j.id)} onToggleSave={toggleSave} />
-              ))}
-            </div>
-          )
+          : low && !revealed
+            ? (
+              <EmptyState
+                title={t('jobs.lowTitle')}
+                body={t('jobs.lowBody')}
+                action={(
+                  <div className="row">
+                    <Link className="btn btn--primary" to="/courses">{t('jobs.seePath')}</Link>
+                    {/* Secondary on purpose. The path is the recommendation;
+                        this is the escape hatch, and it should read as one. */}
+                    <button
+                      className="btn btn--ghost"
+                      type="button"
+                      onClick={() => setRevealed(true)}
+                    >
+                      {t('jobs.showAnyway')}
+                    </button>
+                  </div>
+                )}
+              />
+            )
+            : (
+              <>
+                {/* Shown once, above the list, when the user overrode the
+                    advice — so the caveat travels with the thing it is about
+                    instead of being forgotten on the previous screen. */}
+                {low && revealed && <Callout>{t('jobs.lowShown')}</Callout>}
+                <div className="grid grid--2">
+                  {shown.map((j) => (
+                    <MatchCard key={j.id} job={j} saved={saved.includes(j.id)} onToggleSave={toggleSave} />
+                  ))}
+                </div>
+              </>
+            )
       )}
     </div>
   );

@@ -74,6 +74,24 @@
 .map__canvas .react-flow__background,
 .map__canvas .react-flow__pane { background: transparent; }
 
+/* THE NODES HAD NO POINTER EVENTS AT ALL, and this is why "Open the course"
+   could not be clicked and the cursor stayed a drag hand over every card.
+   React Flow sets `pointer-events: none` on a node that is not draggable,
+   selectable, connectable or focusable — a reasonable optimisation, on the
+   assumption that an inert node has nothing to click. Ours has three things:
+   the provider link, the Done button, and the hit area that opens the detail.
+   The pane underneath was receiving every click instead, cursor included.
+
+   Re-enabled here rather than by making the nodes selectable, which would drag
+   in selection outlines and node dragging the map does not want. The cost is
+   that a drag STARTING on a card no longer pans; dragging the paper between
+   cards still does, and the arrows now cover the rest. */
+.map__canvas .react-flow__node { pointer-events: auto; }
+
+/* A static map is a picture, so nothing about it should offer to move. */
+.map__canvas[data-static] .react-flow__pane,
+.map__canvas[data-static] .react-flow__pane.draggable { cursor: default; }
+
 /* ---- Edges ----------------------------------------------------------------
    THE RESET COLLIDES WITH REACT FLOW, and this is the whole reason the path was
    invisible for a while. React Flow gives each edge its own <svg> and sets no
@@ -283,22 +301,10 @@
 /* The arrow points along the direction of travel, which reverses in Arabic. */
 [dir='rtl'] .mapnode__label--go svg { transform: scaleX(-1); }
 
-/* The stretched hit area that opens a course's detail. Under the explicit
-   actions, so Open and Done stay clickable. */
-.mapnode__hit {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-}
-
+/* The whole card opens the detail, so the whole card says so. */
+.mapnode--course { cursor: pointer; }
 .mapnode--course:hover { border-color: var(--color-border-strong); }
 
-.mapnode--course > *:not(.mapnode__hit) { position: relative; z-index: 2; }
 
 /* ---- Course internals ----------------------------------------------------- */
 .mapnode__badge {
