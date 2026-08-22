@@ -96,6 +96,19 @@ export interface UploadedDocument {
 
 /** Everything the reader agent pulled out of the uploaded document. */
 export interface AnalysisResult {
+  /**
+   * What could not be read, as ids the interface translates (`notice.*`).
+   *
+   * A transcript that fails to extract is optional-by-design: the run finishes
+   * on the CV rather than losing everything. Until this existed it finished
+   * SILENTLY, so "your transcript could not be read" and "you did not upload a
+   * transcript" looked identical from the outside — which is why people saw one
+   * of their two documents apparently ignored and had nothing to act on.
+   *
+   * Ids, never sentences: the backend's warnings carry exception text, and prose
+   * on the wire cannot be translated.
+   */
+  notices: string[];
   fullName: Extracted<string> | null;
   birthDate: Extracted<string> | null;      // ISO yyyy-mm-dd
   graduationDate: Extracted<string> | null; // ISO yyyy-mm

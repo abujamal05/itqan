@@ -71,6 +71,20 @@ export function Documents() {
     });
   }, [stored.data]);
 
+  /*
+   * Two files of one kind are read TOGETHER, as one document — which is right
+   * for a transcript photographed a page at a time, and wrong for a replacement
+   * CV sitting beside the old one.
+   *
+   * Nothing here can tell those apart, and the previous attempt to guess (read
+   * only the newest) silently discarded pages of real documents. So the choice
+   * is handed back: this says what will happen, beside the delete control, and
+   * the person decides. Visible and correctable beats silent and wrong.
+   */
+  const duplicateKind = ['cv', 'transcript'].some(
+    (kind) => items.filter((i) => i.kind === kind && i.status === 'done').length > 1,
+  );
+
   const ready = hasRequiredDocument(items);
   const uploading = anyUploading(items);
 
@@ -105,6 +119,8 @@ export function Documents() {
 
       {/* The requirement is explained next to the control it blocks. */}
       {!ready && items.length > 0 && <Callout>{t('upload.missingRequired')}</Callout>}
+
+      {duplicateKind && <Callout>{t('documents.duplicateKind')}</Callout>}
 
       {error && (
         <Callout tone="danger">

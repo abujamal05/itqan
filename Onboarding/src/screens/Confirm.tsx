@@ -284,6 +284,21 @@ export function Confirm() {
               <Card><LoadingBlock rows={4} /></Card>
             ) : (
               <>
+                {/* What could not be read, ABOVE the form and before anything
+                    else. A transcript that failed to extract is the case this
+                    exists for: the run finishes on the CV, which is right, and
+                    used to finish silently — leaving the person to conclude
+                    their transcript simply did not matter. */}
+                {(result?.notices ?? []).length > 0 && (
+                  <Callout tone="danger">
+                    <div className="stack stack--sm">
+                      {(result?.notices ?? []).map((id) => (
+                        <p key={id}>{t(`notice.${id}`)}</p>
+                      ))}
+                    </div>
+                  </Callout>
+                )}
+
                 {uncertain.length > 0 && (
                   <Callout>
                     <div className="stack stack--sm">

@@ -377,5 +377,13 @@
   "jobs.lowBody": "Nothing on this list is worth your time applying to today. The courses on your path are ordered so the first one moves you furthest towards being able to.",
   "jobs.showAnyway": "Show them anyway",
   "jobs.lowShown": "These are shown at your request. Your readiness is still low for them, so treat a rejection as information about timing rather than about you.",
-  "jobs.seePath": "See your path"
+  "jobs.seePath": "See your path",
+  "notice.transcriptUnreadable": "Your transcript could not be read, so this is based on your CV alone. You can upload it again from your documents.",
+  "notice.transcriptExtractionFailed": "Something went wrong reading your transcript, so this is based on your CV alone. Trying again usually works.",
+  "notice.someFilesUnreadable": "Some of your files could not be opened and were skipped.",
+  "notice.cvUnreadable": "We could not read any text from your CV.",
+  "notice.cvExtractionFailed": "Something went wrong reading your CV.",
+  "notice.courseworkNotResearched": "We could not look up what your courses teach, so fewer skills may appear.",
+  "notice.courseworkNotDerived": "We could not work out the skills your coursework covers, so fewer skills may appear.",
+  "documents.duplicateKind": "Two of these are the same kind of document. Both will be read together — remove one if it is not part of the same document."
 }
