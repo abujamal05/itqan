@@ -17,6 +17,15 @@ type Bi = { ar: string; en: string };
 const pick = (b: Bi, l: Locale) => b[l];
 
 export const analysisResult = (l: Locale) => ({
+  /*
+   * Empty, which is the normal case — a clean run reads both documents.
+   *
+   * Set to ['transcriptUnreadable'] to develop against the failure: it is the
+   * one this field exists for, it is invisible in production until something
+   * renders it, and a stub that cannot produce it is how a screen gets built
+   * against a fiction. Same lesson as `emailVerified` and the price label.
+   */
+  notices: [] as string[],
   fullName: {
     value: pick({ ar: 'مريم بنت سالم البلوشية', en: 'Maryam Salim Al Balushi' }, l),
     confidence: 0.96,
