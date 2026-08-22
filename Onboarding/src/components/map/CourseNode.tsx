@@ -52,9 +52,6 @@ export interface CourseNodeData extends Record<string, unknown> {
     available: string;
   };
   onDone?: () => void;
-  /** Open the full course, with its source, confidence and feedback controls.
-   *  The node is a summary; everything the grid card carried lives in there. */
-  onOpen: () => void;
   incoming: Position;
   outgoing: Position;
 }
@@ -75,21 +72,6 @@ function CourseNodeBase({ data }: NodeProps) {
     <div className="mapnode mapnode--course" data-state={d.state}>
       <Handle type="target" position={d.incoming} isConnectable={false} />
       <Handle type="source" position={d.outgoing} isConnectable={false} />
-
-      {/* The whole card opens the detail. A stretched button rather than a
-          click handler on the div: it keeps the node a real control with a real
-          accessible name, and it sits UNDER the explicit actions so it cannot
-          swallow them. `tabIndex={-1}` because the canvas is aria-hidden and
-          the keyboard path through the map is the list beneath it. */}
-      <button
-        className="mapnode__hit"
-        type="button"
-        onClick={d.onOpen}
-        tabIndex={-1}
-        aria-hidden="true"
-      >
-        <span className="sr-only">{d.title}</span>
-      </button>
 
       {badge && Icon && (
         <span className="mapnode__badge">
@@ -124,18 +106,27 @@ function CourseNodeBase({ data }: NodeProps) {
           button; a locked node has neither. */}
       {d.state !== 'locked' && (
         <span className="mapnode__actions">
+          {/* `stopPropagation` on both controls: the whole card is a click
+              target now (React Flow's `onNodeClick`), so without it opening the
+              provider's site would ALSO open the detail sheet behind it. */}
           <a
             className="mapnode__open"
             href={d.url}
             target="_blank"
             rel="noopener noreferrer"
             tabIndex={-1}
+            onClick={(e) => e.stopPropagation()}
           >
             {d.labels.open}
             <ExternalLink size={12} aria-hidden="true" />
           </a>
           {d.state !== 'completed' && d.onDone && (
-            <button className="mapnode__done" type="button" onClick={d.onDone} tabIndex={-1}>
+            <button
+              className="mapnode__done"
+              type="button"
+              tabIndex={-1}
+              onClick={(e) => { e.stopPropagation(); d.onDone?.(); }}
+            >
               {d.labels.done}
             </button>
           )}

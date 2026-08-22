@@ -20,8 +20,8 @@
  * node's state in words. The canvas itself is `aria-hidden`, so assistive tech
  * gets the list and never the graph.
  */
-import { useCallback, useEffect, useRef, type ReactNode } from 'react';
-import { Crosshair, Minus, Plus } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { ChevronLeft, ChevronRight, Maximize, Minus, Plus } from 'lucide-react';
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -69,11 +69,45 @@ interface MapCanvasProps {
    * canvas from being a place to get lost. Omitted on maps small enough that
    * getting lost is not possible.
    */
-  tools?: { zoomIn: string; zoomOut: string; recentre: string };
+  tools?: {
+    zoomIn: string; zoomOut: string; recentre: string;
+    next: string; prev: string;
+  };
+  /**
+   * A picture, not a place you can go.
+   *
+   * The dashboard journey is four milestones that all fit on screen — there is
+   * nothing off-frame to pan to, so dragging it could only ever move the
+   * picture somewhere worse, and a grab cursor over it promises an interaction
+   * that has no payoff. Static maps do not pan, do not zoom, and show no tools.
+   */
+  isStatic?: boolean;
+  /**
+   * Ordered node ids the prev/next arrows step through.
+   *
+   * Given, the map also refuses to be panned past the graph — `translateExtent`
+   * is derived from the node bounds, so the furthest you can drag is the edge
+   * of the content plus a margin. Without it a hard flick leaves you looking at
+   * empty canvas with no way back except the recentre button.
+   */
+  stops?: string[];
+  /** Opening a node. See the note on `onNodeClick` in the component below. */
+  onNodeOpen?: (id: string) => void;
 }
 
 /** Margin fitView leaves around the graph, as a fraction of the graph's size. */
 const FIT_PADDING = 0.06;
+
+/**
+ * Fitting never ENLARGES.
+ *
+ * When a graph is smaller than its canvas, fitView happily scales it up to the
+ * maxZoom — the dashboard journey came out at 1.53 on a laptop, with 44px
+ * markers rendered at 67px and type to match. Every node in these maps is drawn
+ * at its intended size already, so fitting may only ever shrink to make things
+ * visible, never magnify to fill space.
+ */
+const FIT = { padding: FIT_PADDING, maxZoom: 1 } as const;
 
 function Frame({
   fitKey,
@@ -117,7 +151,7 @@ function Frame({
       const node = focusNodeId ? flow.getNode(focusNodeId) : undefined;
 
       if (clamped >= fitFloor || !node) {
-        flow.fitView({ padding: FIT_PADDING, duration });
+        flow.fitView({ ...FIT, duration });
         return;
       }
 
@@ -137,25 +171,67 @@ function Frame({
 function Tools({
   labels,
   focusNodeId,
+  stops,
 }: {
-  labels: { zoomIn: string; zoomOut: string; recentre: string };
+  labels: NonNullable<MapCanvasProps['tools']>;
   focusNodeId?: string;
+  stops?: string[];
 }) {
   const flow = useReactFlow();
+  /* Which stop the viewport is currently nearest. Tracked rather than derived
+     from the viewport on every frame: the arrows are a sequence the user is
+     walking, and a purely positional answer would jump two steps when a drag
+     landed between nodes. */
+  const [at, setAt] = useState(() => Math.max(0, stops?.indexOf(focusNodeId ?? '') ?? 0));
 
-  /* Recentring goes back to the node the map OPENED on, not to the whole
-     graph: "where was I" is the question someone lost on a map is asking, and
-     fitting everything answers a different one. */
-  const recentre = useCallback(() => {
-    const node = focusNodeId ? flow.getNode(focusNodeId) : undefined;
-    if (!node) { flow.fitView({ padding: FIT_PADDING, duration: 400 }); return; }
+  useEffect(() => {
+    setAt(Math.max(0, stops?.indexOf(focusNodeId ?? '') ?? 0));
+  }, [stops, focusNodeId]);
+
+  const centreOn = useCallback((id: string | undefined, zoom = 1) => {
+    const node = id ? flow.getNode(id) : undefined;
+    if (!node) { flow.fitView({ ...FIT, duration: 400 }); return; }
     const w = node.measured?.width ?? node.width ?? 0;
     const h = node.measured?.height ?? node.height ?? 0;
-    flow.setCenter(node.position.x + w / 2, node.position.y + h / 2, { zoom: 1, duration: 400 });
-  }, [flow, focusNodeId]);
+    flow.setCenter(node.position.x + w / 2, node.position.y + h / 2, { zoom, duration: 400 });
+  }, [flow]);
+
+  const step = useCallback((by: number) => {
+    if (!stops?.length) return;
+    const next = Math.min(stops.length - 1, Math.max(0, at + by));
+    setAt(next);
+    centreOn(stops[next]);
+  }, [at, stops, centreOn]);
+
+  /* Overview frames the WHOLE route. It is the answer to "where am I in this",
+     which neither arrow can give — and the way back from a lost viewport. */
+  const overview = useCallback(() => {
+    flow.fitView({ ...FIT, duration: 400 });
+  }, [flow]);
+
+  const first = at <= 0;
+  const last = !stops?.length || at >= stops.length - 1;
 
   return (
     <div className="map__tools">
+      {stops && stops.length > 1 && (
+        <>
+          <button className="map__tool" type="button" onClick={() => step(-1)} disabled={first}>
+            <ChevronLeft className="map__tool-back" size={16} aria-hidden="true" />
+            <span className="sr-only">{labels.prev}</span>
+          </button>
+          <button className="map__tool" type="button" onClick={() => step(1)} disabled={last}>
+            <ChevronRight className="map__tool-fwd" size={16} aria-hidden="true" />
+            <span className="sr-only">{labels.next}</span>
+          </button>
+        </>
+      )}
+
+      <button className="map__tool" type="button" onClick={overview}>
+        <Maximize size={16} aria-hidden="true" />
+        <span className="sr-only">{labels.recentre}</span>
+      </button>
+
       <button className="map__tool" type="button" onClick={() => flow.zoomOut({ duration: 200 })}>
         <Minus size={16} aria-hidden="true" />
         <span className="sr-only">{labels.zoomOut}</span>
@@ -163,10 +239,6 @@ function Tools({
       <button className="map__tool" type="button" onClick={() => flow.zoomIn({ duration: 200 })}>
         <Plus size={16} aria-hidden="true" />
         <span className="sr-only">{labels.zoomIn}</span>
-      </button>
-      <button className="map__tool" type="button" onClick={recentre}>
-        <Crosshair size={16} aria-hidden="true" />
-        <span className="sr-only">{labels.recentre}</span>
       </button>
     </div>
   );
@@ -184,7 +256,35 @@ export function MapCanvas({
   className,
   fitKey,
   tools,
+  isStatic = false,
+  stops,
+  onNodeOpen,
 }: MapCanvasProps) {
+  /**
+   * How far the viewport may travel, in canvas coordinates.
+   *
+   * WITHOUT THIS A HARD FLICK LOSES THE MAP. React Flow pans infinitely by
+   * default, so one enthusiastic drag leaves the user staring at empty dotted
+   * paper with no clue which way the route went. The extent is the node bounds
+   * plus a screen's worth of margin on each side — enough that the outermost
+   * card can still be centred, and no further.
+   */
+  const extent = useMemo(() => {
+    if (isStatic || nodes.length === 0) return undefined;
+    const b = getNodesBounds(nodes);
+    /* A margin, not a proportion. Scaling the slack with the graph meant a
+       three-course path allowed 1,100px of travel past its own last card, which
+       is a screen and a half of empty paper — bounded in principle and lost in
+       practice. A flat margin is roughly one screen: enough that the outermost
+       node can sit near the middle, not enough to leave the route behind. */
+    const mx = 380;
+    const my = 260;
+    return [
+      [b.x - mx, b.y - my],
+      [b.x + b.width + mx, b.y + b.height + my],
+    ] as [[number, number], [number, number]];
+  }, [nodes, isStatic]);
+
   return (
     /* The provider wraps the WHOLE component, not just the canvas, so the
        controls can live outside the `aria-hidden` region and still reach the
@@ -192,7 +292,7 @@ export function MapCanvas({
        assistive tech, which is the worst of both. */
     <ReactFlowProvider>
       <div className={className}>
-        <div className="map__canvas" aria-hidden="true">
+        <div className="map__canvas" data-static={isStatic || undefined} aria-hidden="true">
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -204,12 +304,32 @@ export function MapCanvas({
             elementsSelectable={false}
             edgesFocusable={false}
             nodesFocusable={false}
-            panOnDrag
+            /* A STATIC MAP IS A PICTURE. The dashboard journey fits entirely
+               on screen, so there is nothing to pan to and dragging could only
+               move it somewhere worse — and a grab cursor over it promises an
+               interaction with no payoff. */
+            panOnDrag={!isStatic}
             zoomOnScroll={false}
-            zoomOnPinch
+            zoomOnPinch={!isStatic}
             zoomOnDoubleClick={false}
             panOnScroll={false}
             preventScrolling={false}
+            translateExtent={extent}
+            /* ALWAYS SET, even when nothing listens, and the reason is not the
+               callback. React Flow decides whether a node gets pointer events
+               from whether anything could possibly want them — no drag, no
+               selection, no focus and no click handler means it writes
+               `pointer-events: none` as an INLINE style on every node. That is
+               why the provider link could not be clicked and the pane's grab
+               cursor showed through the cards: the clicks were landing on the
+               canvas behind them, and CSS could not override an inline style
+               without `!important`. Handing it a click handler is the API-level
+               answer to the same problem. */
+            onNodeClick={(_, node) => onNodeOpen?.(node.id)}
+            /* A static map still needs fitView to be ABLE to zoom out — that
+               is the only way it can show everything without panning. The user
+               cannot zoom either way: wheel, pinch and double-click are all off
+               above, so these bounds only constrain the framing code. */
             minZoom={minZoom}
             maxZoom={maxZoom}
             proOptions={{ hideAttribution: true }}
@@ -218,7 +338,9 @@ export function MapCanvas({
           </ReactFlow>
         </div>
 
-        {tools && <Tools labels={tools} focusNodeId={focusNodeId} />}
+        {tools && !isStatic && (
+          <Tools labels={tools} focusNodeId={focusNodeId} stops={stops} />
+        )}
 
         {/* The same route, in order, for anyone who is not looking at it — and
             the KEYBOARD path through the map, which is why it is not plain
