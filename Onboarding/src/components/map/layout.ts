@@ -1,3 +1,5 @@
+import { Position } from '@xyflow/react';
+
 /**
  * Where nodes sit on the career map.
  *
@@ -21,6 +23,37 @@
 export interface Placed {
   x: number;
   y: number;
+}
+
+/**
+ * Which sides of a node its edges attach to, for a node at `i` in a serpentine.
+ *
+ * THE TURN IS THE WHOLE REASON THIS EXISTS. Along a row the edges attach to the
+ * left and right, and which is which flips every row because the path doubles
+ * back. But at the END of a row the next node is directly BELOW, not beside —
+ * and attaching that edge to the side sends it out sideways and back in again,
+ * curving straight across the node's own caption. That is exactly what it did:
+ * the live dashed edge ran through the words "Identifying your skills".
+ *
+ * So a row change attaches bottom-to-top, and only the horizontal legs use the
+ * sides. RTL flips left and right and nothing else — down is down in both
+ * languages.
+ */
+export function sides(i: number, count: number, perRow: number, rtl: boolean) {
+  const row = Math.floor(i / perRow);
+  const forward = row % 2 === 0;
+  /* `lead` is the side the PREVIOUS node is on, `trail` the side the next one
+     is on, for a row running in this direction. */
+  const lead = forward ? Position.Left : Position.Right;
+  const trail = forward ? Position.Right : Position.Left;
+
+  const firstInRow = i % perRow === 0;
+  const lastInRow = i % perRow === perRow - 1;
+
+  const incoming = i > 0 && firstInRow ? Position.Top : (rtl ? trail : lead);
+  const outgoing = i < count - 1 && lastInRow ? Position.Bottom : (rtl ? lead : trail);
+
+  return { incoming, outgoing };
 }
 
 /**

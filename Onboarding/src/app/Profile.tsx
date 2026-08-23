@@ -249,14 +249,21 @@ export function Profile() {
    *
    * Deliberately NOT folded into the profile fetch: `GET /api/usage` does not
    * exist in production yet (BACKEND.md §4), and a 404 there must not take the
-   * whole profile screen down with it. Null — whether the route is missing, the
-   * request failed, or it simply has not landed — renders no section at all,
-   * which is the honest state. Zeros would be a figure nobody measured.
+   * whole profile screen down with it.
+   *
+   * THREE STATES, NOT TWO, and the third is the point. This used to render
+   * nothing at all when the call failed, which is honest about the numbers and
+   * useless to the person reading — a section that is absent looks exactly like
+   * a section that is broken, and it cost real time working out which. It now
+   * says the usage is unavailable. Still no zeros: an invented figure is worse
+   * than an admitted gap, but an unexplained gap is worse than an admitted one.
    */
-  const [usage, setUsage] = useState<Usage | null>(null);
+  const [usage, setUsage] = useState<Usage | 'unavailable' | null>(null);
   useEffect(() => {
     const ac = new AbortController();
-    api.getUsage(ac.signal).then(setUsage).catch(() => setUsage(null));
+    api.getUsage(ac.signal)
+      .then(setUsage)
+      .catch(() => { if (!ac.signal.aborted) setUsage('unavailable'); });
     return () => ac.abort();
   }, [api, locale]);
 
@@ -646,7 +653,9 @@ export function Profile() {
           you actually use Hud. */}
       {usage && (
         <Section id="ai" title={t('profile.aiTitle')} icon={Bot} editing={false}>
-          <UsageMeters usage={usage} />
+          {usage === 'unavailable'
+            ? <p className="text-sm muted">{t('profile.aiUsageUnavailable')}</p>
+            : <UsageMeters usage={usage} />}
         </Section>
       )}
 

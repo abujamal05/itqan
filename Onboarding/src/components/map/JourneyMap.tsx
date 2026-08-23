@@ -23,7 +23,7 @@ import { useMediaQuery } from '../../lib/useMediaQuery';
 import type { JourneyStage } from '../../api';
 import { MapCanvas } from './MapCanvas';
 import { MilestoneNode, type MilestoneData } from './MilestoneNode';
-import { arc, serpentine, NODE } from './layout';
+import { arc, serpentine, sides, NODE } from './layout';
 
 /**
  * At or below this, the journey ends at building rather than at applying.
@@ -36,6 +36,16 @@ export const LOW_READINESS = 30;
 const STAGE_LINKS: Record<string, string> = { jobs: '/jobs' };
 
 const nodeTypes = { milestone: MilestoneNode };
+
+/**
+ * Milestones per row once the map wraps, which is phones only.
+ *
+ * One row is all-horizontal, so its edges attach left and right and only flip
+ * with direction. Two rows have a TURN in them, and that edge has to leave the
+ * bottom and arrive at the top — attaching it to the side sent it out sideways
+ * and straight back across the caption under the marker it just left.
+ */
+const PER_ROW = 2;
 
 export function JourneyMap({
   stages,
@@ -65,7 +75,7 @@ export function JourneyMap({
   const { nodes, edges } = useMemo(() => {
     const pts = narrow
       ? serpentine(stages.length, {
-        perRow: 2,
+        perRow: PER_ROW,
         stepX: NODE.milestone.w + 54,
         stepY: NODE.milestone.h + 48,
         amplitude: 0,
@@ -73,20 +83,22 @@ export function JourneyMap({
       })
       : arc(stages.length, NODE.milestone.w + 54, 56, rtl);
 
-    /* Attachment sides flip with direction, or every edge would leave from the
-       wrong side of its node and loop back on itself in Arabic. */
-    const incoming = rtl ? Position.Right : Position.Left;
-    const outgoing = rtl ? Position.Left : Position.Right;
-
     const ns: Node[] = stages.map((s, i) => {
       const isLast = i === stages.length - 1;
+      const turn = narrow
+        ? sides(i, stages.length, PER_ROW, rtl)
+        : {
+          incoming: rtl ? Position.Right : Position.Left,
+          outgoing: rtl ? Position.Left : Position.Right,
+        };
+
       const data: MilestoneData = {
         label: isLast && low ? t('journey.building') : s.label,
         detail: s.detail,
         state: s.state,
         to: isLast && !low ? STAGE_LINKS[s.id] : undefined,
-        incoming,
-        outgoing,
+        incoming: turn.incoming,
+        outgoing: turn.outgoing,
       };
       return {
         id: s.id,
