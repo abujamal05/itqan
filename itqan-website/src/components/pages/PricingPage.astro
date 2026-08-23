@@ -97,6 +97,9 @@ const offer = {
           ))
         }
       </ul>
+      <a class="button button--primary tier__cta" href={`${base}/signup/`}>
+        {s.pricing.free.cta}
+      </a>
     </article>
 
     <article class="tier tier--paid">
@@ -117,9 +120,10 @@ const offer = {
           ))
         }
       </ul>
-      <p class="tier__note">
-        {s.pricing.paid.cancel}<br />{s.pricing.paid.where}
-      </p>
+      <p class="tier__note">{s.pricing.paid.cancel}</p>
+      <a class="button button--secondary tier__cta" href={`${base}/signup/`}>
+        {s.pricing.paid.cta}
+      </a>
     </article>
   </section>
 
@@ -137,12 +141,6 @@ const offer = {
     </dl>
   </section>
 
-  <div class="page-cta reveal">
-    <a class="button button--primary button--arrow" href={`${base}/signup/`}>
-      <span>{s.actions.signup}</span>
-      <Icon class="button__arrow" name="ph:arrow-right" width="16" height="16" aria-hidden="true" />
-    </a>
-  </div>
 </div>
 
 <script type="application/ld+json" set:html={JSON.stringify(offer)} is:inline />
@@ -157,12 +155,15 @@ const offer = {
 
   /* Free is the wider column. Two tiers side by side at equal weight would say
      they are equally the point, and they are not. */
+  /* One rhythm step, not two. `.page-head` already ends with its own
+     padding-block-end; adding a full space-16 on top of it opened 112px of dead
+     air between the intro and the cards. */
   .tiers {
     display: grid;
     grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
     gap: var(--space-8);
     align-items: start;
-    padding-block: var(--space-16);
+    padding-block-end: var(--space-16);
   }
 
   .tier {
@@ -181,6 +182,16 @@ const offer = {
   .tier--free {
     border-color: var(--color-border-accent);
     background: var(--color-surface-warm);
+  }
+
+  /* IN DARK THE TWO SURFACES WERE THE SAME OBJECT. `--color-surface-warm` is a
+     7% gold wash, which composites to a 1.06:1 difference against the paid
+     card on a near-black ground: below any perceptual threshold, so the whole
+     "free is the brighter one" argument was resting on the border alone.
+     Dark needs a wash with something to sit on. */
+  :global([data-theme='dark']) .tier--free {
+    background: var(--color-accent-wash);
+    box-shadow: var(--shadow-md);
   }
 
   .tier__name {
@@ -241,17 +252,42 @@ const offer = {
 
   .tier__note {
     margin-block-start: auto;
-    padding-block-start: var(--space-2);
     font-size: var(--text-sm);
     color: var(--color-text-muted);
   }
 
+  /* Each column carries its own action, so a reader who has decided on one does
+     not have to scroll past the other to act. The free card's is primary and the
+     paid card's is secondary: both lead to the same signup, because there is no
+     way to subscribe without an account, and only one of them should be the
+     page's gold anchor. */
+  .tier__cta {
+    align-self: flex-start;
+    margin-block-start: var(--space-2);
+  }
+
+  /* Pushes the free card's button to the bottom of its own card. It does NOT
+     align the two buttons with each other — the paid card is ~25px taller
+     because of the billed-as line, so they sit at different heights by design
+     rather than by accident. */
+  .tier--free .tier__cta { margin-block-start: auto; }
+
   .pricing-faq { padding-block: var(--space-16); }
 
+  /* Two columns once there is room. A 630px answer column inside a 1104px
+     section left 474px of dead space down the right and turned the page from a
+     grid into a ragged half-width strip. */
   .pricing-faq dl {
     margin-block-start: var(--space-8);
     display: grid;
     gap: var(--space-8);
+  }
+
+  @media (min-width: 52rem) {
+    .pricing-faq dl {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: var(--space-12);
+    }
   }
 
   .pricing-faq dt {

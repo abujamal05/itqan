@@ -502,7 +502,8 @@
         "Your three strongest job matches, kept current",
         "30 messages a day with Hud",
         "One document rescan a week"
-      ]
+      ],
+      "cta": "Create your free account"
     },
     "paid": {
       "name": "Premium",
@@ -516,9 +517,9 @@
         "Three document rescans a week"
       ],
       "cancel": "Cancel any time. Premium runs to the end of the month you paid for.",
-      "where": "Upgrading happens inside Itqan."
+      "cta": "Start free, upgrade inside"
     },
-    "faqHeading": "Two questions people ask",
+    "faqHeading": "Before you decide",
     "faq": [
       {
         "q": "Do I have to pay to find a job?",

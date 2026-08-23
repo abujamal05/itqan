@@ -26,7 +26,7 @@ import { useApi } from '../state/api';
 import { useAuth } from '../state/auth';
 import { useTheme } from '../lib/theme';
 import { useAsync } from '../lib/useAsync';
-import { Button, Callout, Card, ErrorState, LoadingBlock } from '../components/ui';
+import { Callout, Card, ErrorState, LoadingBlock } from '../components/ui';
 import { UsageMeters } from '../components/UsageMeters';
 import { isConfigured, openCheckout } from '../lib/paddle';
 
@@ -100,6 +100,14 @@ export function Plan() {
 
       <Card>
         <div className="stack">
+          {/* WHICH PLAN YOU ARE ON, ON A PHONE. Stacking the table hides the
+              header row, and the header row is where the "Current" marker
+              lives — so the mobile layout silently dropped the one fact this
+              screen exists to state. Shown only where the columns are gone. */}
+          <p className="tiers__youare">
+            {t('plan.youAreOn', { plan: paid ? t('plan.paidName') : t('plan.freeName') })}
+          </p>
+
           <table className="tiers">
             <thead>
               <tr>
@@ -117,54 +125,68 @@ export function Plan() {
             <tbody>
               <tr>
                 <th scope="row">{t('plan.rowCore')}</th>
-                <td><Check size={16} aria-label={t('plan.included')} /></td>
-                <td><Check size={16} aria-label={t('plan.included')} /></td>
+                <td data-tier={t('plan.freeName')}><Check size={16} aria-label={t('plan.included')} /></td>
+                <td data-tier={t('plan.paidName')}><Check size={16} aria-label={t('plan.included')} /></td>
               </tr>
               <tr>
                 <th scope="row">{t('plan.rowMatches')}</th>
-                <td>{t('plan.rowMatchesFree')}</td>
-                <td>{t('plan.rowMatchesPaid')}</td>
+                <td data-tier={t('plan.freeName')}>{t('plan.rowMatchesFree')}</td>
+                <td data-tier={t('plan.paidName')}>{t('plan.rowMatchesPaid')}</td>
               </tr>
               <tr>
                 <th scope="row">{t('plan.rowMessages')}</th>
-                <td className="num">{t('plan.perDay', { n: formatNumber(30) })}</td>
-                <td className="num">{t('plan.perDay', { n: formatNumber(90) })}</td>
+                <td className="num" data-tier={t('plan.freeName')}>{t('plan.perDay', { n: formatNumber(30) })}</td>
+                <td className="num" data-tier={t('plan.paidName')}>{t('plan.perDay', { n: formatNumber(90) })}</td>
               </tr>
               <tr>
                 <th scope="row">{t('plan.rowRescans')}</th>
-                <td className="num">{t('plan.perWeek', { n: formatNumber(1) })}</td>
-                <td className="num">{t('plan.perWeek', { n: formatNumber(3) })}</td>
+                <td className="num" data-tier={t('plan.freeName')}>{t('plan.perWeek', { n: formatNumber(1) })}</td>
+                <td className="num" data-tier={t('plan.paidName')}>{t('plan.perWeek', { n: formatNumber(3) })}</td>
               </tr>
             </tbody>
+
+            {/* THE PRICE BELONGS TO THE COLUMN IT PRICES. It used to sit under
+                the table as a block, which put it under the row-LABEL column
+                with 600px of empty space to its right — spatially pricing
+                "Where you stand, your path, the advisor". In the footer it
+                lands in the Premium cell, where it is the price of. */}
+            {!paid && (
+              <tfoot>
+                <tr>
+                  <td /><td />
+                  <td>
+                    <p className="tiers__price num">{t('plan.price')}</p>
+                    {/* Quiet, and underneath. Not what anyone is quoted, but it
+                        is what reaches the statement. */}
+                    <p className="tiers__usd num">{t('plan.priceUsd')}</p>
+                    {isConfigured && (
+                      <button
+                        className="btn btn--primary tiers__buy"
+                        type="button"
+                        onClick={upgrade}
+                        disabled={phase === 'confirming'}
+                      >
+                        <Sparkles size={16} aria-hidden="true" />
+                        {t('plan.upgrade')}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              </tfoot>
+            )}
           </table>
+
+          {/* The cancel policy is true whether or not checkout is wired, so it
+              is no longer gated behind it. Previously an unconfigured build
+              silently dropped the one piece of reassurance on the page. */}
+          {!paid && <p className="text-sm muted">{t('plan.cancelNote')}</p>}
 
           {paid ? (
             <div className="stack stack--sm">
               <p className="text-sm">{t('plan.onPaid')}</p>
               <p className="text-sm muted">{t('plan.manage')}</p>
             </div>
-          ) : (
-            <div className="stack stack--sm">
-              <div>
-                <p className="tiers__price num">{t('plan.price')}</p>
-                {/* Quiet, and underneath. Not what anyone is quoted, but it is
-                    what reaches the statement, and omitting it would be a price
-                    that changes at checkout. */}
-                <p className="tiers__usd num">{t('plan.priceUsd')}</p>
-              </div>
-              <div className="row">
-                <Button onClick={upgrade} disabled={!isConfigured || phase === 'confirming'}>
-                  <Sparkles size={16} aria-hidden="true" />
-                  {t('plan.upgrade')}
-                </Button>
-              </div>
-              {/* Nothing is said when checkout is not configured. A user cannot
-                  act on it, and a line explaining an unfinished deployment is
-                  noise in the middle of a plan they are reading. The button is
-                  disabled, the console says why, and BACKEND.md §6 carries it. */}
-              {isConfigured && <p className="text-sm muted">{t('plan.cancelNote')}</p>}
-            </div>
-          )}
+          ) : null}
         </div>
       </Card>
 
