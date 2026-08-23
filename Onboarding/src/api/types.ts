@@ -354,6 +354,25 @@ export interface Usage {
   messages: UsageCounter;
 }
 
+/**
+ * The job list, and how much of it this account is allowed to see.
+ *
+ * WHY THIS IS NOT A BARE ARRAY ANY MORE. A free account sees its three
+ * strongest matches; the rest are paid. That cut is made by the SERVER and the
+ * locked matches are never sent — the only gate that survives an extension or
+ * a devtools session is one where the data does not arrive. `locked` is a
+ * COUNT, never content: it says how many more exist so the UI can be honest
+ * about the size of what is behind the wall, and says nothing about what they
+ * are. See BACKEND.md §5.
+ */
+export interface JobsResult {
+  /** Free: at most three, strongest first. Paid: all of them. */
+  matches: JobMatch[];
+  /** How many more exist that this account cannot see. Zero on paid. */
+  locked: number;
+  plan: 'free' | 'paid';
+}
+
 export interface SkillStanding {
   name: string;
   /** 0..1 how well evidenced this is by the documents. */
@@ -646,7 +665,7 @@ export interface ItqanApi {
    */
   removeAvatar(signal?: AbortSignal): Promise<void>;
   getDashboard(signal?: AbortSignal): Promise<DashboardData>;
-  getJobs(signal?: AbortSignal): Promise<JobMatch[]>;
+  getJobs(signal?: AbortSignal): Promise<JobsResult>;
   getCourses(signal?: AbortSignal): Promise<Course[]>;
   /** Not built yet in production — BACKEND.md §4. Callers must tolerate a 404. */
   getUsage(signal?: AbortSignal): Promise<Usage>;

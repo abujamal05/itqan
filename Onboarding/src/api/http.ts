@@ -14,7 +14,8 @@
 import type {
   AnalysisJob, ChatMessage, ChatThread, ChatThreadSummary, ConfirmProfileResult,
   ConfirmedProfile, Course, DashboardData, Feedback, FeedbackState, ItqanApi,
-  JobMatch, OnboardingProgress, Session, StoredProfile, UploadedDocument, Usage,
+  JobsResult, OnboardingProgress, Session, StoredProfile, UploadedDocument,
+  Usage,
 } from './types';
 import { emptyFeedback } from './types';
 import { takeHandoffToken } from '../lib/site';
@@ -154,7 +155,7 @@ export function createHttpApi(): ItqanApi {
       await req<void>('/profile/avatar', { method: 'DELETE', signal });
     },
     getDashboard(signal) { return req<DashboardData>('/dashboard', { signal }); },
-    getJobs(signal) { return req<JobMatch[]>('/jobs', { signal }); },
+    getJobs(signal) { return req<JobsResult>('/jobs', { signal }); },
     getCourses(signal) { return req<Course[]>('/courses', { signal }); },
     getUsage(signal) { return req<Usage>('/usage', { signal }); },
 

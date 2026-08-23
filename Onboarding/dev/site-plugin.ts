@@ -141,6 +141,25 @@ const PLAN_LIMITS = {
   paid: { rescans: 3, messages: 90 },
 } as const;
 
+/**
+ * How many job matches a free account sees. The rest are paid.
+ *
+ * Three, and they are the STRONGEST three rather than the first three that
+ * happen to be in the array — the free tier is "your best matches, kept
+ * current", not "a sample". The stub's fixture is already ranked, so slicing is
+ * the right cut here; production must sort by score before it slices.
+ */
+const FREE_MATCHES = 3;
+
+/**
+ * Which plan an account is on.
+ *
+ * In-memory and flipped by the dev-only upgrade route below, because there is
+ * no Paddle webhook locally. Production reads this from the account.
+ */
+const plans = new Map<string, 'free' | 'paid'>();
+const planFor = (id: string) => plans.get(id) ?? 'free';
+
 const messagesUsed = new Map<string, number>();
 const rescansUsed = new Map<string, number>();
 
@@ -637,14 +656,43 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
         }
 
         if (url === '/api/dashboard') return json(res, 200, dashboard(locale));
-        if (url === '/api/jobs') return json(res, 200, jobs(locale));
+        /* THE JOB CUT, MADE SERVER SIDE. A free account gets its three
+           strongest matches and a COUNT of the rest; the locked ones are never
+           serialised, so there is nothing in the response for an extension or
+           devtools to reveal. The stub mirrors production deliberately — doing
+           the cut in the client here would let a bypassable build pass local
+           testing and ship. See BACKEND.md §5. */
+        if (url === '/api/jobs') {
+          const all = jobs(locale);
+          const plan = planFor(me.id);
+          if (plan === 'paid') {
+            return json(res, 200, { matches: all, locked: 0, plan });
+          }
+          return json(res, 200, {
+            matches: all.slice(0, FREE_MATCHES),
+            locked: Math.max(0, all.length - FREE_MATCHES),
+            plan,
+          });
+        }
         if (url === '/api/courses') return json(res, 200, courses(locale));
+
+        /* DEV ONLY, AND IT HAS NO PRODUCTION COUNTERPART. In production the
+           plan flips when Paddle's webhook reaches the server; there is no
+           Paddle here, so without this the paid state could not be rendered or
+           tested at all. It is not in BACKEND.md because nothing should ever
+           build against it. */
+        if (url === '/api/dev/plan' && req.method === 'POST') {
+          const f = parseBody(await body(req), req.headers['content-type'] ?? '');
+          const next = f.plan === 'paid' ? 'paid' : 'free';
+          plans.set(me.id, next);
+          return json(res, 200, { ok: true, plan: next });
+        }
 
         /* What this account has used of its AI allowance. Everyone is on the
            free tier here: there is no plan field on the account yet, which is
            the other half of BACKEND.md §4. */
         if (url === '/api/usage' && req.method === 'GET') {
-          const plan = 'free' as const;
+          const plan = planFor(me.id);
           return json(res, 200, {
             plan,
             rescans: {

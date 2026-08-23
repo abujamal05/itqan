@@ -27,6 +27,7 @@ import { isStrong } from '../api';
 import { Callout, Card, EmptyState, ErrorState, LoadingBlock } from '../components/ui';
 import { LOW_READINESS } from '../components/map/JourneyMap';
 import { MatchCard } from '../components/MatchCard';
+import { LockedMatches } from '../components/LockedMatches';
 import { BrowseBar } from '../components/BrowseBar';
 import type { FilterDef } from '../components/BrowseBar';
 
@@ -76,10 +77,10 @@ export function Jobs() {
   const refresh = useCallback(async () => {
     setRefreshing(true);
     setStatus(null);
-    const before = data?.length ?? 0;
+    const before = data?.matches.length ?? 0;
     try {
       const fresh = await api.getJobs();
-      const added = Math.max(0, fresh.length - before);
+      const added = Math.max(0, fresh.matches.length - before);
       setStatus(added > 0
         ? t('browse.foundNew', { n: formatNumber(added) })
         : t('browse.nothingNew'));
@@ -92,11 +93,21 @@ export function Jobs() {
   }, [api, data, reload, t, formatNumber]);
 
   const shown = useMemo(() => {
-    const list = data ?? [];
+    const list = data?.matches ?? [];
     if (filter === 'strong') return list.filter((j) => isStrong(j.score));
     if (filter === 'saved') return list.filter((j) => saved.includes(j.id));
     return list;
   }, [data, filter, saved]);
+
+  /**
+   * How many matches this account is not allowed to see.
+   *
+   * Only shown on the unfiltered list. Under a filter the count would be a lie
+   * in both directions: the locked matches are not filtered (we do not have
+   * them), so "12 more" beside a "Saved" list would promise twelve more saved
+   * jobs that do not exist.
+   */
+  const locked = filter === 'all' ? (data?.locked ?? 0) : 0;
 
   return (
     <div className="stack stack--lg enter">
@@ -155,6 +166,7 @@ export function Jobs() {
                     <MatchCard key={j.id} job={j} saved={saved.includes(j.id)} onToggleSave={toggleSave} />
                   ))}
                 </div>
+                <LockedMatches count={locked} />
               </>
             )
       )}

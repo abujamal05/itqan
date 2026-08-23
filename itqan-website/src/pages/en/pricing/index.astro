@@ -1,0 +1,11 @@
+---
+import Base from '../../../layouts/Base.astro';
+import PricingPage from '../../../components/pages/PricingPage.astro';
+import { t } from '../../../i18n';
+
+const s = t('en');
+---
+
+<Base title={`${s.pricing.title} | ${s.site.name}`} description={s.pricing.metaDescription}>
+  <PricingPage locale="en" />
+</Base>

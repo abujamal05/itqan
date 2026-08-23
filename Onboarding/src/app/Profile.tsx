@@ -656,6 +656,12 @@ export function Profile() {
           {usage === 'unavailable'
             ? <p className="text-sm muted">{t('profile.aiUsageUnavailable')}</p>
             : <UsageMeters usage={usage} />}
+
+          {/* The comparison lives on its own page. A price list beside someone's
+              own consumption turns a settings screen into a sales screen. */}
+          <div className="row">
+            <Link className="btn btn--secondary" to="/plan">{t('nav.plan')}</Link>
+          </div>
         </Section>
       )}
 

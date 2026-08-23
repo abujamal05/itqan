@@ -38,6 +38,7 @@ import { Jobs } from './app/Jobs';
 import { Courses } from './app/Courses';
 import { Documents } from './app/Documents';
 import { Profile } from './app/Profile';
+import { Plan } from './app/Plan';
 
 /** Full-page hold while the session is read. Deliberately quiet. */
 function Booting() {
@@ -354,6 +355,7 @@ export default function App() {
                         <Route path="/courses" element={<Courses />} />
                         <Route path="/documents" element={<Documents />} />
                         <Route path="/profile" element={<Profile />} />
+                        <Route path="/plan" element={<Plan />} />
                       </Route>
 
                       {/* Entry point: the guards decide where this actually lands.
