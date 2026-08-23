@@ -51,16 +51,22 @@ is worth more than one that is 95% right and cannot be checked.
 
 Success for the marketing site is one thing only: a stranger creates a free account.
 
-**Pricing.** The parts that get someone into work are free and stay free: where they stand, the path,
-the job matches and the advisor. A premium tier covers extended use of the AI. Never write an absolute
-like "free forever" or "no payment at any point"; they were true of an earlier model and are not now.
+**Pricing.** Most of what gets someone started is free and stays free: where they stand, the path,
+their three strongest job matches, and the advisor. A premium tier opens the rest of their matches
+and raises how much of the AI they can use. Never write an absolute like "free forever" or "no
+payment at any point"; they were true of an earlier model and are not now. **"Nobody pays to get
+hired" is retired** and must not come back: from 2026-08-23 the full match list is paid.
 
-"Extended use" is two allowances, decided 2026-08-21. Free is **one document rescan a week and 30
-messages a day** with Hud; paid is **three rescans a week and 90 messages a day**. The paid tier raises
-only these — it does not put any of the four answers behind a payment. The profile screen shows a person their own
-consumption against these limits, never the price list — the tier comparison belongs on a plan page of
-its own. The contract behind it is [`BACKEND.md`](BACKEND.md) §4; where it is unavailable, no screen may
-show a usage number at all.
+Premium is **2.99 OMR a month, charged as $7.78** through Paddle, which does not support the rial.
+The peg is fixed at 1 OMR = 2.6008 USD, so the two figures do not drift apart. Both are shown; the
+conversion is not explained on the page.
+
+"Extended use" is two allowances plus the match list. Free is **one document rescan a week, 30
+messages a day** with Hud, and **the three strongest job matches, kept current**; paid is **three
+rescans, 90 messages, and every match**. The profile screen shows a person their own consumption
+against these limits, never the price list; the tier comparison lives on `/app/plan`. The contract
+behind it is [`BACKEND.md`](BACKEND.md) §4, and the job cut is §5; where usage is unavailable, no
+screen may show a usage number at all.
 
 ## Positioning
 

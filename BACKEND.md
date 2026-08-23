@@ -724,3 +724,95 @@ GET /api/usage -> {
   routes should refuse with `429` and a machine-readable reason
   (`{ error: "rescan_limit" | "message_limit", resetsAt }`) so the front end
   keeps owning the wording in both languages — the same rule as `409 last_cv`.
+
+### 5. The job cut — `GET /api/jobs` returns an object, and the server decides  **(required, blocking)**
+
+**This is the one entry on the page where a client-side implementation is not a
+weaker version of the feature, it is no feature at all.**
+
+The brief asked for locked job matches that an extension could not reveal. A CSS
+blur over real data is decoration: devtools, uBlock, a user stylesheet or reader
+mode each strip it in one action. The only gate that holds is one where the
+hidden matches never reach the browser, so the shape has to change.
+
+```jsonc
+GET /api/jobs -> {
+  "matches": [ /* free: at most 3, STRONGEST FIRST. paid: all */ ],
+  "locked": 12,          // how many more exist. 0 on paid
+  "plan": "free"
+}
+```
+
+- **Sort before you slice.** Free is "your three strongest matches, kept
+  current", not "the first three in the array". A cut taken over an unsorted
+  list silently sells the wrong thing.
+- `locked` is a **count and nothing else**. How many, never what. No titles, no
+  employers, no ids, not even a length-3 array of nulls with real keys.
+- The front end is built against this and treats the array as the whole truth.
+
+**Two leaks to close with it, both of which route around the cut:**
+
+1. **`POST /api/chat/ask`.** Hud attaches job cards to his answers. A free user
+   who asks him for more jobs must not receive a match outside their three. Same
+   cut, same place.
+2. **`GET /api/dashboard` → `topMatches`.** Currently sends two, so it is inside
+   the allowance by luck rather than by rule. Make it the rule.
+
+`dev/site-plugin.ts` performs the cut the same way, deliberately: doing it in
+the client locally would let a bypassable build pass every local test and ship.
+
+### 6. Paddle — what the front end does, and what it refuses to do
+
+The checkout is built (`Onboarding/src/lib/paddle.ts`, `src/app/Plan.tsx`)
+against `@paddle/paddle-js`. It opens an overlay with the price id, passes
+`customData: { userId }` so the webhook can attach the subscription to an
+account, and passes `customer.email` to save the user retyping it.
+
+**The browser never decides that somebody is premium.** `checkout.completed`
+means Paddle took the money, not that the account changed. On that event the
+plan screen polls `GET /api/usage` until the SERVER reports `plan: "paid"`, and
+after 30 seconds says the payment is still landing rather than claiming it
+failed. What the server owes:
+
+- Handle the Paddle webhook and flip the account to `paid`.
+- Reflect it in `GET /api/usage` (`plan`) and in the limits it returns: 3 rescans
+  a week and 90 messages a day on paid, 1 and 30 on free.
+- Reflect it in the job cut above.
+- On a lapsed or cancelled subscription, return to `free` at period end. The UI
+  already treats free as the normal state, so nothing needs to be told.
+
+**Currency.** Paddle does not support OMR. The rial is pegged at a fixed
+1 OMR = 2.6008 USD, so the published 2.99 OMR is charged as **$7.78** and the
+two cannot drift. The Paddle price must be created in USD at 7.78.
+
+**Config** is three build-time vars, documented in `Onboarding/.env.example`:
+`VITE_PADDLE_ENV`, `VITE_PADDLE_TOKEN` (the client-side token, safe in the
+browser — never the API key), `VITE_PADDLE_PRICE_ID`.
+
+**With the vars unset the upgrade button renders disabled and SAYS NOTHING.**
+That is deliberate. A user cannot act on a missing environment variable, and a
+sentence about an unfinished deployment in the middle of a plan they are reading
+is noise. The explanation goes to the console in dev, naming which var is
+missing. So: an upgrade button that is disabled in a deployed environment means
+these are not set, and there will be no message on the page saying so — check
+here. Vite reads env files at startup, so the dev server needs a restart, not a
+reload, after adding them.
+
+**If a CSP is ever added** to the app it has to allow Paddle: `cdn.paddle.com`
+for the script and `*.paddle.com` in `frame-src`. There is no CSP today.
+
+### 7. Deferred: telling someone a better match appeared
+
+Free is "your three strongest matches, **kept current**", and the second half of
+that promise is not built. When a new posting outranks one of a user's three,
+they should hear about it; today the list simply changes if they happen to look.
+
+Nothing exists for this — no event, no delivery channel, no surface — so it is
+deliberately out of the pricing work rather than half done. What it needs:
+
+- An event when a user's top three changes, with what entered and what left.
+- A channel. In-app is the smallest honest version; email needs a template, a
+  sending path and an unsubscribe, and should not be added without them.
+- An opt-out, stored with the account rather than the browser.
+
+Until it ships, no screen may claim the user will be notified.

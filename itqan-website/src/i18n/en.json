@@ -26,7 +26,8 @@
     "home": "Home",
     "howItWorks": "How it works",
     "proof": "Proof",
-    "about": "Who we are"
+    "about": "Who we are",
+    "pricing": "Pricing"
   },
   "actions": {
     "login": "Log in",
@@ -66,7 +67,7 @@
         "id": "free",
         "q": "Is it really free?",
         "keywords": "free cost costs price pay paid payment money subscription plan card charge trial",
-        "a": "The core is free: where you stand, the full path, your job matches and the advisor. A premium tier covers extended use of the AI. Nobody pays to get hired.",
+        "a": "Where you stand, your full path, your three strongest job matches and the advisor are free and stay free. Premium opens every other match you fit, and raises how much of the AI you can use.",
         "slug": "about",
         "linkLabel": "What we refuse"
       },
@@ -161,7 +162,7 @@
       "items": [
         {
           "q": "Is it really free?",
-          "a": "The parts that get you hired are free and they stay free: where you stand, your path, your job matches and the advisor. A paid tier covers heavier use of the AI, and nothing you need to find work sits behind it."
+          "a": "The parts that get you started are free and they stay free: where you stand, your path, your three strongest job matches and the advisor. Premium opens the rest of the matches you fit and raises how much of the AI you can use."
         },
         {
           "q": "What do you need from me?",
@@ -443,7 +444,7 @@
     "evidenceQualifier": "An early sample, drawn from the graduates we are launching to. We are widening it.",
     "whereBody": "We are embedded at UTAS, our first pilot and where the survey came from. We start in Oman, then Saudi Arabia, then the wider region.",
     "payHeading": "What you will never pay for.",
-    "payBody": "Where you stand, your path, your job matches and the advisor are free and stay free. A premium tier covers extended use of the AI, never the parts that get you hired.",
+    "payBody": "Where you stand, your path, your three strongest job matches and the advisor are free and stay free. Premium opens the rest of your matches and raises how much of the AI you can use, never the parts that get you started.",
     "refuseHeading": "And what we refuse.",
     "refuse1": "We will not sell a place in your results.",
     "refuse2": "We will not invent a course or a job that does not exist.",
@@ -484,5 +485,49 @@
     "holdHeading": "The standards we hold ourselves to",
     "statsAria": "Survey finding",
     "mvHeading": "What we are for"
+  },
+  "pricing": {
+    "title": "Pricing",
+    "metaDescription": "Most of Itqan is free. Premium is 2.99 OMR a month and opens the rest of your job matches.",
+    "eyebrow": "Pricing",
+    "heading": "Most of Itqan is free.",
+    "intro": "Not a trial, and no card to enter. Premium raises two limits and opens the rest of your job matches, and that is all it does.",
+    "free": {
+      "name": "Free",
+      "price": "No cost",
+      "for": "Everything you need to start.",
+      "items": [
+        "Where you stand today",
+        "Your path to the role you want",
+        "Your three strongest job matches, kept current",
+        "30 messages a day with Hud",
+        "One document rescan a week"
+      ]
+    },
+    "paid": {
+      "name": "Premium",
+      "price": "2.99 OMR",
+      "period": "a month",
+      "priceUsd": "Billed as $7.78",
+      "for": "For when three matches are not enough.",
+      "items": [
+        "Every job match you fit",
+        "90 messages a day with Hud",
+        "Three document rescans a week"
+      ],
+      "cancel": "Cancel any time. Premium runs to the end of the month you paid for.",
+      "where": "Upgrading happens inside Itqan."
+    },
+    "faqHeading": "Two questions people ask",
+    "faq": [
+      {
+        "q": "Do I have to pay to find a job?",
+        "a": "No. Your three strongest matches are free, and they are the ones worth your time first. Premium is for working through the rest of the list."
+      },
+      {
+        "q": "What happens if I stop paying?",
+        "a": "Your account goes back to free. Nothing you have done is deleted, and your three strongest matches keep updating."
+      }
+    ]
   }
 }

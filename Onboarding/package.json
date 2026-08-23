@@ -17,6 +17,7 @@
     "lighthouse": "node scripts/lighthouse.mjs"
   },
   "dependencies": {
+    "@paddle/paddle-js": "^1.6.4",
     "@xyflow/react": "^12.11.3",
     "d3-shape": "^3.2.0",
     "lucide-react": "^1.26.0",

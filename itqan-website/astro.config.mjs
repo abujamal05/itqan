@@ -36,7 +36,7 @@ export default defineConfig({
           'arrow-right', 'briefcase-duotone', 'caret-down', 'chart-bar-duotone', 'chat-circle-dots',
           'check', 'eye', 'eye-slash', 'file-text-duotone', 'info',
           'linkedin-logo', 'list', 'map-pin', 'minus', 'moon', 'mouse-scroll',
-          'path-duotone',
+          'path-duotone', 'plus',
           'question', 'seal-check-duotone', 'shield-check-duotone', 'sun',
           'target-duotone', 'warning', 'warning-circle', 'warning-duotone', 'x',
         ],

@@ -16,9 +16,10 @@ to hundreds of roles that were never a fit, with nobody telling them what to fix
 earlier pitch led with it and the framing still resurfaces; if a page, deck or headline makes decoding a
 document the story, it is reproducing a superseded pitch.
 
-**Pricing.** The parts that get someone into work are free and stay free: where they stand, the path, the
-job matches and the advisor. A premium tier covers extended use of the AI. Never write "free forever" or
-"no payment at any point".
+**Pricing.** Most of what gets someone started is free and stays free: where they stand, the path,
+their three strongest job matches, and the advisor. Premium opens the rest of the matches and raises
+AI usage. It is 2.99 OMR a month, charged as $7.78 through Paddle. Never write "free forever" or "no
+payment at any point", and never "nobody pays to get hired" — that one is retired and now false.
 
 ## The two front ends
 

@@ -21,8 +21,10 @@ answer is measured against live regional demand and carries its reason and a rea
 **Itqan is not a translation engine.** Turning a course into a skill is one step inside question one. An
 earlier pitch led with it; if a page makes decoding a document the story, it is the superseded pitch.
 
-**Pricing.** The parts that get someone into work are free and stay free. A premium tier covers extended
-use of the AI. Never write "free forever" or "no payment at any point".
+**Pricing.** Most of what gets someone started is free and stays free: where they stand, the path,
+their three strongest job matches, and the advisor. Premium opens the rest of the matches and raises
+AI usage. It is 2.99 OMR a month, charged as $7.78 through Paddle. Never write "free forever" or "no
+payment at any point", and never "nobody pays to get hired" — that one is retired and now false.
 
 **Scope stops at the sign up and log in pages.** The product itself is `../Onboarding/`. If a task feels
 like product work, stop and ask.
