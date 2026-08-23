@@ -60,14 +60,14 @@ const offer = {
   offers: [
     {
       '@type': 'Offer',
-      price: '2.99',
+      price: '2.9',
       priceCurrency: 'OMR',
       availability: 'https://schema.org/InStock',
       url: `${siteUrl}${base}/pricing/`,
     },
     {
       '@type': 'Offer',
-      price: '7.78',
+      price: '7.5',
       priceCurrency: 'USD',
       availability: 'https://schema.org/InStock',
       url: `${siteUrl}${base}/pricing/`,
@@ -85,11 +85,25 @@ const offer = {
   </header>
 
   <section class="tiers reveal" aria-label={s.pricing.eyebrow}>
-    <!-- Free first, and wider. The order is the argument. -->
+    {/*
+      Each card is three GROUPS with a rule between them, not eight stacked
+      paragraphs: who this is for, then what you get, then the way in. The plan
+      name leads. Previously it was a small grey label sitting above a huge
+      "No cost", which made the price the heading and the plan an afterthought.
+    */}
     <article class="tier tier--free">
-      <h2 class="tier__name">{s.pricing.free.name}</h2>
-      <p class="tier__price">{s.pricing.free.price}</p>
-      <p class="tier__for">{s.pricing.free.for}</p>
+      <header class="tier__head">
+        <h2 class="tier__name">{s.pricing.free.name}</h2>
+        {/* "0 OMR", not "No cost". The card is already titled Free, so a second
+            word for the same thing was two headings stacked. A figure in the
+            same slot as the paid card's makes the comparison immediate. */}
+        <p class="tier__price">
+          <span class="num">{s.pricing.free.price}</span>
+          <span class="tier__period">{s.pricing.free.period}</span>
+        </p>
+        <p class="tier__for">{s.pricing.free.for}</p>
+      </header>
+
       <ul class="tier__list">
         {
           s.pricing.free.items.map((item) => (
@@ -100,19 +114,25 @@ const offer = {
           ))
         }
       </ul>
-      <a class="button button--secondary tier__cta" href={`${base}/signup/`}>
-        {s.pricing.free.cta}
-      </a>
+
+      <footer class="tier__foot">
+        <a class="button button--secondary tier__cta" href={`${base}/signup/`}>
+          {s.pricing.free.cta}
+        </a>
+      </footer>
     </article>
 
     <article class="tier tier--paid">
-      <h2 class="tier__name">{s.pricing.paid.name}</h2>
-      <p class="tier__price">
-        <span class="num">{s.pricing.paid.price}</span>
-        <span class="tier__period">{s.pricing.paid.period}</span>
-      </p>
-      <p class="tier__usd num">{s.pricing.paid.priceUsd}</p>
-      <p class="tier__for">{s.pricing.paid.for}</p>
+      <header class="tier__head">
+        <h2 class="tier__name">{s.pricing.paid.name}</h2>
+        <p class="tier__price">
+          <span class="num">{s.pricing.paid.price}</span>
+          <span class="tier__period">{s.pricing.paid.period}</span>
+        </p>
+        <p class="tier__usd num">{s.pricing.paid.priceUsd}</p>
+        <p class="tier__for">{s.pricing.paid.for}</p>
+      </header>
+
       <ul class="tier__list">
         {
           s.pricing.paid.items.map((item) => (
@@ -123,10 +143,13 @@ const offer = {
           ))
         }
       </ul>
-      <p class="tier__note">{s.pricing.paid.cancel}</p>
-      <a class="button button--primary tier__cta" href={`${base}/signup/`}>
-        {s.pricing.paid.cta}
-      </a>
+
+      <footer class="tier__foot">
+        <p class="tier__note">{s.pricing.paid.cancel}</p>
+        <a class="button button--primary tier__cta" href={`${base}/signup/`}>
+          {s.pricing.paid.cta}
+        </a>
+      </footer>
     </article>
   </section>
 
@@ -167,19 +190,44 @@ const offer = {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-8);
-    align-items: start;
+    /* STRETCH, not start. The free card has fewer lines, so aligning to the
+       top left a 150px hole under it and made the pair look broken rather than
+       different. Equal heights with the button pinned to the bottom of each
+       reads as two plans; ragged heights read as a layout fault. */
+    align-items: stretch;
     padding-block-end: var(--space-16);
   }
 
   .tier {
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
+    gap: var(--space-6);
     padding: var(--space-8);
     border-radius: var(--radius-lg);
     border: 1px solid var(--color-border);
     background: var(--color-surface);
     box-shadow: var(--shadow-sm);
+  }
+
+  /* Group one: who this is and what it costs. */
+  .tier__head {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding-block-end: var(--space-6);
+    border-block-end: 1px solid var(--color-border);
+  }
+
+  /* Group three, pinned to the bottom so both cards' buttons sit on the same
+     line however many items are above them. */
+  .tier__foot {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    align-items: flex-start;
+    margin-block-start: auto;
+    padding-block-start: var(--space-6);
+    border-block-start: 1px solid var(--color-border);
   }
 
   /* PREMIUM IS THE HIGHLIGHTED CARD. Accent border, warm ground and a real
@@ -190,6 +238,11 @@ const offer = {
     box-shadow: var(--shadow-md);
   }
 
+  /* The dividers have to follow the card they are in, or they vanish on the
+     warm ground and reappear as a hard line on the plain one. */
+  .tier--paid .tier__head,
+  .tier--paid .tier__foot { border-color: var(--color-border-accent); }
+
   /* IN DARK THE TWO SURFACES WERE THE SAME OBJECT. `--color-surface-warm` is a
      7% gold wash, which composites to about 1.06:1 against the plain card on a
      near-black ground — below any perceptual threshold, so the highlight was
@@ -199,11 +252,9 @@ const offer = {
   }
 
   .tier__name {
-    font-size: var(--text-sm);
+    font-size: var(--text-xl);
     font-weight: var(--weight-semibold);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--color-text-muted);
+    line-height: var(--leading-tight);
   }
 
   .tier__price {
@@ -211,9 +262,17 @@ const offer = {
     align-items: baseline;
     flex-wrap: wrap;
     gap: var(--space-3);
-    font-size: var(--text-4xl);
+    font-size: var(--text-2xl);
     font-weight: var(--weight-semibold);
     line-height: var(--leading-tight);
+    color: var(--color-text-muted);
+  }
+
+  /* Only the paid card has an actual figure, and only it gets figure treatment.
+     Setting "No cost" at the same weight made the free card shout a non-price. */
+  .tier--paid .tier__price {
+    font-size: var(--text-4xl);
+    color: var(--color-text);
   }
 
   .tier__period {
@@ -255,7 +314,6 @@ const offer = {
   }
 
   .tier__note {
-    margin-block-start: auto;
     font-size: var(--text-sm);
     color: var(--color-text-muted);
   }
@@ -265,16 +323,8 @@ const offer = {
      paid card's is secondary: both lead to the same signup, because there is no
      way to subscribe without an account, and only one of them should be the
      page's gold anchor. */
-  .tier__cta {
-    align-self: flex-start;
-    margin-block-start: var(--space-2);
-  }
-
-  /* Pushes the free card's button to the bottom of its own card. It does NOT
-     align the two buttons with each other — the paid card is ~25px taller
-     because of the billed-as line, so they sit at different heights by design
-     rather than by accident. */
-  .tier--free .tier__cta { margin-block-start: auto; }
+  /* `.tier__foot` owns the position now, so the button just sits in it. */
+  .tier__cta { align-self: flex-start; }
 
   .pricing-faq { padding-block: var(--space-16); }
 
@@ -284,14 +334,24 @@ const offer = {
   .pricing-faq dl {
     margin-block-start: var(--space-8);
     display: grid;
-    gap: var(--space-8);
+    gap: var(--space-4);
   }
 
   @media (min-width: 52rem) {
     .pricing-faq dl {
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      column-gap: var(--space-12);
+      column-gap: var(--space-4);
     }
+  }
+
+  /* EACH ANSWER GETS A SURFACE. Without one the questions floated on the page
+     ground with nothing holding them, which read as unfinished next to two
+     cards that are clearly objects. A quiet panel, not a third tier card. */
+  .pricing-faq__item {
+    padding: var(--space-6);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
   }
 
   .pricing-faq dt {
@@ -301,7 +361,6 @@ const offer = {
 
   .pricing-faq dd {
     margin: 0;
-    max-inline-size: 62ch;
     color: var(--color-text-muted);
   }
 

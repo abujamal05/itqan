@@ -488,13 +488,13 @@
   },
   "pricing": {
     "title": "Pricing",
-    "metaDescription": "Most of Itqan is free. Premium is 2.99 OMR a month and opens the rest of your job matches.",
+    "metaDescription": "Start for free. Premium is 2.9 OMR a month and opens every job match you fit.",
     "eyebrow": "Pricing",
-    "heading": "Most of Itqan is free.",
-    "intro": "Not a trial, and no card to enter. Premium raises two limits and opens the rest of your job matches, and that is all it does.",
+    "heading": "Start for free.",
+    "intro": "Everything that gets you moving costs nothing: where you stand, your path to the role you want, your three strongest job matches, and Hud. Premium opens the rest of the list and triples what you can ask of the AI.",
     "free": {
       "name": "Free",
-      "price": "No cost",
+      "price": "0 OMR",
       "for": "Enough to start moving.",
       "items": [
         "Where you stand today, and the path to the role you want",
@@ -502,13 +502,14 @@
         "30 messages a day with Hud",
         "One document rescan a week"
       ],
-      "cta": "Create your free account"
+      "cta": "Create your free account",
+      "period": "a month"
     },
     "paid": {
       "name": "Premium",
-      "price": "2.99 OMR",
+      "price": "2.9 OMR",
       "period": "a month",
-      "priceUsd": "Billed as $7.78",
+      "priceUsd": "Billed as $7.50",
       "for": "For when the whole list is worth your time.",
       "items": [
         "Everything in the free plan",

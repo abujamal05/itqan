@@ -793,8 +793,8 @@ failed. What the server owes:
   already treats free as the normal state, so nothing needs to be told.
 
 **Currency.** Paddle does not support OMR. The rial is pegged at a fixed
-1 OMR = 2.6008 USD, so the published 2.99 OMR is charged as **$7.78** and the
-two cannot drift. The Paddle price must be created in USD at 7.78.
+1 OMR = 2.6008 USD, so the published 2.9 OMR is charged as **$7.50** and the
+two cannot drift. The Paddle price must be created in USD at 7.50.
 
 **Config** is three build-time vars, documented in `Onboarding/.env.example`:
 `VITE_PADDLE_ENV`, `VITE_PADDLE_TOKEN` (the client-side token, safe in the

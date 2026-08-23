@@ -57,7 +57,7 @@ and raises how much of the AI they can use. Never write an absolute like "free f
 payment at any point"; they were true of an earlier model and are not now. **"Nobody pays to get
 hired" is retired** and must not come back: from 2026-08-23 the full match list is paid.
 
-Premium is **2.99 OMR a month, charged as $7.78** through Paddle, which does not support the rial.
+Premium is **2.9 OMR a month, charged as $7.50** through Paddle, which does not support the rial.
 The peg is fixed at 1 OMR = 2.6008 USD, so the two figures do not drift apart. Both are shown; the
 conversion is not explained on the page.
 
