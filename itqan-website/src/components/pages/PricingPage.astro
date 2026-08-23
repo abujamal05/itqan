@@ -43,22 +43,33 @@ const { locale } = Astro.props;
 const s = t(locale);
 const base = `/${locale}`;
 
-/* Priced in USD because that is what is charged. Paddle does not bill in
-   rials; publishing OMR here as the machine-readable price would put a figure
-   in structured data that never appears on anyone's statement. */
+/* BOTH figures, the published one first. The price people are quoted is in
+   rials and the amount that reaches a statement is in dollars; publishing only
+   one of those to machines makes an assistant quote a number the page does not
+   show, or one the bank never charges. The peg is fixed, so they cannot
+   disagree. */
 const offer = {
   '@context': 'https://schema.org',
   '@type': 'Product',
   name: `${s.site.name} ${s.pricing.paid.name}`,
   description: s.pricing.metaDescription,
   brand: { '@type': 'Brand', name: s.site.name },
-  offers: {
-    '@type': 'Offer',
-    price: '7.78',
-    priceCurrency: 'USD',
-    availability: 'https://schema.org/InStock',
-    url: `${siteUrl}${base}/pricing/`,
-  },
+  offers: [
+    {
+      '@type': 'Offer',
+      price: '2.99',
+      priceCurrency: 'OMR',
+      availability: 'https://schema.org/InStock',
+      url: `${siteUrl}${base}/pricing/`,
+    },
+    {
+      '@type': 'Offer',
+      price: '7.78',
+      priceCurrency: 'USD',
+      availability: 'https://schema.org/InStock',
+      url: `${siteUrl}${base}/pricing/`,
+    },
+  ],
 };
 ---
 
@@ -92,8 +103,9 @@ const offer = {
       <h2 class="tier__name">{s.pricing.paid.name}</h2>
       <p class="tier__price">
         <span class="num">{s.pricing.paid.price}</span>
-        <span class="tier__omr num">{s.pricing.paid.priceOmr}</span>
+        <span class="tier__period">{s.pricing.paid.period}</span>
       </p>
+      <p class="tier__usd num">{s.pricing.paid.priceUsd}</p>
       <p class="tier__for">{s.pricing.paid.for}</p>
       <ul class="tier__list">
         {
@@ -105,13 +117,10 @@ const offer = {
           ))
         }
       </ul>
-      <p class="tier__note">{s.pricing.ctaNote}</p>
+      <p class="tier__note">
+        {s.pricing.paid.cancel}<br />{s.pricing.paid.where}
+      </p>
     </article>
-  </section>
-
-  <section class="pricing-terms reveal">
-    <h2>{s.pricing.guaranteeHeading}</h2>
-    <p>{s.pricing.guarantee}</p>
   </section>
 
   <section class="pricing-faq reveal">
@@ -192,11 +201,18 @@ const offer = {
     line-height: var(--leading-tight);
   }
 
-  /* Beside the charged figure, never instead of it: the statement says dollars,
-     so the page has to as well. */
-  .tier__omr {
+  .tier__period {
     font-size: var(--text-base);
     font-weight: var(--weight-regular);
+    color: var(--color-text-muted);
+  }
+
+  /* The rial is the price. The dollar is underneath it and quiet, because it is
+     not what anyone is being quoted — it is what will appear on the statement,
+     and leaving that out would be a price that changes at checkout. */
+  .tier__usd {
+    margin-block-start: calc(var(--space-2) * -1);
+    font-size: var(--text-sm);
     color: var(--color-text-muted);
   }
 
@@ -230,13 +246,7 @@ const offer = {
     color: var(--color-text-muted);
   }
 
-  .pricing-terms,
   .pricing-faq { padding-block: var(--space-16); }
-
-  .pricing-terms p {
-    max-inline-size: 60ch;
-    margin-block-start: var(--space-4);
-  }
 
   .pricing-faq dl {
     margin-block-start: var(--space-8);
@@ -261,7 +271,6 @@ const offer = {
       gap: var(--space-6);
       padding-block: var(--space-12);
     }
-    .pricing-terms,
     .pricing-faq { padding-block: var(--space-12); }
   }
 </style>

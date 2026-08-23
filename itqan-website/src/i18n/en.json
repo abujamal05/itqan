@@ -490,48 +490,44 @@
     "title": "Pricing",
     "metaDescription": "Most of Itqan is free. Premium is 2.99 OMR a month and opens the rest of your job matches.",
     "eyebrow": "Pricing",
-    "heading": "Most of it is free, and that is not a trial.",
-    "intro": "Everything that gets you started costs nothing and keeps costing nothing: where you stand, the path to the role you want, your three strongest job matches, and the advisor. There is no card to enter and no clock running.",
+    "heading": "Most of Itqan is free.",
+    "intro": "Not a trial, and no card to enter. Premium raises two limits and opens the rest of your job matches, and that is all it does.",
     "free": {
       "name": "Free",
       "price": "No cost",
-      "for": "Everything you need to start moving.",
+      "for": "Everything you need to start.",
       "items": [
-        "Where you stand today, measured against live openings",
-        "The shortest path to the role you want, in real courses",
+        "Where you stand today",
+        "Your path to the role you want",
         "Your three strongest job matches, kept current",
-        "30 messages a day with Hud - هود",
+        "30 messages a day with Hud",
         "One document rescan a week"
       ]
     },
     "paid": {
       "name": "Premium",
-      "price": "$7.78 a month",
-      "priceOmr": "2.99 OMR",
-      "for": "For when three matches a week is no longer enough.",
+      "price": "2.99 OMR",
+      "period": "a month",
+      "priceUsd": "Billed as $7.78",
+      "for": "For when three matches are not enough.",
       "items": [
-        "Every job match you fit, not only the top three",
-        "90 messages a day with Hud - هود",
+        "Every job match you fit",
+        "90 messages a day with Hud",
         "Three document rescans a week"
-      ]
+      ],
+      "cancel": "Cancel any time. Premium runs to the end of the month you paid for.",
+      "where": "Upgrading happens inside Itqan."
     },
-    "guaranteeHeading": "What you are agreeing to",
-    "guarantee": "Cancel whenever you want. Premium runs to the end of the month you have paid for and then stops. Payments are handled by Paddle, which bills in US dollars, so the charge on your statement reads $7.78.",
-    "faqHeading": "The questions people actually ask",
+    "faqHeading": "Two questions people ask",
     "faq": [
       {
         "q": "Do I have to pay to find a job?",
-        "a": "No. Your three strongest matches are free, and they are the ones worth your time first. Premium is for working through the rest of the list once you have exhausted them."
+        "a": "No. Your three strongest matches are free, and they are the ones worth your time first. Premium is for working through the rest of the list."
       },
       {
-        "q": "Why does the price show in dollars?",
-        "a": "Paddle handles the payment and does not bill in rials. The rial is pegged to the dollar, so 2.99 OMR and $7.78 are the same amount and stay that way."
-      },
-      {
-        "q": "What happens to my free account if I stop paying?",
-        "a": "It goes back to being a free account. Nothing you have already done is deleted, and your three strongest matches keep updating."
+        "q": "What happens if I stop paying?",
+        "a": "Your account goes back to free. Nothing you have done is deleted, and your three strongest matches keep updating."
       }
-    ],
-    "ctaNote": "Upgrading happens inside Itqan, once you have an account."
+    ]
   }
 }

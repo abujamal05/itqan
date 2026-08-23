@@ -145,10 +145,13 @@ export function Plan() {
             </div>
           ) : (
             <div className="stack stack--sm">
-              <p className="tiers__price">
-                <span className="num">{t('plan.price')}</span>
-                <span className="tiers__omr num">{t('plan.priceOmr')}</span>
-              </p>
+              <div>
+                <p className="tiers__price num">{t('plan.price')}</p>
+                {/* Quiet, and underneath. Not what anyone is quoted, but it is
+                    what reaches the statement, and omitting it would be a price
+                    that changes at checkout. */}
+                <p className="tiers__usd num">{t('plan.priceUsd')}</p>
+              </div>
               <div className="row">
                 <Button onClick={upgrade} disabled={!isConfigured || phase === 'confirming'}>
                   <Sparkles size={16} aria-hidden="true" />

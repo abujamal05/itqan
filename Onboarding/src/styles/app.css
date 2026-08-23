@@ -2030,11 +2030,11 @@
   flex-wrap: wrap;
 }
 
-.tiers__price > .num:first-child {
+.tiers__price {
   font-size: var(--text-2xl);
   font-weight: var(--weight-semibold);
 }
 
-/* The rial sits beside the charged figure, not instead of it. Paddle bills in
-   USD; showing only OMR would be a price that changes at checkout. */
-.tiers__omr { font-size: var(--text-sm); color: var(--color-text-muted); }
+/* The rial is the price and it is the big number. The dollar sits under it,
+   quiet: not what anyone is quoted, but what reaches the statement. */
+.tiers__usd { font-size: var(--text-sm); color: var(--color-text-muted); }
