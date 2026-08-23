@@ -725,7 +725,18 @@ GET /api/usage -> {
   (`{ error: "rescan_limit" | "message_limit", resetsAt }`) so the front end
   keeps owning the wording in both languages — the same rule as `409 last_cv`.
 
-### 5. The job cut — `GET /api/jobs` returns an object, and the server decides  **(required, blocking)**
+### 5. The job cut — `GET /api/jobs` returns an object, and the server decides  **(NOT BUILT — the UI waits for you)**
+
+> **Status: the front end is ready and dormant.** The client accepts the old
+> bare array AND the new object, so nothing is gated today and no job is
+> hidden from anyone. The moment this endpoint starts returning a `locked`
+> count above zero, the locked cards and the upgrade prompt appear on their
+> own. Nothing in the front end needs to change or be remembered.
+>
+> This is deliberate. Typing the client to the new shape alone emptied the job
+> list in every environment that had not shipped the cut — the page said "no
+> job postings" to people who had four. A contract change has to be additive
+> until both ends agree.
 
 **This is the one entry on the page where a client-side implementation is not a
 weaker version of the feature, it is no feature at all.**

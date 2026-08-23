@@ -152,6 +152,16 @@ const PLAN_LIMITS = {
 const FREE_MATCHES = 3;
 
 /**
+ * Is the job cut switched on?
+ *
+ * OFF, because production does not do it yet (BACKEND.md §5). The stub matches
+ * production rather than running ahead of it: a local build that gates while
+ * the real API does not is a build that tests a screen nobody has. Flip it with
+ * `POST /api/dev/gate {"on":true}` to exercise the locked cards.
+ */
+let jobGate = false;
+
+/**
  * Which plan an account is on.
  *
  * In-memory and flipped by the dev-only upgrade route below, because there is
@@ -665,7 +675,7 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
         if (url === '/api/jobs') {
           const all = jobs(locale);
           const plan = planFor(me.id);
-          if (plan === 'paid') {
+          if (!jobGate || plan === 'paid') {
             return json(res, 200, { matches: all, locked: 0, plan });
           }
           return json(res, 200, {
@@ -675,6 +685,14 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           });
         }
         if (url === '/api/courses') return json(res, 200, courses(locale));
+
+        /* DEV ONLY. Turns the job cut on so the locked cards can be seen; it
+           is off by default because production does not cut yet. */
+        if (url === '/api/dev/gate' && req.method === 'POST') {
+          const f = parseBody(await body(req), req.headers['content-type'] ?? '');
+          jobGate = String(f.on) === 'true';
+          return json(res, 200, { ok: true, gate: jobGate });
+        }
 
         /* DEV ONLY, AND IT HAS NO PRODUCTION COUNTERPART. In production the
            plan flips when Paddle's webhook reaches the server; there is no

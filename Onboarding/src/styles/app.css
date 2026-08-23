@@ -2026,6 +2026,22 @@
 }
 
 .tiers tbody th { font-weight: var(--weight-regular); color: var(--color-text); }
+
+/* PREMIUM IS THE HIGHLIGHTED COLUMN, matching the public pricing page. A tint
+   rather than a fill: this is still a settings screen, and the upgrade button
+   below is already the one gold anchor on it.
+
+   Exact numbers stay here, unlike the marketing page's "triple the messages".
+   Both columns are visible side by side, so the multiple is legible from the
+   figures themselves, and someone checking their own ceiling wants the ceiling. */
+.tiers thead th:last-child,
+.tiers tbody td:last-child,
+.tiers tfoot td:last-child {
+  background-color: var(--color-accent-wash);
+}
+
+.tiers thead th:last-child { border-start-start-radius: var(--radius-md); border-start-end-radius: var(--radius-md); }
+.tiers tfoot td:last-child { border-end-start-radius: var(--radius-md); border-end-end-radius: var(--radius-md); }
 .tiers tbody tr:last-child th,
 .tiers tbody tr:last-child td { border-block-end: 0; }
 .tiers td svg { color: var(--color-accent-ink); }
@@ -2122,6 +2138,16 @@
     flex: 0 0 5.5rem;
     color: var(--color-text-muted);
   }
+
+  /* No columns to tint once stacked, so the premium row carries the emphasis
+     on its own line. */
+  .tiers tbody td:last-child {
+    font-weight: var(--weight-semibold);
+    background: transparent;
+  }
+
+  .tiers thead th:last-child,
+  .tiers tfoot td:last-child { background: transparent; }
 
   .tiers tfoot td { padding: var(--space-4) 0 0; }
   .tiers tfoot td:empty { display: none; }

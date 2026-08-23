@@ -495,10 +495,9 @@
     "free": {
       "name": "Free",
       "price": "No cost",
-      "for": "Everything you need to start.",
+      "for": "Enough to start moving.",
       "items": [
-        "Where you stand today",
-        "Your path to the role you want",
+        "Where you stand today, and the path to the role you want",
         "Your three strongest job matches, kept current",
         "30 messages a day with Hud",
         "One document rescan a week"
@@ -510,14 +509,17 @@
       "price": "2.99 OMR",
       "period": "a month",
       "priceUsd": "Billed as $7.78",
-      "for": "For when three matches are not enough.",
+      "for": "For when the whole list is worth your time.",
       "items": [
-        "Every job match you fit",
-        "90 messages a day with Hud",
-        "Three document rescans a week"
+        "Everything in the free plan",
+        "Every job match you fit, not only your strongest three",
+        "Triple the messages with Hud, every day",
+        "Triple the document rescans, every week",
+        "Rescan the week you finish a course, not the week after",
+        "Work through a whole shortlist in one sitting"
       ],
       "cancel": "Cancel any time. Premium runs to the end of the month you paid for.",
-      "cta": "Start free, upgrade inside"
+      "cta": "Start free, upgrade inside the app"
     },
     "faqHeading": "Before you decide",
     "faq": [
