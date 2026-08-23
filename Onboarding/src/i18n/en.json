@@ -409,7 +409,6 @@
   "plan.perDay": "{n} a day",
   "plan.upgrade": "Upgrade to Premium",
   "plan.cancelNote": "Cancel any time. You keep Premium until the month you have paid for runs out.",
-  "plan.unavailable": "Upgrading is not switched on in this build yet.",
   "plan.confirming": "Payment received. Waiting for it to reach your account, which can take a moment.",
   "plan.failed": "That did not go through and you have not been charged. You can try again.",
   "plan.onPaid": "You are on Premium. Every match you fit is on your job postings page.",

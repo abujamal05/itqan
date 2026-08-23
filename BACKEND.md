@@ -787,8 +787,16 @@ two cannot drift. The Paddle price must be created in USD at 7.78.
 
 **Config** is three build-time vars, documented in `Onboarding/.env.example`:
 `VITE_PADDLE_ENV`, `VITE_PADDLE_TOKEN` (the client-side token, safe in the
-browser — never the API key), `VITE_PADDLE_PRICE_ID`. Missing config renders the
-upgrade button disabled with an honest line rather than throwing.
+browser — never the API key), `VITE_PADDLE_PRICE_ID`.
+
+**With the vars unset the upgrade button renders disabled and SAYS NOTHING.**
+That is deliberate. A user cannot act on a missing environment variable, and a
+sentence about an unfinished deployment in the middle of a plan they are reading
+is noise. The explanation goes to the console in dev, naming which var is
+missing. So: an upgrade button that is disabled in a deployed environment means
+these are not set, and there will be no message on the page saying so — check
+here. Vite reads env files at startup, so the dev server needs a restart, not a
+reload, after adding them.
 
 **If a CSP is ever added** to the app it has to allow Paddle: `cdn.paddle.com`
 for the script and `*.paddle.com` in `frame-src`. There is no CSP today.

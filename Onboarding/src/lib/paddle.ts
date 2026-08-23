@@ -28,6 +28,24 @@ const ENV = (import.meta.env.VITE_PADDLE_ENV as Environments | undefined) ?? 'sa
 /** Both are needed. A token with no price buys nothing. */
 export const isConfigured = Boolean(TOKEN && PRICE_ID);
 
+/**
+ * Say WHY, to the person who can fix it.
+ *
+ * The user-facing message for this case is deliberately vague — "not available
+ * right now" — because a job seeker cannot act on a missing environment
+ * variable and should not be shown one. But somebody has to be told, or a
+ * mis-deployed build looks identical to a working one until revenue is missing.
+ * So the explanation goes to the console, naming exactly what is unset.
+ */
+if (!isConfigured && import.meta.env.DEV) {
+  const missing = [!TOKEN && 'VITE_PADDLE_TOKEN', !PRICE_ID && 'VITE_PADDLE_PRICE_ID'].filter(Boolean);
+  console.warn(
+    `[paddle] Upgrading is disabled: ${missing.join(' and ')} not set. `
+    + 'Copy .env.example to .env.local and restart the dev server '
+    + '(Vite reads env files at startup, not on reload).',
+  );
+}
+
 export const priceId = PRICE_ID;
 
 let pending: Promise<Paddle | undefined> | null = null;

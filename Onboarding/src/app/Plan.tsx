@@ -158,11 +158,11 @@ export function Plan() {
                   {t('plan.upgrade')}
                 </Button>
               </div>
-              {/* An unwired build says so, rather than offering a button that
-                  throws when pressed. */}
-              <p className="text-sm muted">
-                {isConfigured ? t('plan.cancelNote') : t('plan.unavailable')}
-              </p>
+              {/* Nothing is said when checkout is not configured. A user cannot
+                  act on it, and a line explaining an unfinished deployment is
+                  noise in the middle of a plan they are reading. The button is
+                  disabled, the console says why, and BACKEND.md §6 carries it. */}
+              {isConfigured && <p className="text-sm muted">{t('plan.cancelNote')}</p>}
             </div>
           )}
         </div>
