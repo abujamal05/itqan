@@ -39,6 +39,7 @@ import { Courses } from './app/Courses';
 import { Documents } from './app/Documents';
 import { Profile } from './app/Profile';
 import { Plan } from './app/Plan';
+import { captureUpgradeIntent, clearUpgradeIntent, hasUpgradeIntent } from './state/upgradeIntent';
 
 /** Full-page hold while the session is read. Deliberately quiet. */
 function Booting() {
@@ -306,6 +307,35 @@ function DocumentTitle() {
   return null;
 }
 
+/**
+ * Take the "I came to buy" intent out of its carriers, once, on arrival.
+ *
+ * Runs before any route resolves so the catch-all below can already see it.
+ * Everything about spending it lives in the two places that redirect: the end
+ * of Confirm for a first run, and the catch-all here for someone who already
+ * had an account.
+ */
+function CaptureIntent() {
+  useEffect(() => { captureUpgradeIntent(); }, []);
+  return null;
+}
+
+/**
+ * Where a signed-in user with no route actually lands.
+ *
+ * Normally the dashboard: a returning user is coming back to their results.
+ * But someone who pressed premium on the marketing site and turned out to
+ * ALREADY have a finished account never passes through Confirm, so this is the
+ * only place their intent can be honoured. Spent here rather than remembered,
+ * so a second visit behaves normally.
+ */
+function Landing() {
+  const onboarded = useAuth().user?.onboarded;
+  const wants = onboarded && hasUpgradeIntent();
+  useEffect(() => { if (wants) clearUpgradeIntent(); }, [wants]);
+  return <Navigate to={wants ? '/plan' : '/dashboard'} replace />;
+}
+
 function RouteFocus() {
   const { pathname } = useLocation();
   const firstPaint = useRef(true);
@@ -326,6 +356,7 @@ export default function App() {
   return (
     <ThemeProvider>
       <I18nProvider>
+        <CaptureIntent />
         {/* Follows Vite's base: /app in dev where the site owns the root, and
             / in production where this app is its own deployment. */}
         <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
@@ -363,7 +394,7 @@ export default function App() {
                           back to their results. A FIRST run lands in chat instead,
                           and that redirect lives at the end of Confirm, where the
                           state that decides it actually exists. */}
-                      <Route path="*" element={<RequireApp><Navigate to="/dashboard" replace /></RequireApp>} />
+                      <Route path="*" element={<RequireApp><Landing /></RequireApp>} />
                     </Routes>
                   </ScreenBoundary>
                 </WithChat>

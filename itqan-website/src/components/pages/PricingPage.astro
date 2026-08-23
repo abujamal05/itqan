@@ -146,7 +146,11 @@ const offer = {
 
       <footer class="tier__foot">
         <p class="tier__note">{s.pricing.paid.cancel}</p>
-        <a class="button button--primary tier__cta" href={`${base}/signup/`}>
+        {/* The only link on the site that carries an intent. `form.ts` turns it
+            into a cookie on a successful signup, and the app reads it after
+            onboarding to land this person on the upgrade screen rather than the
+            dashboard. */}
+        <a class="button button--primary tier__cta" href={`${base}/signup/?intent=premium`}>
           {s.pricing.paid.cta}
         </a>
       </footer>

@@ -827,3 +827,33 @@ deliberately out of the pricing work rather than half done. What it needs:
 - An opt-out, stored with the account rather than the browser.
 
 Until it ships, no screen may claim the user will be notified.
+
+### 8. Carrying "I came here to buy" across the handoff
+
+Someone who presses the premium button on `/pricing` should land on the upgrade
+screen once they are through signup, verification and onboarding, rather than on
+the dashboard having to go and find it.
+
+**Built and working today, with one deployment assumption.** The pricing CTA
+links to `/signup/?intent=premium`; `form.ts` turns that into a cookie
+(`itqan_intent=premium`, 30 minutes) on a successful signup; the app reads it on
+boot, moves it into `sessionStorage`, deletes the cookie, and spends it once —
+at the end of `Confirm` for a first run, or at the app's landing route for
+someone who already had an account.
+
+**The assumption is a shared registrable domain.** A cookie set on
+`itqan.com` reaches `app.itqan.com`; it does not reach a different domain
+entirely. If the app ever moves off the site's domain, this stops working
+silently — nobody sees an error, the intent is simply lost and they land on the
+dashboard.
+
+To make it survive that, `/api/handoff` needs to forward the parameter:
+
+```
+GET /api/handoff?intent=premium   ->  302 <app>/?intent=premium
+```
+
+**The app already reads `?intent=premium` from its own URL**, with the same
+capture-and-clear path, so forwarding it is the only change required and nothing
+in the front end has to be touched. Pass through only the literal value
+`premium`; anything else should be dropped rather than reflected.
