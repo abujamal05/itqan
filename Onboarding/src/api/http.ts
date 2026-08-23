@@ -14,7 +14,7 @@
 import type {
   AnalysisJob, ChatMessage, ChatThread, ChatThreadSummary, ConfirmProfileResult,
   ConfirmedProfile, Course, DashboardData, Feedback, FeedbackState, ItqanApi,
-  JobsResult, OnboardingProgress, Session, StoredProfile, UploadedDocument,
+  JobMatch, JobsResult, OnboardingProgress, Session, StoredProfile, UploadedDocument,
   Usage,
 } from './types';
 import { emptyFeedback } from './types';
@@ -155,7 +155,24 @@ export function createHttpApi(): ItqanApi {
       await req<void>('/profile/avatar', { method: 'DELETE', signal });
     },
     getDashboard(signal) { return req<DashboardData>('/dashboard', { signal }); },
-    getJobs(signal) { return req<JobsResult>('/jobs', { signal }); },
+    /**
+     * Jobs, accepting BOTH shapes on purpose.
+     *
+     * The gated shape is `{ matches, locked, plan }` (BACKEND.md §5) and the
+     * server does not send it yet — it still returns a bare array. Typing the
+     * client to the new shape alone made `data.matches` undefined against every
+     * environment that had not shipped the cut, which emptied the job list
+     * completely: the page said "no job postings" to people who had four.
+     *
+     * So an array is read as "everything, nothing withheld". The lock appears
+     * on its own the day the server starts sending a count, and until then
+     * nothing anywhere has to change or be remembered.
+     */
+    async getJobs(signal) {
+      const raw = await req<JobsResult | JobMatch[]>('/jobs', { signal });
+      if (Array.isArray(raw)) return { matches: raw, locked: 0, plan: 'free' as const };
+      return { ...raw, matches: raw.matches ?? [], locked: raw.locked ?? 0 };
+    },
     getCourses(signal) { return req<Course[]>('/courses', { signal }); },
     getUsage(signal) { return req<Usage>('/usage', { signal }); },
 

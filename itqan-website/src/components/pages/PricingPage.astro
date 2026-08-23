@@ -2,14 +2,17 @@
 /**
  * Pricing.
  *
- * THE PAGE'S JOB IS A FREE ACCOUNT, NOT A SALE. The site has one success
- * condition and it is a stranger signing up. A pricing page that pushes a
- * logged-out visitor toward a card inverts that, and for the anchor user —
- * unemployed, demoralised, arriving with no money — a price above the fold is a
- * reason to close the tab. So the free column is the long one, the price sits
- * below it, and the only button on the page creates a free account. There is no
- * checkout here at all: upgrading happens inside the app, where the account it
- * attaches to exists.
+ * BOTH BUTTONS CREATE A FREE ACCOUNT. There is no checkout here: subscribing
+ * needs an account, so the paid card's CTA goes to signup like the free one.
+ * The site's success condition is still a stranger signing up.
+ *
+ * PREMIUM CARRIES THE EMPHASIS. This was the other way round first, on the
+ * argument that the anchor user is unemployed and a highlighted price is a
+ * reason to close the tab. The product owner reversed it: a paid tier nobody
+ * looks at is not a kindness either, and the free column was reading as the
+ * whole offer. The protection that remains is structural rather than visual —
+ * free is listed first and states its allowances in full, so nobody has to
+ * infer what they get for nothing.
  *
  * WHAT IS DELIBERATELY MISSING, and each absence is a decision:
  *
@@ -97,6 +100,9 @@ const offer = {
           ))
         }
       </ul>
+      <a class="button button--secondary tier__cta" href={`${base}/signup/`}>
+        {s.pricing.free.cta}
+      </a>
     </article>
 
     <article class="tier tier--paid">
@@ -117,9 +123,10 @@ const offer = {
           ))
         }
       </ul>
-      <p class="tier__note">
-        {s.pricing.paid.cancel}<br />{s.pricing.paid.where}
-      </p>
+      <p class="tier__note">{s.pricing.paid.cancel}</p>
+      <a class="button button--primary tier__cta" href={`${base}/signup/`}>
+        {s.pricing.paid.cta}
+      </a>
     </article>
   </section>
 
@@ -137,12 +144,6 @@ const offer = {
     </dl>
   </section>
 
-  <div class="page-cta reveal">
-    <a class="button button--primary button--arrow" href={`${base}/signup/`}>
-      <span>{s.actions.signup}</span>
-      <Icon class="button__arrow" name="ph:arrow-right" width="16" height="16" aria-hidden="true" />
-    </a>
-  </div>
 </div>
 
 <script type="application/ld+json" set:html={JSON.stringify(offer)} is:inline />
@@ -155,14 +156,19 @@ const offer = {
     text-wrap: balance;
   }
 
-  /* Free is the wider column. Two tiers side by side at equal weight would say
-     they are equally the point, and they are not. */
+  /* Equal columns. The emphasis is carried by the paid card's surface and
+     border, not by making it wider — an unequal grid plus a highlight reads as
+     two different kinds of thing rather than two plans.
+
+     One rhythm step, not two: `.page-head` already ends with its own
+     padding-block-end, and adding a full space-16 on top opened 112px of dead
+     air between the intro and the cards. */
   .tiers {
     display: grid;
-    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-8);
     align-items: start;
-    padding-block: var(--space-16);
+    padding-block-end: var(--space-16);
   }
 
   .tier {
@@ -176,11 +182,20 @@ const offer = {
     box-shadow: var(--shadow-sm);
   }
 
-  /* The free tier carries the emphasis, not the paid one. An upsell should not
-     be the brightest object on a page aimed at people without money. */
-  .tier--free {
+  /* PREMIUM IS THE HIGHLIGHTED CARD. Accent border, warm ground and a real
+     shadow, so it sits forward of the free card rather than beside it. */
+  .tier--paid {
     border-color: var(--color-border-accent);
     background: var(--color-surface-warm);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* IN DARK THE TWO SURFACES WERE THE SAME OBJECT. `--color-surface-warm` is a
+     7% gold wash, which composites to about 1.06:1 against the plain card on a
+     near-black ground — below any perceptual threshold, so the highlight was
+     resting on the border alone. Dark needs a wash with more under it. */
+  :global([data-theme='dark']) .tier--paid {
+    background: var(--color-accent-wash);
   }
 
   .tier__name {
@@ -241,17 +256,42 @@ const offer = {
 
   .tier__note {
     margin-block-start: auto;
-    padding-block-start: var(--space-2);
     font-size: var(--text-sm);
     color: var(--color-text-muted);
   }
 
+  /* Each column carries its own action, so a reader who has decided on one does
+     not have to scroll past the other to act. The free card's is primary and the
+     paid card's is secondary: both lead to the same signup, because there is no
+     way to subscribe without an account, and only one of them should be the
+     page's gold anchor. */
+  .tier__cta {
+    align-self: flex-start;
+    margin-block-start: var(--space-2);
+  }
+
+  /* Pushes the free card's button to the bottom of its own card. It does NOT
+     align the two buttons with each other — the paid card is ~25px taller
+     because of the billed-as line, so they sit at different heights by design
+     rather than by accident. */
+  .tier--free .tier__cta { margin-block-start: auto; }
+
   .pricing-faq { padding-block: var(--space-16); }
 
+  /* Two columns once there is room. A 630px answer column inside a 1104px
+     section left 474px of dead space down the right and turned the page from a
+     grid into a ragged half-width strip. */
   .pricing-faq dl {
     margin-block-start: var(--space-8);
     display: grid;
     gap: var(--space-8);
+  }
+
+  @media (min-width: 52rem) {
+    .pricing-faq dl {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: var(--space-12);
+    }
   }
 
   .pricing-faq dt {

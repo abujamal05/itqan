@@ -396,7 +396,7 @@
   "plan.title": "Your plan",
   "plan.freeName": "Free",
   "plan.paidName": "Premium",
-  "plan.current": "Your plan",
+  "plan.current": "Current",
   "plan.price": "2.99 OMR a month",
   "plan.rowMatches": "Job matches",
   "plan.rowMatchesFree": "Your 3 strongest, kept current",
@@ -415,5 +415,6 @@
   "plan.manage": "To cancel or change your card, use the receipt emailed to you.",
   "plan.usageTitle": "What you have used",
   "nav.plan": "Your plan",
-  "plan.priceUsd": "Billed as $7.78"
+  "plan.priceUsd": "Billed as $7.78",
+  "plan.youAreOn": "You are on the {plan} plan"
 }

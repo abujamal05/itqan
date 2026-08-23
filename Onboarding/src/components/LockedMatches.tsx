@@ -20,33 +20,55 @@ import { Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '../i18n';
 
-/** Cards drawn before it stops being information and starts being wallpaper. */
-const MAX_CARDS = 3;
+/**
+ * Ghosts drawn, and why it is an even number.
+ *
+ * The grid is two across. Three ghosts filled one row and orphaned a single
+ * card in the next, which reads as a rendering fault rather than as "there is
+ * more". Two fills the row exactly at every count above one.
+ */
+const MAX_CARDS = 2;
+
+/**
+ * Below this the ghosts are dropped entirely.
+ *
+ * At one locked match the whole apparatus — a ghost card, a frosted fade and an
+ * ask panel — was deployed to sell a single job, which costs more attention
+ * than the thing it is selling is worth. One match gets the ask row alone.
+ */
+const MIN_GHOSTS = 2;
 
 export function LockedMatches({ count }: { count: number }) {
   const { t, formatNumber } = useI18n();
   if (count <= 0) return null;
 
-  /* Never more cards than there are matches: three placeholders above a
-     "2 more" count would be claiming more than the server said exists. */
-  const cards = Math.min(count, MAX_CARDS);
+  /* Never more cards than there are matches: placeholders above a "2 more"
+     count would be claiming more than the server said exists. */
+  const cards = count >= MIN_GHOSTS ? Math.min(count, MAX_CARDS) : 0;
 
   return (
     <section className="locked" aria-labelledby="locked-title">
-      <ul className="grid grid--2 locked__ghosts" aria-hidden="true">
-        {Array.from({ length: cards }, (_, i) => (
-          <li className="locked__ghost" key={i}>
-            {/* Deliberately meaningless. These are bars, not redacted text. */}
-            <span className="locked__bar locked__bar--sm" />
-            <span className="locked__bar locked__bar--lg" />
-            <span className="locked__bar locked__bar--md" />
-            <span className="locked__chips">
-              <span className="locked__chip" />
-              <span className="locked__chip" />
-            </span>
-          </li>
-        ))}
-      </ul>
+      {cards > 0 && (
+        <ul className="grid grid--2 locked__ghosts" aria-hidden="true">
+          {Array.from({ length: cards }, (_, i) => (
+            <li className="locked__ghost" key={i}>
+              {/* A LOCK, NOT A SPINNER. Blurred grey bars are the universal
+                  loading idiom, and without this the region asked the reader to
+                  work out whether to wait or to pay. The glyph settles it
+                  before they have to think about it. */}
+              <Lock className="locked__ghostmark" size={18} />
+              {/* Deliberately meaningless. These are bars, not redacted text. */}
+              <span className="locked__bar locked__bar--sm" />
+              <span className="locked__bar locked__bar--lg" />
+              <span className="locked__bar locked__bar--md" />
+              <span className="locked__chips">
+                <span className="locked__chip" />
+                <span className="locked__chip" />
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <div className="locked__ask">
         <Lock size={18} className="locked__icon" aria-hidden="true" />
@@ -61,7 +83,12 @@ export function LockedMatches({ count }: { count: number }) {
           </h2>
           <p className="text-sm">{t('jobs.lockedBody')}</p>
         </div>
-        <Link className="btn btn--primary locked__cta" to="/plan">
+        {/* SECONDARY, not primary. Gold on this screen already means "apply to
+            this job" — three of them are directly above. A fourth gold fill
+            selling an upgrade competes with the product's core action and
+            breaks the one-gold-anchor rule. The lock and the accent border
+            carry this well enough. */}
+        <Link className="btn btn--secondary locked__cta" to="/plan">
           {t('jobs.lockedCta')}
         </Link>
       </div>
