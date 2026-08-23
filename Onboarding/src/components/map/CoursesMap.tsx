@@ -23,13 +23,13 @@
  * it is the only one anybody needed.
  */
 import { useMemo } from 'react';
-import { Position, type Edge, type Node } from '@xyflow/react';
+import type { Edge, Node } from '@xyflow/react';
 import { useI18n } from '../../i18n';
 import type { Course } from '../../api';
 import { courseFacts } from '../../lib/courseFacts';
 import { MapCanvas } from './MapCanvas';
 import { CourseNode, type CourseNodeData, type CourseState } from './CourseNode';
-import { serpentine, NODE } from './layout';
+import { serpentine, sides, NODE } from './layout';
 
 const nodeTypes = { course: CourseNode };
 
@@ -43,6 +43,8 @@ export interface CoursesMapProps {
   /** Null while the target role is still undetermined. */
   target?: string;
   onDone: (course: Course) => void;
+  /** Undo a completion. Marking done is a tap, so undoing it must be too. */
+  onUndo: (course: Course) => void;
   onOpen: (course: Course) => void;
 }
 
@@ -65,7 +67,7 @@ function states(courses: Course[], completed: Set<string>): CourseState[] {
   });
 }
 
-export function CoursesMap({ courses, completed, onDone, onOpen }: CoursesMapProps) {
+export function CoursesMap({ courses, completed, onDone, onUndo, onOpen }: CoursesMapProps) {
   const { t, locale, formatNumber, formatMoney } = useI18n();
   const rtl = locale === 'ar';
 
@@ -101,17 +103,15 @@ export function CoursesMap({ courses, completed, onDone, onOpen }: CoursesMapPro
       /* `available` carries no badge on the node — a quiet state is stated by
          being quiet. The hidden list has no such option, so it needs a word. */
       available: t('courses.stateAvailable'),
+      undo: t('courses.undo'),
     };
 
     const ns: Node[] = order.map((c, i) => {
       const { price, duration } = courseFacts(c, { t, formatNumber, formatMoney });
-      /* Which side an edge attaches to depends on which way this row runs, and
-         the rows alternate. Getting this from the row parity rather than from a
-         fixed left/right is what stops every turn looping back on itself. */
-      const row = Math.floor(i / PER_ROW);
-      const forward = row % 2 === 0;
-      const lead = forward ? Position.Left : Position.Right;
-      const trail = forward ? Position.Right : Position.Left;
+      /* Shared with the journey map. Row parity decides which side is which,
+         and the row CHANGE attaches bottom-to-top so the turn does not curve
+         back across the card it just left. */
+      const turn = sides(i, order.length, PER_ROW, rtl);
 
       const data: CourseNodeData = {
         title: c.title,
@@ -123,10 +123,9 @@ export function CoursesMap({ courses, completed, onDone, onOpen }: CoursesMapPro
         url: c.source.url,
         labels,
         onDone: st[i] === 'completed' ? undefined : () => onDone(c),
-        /* The pair swaps in Arabic for the same reason the coordinates are
-           negated: the journey travels the other way. */
-        incoming: rtl ? trail : lead,
-        outgoing: rtl ? lead : trail,
+        onUndo: st[i] === 'completed' ? () => onUndo(c) : undefined,
+        incoming: turn.incoming,
+        outgoing: turn.outgoing,
       };
 
       return {
@@ -157,7 +156,7 @@ export function CoursesMap({ courses, completed, onDone, onOpen }: CoursesMapPro
     });
 
     return { nodes: ns, edges: es, order, st, labels };
-  }, [courses, completed, rtl, t, formatNumber, formatMoney, onDone, onOpen]);
+  }, [courses, completed, rtl, t, formatNumber, formatMoney, onDone, onUndo, onOpen]);
 
   const current = order.find((c) => !completed.has(c.id)) ?? order[order.length - 1];
 

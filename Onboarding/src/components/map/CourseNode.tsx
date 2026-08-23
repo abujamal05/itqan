@@ -50,8 +50,11 @@ export interface CourseNodeData extends Record<string, unknown> {
     locked: string;
     current: string;
     available: string;
+    undo: string;
   };
   onDone?: () => void;
+  /** Take a course back OUT of completed. Absent unless it is completed. */
+  onUndo?: () => void;
   incoming: Position;
   outgoing: Position;
 }
@@ -128,6 +131,21 @@ function CourseNodeBase({ data }: NodeProps) {
               onClick={(e) => { e.stopPropagation(); d.onDone?.(); }}
             >
               {d.labels.done}
+            </button>
+          )}
+
+          {/* COMPLETED IS NOT A ONE-WAY DOOR. Marking a course done is a claim
+              the user makes about themselves, and a mis-tap on it used to be
+              permanent — the button simply vanished. Every state that can be
+              entered by a tap has to be leavable by one. */}
+          {d.state === 'completed' && d.onUndo && (
+            <button
+              className="mapnode__undo"
+              type="button"
+              tabIndex={-1}
+              onClick={(e) => { e.stopPropagation(); d.onUndo?.(); }}
+            >
+              {d.labels.undo}
             </button>
           )}
         </span>

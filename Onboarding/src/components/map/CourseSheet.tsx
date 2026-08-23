@@ -26,6 +26,7 @@ export function CourseSheet({
   onClose,
   onReplace,
   onDone,
+  onUndo,
   done,
 }: {
   /** Null closes it. Kept mounted so the close transition has something to run on. */
@@ -33,6 +34,7 @@ export function CourseSheet({
   onClose: () => void;
   onReplace: (id: string, next: Course) => void;
   onDone: (course: Course) => void;
+  onUndo: (course: Course) => void;
   done: boolean;
 }) {
   const { t } = useI18n();
@@ -81,8 +83,18 @@ export function CourseSheet({
               done is a claim about the USER, not about the course. On its own
               surface so it reads as part of the sheet rather than a gold button
               left floating on the backdrop. */}
-          {!done && (
-            <div className="sheet__foot">
+          <div className="sheet__foot">
+            {done ? (
+              /* Reversible, and quieter than the action that got here: undoing
+                 is a correction, not an achievement. */
+              <button
+                className="btn btn--secondary"
+                type="button"
+                onClick={() => { onUndo(course); onClose(); }}
+              >
+                {t('courses.markNotDone')}
+              </button>
+            ) : (
               <button
                 className="btn btn--primary"
                 type="button"
@@ -90,8 +102,8 @@ export function CourseSheet({
               >
                 {t('courses.markDone')}
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
     </dialog>

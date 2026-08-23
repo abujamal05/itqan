@@ -104,6 +104,19 @@ export function Courses() {
     );
   }, [toggle, t]);
 
+  /**
+   * Take it back out of completed.
+   *
+   * The mirror of `markDone`, and it exists because that one was a one-way
+   * door: the button disappeared once tapped, so a mis-tap was permanent. It
+   * does not move readiness either — nothing here does — so the message says
+   * only what actually happened and does not re-open the CV prompt.
+   */
+  const markNotDone = useCallback((course: Course) => {
+    toggle(course.id, false);
+    setStatus(t('courses.undoneNoted'));
+  }, [toggle, t]);
+
   const filters: FilterDef<Filter>[] = [
     { id: 'all', label: t('browse.all') },
     { id: 'recommended', label: t('courses.filterRecommended') },
@@ -187,6 +200,7 @@ export function Courses() {
                 completed={completed}
                 onOpen={setOpen}
                 onDone={markDone}
+                onUndo={markNotDone}
               />
               <p className="map__hint">{t('courses.mapHint')}</p>
             </>
@@ -199,6 +213,7 @@ export function Courses() {
         onClose={() => setOpen(null)}
         onReplace={replaceCourse}
         onDone={markDone}
+        onUndo={markNotDone}
       />
     </div>
   );
