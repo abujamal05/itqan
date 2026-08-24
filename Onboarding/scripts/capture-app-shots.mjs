@@ -41,7 +41,7 @@ const PASSWORD = 'itqan1234';
 const VIEW = { width: 1200, height: 900 };
 
 const login = async (context, email) => {
-  const res = await context.request.post(`${BASE}/api/placeholder/login`, {
+  const res = await context.request.post(`${BASE}/api/auth/login`, {
     multipart: { email, password: PASSWORD },
     headers: { referer: `${BASE}/en/login/` },
   });

@@ -57,7 +57,7 @@ async function sessionCookie(email, locale = 'en') {
   const body = new FormData();
   body.set('email', email);
   body.set('password', PASSWORD);
-  const res = await fetch(`${BASE}/api/placeholder/login`, {
+  const res = await fetch(`${BASE}/api/auth/login`, {
     method: 'POST',
     body,
     // The endpoint reads the referer to stamp the locale cookie.
