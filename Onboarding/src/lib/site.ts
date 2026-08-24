@@ -3,18 +3,23 @@
  *
  * There are three environments and the difference is real, not incidental:
  *
- *   dev            one origin. The Vite plugin serves the site at / and this
- *                  app under /app/, so a plain path is correct.
- *   Vercel (prod)  two projects on two domains, so a link to the site must be
- *                  absolute or it 404s here.
- *   VPS (prod)     one Caddy serves both, so plain paths are correct again —
- *                  and better, because they carry no baked-in domain to go
- *                  stale when the real one is chosen.
+ *   dev             one origin. The Vite plugin serves the site at / and this
+ *                   app under /app/, so a plain path is correct.
+ *   VPS (PRODUCTION) tryitqan.com, one Caddy serving the site, /app/* and
+ *                   /api/* together. Plain paths are correct, and better,
+ *                   because they carry no baked-in domain to go stale.
+ *   Vercel (test)   two projects on two domains, so a link to the site has to
+ *                   be absolute or it 404s there.
  *
- * The single-host case is opt-in via VITE_SITE_SAME_ORIGIN=1 (the deploy sets
- * it) rather than inferred, so the Vercel two-origin default is never changed
- * by accident — getting it wrong there sends every "home"/"log in" link to a
- * 404, silently. Set VITE_SITE_URL to move the site on a two-origin setup.
+ * **Vercel is a testing target, not production.** An earlier version of this
+ * comment had it the other way round, which mattered because it made the
+ * two-origin branch look like the one that ships.
+ *
+ * The single-host case is opt-in via VITE_SITE_SAME_ORIGIN=1 rather than
+ * inferred, and `.github/workflows/deploy.yml` sets it — so the production
+ * build takes the relative-path branch. Leave the default alone: on Vercel,
+ * getting it wrong sends every "home"/"log in" link to a silent 404. Set
+ * VITE_SITE_URL to move the site on a two-origin setup.
  */
 const CONFIGURED = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/+$/, '');
 

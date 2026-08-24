@@ -90,8 +90,12 @@ is the single most confusing thing in the project, so it is worth reading once p
 | | Who serves what | How the session travels |
 |---|---|---|
 | **Dev** | One origin. The Vite plugin serves the site at `/` and this app at `/app/`. | An ordinary cookie. Same origin, so it just works. |
-| **Vercel** | **Two separate projects on two domains.** | A signed **handoff token** in the redirect URL. See below. |
-| **VPS** (production) | One Caddy serves both: site at `/`, app at `/app/`. | An ordinary cookie again. |
+| **VPS** — **PRODUCTION**, `tryitqan.com` | One Caddy serves both: site at `/`, app at `/app/`. | An ordinary cookie again. |
+| **Vercel** — testing only | **Two separate projects on two domains.** | A signed **handoff token** in the redirect URL. See below. |
+
+**Vercel is a test target, not where the product runs.** It is listed second on
+purpose: the two-origin case is the awkward one and gets the most words below,
+which has read to more than one person as though it were the shipping setup.
 
 `src/lib/site.ts` is what knows the difference. `VITE_SITE_SAME_ORIGIN=1` (set by the deploy) makes
 links to the site relative; without it they are absolute, which is what Vercel needs.
