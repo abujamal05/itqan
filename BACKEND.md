@@ -793,8 +793,27 @@ failed. What the server owes:
   already treats free as the normal state, so nothing needs to be told.
 
 **Currency.** Paddle does not support OMR. The rial is pegged at a fixed
-1 OMR = 2.6008 USD, so the published 2.99 OMR is charged as **$7.78** and the
-two cannot drift. The Paddle price must be created in USD at 7.78.
+1 OMR = 2.6008 USD, so the published **2.9 OMR** is charged as **$7.54** and the
+two cannot drift. The Paddle price must be created in USD at **7.54**.
+
+The multiplication is written out because it is the only thing keeping the two
+figures together, and it has already come apart twice: this paragraph said
+2.99 OMR / $7.78 while the integration request asked for $7.50 against 2.9 OMR —
+three figures, none of which agreed.
+
+    2.9  x 2.6008 = 7.5423  ->  $7.54     <- the pair in use
+    2.99 x 2.6008 = 7.7764  ->  $7.78         (the previous pair)
+    7.50 / 2.6008 = 2.8837  ->  2.88 OMR      ($7.50 is not 2.9 OMR)
+
+**The price must be RECURRING.** A one-time price creates no subscription, so no
+`subscription.*` webhook ever fires and the account is never moved to paid — the
+webhook would be correct, silent, and blamed. This is the most likely way a
+first sandbox checkout appears to do nothing.
+
+**`checkout.completed` is a browser event, not a webhook.** Nothing server-side
+listens to it and nothing should. The plan flips on `subscription.activated`
+(and `.created` / `.updated` for later changes), which is what the plan screen's
+poll of `GET /api/usage` is waiting for.
 
 **Config** is three build-time vars, documented in `Onboarding/.env.example`:
 `VITE_PADDLE_ENV`, `VITE_PADDLE_TOKEN` (the client-side token, safe in the
