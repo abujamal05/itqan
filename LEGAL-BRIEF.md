@@ -107,8 +107,20 @@ and information about the data subject's personal life.
 **Why Itqan triggers it:** Gulf CVs routinely carry a photograph, nationality, marital status, date
 of birth and sometimes religion. Itqan never asks for any of it; it arrives inside the document and
 the parsing agent reads it. Not asking is not a defence.
-**Unknown, must be answered:** Has a permit been sought? If not, the design question is whether
-sensitive fields can be dropped before they reach the matching engine, and the policy has to say so.
+**This is a separate obligation from the transfer rules and Article 37 consent does not answer it.**
+Consent legitimises sending data abroad. It does not substitute for the permit that processing
+sensitive data requires in the first place.
+
+**Dropping sensitive fields at the parsing stage now solves two problems, not one.** It was already
+the cleaner answer to the permit question. Executive Regulations Article 37 also exempts genuinely
+anonymised data from the cross-border consent requirement, so a parser that discards religion,
+marital status, photograph and date of birth before anything is stored or transmitted reduces the
+exposure under Article 23 as well. That makes it the strongest single technical change available
+here, and it belongs to the pipeline rather than to either front end.
+
+**Unknown, must be answered:** Has a permit been sought? Can the parser drop these fields before
+storage and before transmission, and can that be evidenced? If it can, the privacy notice should say
+so, because it is a claim worth making and one of the few here that a skeptical user can check.
 
 ## Duty to appoint a Data Protection Officer
 **Medium-high risk. 15,000 to 20,000 OMR.**
