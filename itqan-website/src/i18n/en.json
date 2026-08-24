@@ -268,7 +268,8 @@
     "serverError": "We could not create the account just now. Try again in a moment.",
     "haveAccount": "Already have an account?",
     "loginLink": "Log in",
-    "eyebrow": "Free account"
+    "eyebrow": "Free account",
+    "emailTaken": "That email already has an account."
   },
   "login": {
     "title": "Log in",
@@ -290,7 +291,8 @@
     "forgot": "Forgot your password?",
     "noAccount": "New to Itqan?",
     "signupLink": "Create a free account",
-    "eyebrow": "Your account"
+    "eyebrow": "Your account",
+    "invalidCredentials": "That email and password do not match."
   },
   "forgot": {
     "title": "Password reset",

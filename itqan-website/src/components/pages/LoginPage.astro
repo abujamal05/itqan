@@ -25,6 +25,9 @@ const base = `/${locale}`;
       action={formEndpoints.login}
       novalidate
       data-server-error={s.login.serverError}
+      data-msg-invalid={s.login.invalidCredentials}
+      data-forgot-url={`${base}/forgot-password/`}
+      data-forgot-text={s.login.forgot}
       data-success-url={appUrl}
     >
       <div class="form-summary" role="alert" tabindex="-1" hidden>
@@ -106,10 +109,23 @@ const base = `/${locale}`;
 </div>
 
 <script>
-  import { initForm } from '../../scripts/form';
+  import { explainServerErrors, initForm } from '../../scripts/form';
   document
     .querySelectorAll<HTMLFormElement>('form.form-card')
-    .forEach((form) => initForm(form));
+    .forEach((form) => {
+      initForm(form);
+
+      /* "That email and password do not match" — never which of the two was
+         wrong. Saying "no account with that email" would turn this form into a
+         way to test whether an address is registered, one guess at a time.
+         Recovery is offered because a wrong password is the likely cause and it
+         is the only thing the person can act on. */
+      explainServerErrors(
+        form,
+        { invalid_credentials: form.dataset.msgInvalid },
+        [{ href: form.dataset.forgotUrl ?? '', text: form.dataset.forgotText ?? '' }],
+      );
+    });
 </script>
 
 <style>

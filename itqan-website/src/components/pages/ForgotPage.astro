@@ -163,6 +163,7 @@ const base = `/${locale}`;
       action="/api/auth/reset-password"
       novalidate
       data-server-error={s.forgot.serverError}
+      data-msg-weak={s.signup.password.errorWeak}
       data-success-url={`${base}/login/`}
     >
       <div class="form-summary" role="alert" tabindex="-1" hidden>
@@ -357,6 +358,29 @@ const base = `/${locale}`;
          pre-empt it. */
       stash.clear();
       show('expired');
+      return;
+    }
+    if (e.detail.status === 422) {
+      /* The password itself was refused, and this is the one failure here the
+         person can fix without a new link — so it belongs UNDER THE FIELD, as a
+         validation error, not in a panel about expired links and not as
+         "something went wrong, try again in a moment", which would tell them to
+         wait for a condition that will never change on its own.
+
+         The client checks the same rule before posting, so reaching this means
+         the two have drifted apart. Saying which rule was broken is still the
+         useful thing; saying nothing leaves a correct-looking password refused
+         with no reason. */
+      e.preventDefault();
+      const field = document.getElementById('rp-password')?.closest('.field') as HTMLElement | null;
+      const box = document.getElementById('rp-password-error');
+      const text = box?.querySelector<HTMLElement>('.field__error-text');
+      if (field && box && text) {
+        field.dataset.state = 'error';
+        text.textContent = reset?.dataset.msgWeak ?? '';
+        box.hidden = false;
+        document.getElementById('rp-password')?.focus();
+      }
     }
   }) as EventListener);
 </script>

@@ -24,9 +24,53 @@ const BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '/api'
 
 export class HttpError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  /**
+   * The server's own name for what went wrong — `last_cv`, `email_taken`,
+   * `rescan_limit`. An ID, never a sentence.
+   *
+   * It carries the code rather than a message because this product is
+   * bilingual: an English string on the wire cannot be shown to an Arabic user,
+   * so the API sends an identifier and the front end owns the wording in both
+   * languages. That contract was already being honoured on the server — and
+   * BROKEN HERE, because this client read the status and threw the body away,
+   * which left every specific refusal the API can make unreachable and every
+   * failure rendering as one generic sentence.
+   *
+   * Undefined when the response carried no code (a proxy's HTML 502, a network
+   * failure), which callers must handle: the generic message is still the right
+   * answer when nothing more specific is known.
+   */
+  code?: string;
+  constructor(status: number, message: string, code?: string) {
     super(message);
     this.status = status;
+    this.code = code;
+  }
+}
+
+/** The error id from a failed response, or undefined. Never throws: a body that
+ *  is not JSON is a normal failure mode here (a gateway error page), and it must
+ *  not turn a handled rejection into an unhandled one. */
+async function errorCode(res: Response): Promise<string | undefined> {
+  try {
+    const body = await res.clone().json();
+    const code = (body as { error?: unknown })?.error;
+    return typeof code === 'string' ? code : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** The same, for the XHR upload paths, which hold a body string rather than a
+ *  `Response`. They are where `file_too_large` and `empty_file` arrive, so
+ *  dropping the code here would leave the two most explainable upload failures
+ *  rendering as "something went wrong". */
+function errorCodeFrom(text: string): string | undefined {
+  try {
+    const code = (JSON.parse(text) as { error?: unknown })?.error;
+    return typeof code === 'string' ? code : undefined;
+  } catch {
+    return undefined;
   }
 }
 
@@ -38,7 +82,9 @@ async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
       ? init.headers
       : { 'Content-Type': 'application/json', ...init.headers },
   });
-  if (!res.ok) throw new HttpError(res.status, `${res.status} on ${path}`);
+  if (!res.ok) {
+    throw new HttpError(res.status, `${res.status} on ${path}`, await errorCode(res));
+  }
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
@@ -95,7 +141,7 @@ export function createHttpApi(): ItqanApi {
           if (xhr.status >= 200 && xhr.status < 300) {
             try { resolve(JSON.parse(xhr.responseText) as UploadedDocument); }
             catch { reject(new HttpError(xhr.status, 'bad json')); }
-          } else reject(new HttpError(xhr.status, 'upload failed'));
+          } else reject(new HttpError(xhr.status, 'upload failed', errorCodeFrom(xhr.responseText)));
         });
         xhr.addEventListener('error', () => reject(new HttpError(0, 'network')));
         xhr.addEventListener('abort', () => reject(new HttpError(0, 'aborted')));
@@ -143,7 +189,7 @@ export function createHttpApi(): ItqanApi {
           if (xhr.status >= 200 && xhr.status < 300) {
             try { resolve(JSON.parse(xhr.responseText) as { avatarUrl: string }); }
             catch { reject(new HttpError(xhr.status, 'bad json')); }
-          } else reject(new HttpError(xhr.status, 'avatar upload failed'));
+          } else reject(new HttpError(xhr.status, 'avatar upload failed', errorCodeFrom(xhr.responseText)));
         });
         xhr.addEventListener('error', () => reject(new HttpError(0, 'network')));
         xhr.addEventListener('abort', () => reject(new HttpError(0, 'aborted')));

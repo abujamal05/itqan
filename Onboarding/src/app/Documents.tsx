@@ -98,7 +98,24 @@ export function Documents() {
     } catch (err: unknown) {
       // Kept on this screen rather than thrown: the files are already stored,
       // so the recoverable action is to retry the read, not to upload again.
-      setError(err instanceof HttpError ? t('documents.failedHelp') : t('state.errorSub'));
+      /* The server names what it refused, so say THAT rather than one sentence
+         for every outcome. `documents.failedHelp` ("try reading them again in a
+         moment") is right for a transient failure and actively wrong for a
+         quota that will not return until next week, or for a missing CV that
+         retrying cannot conjure.
+
+         An unmapped code keeps the old message on purpose: this is additive,
+         and a screen adopting one code at a time never loses what it had. */
+      const code = err instanceof HttpError ? err.code : undefined;
+      const specific: Record<string, string> = {
+        cv_required: t('documents.cvRequired'),
+        no_documents: t('documents.cvRequired'),
+        rescan_limit: t('documents.limitReached'),
+      };
+      setError(
+        (code && specific[code])
+        ?? (err instanceof HttpError ? t('documents.failedHelp') : t('state.errorSub')),
+      );
       setBusy(false);
     }
   };

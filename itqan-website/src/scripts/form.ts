@@ -76,6 +76,72 @@ function clearError(field: HTMLElement): void {
   field.dataset.state = hasValue ? 'valid' : '';
 }
 
+export interface Submitted {
+  ok: boolean;
+  status: number;
+  body?: unknown;
+}
+
+/**
+ * Turn the server's error CODE into a sentence that says what to do next.
+ *
+ * The failure this exists for: every non-2xx used to render one string, so
+ * signing up with an address that already had an account said "we could not
+ * create the account just now — try again in a moment". Trying again in a
+ * moment could never work, and the person was told to do the one thing
+ * guaranteed to fail.
+ *
+ * `messages` maps an API error id to text the PAGE owns, which is what keeps
+ * this bilingual: the server sends `email_taken`, never a sentence, because an
+ * English string on the wire cannot be shown to an Arabic user.
+ *
+ * `links` are the way out. A message that only diagnoses is half an answer —
+ * "that email already has an account" is useful because "log in instead" is
+ * next to it.
+ *
+ * An UNMAPPED code falls through to the generic message deliberately. This is
+ * additive: a page adopts it one code at a time, and nothing loses the message
+ * it has today.
+ */
+export function explainServerErrors(
+  form: HTMLFormElement,
+  messages: Record<string, string | undefined>,
+  links: { href: string; text: string }[] = [],
+): void {
+  const summary = form.querySelector<HTMLElement>('.form-summary');
+  const heading = form.querySelector<HTMLElement>('.form-summary__heading');
+  const list = form.querySelector<HTMLElement>('.form-summary__list');
+  if (!summary || !heading || !list) return;
+
+  form.addEventListener('itqan:submitted', ((e: CustomEvent<Submitted>) => {
+    if (e.detail.ok) return;
+    const code = (e.detail.body as { error?: unknown } | undefined)?.error;
+    const message = typeof code === 'string' ? messages[code] : undefined;
+    if (!message) return;
+
+    /* We have said something specific, so stop the generic sentence appearing
+       underneath it and contradicting it. */
+    e.preventDefault();
+
+    heading.textContent = message;
+    list.replaceChildren(
+      ...links.map(({ href, text }) => {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = href;
+        a.textContent = text;
+        li.append(a);
+        return li;
+      }),
+    );
+    summary.hidden = false;
+    /* Focus moves here because the summary is `role="alert"` and the person's
+       attention is in the form they just submitted; `initForm` does the same
+       for client-side validation failures. */
+    summary.focus();
+  }) as EventListener);
+}
+
 export function initForm(form: HTMLFormElement): void {
   const fields = Array.from(form.querySelectorAll<HTMLElement>('.field'));
   const summary = form.querySelector<HTMLElement>('.form-summary');
@@ -173,13 +239,24 @@ export function initForm(form: HTMLFormElement): void {
       } catch {
         body = undefined;
       }
-      form.dispatchEvent(new CustomEvent('itqan:submitted', {
+      /* CANCELABLE, and that is what stops this page contradicting itself.
+         The generic summary below used to appear whatever the page did with the
+         event, so the verify screen said "3 attempts left" AND "Something went
+         wrong" at the same time — two messages, one of them useless, and the
+         person left to decide which to believe.
+
+         A listener that has said something specific calls `preventDefault()`
+         and the generic sentence is skipped. A page with no listener is
+         unaffected, so this stays additive: nothing loses its message. */
+      const handled = !form.dispatchEvent(new CustomEvent('itqan:submitted', {
         detail: { ok: response.ok, status: response.status, body },
+        cancelable: true,
       }));
       if (response.ok) {
         if (form.dataset.successUrl) window.location.assign(form.dataset.successUrl);
         return;
       }
+      if (handled) return;
       throw new Error(String(response.status));
     } catch {
       summaryHeading.textContent = form.dataset.serverError ?? '';
