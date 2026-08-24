@@ -104,4 +104,51 @@ test.describe('onboarding flow (fresh account)', () => {
     await expect(page).toHaveURL(/\/app\/upload/);
     await expect(page.getByRole('heading', { name: 'Add your documents' })).toBeVisible();
   });
+
+  /**
+   * The premium intent, spent at the end of a real first run.
+   *
+   * Lives here rather than with the other intent tests because it walks this
+   * account's onboarding, and the describe above is what serialises that.
+   */
+  test('a first run with the premium intent ends on the plan, not chat', async ({ page }) => {
+    test.setTimeout(90_000);
+
+    // What form.ts writes on a successful signup from a ?intent=premium URL.
+    await page.context().addCookies([{
+      name: 'itqan_intent', value: 'premium', url: 'http://localhost:4333/',
+    }]);
+
+    await page.goto('/app/upload');
+    await page.locator('input[type="file"]').setInputFiles(fakeCv());
+    await expect(page.locator('.doc')).toHaveCount(1);
+    await page.getByRole('button', { name: 'Read my documents' }).click();
+
+    /* Answer whatever the step puts up. Not every question is a choice list —
+       "what kind of job are you looking for" is free text with Continue and
+       Skip, and a loop that only clicks `.choice` stops dead on it. */
+    await expect(page).toHaveURL(/\/app\/questions/);
+    for (let i = 0; i < 12; i += 1) {
+      if (!/\/app\/questions/.test(page.url())) break;
+      const choice = page.locator('.choice').first();
+      const skip = page.getByRole('button', { name: 'Skip this' });
+      if (await choice.isVisible().catch(() => false)) await choice.click();
+      else if (await skip.isVisible().catch(() => false)) await skip.click();
+      else break;
+      await page.waitForTimeout(300);
+    }
+
+    // The pipeline has to land before confirm can be reached.
+    await page.waitForURL(/\/app\/confirm/, { timeout: 60_000 });
+
+    /* Confirm is the product's consent checkpoint: the box is required and the
+       CTA is named for the outcome, not for the act. */
+    await page.locator('.consent input[type="checkbox"]').check();
+    await page.getByRole('button', { name: 'See where I stand' }).click();
+
+    // THE ASSERTION: not /chat, which is where a first run normally ends.
+    await expect(page).toHaveURL(/\/app\/plan/, { timeout: 20_000 });
+
+    await resetProgress(page);
+  });
 });

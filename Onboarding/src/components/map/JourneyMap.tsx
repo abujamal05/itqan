@@ -123,8 +123,10 @@ export function JourneyMap({
         target: s.id,
         /* Bezier, not smoothstep. Smoothstep routes in right angles, which is
            exactly the flowchart read the map is meant to avoid; a career does
-           not turn ninety degrees. The curve is what makes this a route. */
-        type: 'default',
+           not turn ninety degrees. The curve is what makes this a route.
+           `path` is the local edge that normalises dash length — see
+           PathEdge.tsx. */
+        type: 'path',
         animated: live,
         className: reached ? 'mapedge mapedge--reached' : 'mapedge',
       };

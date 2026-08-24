@@ -49,8 +49,9 @@ In this order:
 ## Locked
 
 - **`src/styles/tokens.css` is a verbatim copy of the design system's**, in lockstep with the website's.
-  One deliberate deviation, documented in the file: `--color-text-muted`, because the upstream value
-  measures 4.32:1 and fails AA. If a value is missing, fix the skill rather than inventing a local token.
+  All three copies are now byte identical: the `--color-text-muted` deviation was fixed upstream rather
+  than carried, so there is no longer a sanctioned place for these files to differ. If a value is
+  missing, fix the skill rather than inventing a local token.
 - **Tokens only.** No raw hex, px, ms or curves in components.
 - **The brand gold is `#F39F1C`.** Gold **fills** carry navy text at 8.1:1. Gold **edges and icons** on
   light must use `--color-border-accent` (3.2:1) — the brand gold measures 2.0:1 and is barred from being

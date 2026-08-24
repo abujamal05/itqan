@@ -98,10 +98,12 @@
 .headline { font-size: var(--text-3xl); font-weight: var(--weight-semibold); letter-spacing: -0.01em; }
 [dir="rtl"] .headline { letter-spacing: normal; }   /* never letter-space Arabic */
 @media (min-width: 640px) { .headline { font-size: var(--text-4xl); } }
-/* Lead paragraph. It keeps --color-text rather than --color-text-muted: muted
-   (navy-300) over the paper background measures 4.32:1, under the 4.5 floor for
-   normal-size text. Tokens are locked, so the hierarchy is carried by size and
-   position instead of colour — which is the more robust signal regardless. */
+/* Lead paragraph. It keeps --color-text rather than --color-text-muted. That
+   started as a contrast workaround — muted measured 4.32:1 on paper at the time
+   — and the token has since been deepened past the floor, so the workaround is
+   no longer load bearing. It stays because a lead paragraph carrying its
+   hierarchy by size and position is the more robust signal regardless; moving it
+   to muted is a design decision, not a fix. */
 .subhead { color: var(--color-text); font-size: var(--text-lg); max-width: 46ch; }
 .eyebrow {
   font-size: var(--text-sm); font-weight: var(--weight-medium);
@@ -109,15 +111,15 @@
 }
 
 /* ---------------------------------------------------------------------------
-   A note on --color-text-muted.
-   Measured against the two non-white surfaces it fails WCAG AA for normal text:
-     on --color-bg (paper)            4.32:1   (needs 4.5)
-     on --color-surface-sunken (sand) 3.70:1   (needs 4.5)
-   It passes only on --color-surface (white), at 4.58:1. The tokens are locked,
-   so muted is used ONLY inside white cards below (.source, .match__org,
-   .skill__state, .choice__sub, .format). Everything sitting on paper or sand
-   takes --color-text and gets its hierarchy from size and weight instead.
-   The design system needs a muted step that clears 4.5 on paper; flagged.
+   A note on --color-text-muted. RESOLVED — kept for the history.
+   The raw --navy-300 failed WCAG AA for normal text on the two non-white
+   surfaces: 4.32:1 on paper and 3.70:1 on sand, against a 4.5 floor, passing
+   only on white. The token has since been deepened toward the navy anchor in
+   all three copies of tokens.css and now measures 5.46:1 on paper, 4.63:1 on
+   sand and 5.79:1 on white. Muted is safe on any surface.
+   What survives is the workaround, not the failure: .subhead and a few other
+   lines on paper or sand still take --color-text and carry their hierarchy by
+   size and weight. That is now a design choice and can be revisited per line.
    --------------------------------------------------------------------------- */
 
 /* ---------------------------------------------------------------- BUTTON -- */
@@ -2153,3 +2155,10 @@
   .tiers tfoot td:empty { display: none; }
   .tiers__buy { inline-size: 100%; justify-content: center; }
 }
+
+/* The card's own action row. "Open the course" is the course's link; whatever
+   sits beside it is the reader's action on that course. `margin-inline-start:
+   auto` on the second child pushes them apart so they never read as a pair of
+   equal options. */
+.course__actions { flex-wrap: wrap; gap: var(--space-2); }
+.course__actions > :nth-child(2) { margin-inline-start: auto; }

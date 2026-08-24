@@ -1,6 +1,14 @@
 ---
-/* Structure only. The legal text is written by a lawyer; fabricating a
-   privacy notice in a regulated market would be worse than an empty one. */
+/* PLAIN LANGUAGE, NOT LAW. There is still no drafted privacy notice, and
+   fabricating one in a regulated market would be worse than an empty page.
+   What this renders instead is a description of what the software actually
+   does with what it is given — every line of it checkable against the product
+   — plus one notice naming the parts only a lawyer can settle.
+
+   The lawyer's own question list survives as `s.privacy.brief` in the locale
+   files. It is the brief for whoever drafts the real notice and is deliberately
+   not rendered: a visitor arriving here wants certainty, and a published list
+   of unanswered questions is the opposite of it. */
 import NoticeBox from '../NoticeBox.astro';
 import { t, type Locale } from '../../i18n';
 
@@ -17,24 +25,63 @@ const s = t(locale);
     <p class="eyebrow">{s.privacy.eyebrow}</p>
     <h1>{s.privacy.heading}</h1>
     <div class="page-head__rule" aria-hidden="true"></div>
+    <p class="page-head__intro">{s.privacy.intro}</p>
   </header>
 
-  {/* UNDER CONSTRUCTION, and nothing more.
-      This used to publish the lawyer's own question list, section by section, on
-      the live page. That reads to a visitor as a privacy notice with the answers
-      missing, which is worse than saying nothing: it puts the gaps on display
-      under a heading people arrive at precisely because they want certainty.
-      `s.privacy.sections` and `noticeLabel` stay in the locale files as the
-      brief for whoever drafts the real notice. */}
+  <div class="legal__body">
+    {
+      s.privacy.sections.map((section) => (
+        <section class="legal__section reveal">
+          <h2>{section.heading}</h2>
+          <ul>
+            {section.points.map((point) => <li>{point}</li>)}
+          </ul>
+        </section>
+      ))
+    }
+  </div>
+
+  {/* The notice sits at the END now, not in place of the page. What is above it
+      is true and useful today; this says which parts are still with the lawyer,
+      once, rather than leaving the reader with nothing. */}
   <NoticeBox>
-    <p>{s.privacy.intro}</p>
+    <p>{s.privacy.note}</p>
   </NoticeBox>
 </div>
 
 <style>
   .legal {
     max-inline-size: 44rem;
-    padding-block-end: var(--space-16);
+    padding-block-end: var(--space-20);
+  }
+
+  .legal__body {
+    display: grid;
+    gap: var(--space-10);
+    margin-block: var(--space-12);
+  }
+
+  .legal__section h2 {
+    font-size: var(--text-xl);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+    margin-block-end: var(--space-4);
+  }
+
+  .legal__section ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  /* A marker rather than a bullet glyph: these are statements of fact, and the
+     accent hairline ties them to the rest of the site's list treatments. */
+  .legal__section li {
+    padding-inline-start: var(--space-4);
+    border-inline-start: 2px solid var(--color-border-accent);
+    line-height: 1.6;
   }
 
   /* .page-head now lives in global.css. */

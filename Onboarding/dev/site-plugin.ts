@@ -420,8 +420,14 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
         const cookies = readCookies(req.headers.cookie);
         const setLocale = `${LOCALE_COOKIE}=${localeFromReferer(req.headers.referer)}; Path=/; SameSite=Lax`;
 
-        // Sign up: the site posts name, email, password, consent.
-        if (url === '/api/placeholder/signup' && req.method === 'POST') {
+        /* Sign up: the site posts name, email, password, consent.
+           `/api/auth/signup` is the real path and the one `config.ts` builds
+           against. `/api/placeholder/signup` is answered only because older
+           deployed HTML still posts to it; production is dropping that alias,
+           and this stub drops it on the same day. A stub that answers a route
+           production no longer has is how a screen gets built against a
+           fiction. */
+        if ((url === '/api/auth/signup' || url === '/api/placeholder/signup') && req.method === 'POST') {
           const f = parseBody(await body(req), req.headers['content-type'] ?? '');
           const email = (f.email ?? '').trim().toLowerCase();
           if (accounts.some((a) => a.email === email)) {
@@ -461,8 +467,8 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           ]);
         }
 
-        // Log in: the site posts email, password.
-        if (url === '/api/placeholder/login' && req.method === 'POST') {
+        // Log in: the site posts email, password. Same alias rule as sign up.
+        if ((url === '/api/auth/login' || url === '/api/placeholder/login') && req.method === 'POST') {
           const f = parseBody(await body(req), req.headers['content-type'] ?? '');
           const hit = accounts.find(
             (a) => a.email === (f.email ?? '').trim().toLowerCase() && a.password === f.password,

@@ -37,7 +37,7 @@ export async function login(
   email: string = ACCOUNTS.onboarded,
   locale: 'ar' | 'en' = 'en',
 ): Promise<void> {
-  const res = await page.request.post('/api/placeholder/login', {
+  const res = await page.request.post('/api/auth/login', {
     multipart: { email, password: PASSWORD },
     // The endpoint only looks for a `/en/` or `/ar/` segment in the referer.
     headers: { referer: `http://localhost/${locale}/login/` },

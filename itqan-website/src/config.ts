@@ -26,9 +26,17 @@ export const siteUrl = import.meta.env.SITE ?? 'https://itqan.example';
 /**
  * Where a successful sign up or log in lands.
  *
- * This points at an endpoint on THIS origin, not at the app, because the app
- * is a separate deployment on a different domain and cannot read a cookie set
- * here. /api/handoff reads the session, signs a short-lived token, and
- * redirects to the app with it. The user sees one hop and stays signed in.
+ * This points at an endpoint on THIS origin rather than straight at the app.
+ *
+ * The reason used to be that the app was a separate deployment on a different
+ * domain and could not read a cookie set here. **That is no longer true.**
+ * Since the move to a single box, Caddy serves the site, `/app/*` and `/api/*`
+ * from one origin, which is why `credentials: 'same-origin'` works and why no
+ * CORS is configured anywhere. Confirmed with the API team, 2026-08-24.
+ *
+ * The hop stays regardless, because it does a second job: /api/handoff reads
+ * the session, signs a short-lived token and redirects with it, which is what
+ * lets the app come up already signed in instead of racing the cookie. Do not
+ * "simplify" it away on the grounds that the domains now match.
  */
 export const appUrl = '/api/handoff';

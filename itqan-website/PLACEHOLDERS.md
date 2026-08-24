@@ -34,9 +34,9 @@ Two things about them are still live constraints rather than gaps:
 | What | File | Current value |
 |---|---|---|
 | Site domain | `astro.config.mjs` and `src/config.ts` | `https://itqan.example` |
-| Sign up form endpoint | `src/config.ts` | `/api/placeholder/signup` |
-| Log in form endpoint | `src/config.ts` | `/api/placeholder/login` |
-| Post sign up destination | `src/config.ts` (`appUrl`) | `https://app.itqan.example` |
+| ~~Sign up form endpoint~~ | `src/config.ts` | **Resolved.** `/api/auth/signup`, live |
+| ~~Log in form endpoint~~ | `src/config.ts` | **Resolved.** `/api/auth/login`, live |
+| ~~Post sign up destination~~ | `src/config.ts` (`appUrl`) | **Resolved.** `/api/handoff` on this origin |
 | Password minimum length | Sign up form | 8 characters, an assumed product rule |
 
 ## Legal text that a lawyer must write

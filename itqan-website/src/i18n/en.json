@@ -354,9 +354,10 @@
     "title": "Privacy",
     "metaDescription": "How Itqan collects, keeps and protects your data.",
     "heading": "How your data is handled",
-    "intro": "This page is under construction.",
+    "intro": "The formal privacy notice is being written with a lawyer. Until it is published, this page says plainly what Itqan does with what you give it. Everything below is how the product works today, not a summary of a document you cannot read.",
     "noticeLabel": "A lawyer completes this section. Questions to answer:",
-    "sections": [
+    "eyebrow": "Your data",
+    "brief": [
       {
         "heading": "What is collected",
         "questions": [
@@ -402,15 +403,77 @@
         ]
       }
     ],
-    "eyebrow": "Your data"
+    "sections": [
+      {
+        "heading": "What you give Itqan",
+        "points": [
+          "The account details you type at sign up: your name, your email, and a password.",
+          "The documents you upload. A CV is the one Itqan cannot work without; a transcript or certificates are optional and make the reading more accurate.",
+          "The answers you give during onboarding, such as the role you are aiming for and how you want to work."
+        ]
+      },
+      {
+        "heading": "What Itqan does with it",
+        "points": [
+          "Your documents are read so Itqan can work out where you stand, and measure that against openings that are live now.",
+          "Nothing moves forward until you have seen it. The confirmation screen shows you everything that was read, and you correct it before any of it is used.",
+          "Your answers decide which roles and courses you are shown, and nothing else."
+        ]
+      },
+      {
+        "heading": "What you can change",
+        "points": [
+          "You can replace your documents whenever you like, and Itqan reads the new ones instead.",
+          "You can edit what was extracted from them, from your profile.",
+          "Your CV cannot be removed while it is the only one, because nothing runs without it. Replacing it puts a new one in its place."
+        ]
+      },
+      {
+        "heading": "Payment",
+        "points": [
+          "Card details never reach Itqan. Payment is handled by an external processor, and Itqan is told only whether a subscription is active."
+        ]
+      }
+    ],
+    "note": "Retention periods, the providers Itqan uses and where their servers are, and how to request a copy of your data or withdraw consent, are all settled in the full notice. It is being prepared and will replace this page."
   },
   "terms": {
     "title": "Terms",
     "metaDescription": "Itqan's terms of use.",
     "heading": "Terms of use",
-    "notice": "This page is under construction.",
-    "body": "The core of the service is free, your account is yours, and your data is handled as the privacy page describes.",
-    "eyebrow": "The basics"
+    "eyebrow": "The basics",
+    "intro": "The full terms are being written with a lawyer. Until they are published, this is what using Itqan means in practice.",
+    "sections": [
+      {
+        "heading": "What Itqan does",
+        "points": [
+          "It reads what you upload, works out where you stand, and shows you the roles and courses that close the distance to the one you want.",
+          "Every match and every course carries its reason and a link to the source it came from, with the date it was retrieved."
+        ]
+      },
+      {
+        "heading": "What Itqan does not promise",
+        "points": [
+          "Itqan does not promise you a job. It helps you see the distance to the one you want, and shorten it.",
+          "Matches and courses are suggestions with their working shown, not decisions. Anything Itqan is unsure of is labelled as such, and you are meant to check it."
+        ]
+      },
+      {
+        "heading": "Your account",
+        "points": [
+          "Your account is yours, and so is what you upload.",
+          "Itqan can only be as accurate as the documents it is given, so what you upload should be your own and should be current."
+        ]
+      },
+      {
+        "heading": "Paying",
+        "points": [
+          "Most of Itqan is free and stays free.",
+          "Premium is 2.9 OMR a month, billed as $7.50. You can cancel at any time and it runs to the end of the month you paid for."
+        ]
+      }
+    ],
+    "note": "Liability, termination and how any dispute is handled are settled in the full terms. They are being prepared and will replace this page."
   },
   "notfound": {
     "title": "Page not found",
@@ -488,13 +551,13 @@
   },
   "pricing": {
     "title": "Pricing",
-    "metaDescription": "Most of Itqan is free. Premium is 2.99 OMR a month and opens the rest of your job matches.",
+    "metaDescription": "Start for free. Premium is 2.9 OMR a month and opens every job match you fit.",
     "eyebrow": "Pricing",
-    "heading": "Most of Itqan is free.",
-    "intro": "Not a trial, and no card to enter. Premium raises two limits and opens the rest of your job matches, and that is all it does.",
+    "heading": "Start for free.",
+    "intro": "Everything that gets you moving costs nothing: where you stand, your path to the role you want, your three strongest job matches, and Hud. Premium opens the rest of the list and triples what you can ask of the AI.",
     "free": {
       "name": "Free",
-      "price": "No cost",
+      "price": "0 OMR",
       "for": "Enough to start moving.",
       "items": [
         "Where you stand today, and the path to the role you want",
@@ -502,13 +565,14 @@
         "30 messages a day with Hud",
         "One document rescan a week"
       ],
-      "cta": "Create your free account"
+      "cta": "Create your free account",
+      "period": "a month"
     },
     "paid": {
       "name": "Premium",
-      "price": "2.99 OMR",
+      "price": "2.9 OMR",
       "period": "a month",
-      "priceUsd": "Billed as $7.78",
+      "priceUsd": "Billed as $7.50",
       "for": "For when the whole list is worth your time.",
       "items": [
         "Everything in the free plan",

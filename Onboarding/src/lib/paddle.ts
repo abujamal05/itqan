@@ -7,11 +7,12 @@
  * checkout attempt and the promise is cached, so a second click reuses the same
  * instance rather than loading Paddle twice.
  *
- * CONFIG IS OPTIONAL AT BUILD TIME, DELIBERATELY. Without a token the upgrade
- * button has to render disabled with an honest line, not throw when pressed —
- * `isConfigured` exists so the UI can ask before it offers. A build with no
- * Paddle keys is a normal state here: the app ships to environments that have
- * not been wired yet, and it must not white-screen in them.
+ * CONFIG IS OPTIONAL AT BUILD TIME, DELIBERATELY. A build with no Paddle keys
+ * is a normal state here: the app ships to environments that have not been
+ * wired yet, and it must not white-screen in them. `isConfigured` exists so
+ * the UI can ask before it offers, and `Plan.tsx` uses it to OMIT the upgrade
+ * button rather than disable it — a disabled button invites a click and then
+ * refuses it, which is the same rule the last-CV control follows.
  *
  * THE PLAN DOES NOT FLIP HERE. Paddle tells the SERVER, by webhook, and the
  * server owns the account. `checkout.completed` means "payment taken", not
@@ -31,11 +32,12 @@ export const isConfigured = Boolean(TOKEN && PRICE_ID);
 /**
  * Say WHY, to the person who can fix it.
  *
- * The user-facing message for this case is deliberately vague — "not available
- * right now" — because a job seeker cannot act on a missing environment
- * variable and should not be shown one. But somebody has to be told, or a
- * mis-deployed build looks identical to a working one until revenue is missing.
- * So the explanation goes to the console, naming exactly what is unset.
+ * THERE IS NO USER-FACING MESSAGE FOR THIS CASE AT ALL — the button is simply
+ * absent, and nothing on the page explains its absence. That is on purpose: a
+ * job seeker cannot act on a missing environment variable and should not be
+ * shown one. But somebody has to be told, or a mis-deployed build looks
+ * identical to a working one until the revenue is missing. So the whole
+ * explanation goes to the console, naming exactly what is unset.
  */
 if (!isConfigured && import.meta.env.DEV) {
   const missing = [!TOKEN && 'VITE_PADDLE_TOKEN', !PRICE_ID && 'VITE_PADDLE_PRICE_ID'].filter(Boolean);
