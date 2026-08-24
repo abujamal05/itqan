@@ -40,6 +40,10 @@ cd Onboarding    && npm install && npm run dev   # http://localhost:4333/app/
 
 - [`PRODUCT.md`](PRODUCT.md) — product truth: users, positioning, constraints, brand commitments. The
   source every other doc and skill defers to.
+- [`DESIGN.md`](DESIGN.md) — the consolidated design system: tokens, the three registers and the evidence
+  fence, component patterns, RTL, and the anti-slop directives. **It wins on anything visual.** The
+  `itqan-*` skills and the three `tokens.css` copies remain in place; where they disagree with this file,
+  they are the bug.
 - [`BACKEND.md`](BACKEND.md) — every HTTP call either front end makes, and which ones do not exist yet.
 - [`LEGAL-BRIEF.md`](LEGAL-BRIEF.md) — the issue list a lawyer needs to draft the real privacy policy
   and terms, and the infrastructure questions that block it. **Not legal text, and not a licence to
