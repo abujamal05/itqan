@@ -60,3 +60,7 @@ node_modules/
 .claude/skills/review-animations
 .github/skills/
 .github/hooks/
+
+# Python bytecode from tools/
+__pycache__/
+*.pyc
