@@ -3,6 +3,10 @@
     "browsermcp": {
       "command": "cmd",
       "args": ["/c", "npx", "@browsermcp/mcp@latest"]
+    },
+    "itqan-content": {
+      "command": "python",
+      "args": ["tools/itqan_content_mcp.py"]
     }
   }
 }
