@@ -2153,3 +2153,10 @@
   .tiers tfoot td:empty { display: none; }
   .tiers__buy { inline-size: 100%; justify-content: center; }
 }
+
+/* The card's own action row. "Open the course" is the course's link; whatever
+   sits beside it is the reader's action on that course. `margin-inline-start:
+   auto` on the second child pushes them apart so they never read as a pair of
+   equal options. */
+.course__actions { flex-wrap: wrap; gap: var(--space-2); }
+.course__actions > :nth-child(2) { margin-inline-start: auto; }

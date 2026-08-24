@@ -16,7 +16,7 @@
  * the alternative was a component library the project's rules exclude.
  */
 import { useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
+import { Check, RotateCcw, X } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import type { Course } from '../../api';
 import { CourseCard } from '../CourseCard';
@@ -77,21 +77,21 @@ export function CourseSheet({
           <CourseCard
             course={course}
             onReplace={(next) => { onReplace(course.id, next); onClose(); }}
-          />
-
-          {/* The one control the card does not carry, because marking a course
-              done is a claim about the USER, not about the course. On its own
-              surface so it reads as part of the sheet rather than a gold button
-              left floating on the backdrop. */}
-          <div className="sheet__foot">
-            {done ? (
+            /* INSIDE the card, beside "Open the course". It used to sit on its
+               own surface underneath, which made the one control the user came
+               for look like a separate object parked below the thing it acts
+               on. Done and Undo occupy the same slot, so the card never grows
+               or shrinks when the state flips. */
+            action={done ? (
               /* Reversible, and quieter than the action that got here: undoing
-                 is a correction, not an achievement. */
+                 is a correction, not an achievement. A course marked done by a
+                 mis-tap used to be permanent — the button simply vanished. */
               <button
-                className="btn btn--secondary"
+                className="btn btn--ghost"
                 type="button"
                 onClick={() => { onUndo(course); onClose(); }}
               >
+                <RotateCcw size={16} aria-hidden="true" />
                 {t('courses.markNotDone')}
               </button>
             ) : (
@@ -100,10 +100,11 @@ export function CourseSheet({
                 type="button"
                 onClick={() => { onDone(course); onClose(); }}
               >
+                <Check size={16} aria-hidden="true" />
                 {t('courses.markDone')}
               </button>
             )}
-          </div>
+          />
         </div>
       )}
     </dialog>

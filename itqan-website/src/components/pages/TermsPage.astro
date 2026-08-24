@@ -1,4 +1,11 @@
 ---
+/* PLAIN LANGUAGE, NOT LAW. Same rule as the privacy page: no terms have been
+   drafted, so nothing here is written as one. These are statements about how
+   the product behaves and what it charges, which are true today and checkable,
+   with a notice naming what the binding document still has to settle.
+
+   "Itqan does not promise you a job" is a product commitment from PRODUCT.md
+   rather than a disclaimer invented here. */
 import NoticeBox from '../NoticeBox.astro';
 import { t, type Locale } from '../../i18n';
 
@@ -15,16 +22,27 @@ const s = t(locale);
     <p class="eyebrow">{s.terms.eyebrow}</p>
     <h1>{s.terms.heading}</h1>
     <div class="page-head__rule" aria-hidden="true"></div>
+    <p class="page-head__intro">{s.terms.intro}</p>
   </header>
 
-  {/* UNDER CONSTRUCTION, and nothing more.
-      There is no drafted terms text, and a page that summarises terms it does
-      not have reads as terms. `s.terms.body` stays in the locale files as the
-      brief for whoever drafts the real thing, but it is not rendered: a plain
-      sentence about the service is not a term of use, and putting it under this
-      heading invites someone to treat it as one. */}
+  <div class="legal__body">
+    {
+      s.terms.sections.map((section) => (
+        <section class="legal__section reveal">
+          <h2>{section.heading}</h2>
+          <ul>
+            {section.points.map((point) => <li>{point}</li>)}
+          </ul>
+        </section>
+      ))
+    }
+  </div>
+
+  {/* The notice sits at the END now, not in place of the page. What is above it
+      is true and useful today; this says which parts are still with the lawyer,
+      once, rather than leaving the reader with nothing. */}
   <NoticeBox>
-    <p>{s.terms.notice}</p>
+    <p>{s.terms.note}</p>
   </NoticeBox>
 </div>
 
@@ -32,6 +50,35 @@ const s = t(locale);
   .legal {
     max-inline-size: 44rem;
     padding-block-end: var(--space-20);
+  }
+
+  .legal__body {
+    display: grid;
+    gap: var(--space-10);
+    margin-block: var(--space-12);
+  }
+
+  .legal__section h2 {
+    font-size: var(--text-xl);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+    margin-block-end: var(--space-4);
+  }
+
+  .legal__section ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  /* A marker rather than a bullet glyph: these are statements of fact, and the
+     accent hairline ties them to the rest of the site's list treatments. */
+  .legal__section li {
+    padding-inline-start: var(--space-4);
+    border-inline-start: 2px solid var(--color-border-accent);
+    line-height: 1.6;
   }
 
   /* .page-head now lives in global.css. */

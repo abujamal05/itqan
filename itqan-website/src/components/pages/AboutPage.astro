@@ -464,11 +464,36 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
 
      The type is set at display size and the measure kept short, because the
      grandeur is supposed to come from scale and air rather than from decoration. */
+  /* AN INVERTED BAND, so every colour in it has to flip with the theme, and
+     three of them were not.
+
+     `--color-surface-inverse` is navy on a light page and PAPER on a dark one —
+     that is the point of it. But the band was painting `--color-text-on-navy`
+     (paper) and `--gold-300` (a light gold for navy grounds) on top, so in dark
+     mode it was paper text and pale gold labels on a paper background: the
+     whole section, the two sentences meant to outlive every other line on the
+     site, was invisible.
+
+     The three inks are local variables set for the light case and swapped in
+     dark, rather than three separate overrides scattered down the file. */
   .mv {
+    --mv-ink: var(--color-text-on-navy);
+    --mv-accent: var(--gold-300);
+    --mv-rule: color-mix(in srgb, var(--paper) 28%, transparent);
+
     margin-block: var(--space-24);
     padding-block: var(--space-32);
     background-color: var(--color-surface-inverse);
-    color: var(--color-text-on-navy);
+    color: var(--mv-ink);
+  }
+
+  /* Dark mode inverts the ground to paper, so the band takes the LIGHT theme's
+     inks: navy body, and the deep gold that is rated 5.4:1 on paper rather than
+     the soft one meant for navy. */
+  :global([data-theme='dark']) .mv {
+    --mv-ink: var(--navy);
+    --mv-accent: var(--gold-800);
+    --mv-rule: color-mix(in srgb, var(--navy) 24%, transparent);
   }
 
   .mv__inner {
@@ -480,7 +505,7 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
   .mv__eyebrow {
     font-size: var(--text-sm);
     font-weight: var(--weight-semibold);
-    color: var(--gold-300);
+    color: var(--mv-accent);
     margin-block-end: var(--space-12);
   }
 
@@ -509,7 +534,7 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
   .mv__label {
     font-size: var(--text-sm);
     font-weight: var(--weight-semibold);
-    color: var(--gold-300);
+    color: var(--mv-accent);
   }
 
   .mv__text {
@@ -526,7 +551,7 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
   .mv__rule {
     inline-size: 1px;
     block-size: var(--space-20);
-    background-color: color-mix(in srgb, var(--paper) 28%, transparent);
+    background-color: var(--mv-rule);
     transform: scaleY(1);
     transition: transform var(--duration-story) var(--ease-out-expo);
   }

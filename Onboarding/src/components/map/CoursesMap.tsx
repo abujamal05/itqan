@@ -149,7 +149,7 @@ export function CoursesMap({ courses, completed, onDone, onUndo, onOpen }: Cours
         id: `${from.id}->${c.id}`,
         source: from.id,
         target: c.id,
-        type: 'default',
+        type: 'path',
         animated: live,
         className: reached ? 'mapedge mapedge--reached' : 'mapedge',
       };
@@ -167,12 +167,21 @@ export function CoursesMap({ courses, completed, onDone, onUndo, onOpen }: Cours
       edges={edges}
       nodeTypes={nodeTypes}
       fitKey={`${locale}:${order.map((c) => c.id).join(',')}`}
-      /* Always opens on the next thing to do. A course map is big enough that
-         fitting it would be unreadable at any width, so `fitFloor` is never
-         met and this is the framing every time. */
+      /* OPENS ON THE WHOLE ROUTE, not on one node.
+         It used to open at full size on the next course, on the argument that a
+         legible portion beats an unreadable whole. That was the wrong trade for
+         the first thing a person sees here: landing inside a map with no idea
+         how long the path is, or where on it you are, is disorienting in a way
+         that a slightly small label is not. `fitFloor: 0` never triggers the
+         focus fallback, so the opening frame is always the entire roadmap.
+
+         `focusNodeId` is still passed, because the recentre button uses it to
+         answer "where was I" and the arrows start counting from it. */
       focusNodeId={current?.id}
-      fitFloor={1}
-      minZoom={0.3}
+      fitFloor={0}
+      /* Low enough that a long path still fits. Zooming stays manual and the
+         controls are right there. */
+      minZoom={0.2}
       maxZoom={1.4}
       tools={{
         zoomIn: t('a11y.mapZoomIn'),
