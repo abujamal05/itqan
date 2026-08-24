@@ -1,0 +1,212 @@
+# Legal brief — what the Privacy Policy and Terms have to address
+
+**This is not legal advice and not draft legal text.** It is the issue list for whoever drafts the
+real thing: what the obligation is, why Itqan specifically triggers it, and what has to be decided
+or found out first. `itqan-website/CLAUDE.md` locks the rule that no legal text is written here, and
+this document does not break it. It is the brief that rule says should exist.
+
+Produced 2026-08-24 through `tools/itqan_content_mcp.py` with Gemini in a legal-analyst role, over
+researched sources rather than recall, and reviewed against those sources before landing here. The
+first pass dropped six of the obligations it was given; this is the second.
+
+## Why this is urgent rather than housekeeping
+
+**Oman's Personal Data Protection Law has been fully enforceable since 5 February 2026.** The
+transition period is over. Itqan currently ships a Privacy Policy and Terms that describe practice
+and state plainly that the binding version is being drafted, which is honest but is not a privacy
+notice under Article 14. Article 14 requires a written notice to the data subject **before**
+processing begins, and the fine for failing to give proper notice runs 500 to 2,000 OMR per offence.
+
+That is the smallest number on this page. The two that are not small:
+
+| Failure | Fine |
+|---|---|
+| Unlawful cross-border transfer (Art. 23) | **100,000 to 500,000 OMR** |
+| Processing sensitive data without an MTCIT permit | **20,000 to 100,000 OMR** |
+| Mishandling sensitive or children's data, no breach response, or no DPO | 15,000 to 20,000 OMR |
+| Breach of Arts. 15 to 18, 20, 22 | 1,000 to 5,000 OMR |
+| No proper notice before collecting | 500 to 2,000 OMR |
+
+Regulator is the Ministry of Transport, Communications and Information Technology (MTCIT).
+
+## The two questions that decide most of this
+
+Neither can be answered from the front end, and both belong to whoever runs the pipeline:
+
+1. **Where do the AI models run?** If any of the four agents runs outside Oman, or the model vendor
+   is in another jurisdiction, a cross-border transfer happens the moment a user uploads a file.
+   That is the 100,000 to 500,000 OMR line.
+2. **Is the privacy notice accepted before the first upload, or after?** Itqan's agents parse the
+   documents *before* the human confirmation screen. The confirmation screen has been described
+   internally as the consent checkpoint, but if consent is captured there, the parsing that preceded
+   it was unlawful processing. This may be a flow change, not a copy change.
+
+Both are on the list of things to ask the backend team.
+
+---
+
+# Privacy
+
+## Cross-border data transfers
+**High risk. 100,000 to 500,000 OMR.**
+**Obligation:** Personal data cannot be transferred outside Oman where the transfer causes harm to
+the data subject. Cross-border transfers are regulated by the MTCIT.
+**Why Itqan triggers it:** Itqan uses AI agents to process documents and build pathways. If the
+models run on infrastructure outside Oman, or the vendor is in another jurisdiction, the transfer
+happens on upload.
+**Unknown, must be answered:** Where are the servers? Where do the models run? Are there signed Data
+Processing Agreements prohibiting vendors from training on Itqan user data?
+
+## Sensitive data and the permit requirement
+**High risk. 20,000 to 100,000 OMR.**
+**Obligation:** A controller processing sensitive personal data needs an MTCIT permit **in advance**.
+Sensitive data covers finances, sex life, politics, religion, health, genetic and biometric data,
+and information about the data subject's personal life.
+**Why Itqan triggers it:** Gulf CVs routinely carry a photograph, nationality, marital status, date
+of birth and sometimes religion. Itqan never asks for any of it; it arrives inside the document and
+the parsing agent reads it. Not asking is not a defence.
+**Unknown, must be answered:** Has a permit been sought? If not, the design question is whether
+sensitive fields can be dropped before they reach the matching engine, and the policy has to say so.
+
+## Duty to appoint a Data Protection Officer
+**Medium-high risk. 15,000 to 20,000 OMR.**
+**Obligation:** Certain controllers must appoint a DPO to oversee compliance and act as the MTCIT's
+point of contact.
+**Why Itqan triggers it:** Large-scale processing of personal data for profiling, over high-value
+academic and professional records.
+**Unknown, must be answered:** Is there a DPO? Does Itqan's processing volume trigger the mandatory
+appointment under the Executive Regulations? A lawyer has to read the threshold.
+
+## Breach response and reporting
+**Medium-high risk. 15,000 to 20,000 OMR.**
+**Obligation:** A protocol for identifying and responding to breaches, including notifying the
+regulator and the data subject in defined circumstances.
+**Why Itqan triggers it:** Itqan holds dense personal identifiers, including transcripts and phone
+photographs of identity-bearing documents.
+**Must be decided:** The internal incident response timeline, and the notification window stated in
+the notice.
+
+## Retention and deletion
+**Medium risk. Up to 20,000 OMR.**
+**Obligation:** The right to request deletion at any time.
+**Why Itqan triggers it:** Itqan stores both the original files and the extracted skills profile
+derived from them. If the two are not purged together, the deletion is incomplete.
+**Sector precedent:** A 2024 audit of 12 resume builders found 9 retained uploaded content for 30 to
+180 days after account deletion, and 2 kept it indefinitely.
+**Unknown, must be answered:** The retention period. Whether deletion reaches backups and third-party
+vendor logs. If anonymised data is kept for model improvement, whether it is genuinely beyond
+re-identification.
+
+## Naming sub-processors, and whether they train on the data
+**Medium risk.**
+**Obligation:** Regulators expect sub-processors to be named, and expect the policy to state whether
+a vendor may use the data for its own training.
+**Why Itqan triggers it:** Itqan depends on model vendors to function. Users have a right to know
+whether their professional history trains someone else's model.
+**Known drafting failure to avoid:** policies that permit "anonymised or aggregated" resume data to
+improve AI models. That wording blurs training and profiling and is exactly what regulators pull on.
+**Unknown, must be answered:** Which vendors, and what do their terms allow?
+
+## Automated profiling and the right to human review
+**Medium risk.**
+**Obligation:** Users must be told how their data is processed. For users in scope of GDPR, a right
+not to be subject to a decision based solely on automated processing with legal or similarly
+significant effects, and a right to request human review.
+**Why Itqan triggers it:** Four sequential agents match a person against live postings and recommend
+roles. That is automated profiling. The confirmation screen is a genuine defence but the process
+downstream of it remains automated.
+**Sector precedent:** a recruitment agency fined 400,000 EUR for AI candidate profiling without
+valid consent.
+**Must be decided:** Does any human at Itqan ever review a match, or is the user the only human in
+the loop? Is the confirmation screen sufficient to satisfy the right to human review?
+
+## Notice and consent timing
+**Medium risk. 500 to 2,000 OMR.**
+**Obligation:** Article 14 requires a written privacy notice before processing begins. Valid consent
+under Executive Regulations Article 4 is given by a person of full capacity, clearly and without
+coercion, in writing or electronically. Separate written consent is required before any commercial
+marketing.
+**Why Itqan triggers it:** The agents parse documents before the confirmation screen appears. If
+notice and consent are captured at that screen rather than before upload, the initial parsing was
+unlawful.
+**Must be decided:** The exact point in the flow where the notice is presented, and whether marketing
+consent is a separate checkbox from service consent. It must be separate.
+
+## Withdrawal of consent
+**Medium risk.**
+**Obligation:** Consent can be withdrawn at any time, and processing must then stop.
+**Why Itqan triggers it:** Itqan maintains an ongoing profile, a pathway and a match history.
+**Must be decided:** What happens to the derived profile, pathway and match history on withdrawal.
+Whether withdrawal triggers deletion of derived data or only stops further processing.
+
+## Data portability
+**Lower risk, still a right.**
+**Obligation:** Data in a structured, commonly used, machine-readable format.
+**Why Itqan triggers it:** Users invest real effort building a profile and pathway.
+**Must be decided:** Whether portability covers only the uploaded documents or also the
+Itqan-generated skills profile and pathway.
+
+## Capacity and minors
+**Lower risk, with a sharp edge.**
+**Obligation:** Valid consent requires full capacity. Separate fines apply to mishandling children's
+data.
+**Why Itqan triggers it:** The graduate audience includes people near the age of majority.
+**Must be decided:** A minimum age, a capacity declaration in the consent flow, and what happens if
+a minor signs up.
+
+---
+
+# Terms
+
+## Accuracy, and liability for matching outcomes
+**High risk.**
+**Obligation:** Define the limit of the service, so no user can claim a contract for employment
+exists or that the output was professional advice to rely on.
+**Why Itqan triggers it:** Itqan recommends specific postings and pathways from AI extraction with
+**no measured accuracy figure**, and errors in the first agent compound through the next three. Four
+stages at 90% is roughly 73% end to end.
+**Must be decided:** That the user is responsible for confirming extracted skills at the confirmation
+screen before matching. This is already how the product behaves; the Terms have to say it.
+**Standing product rule:** Itqan never promises a job. The Terms must not imply one either.
+
+## Payment and currency conversion
+**Medium risk.**
+**Obligation:** State the price and the nature of the transaction clearly.
+**Why Itqan triggers it:** Itqan displays 2.9 OMR and executes 7.50 USD through a third-party
+processor, because the processor does not support the rial.
+**Must be decided:** Who bears conversion fees and fluctuation. That Itqan does not store card
+details. Renewal, cancellation and the "access until period end" rule.
+
+## User content and intellectual property
+**Medium risk.**
+**Obligation:** Define who owns the uploaded documents and the generated output.
+**Why Itqan triggers it:** Itqan derives a new dataset — a skills profile and a pathway — from
+documents the user did not always author. A transcript is issued by a university, not by the student.
+**Must be decided:** That the user retains ownership and grants Itqan a licence to process for the
+service. Whether the generated pathway and profile are Itqan's intellectual property.
+
+---
+
+## What is still missing, and cannot be written without it
+
+Every item marked unknown above resolves to one of these. None can be answered from the front end.
+
+- Where the servers are, and where the four agents run.
+- Which model vendors are used, and whether their terms permit training on submitted data.
+- Whether a Data Processing Agreement exists with each.
+- Retention periods, and whether deletion reaches backups and vendor logs.
+- Whether a DPO has been appointed.
+- Whether an MTCIT permit has been sought for sensitive data.
+- The exact point in the flow where the privacy notice is accepted.
+
+## Sources
+
+- [Overview of Oman's PDPL — Securiti](https://securiti.ai/oman-personal-data-protection-law-pdpl/)
+- [Oman PDPL: entering the enforcement phase — CMS](https://cms.law/en/omn/legal-updates/oman-personal-data-protection-law-entering-the-enforcement-phase)
+- [Royal Decree 6/2022 — decree.om](https://decree.om/2022/rd20220006/)
+- [Executive Regulations to Oman's Data Protection Law — Amjoman](https://www.amjoman.com/executive-regulations-to-the-omans-data-protection-law/)
+- [Oman PDPL 2026: requirements and compliance roadmap — Kooch](https://kooch.co/en/post/oman-personal-data-protection-law-pdpl-compliance-2026)
+- [Guide to Oman's PDPL — Privacy Bee](https://business.privacybee.com/resource-center/guide-to-omans-personal-data-protection-law-pdpl/)
+- [When AI decision-making violates data privacy and consent — CookieHub](https://www.cookiehub.com/blog/when-automated-ai-decision-making-violates-data-privacy-and-consent-rules)
+- [How to create an AI privacy policy — Usercentrics](https://usercentrics.com/guides/privacy-policy/ai-privacy-policy/)
+- [GDPR meets AI: consent in candidate data mining — IT Recruitment Academy](https://itrecruitmentacademy.com/post/gdpr-meets-ai-navigating-consent-in-candidate-data-mining)

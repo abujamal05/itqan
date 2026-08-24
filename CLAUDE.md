@@ -41,6 +41,10 @@ cd Onboarding    && npm install && npm run dev   # http://localhost:4333/app/
 - [`PRODUCT.md`](PRODUCT.md) — product truth: users, positioning, constraints, brand commitments. The
   source every other doc and skill defers to.
 - [`BACKEND.md`](BACKEND.md) — every HTTP call either front end makes, and which ones do not exist yet.
+- [`LEGAL-BRIEF.md`](LEGAL-BRIEF.md) — the issue list a lawyer needs to draft the real privacy policy
+  and terms, and the infrastructure questions that block it. **Not legal text, and not a licence to
+  write any**: Oman's PDPL has been enforceable since 5 February 2026, and the pages still ship as
+  placeholders.
 - [`README.md`](README.md) — how the two apps are built and why the load bearing decisions went the way
   they did.
 
