@@ -52,7 +52,28 @@ except FileNotFoundError:  # pragma: no cover - startup guard
         "Restore it from git rather than starting without it."
     )
 
-MODEL = "gemini-2.5-pro"
+# WHY NOT gemini-2.5-pro. It was the model this server was written against and
+# it still appears in `models.list()`, but `generateContent` on it returns 404
+# for a key created after Google closed it: "no longer available to new users.
+# Please update your code to use models/gemini-3.1-pro-preview". The listing
+# lies; the call does not.
+#
+# `gemini-3.1-pro-preview`, its named replacement, is not reachable either on
+# the free tier: the quota is not a rate limit but a flat `limit: 0`, so no
+# amount of retrying gets a request through. Pro needs billing enabled.
+#
+# SO THE DEFAULT IS FLASH, which is a compromise and worth naming as one. Pro
+# is the better model for this job and the one originally specified. Flash is
+# here because it RUNS, and a copywriter that 404s is worth nothing. With
+# billing on, flip the env var and take the quality:
+#
+#     ITQAN_GEMINI_MODEL=gemini-3.1-pro-preview
+#
+# PINNED, NOT `gemini-flash-latest`/`gemini-pro-latest`. An alias that tracks
+# the newest model would change the voice of generated copy underneath us with
+# no commit and no diff to point at. Overridable for a deliberate switch, never
+# a silent one.
+MODEL = os.environ.get("ITQAN_GEMINI_MODEL", "gemini-3-flash-preview")
 
 SYSTEM_INSTRUCTION = f"""\
 You are the staff copywriter for Itqan. You are not an assistant helping with
@@ -169,8 +190,15 @@ def _lint(copy: str) -> list[str]:
         if not any(x in copy for x in ("Suggested — confirm", "مقترح — أكِّده")):
             found.append("em/en dash in prose (banned in both languages)")
 
-    if re.search(r"[a-z][,;]\s", copy) and re.search(r"[؀-ۿ]", copy):
-        found.append("Latin comma/semicolon in Arabic text (use ، and ؛)")
+    # PER LINE, not per document. `language="both"` returns the English and the
+    # Arabic in one string, and a whole-string test saw the semicolon in an
+    # English sentence, saw Arabic script elsewhere in the response, and
+    # reported Latin punctuation inside Arabic. It was reading across the two
+    # languages. A semicolon in English prose is fine; only Arabic lines are
+    # asked the question.
+    for line in copy.splitlines():
+        if re.search(r"[؀-ۿ]", line) and re.search(r"[a-z؀-ۿ][,;]\s", line):
+            found.append(f"Latin comma/semicolon in Arabic text (use ، and ؛): {line[:60]!r}")
 
     # Rhythm. Even cadence is the single most reliable tell that survives a
     # clean vocabulary pass, so it is measured rather than eyeballed.
