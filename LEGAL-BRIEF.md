@@ -33,9 +33,10 @@ Regulator is the Ministry of Transport, Communications and Information Technolog
 
 Neither can be answered from the front end, and both belong to whoever runs the pipeline:
 
-1. **Where do the AI models run?** If any of the four agents runs outside Oman, or the model vendor
-   is in another jurisdiction, a cross-border transfer happens the moment a user uploads a file.
-   That is the 100,000 to 500,000 OMR line.
+1. **Does the consent cover the transfer abroad, and does each vendor agreement meet Article 38?**
+   The agents almost certainly run outside Oman, and that is fine: Executive Regulations Article 37
+   makes the data subject's express consent sufficient, with no MTCIT pre-approval. What is not fine
+   is consent that never mentions the transfer, which is what Itqan has today. See below.
 2. **Is the recorded consent demonstrable, and does it survive the policy being rewritten?** The
    timing itself is already right, and this was checked rather than assumed — see below.
 
@@ -66,14 +67,37 @@ before-processing requirement. Two things still have to be true for it to hold:
 # Privacy
 
 ## Cross-border data transfers
-**High risk. 100,000 to 500,000 OMR.**
-**Obligation:** Personal data cannot be transferred outside Oman where the transfer causes harm to
-the data subject. Cross-border transfers are regulated by the MTCIT.
-**Why Itqan triggers it:** Itqan uses AI agents to process documents and build pathways. If the
-models run on infrastructure outside Oman, or the vendor is in another jurisdiction, the transfer
-happens on upload.
-**Unknown, must be answered:** Where are the servers? Where do the models run? Are there signed Data
-Processing Agreements prohibiting vendors from training on Itqan user data?
+**High risk if done wrong. 100,000 to 500,000 OMR. Cheap to do right.**
+
+**The transfer is not the problem.** An earlier version of this brief implied Itqan needed to keep
+processing inside Oman. It does not, and almost nothing in the region could operate under that
+reading. Article 23 permits transfer abroad subject to the controls in the Regulations, and prohibits
+it only where the transfer could harm the data subject or where the data would be processed in breach
+of the PDPL.
+
+**Executive Regulations Article 37: the data subject's express consent is sufficient.** No prior
+MTCIT approval is required, provided the transfer does not prejudice national security or the higher
+interests of the country. Transfer of genuinely anonymised data needs no consent at all.
+
+**Executive Regulations Article 38: the controller stays responsible for the receiving end.** Itqan
+must ensure any processor outside Oman affords protection **not less than** the PDPL and its
+Regulations require. Signing a vendor's standard terms and hoping is not that.
+
+So the compliance path is three things, none of which is infrastructure:
+
+1. **Express consent that actually mentions the transfer.** This is the gap. Today's checkbox reads
+   *"I agree to Itqan processing my academic record and my data as described in the privacy policy"*.
+   It never says the data leaves Oman. Article 37 wants express consent **to the transfer**, so the
+   consent as worded probably does not carry it. Fixing this is a string and a sentence in the
+   notice, not a migration. **The wording is legally operative and must come from the lawyer**, not
+   from this repo.
+2. **Name the destinations and the vendors in the privacy notice**, so the consent is informed rather
+   than nominal.
+3. **A DPA with each vendor that meets the Article 38 standard**, including whether they may train on
+   submitted data.
+
+**Unknown, must be answered:** Which vendors, in which regions, under what agreement. The regions
+matter less than the agreement now, but the notice has to name both.
 
 ## Sensitive data and the permit requirement
 **High risk. 20,000 to 100,000 OMR.**
@@ -228,6 +252,8 @@ Every item marked unknown above resolves to one of these. None can be answered f
 - [Royal Decree 6/2022 — decree.om](https://decree.om/2022/rd20220006/)
 - [Executive Regulations to Oman's Data Protection Law — Amjoman](https://www.amjoman.com/executive-regulations-to-the-omans-data-protection-law/)
 - [Oman PDPL 2026: requirements and compliance roadmap — Kooch](https://kooch.co/en/post/oman-personal-data-protection-law-pdpl-compliance-2026)
+- [Executive Regulations, what you should know — Addleshaw Goddard](https://www.addleshawgoddard.com/en/insights/insights-briefings/2024/data-protection/executive-regulations-oman-personal-data-protection-law/)
+- [Oman's data protection law, new regulations — Trowers & Hamlins](https://www.trowers.com/insights/2024/february/omans-data-protection-law---new-regulations)
 - [Guide to Oman's PDPL — Privacy Bee](https://business.privacybee.com/resource-center/guide-to-omans-personal-data-protection-law-pdpl/)
 - [When AI decision-making violates data privacy and consent — CookieHub](https://www.cookiehub.com/blog/when-automated-ai-decision-making-violates-data-privacy-and-consent-rules)
 - [How to create an AI privacy policy — Usercentrics](https://usercentrics.com/guides/privacy-policy/ai-privacy-policy/)
