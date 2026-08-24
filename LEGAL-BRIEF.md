@@ -36,12 +36,28 @@ Neither can be answered from the front end, and both belong to whoever runs the 
 1. **Where do the AI models run?** If any of the four agents runs outside Oman, or the model vendor
    is in another jurisdiction, a cross-border transfer happens the moment a user uploads a file.
    That is the 100,000 to 500,000 OMR line.
-2. **Is the privacy notice accepted before the first upload, or after?** Itqan's agents parse the
-   documents *before* the human confirmation screen. The confirmation screen has been described
-   internally as the consent checkpoint, but if consent is captured there, the parsing that preceded
-   it was unlawful processing. This may be a flow change, not a copy change.
+2. **Is the recorded consent demonstrable, and does it survive the policy being rewritten?** The
+   timing itself is already right, and this was checked rather than assumed — see below.
 
 Both are on the list of things to ask the backend team.
+
+## Consent is captured at sign up, and the timing is correct
+
+Worth stating clearly, because an earlier draft of this brief got it wrong. `SignupPage.astro:107`
+renders a **required, unticked** checkbox that blocks account creation: *"I agree to Itqan processing
+my academic record and my data as described in the privacy policy"*, linking to `/privacy/`, with
+`Consent is required before the account can be created.` as its error. It is affirmative, specific,
+electronic, not pre-ticked, and it happens **before any document is uploaded**.
+
+That is a strong position against Executive Regulations Article 4 and against Article 14's
+before-processing requirement. Two things still have to be true for it to hold:
+
+- **It has to be recorded.** A checkbox proves the user was asked. Persisting the consent flag with a
+  timestamp and the version of the policy shown is what proves they answered. The field posts as
+  `consent`; whether the server stores it is unknown.
+- **It has to be re-obtained when the policy changes.** Today's checkbox consents to a page that says
+  the formal notice is still being written. When the lawyer's version replaces it, that is materially
+  different text, and prior consent does not carry over to it.
 
 ---
 
@@ -126,11 +142,13 @@ the loop? Is the confirmation screen sufficient to satisfy the right to human re
 under Executive Regulations Article 4 is given by a person of full capacity, clearly and without
 coercion, in writing or electronically. Separate written consent is required before any commercial
 marketing.
-**Why Itqan triggers it:** The agents parse documents before the confirmation screen appears. If
-notice and consent are captured at that screen rather than before upload, the initial parsing was
-unlawful.
-**Must be decided:** The exact point in the flow where the notice is presented, and whether marketing
-consent is a separate checkbox from service consent. It must be separate.
+**Why Itqan triggers it:** Consent is taken at sign up, before upload, which is the right point.
+The remaining exposure is not the timing but the record: consent that cannot be evidenced is
+consent that did not happen, and consent to a placeholder page does not carry over to the binding
+notice that replaces it.
+**Must be decided:** Whether the server persists the `consent` field with a timestamp and a policy
+version, how re-consent is obtained when the notice is published, and whether marketing consent is
+a separate checkbox from service consent. It must be separate.
 
 ## Withdrawal of consent
 **Medium risk.**
@@ -197,7 +215,7 @@ Every item marked unknown above resolves to one of these. None can be answered f
 - Retention periods, and whether deletion reaches backups and vendor logs.
 - Whether a DPO has been appointed.
 - Whether an MTCIT permit has been sought for sensitive data.
-- The exact point in the flow where the privacy notice is accepted.
+- Whether the sign-up `consent` field is persisted, with a timestamp and a policy version.
 
 ## Sources
 
