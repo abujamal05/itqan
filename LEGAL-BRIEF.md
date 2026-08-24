@@ -55,9 +55,11 @@ before-processing requirement. Two things still have to be true for it to hold:
 - **It has to be recorded.** A checkbox proves the user was asked. Persisting the consent flag with a
   timestamp and the version of the policy shown is what proves they answered. The field posts as
   `consent`; whether the server stores it is unknown.
-- **It has to be re-obtained when the policy changes.** Today's checkbox consents to a page that says
-  the formal notice is still being written. When the lawyer's version replaces it, that is materially
-  different text, and prior consent does not carry over to it.
+- **It will have to be re-obtained when the policy changes.** Today's checkbox consents to a page
+  that says the formal notice is still being written. When the lawyer's version replaces it, that is
+  materially different text and prior consent does not carry over to it. **Deferred 2026-08-24:** not
+  worth building a re-consent path before the real notice exists. Revisit when the lawyer delivers,
+  and note it is only a live problem for accounts created before that date.
 
 ---
 
@@ -90,8 +92,11 @@ sensitive fields can be dropped before they reach the matching engine, and the p
 point of contact.
 **Why Itqan triggers it:** Large-scale processing of personal data for profiling, over high-value
 academic and professional records.
-**Unknown, must be answered:** Is there a DPO? Does Itqan's processing volume trigger the mandatory
-appointment under the Executive Regulations? A lawyer has to read the threshold.
+**Decided 2026-08-24: deferred to launch.** The lead's call, and defensible while Itqan is
+pre-launch with no real users being processed. One thing to get right when it happens: the
+obligation attaches to the processing, not to the launch announcement, so the appointment has to be
+**in place on day one** rather than started on day one. A lawyer still has to read the Executive
+Regulations threshold to confirm Itqan's volume triggers the mandatory appointment at all.
 
 ## Breach response and reporting
 **Medium-high risk. 15,000 to 20,000 OMR.**
@@ -213,7 +218,6 @@ Every item marked unknown above resolves to one of these. None can be answered f
 - Which model vendors are used, and whether their terms permit training on submitted data.
 - Whether a Data Processing Agreement exists with each.
 - Retention periods, and whether deletion reaches backups and vendor logs.
-- Whether a DPO has been appointed.
 - Whether an MTCIT permit has been sought for sensitive data.
 - Whether the sign-up `consent` field is persisted, with a timestamp and a policy version.
 
