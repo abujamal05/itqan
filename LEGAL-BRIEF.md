@@ -53,9 +53,21 @@ electronic, not pre-ticked, and it happens **before any document is uploaded**.
 That is a strong position against Executive Regulations Article 4 and against Article 14's
 before-processing requirement. Two things still have to be true for it to hold:
 
-- **It has to be recorded.** A checkbox proves the user was asked. Persisting the consent flag with a
-  timestamp and the version of the policy shown is what proves they answered. The field posts as
-  `consent`; whether the server stores it is unknown.
+- **It has to be recorded — and until 2026-08-24 it was not.** `POST /api/auth/signup` bound email,
+  password and name; the `consent` field was posted by the form and **silently dropped**. Nothing was
+  stored. Every account created before the fix has a consent that cannot be evidenced.
+
+  Now being closed at both ends. Server side: an `app_consents` table keyed on user and `kind`, so
+  **marketing consent is a separate row the sign-up box can never satisfy** and an absent row is a
+  clean, auditable no. Signup refuses without consent, because the required attribute on a checkbox
+  is a courtesy and not a rule.
+
+  Site side, and **already shipped**: the form posts `policy_version`, sourced from
+  `privacyPolicyVersion` in `itqan-website/src/config.ts`, currently
+  `2026-08-24-placeholder`. **The renderer sends it rather than the server stamping its own idea of
+  "current"**, because the site is static and the HTML a visitor has open was built in the past. A
+  server guessing gets it wrong precisely when it matters, which is when a cached older policy is the
+  one being read. **Bump that constant whenever the policy text changes.**
 - **It will have to be re-obtained when the policy changes.** Today's checkbox consents to a page
   that says the formal notice is still being written. When the lawyer's version replaces it, that is
   materially different text and prior consent does not carry over to it. **Deferred 2026-08-24:** not
@@ -96,8 +108,32 @@ So the compliance path is three things, none of which is infrastructure:
 3. **A DPA with each vendor that meets the Article 38 standard**, including whether they may train on
    submitted data.
 
-**Unknown, must be answered:** Which vendors, in which regions, under what agreement. The regions
-matter less than the agreement now, but the notice has to name both.
+### Answered 2026-08-24 — the vendors and where the data goes
+
+From the API team, verified against the running system rather than recalled.
+
+| Vendor | Receives | Where |
+|---|---|---|
+| **OVH** | **All storage — Postgres and every uploaded file** | **Singapore** |
+| OpenAI | CV and transcript **text**, chat messages, job and course text, embeddings | US |
+| Brevo | Email address, name, verification codes | EU |
+| Paddle | Email, payment details | Their infrastructure |
+| Apify | LinkedIn **job postings only**. No user personal data | — |
+| OpenRouter | Nothing. `api_base` is empty and the path is inert | — |
+
+**The storage location is the finding, not the AI.** Every uploaded CV and the whole database sit in
+Singapore. That is a cross-border transfer of everything, continuously, and it is a larger surface
+than the model calls the earlier drafts of this brief worried about. It is still permitted on the
+Article 37 consent basis, and it still has to be named in the notice.
+
+**OpenAI does not train on it.** Their published policy, quotable: *"data sent to the OpenAI API is
+not used to train or improve OpenAI models (unless you explicitly opt in)"*, since 1 March 2023.
+Abuse-monitoring logs are kept up to 30 days. **Zero Data Retention removes even those**, subject to
+OpenAI's prior approval — worth applying for, and someone has to actually ask.
+
+**Still unanswered:** whether a signed DPA exists with each vendor meeting the Article 38 standard.
+The published policy is a promise to the world; a DPA is a promise to Itqan, and Article 38 asks for
+the second.
 
 ## Sensitive data and the permit requirement
 **High risk. 20,000 to 100,000 OMR.**
@@ -118,9 +154,40 @@ marital status, photograph and date of birth before anything is stored or transm
 exposure under Article 23 as well. That makes it the strongest single technical change available
 here, and it belongs to the pipeline rather than to either front end.
 
-**Unknown, must be answered:** Has a permit been sought? Can the parser drop these fields before
-storage and before transmission, and can that be evidenced? If it can, the privacy notice should say
-so, because it is a claim worth making and one of the few here that a skeptical user can check.
+### Answered 2026-08-24 — and the answer is much better than this brief assumed
+
+Established from the code, not from recollection. Three of the four worries here were already
+handled by the design:
+
+- **The extraction schemas cannot represent these categories at all.** `CVExtraction` holds name,
+  contact, skills, education, experience, projects, certifications, courses. `ContactInfo` is email,
+  phone, location, LinkedIn, GitHub. `TranscriptExtraction` is name, institution, programme, CGPA,
+  courses. Religion, marital status, nationality, gender, photograph and date of birth are
+  **structurally unrepresentable**, not merely un-asked-for.
+- **No image is ever sent to a model.** There is no vision call anywhere in Agent A — no
+  `image_url`, no base64. Text comes from PyMuPDF's text layer or from PaddleOCR, which runs
+  **locally in Itqan's own container**. The photograph on a Gulf CV never leaves the server.
+- **The written summary cannot smuggle them in.** `build_input_profile` composes the summariser's
+  input from the structured extraction and the grounding report, never from raw document text.
+
+**What IS transmitted, and the notice must say so.** The extracted document **text** goes to OpenAI,
+because that is the extraction step. If a CV states a religion, that sentence is in the text sent. It
+is not stored in any field and reaches no summary, but it is transmitted, and a notice that implies
+otherwise would be false.
+
+**Redaction before transmission was considered and rejected, correctly.** It would have to run before
+anything understands the text, in Arabic and English, and a false positive silently deletes a real
+qualification. This product has already paid for that exact shape once: a span check dropped all 24
+skills from a real CV, every one of which had matched the document verbatim.
+
+**Still unanswered:** whether an MTCIT permit has been sought. The transmitted-text point above means
+the question has not gone away entirely, even though the storage side is clean.
+
+**Being pinned, not just claimed.** These properties are currently true by accident of design, and
+the notice will turn them into promises. The API team is adding three tests — the schema stays
+closed, no image reaches a model, and the summariser never sees raw text — so that adding a
+`nationality` field means confronting a test that explains the 20,000 to 100,000 OMR reason it
+exists. That is what makes the claim checkable, which is the only kind worth publishing.
 
 ## Duty to appoint a Data Protection Officer
 **Medium-high risk. 15,000 to 20,000 OMR.**
@@ -150,9 +217,28 @@ the notice.
 derived from them. If the two are not purged together, the deletion is incomplete.
 **Sector precedent:** A 2024 audit of 12 resume builders found 9 retained uploaded content for 30 to
 180 days after account deletion, and 2 kept it indefinitely.
-**Unknown, must be answered:** The retention period. Whether deletion reaches backups and third-party
-vendor logs. If anonymised data is kept for model improvement, whether it is genuinely beyond
-re-identification.
+### Answered 2026-08-24 — this is now the largest open item on the page
+
+**There is no account deletion. No route, no store method, nothing.** This brief asked whether
+deletion reached backups; the question assumed a thing that does not exist. **A user cannot exercise
+the right to erasure at all.** The only account deletion this system has ever performed was
+hand-written SQL on the VPS.
+
+Three related facts the drafter needs:
+
+- **No automatic retention limit** on uploaded documents or derived profiles. Both persist until
+  something deletes them, and nothing does.
+- **There is an OVH snapshot backup**, which is one copy any future deletion will not reach without
+  a stated snapshot-rotation period. That period has to be decided and then written down.
+- **`DELETE /api/documents/:id` is complete today** — it removes the row and unlinks the file. So
+  per-document deletion works. It is account-level erasure that is missing, and that route is the
+  model the eventual erasure should follow.
+
+**Decided 2026-08-24: erasure is planned as separate work.** It is irreversible, touches every
+table, and deserves its own review rather than riding along with a documentation change. The right
+call. **What must not happen in the meantime is a privacy notice that describes a deletion right
+users do not have** — that converts a missing feature into a false statement in a legal document.
+Until the route exists, the notice says how to ask a human, or it says nothing.
 
 ## Naming sub-processors, and whether they train on the data
 **Medium risk.**
@@ -246,16 +332,33 @@ service. Whether the generated pathway and profile are Itqan's intellectual prop
 
 ---
 
-## What is still missing, and cannot be written without it
+## What is still missing, after the 2026-08-24 answers
 
-Every item marked unknown above resolves to one of these. None can be answered from the front end.
+Most of this list is now closed. What remains needs a **person**, not a code search, which is
+exactly why it has not been answered by looking:
 
-- Where the servers are, and where the four agents run.
-- Which model vendors are used, and whether their terms permit training on submitted data.
-- Whether a Data Processing Agreement exists with each.
-- Retention periods, and whether deletion reaches backups and vendor logs.
-- Whether an MTCIT permit has been sought for sensitive data.
-- Whether the sign-up `consent` field is persisted, with a timestamp and a policy version.
+1. **Signed DPAs** with OVH, OpenAI, Brevo and Paddle, meeting the Article 38 standard. A published
+   policy is a promise to the world; Article 38 asks for a promise to Itqan.
+2. **The MTCIT permit** for sensitive data. Still not sought as far as anyone has said, and the
+   transmitted-text finding means the question is live even though storage is clean.
+3. **The incident response procedure.** Nothing in the code can answer this and nothing in the
+   repository contains one. Handed back as a question rather than guessed at.
+4. **The OVH snapshot rotation period**, which bounds how long a deletion takes to become true.
+5. **Zero Data Retention with OpenAI** — available, subject to their prior approval. Somebody has to
+   apply.
+
+Closed since the first version of this brief: vendor list and destinations, training terms, the
+sensitive-field guarantees, consent recording, and the consent-timing question.
+
+## The rule that governs how any of this gets written up
+
+**The most dangerous sentence available here is "yes, we do that" about a control nobody has
+verified.** A privacy notice states things to users and to a regulator, so anything overstated
+becomes a false claim in a legal document, and the failure mode is worse than saying nothing.
+
+Two guards, both already in force above. Everything in this brief is drawn either from code or from
+a vendor's published policy, and says which. The questions only a person can answer are handed back
+as questions rather than filled in with plausible answers.
 
 ## Sources
 
