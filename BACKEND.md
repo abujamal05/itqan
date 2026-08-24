@@ -800,14 +800,20 @@ two cannot drift. The Paddle price must be created in USD at 7.50.
 `VITE_PADDLE_ENV`, `VITE_PADDLE_TOKEN` (the client-side token, safe in the
 browser — never the API key), `VITE_PADDLE_PRICE_ID`.
 
-**With the vars unset the upgrade button renders disabled and SAYS NOTHING.**
-That is deliberate. A user cannot act on a missing environment variable, and a
-sentence about an unfinished deployment in the middle of a plan they are reading
-is noise. The explanation goes to the console in dev, naming which var is
-missing. So: an upgrade button that is disabled in a deployed environment means
-these are not set, and there will be no message on the page saying so — check
-here. Vite reads env files at startup, so the dev server needs a restart, not a
-reload, after adding them.
+**With the vars unset the upgrade button is NOT RENDERED AT ALL** — it is not a
+disabled button, and there is no message in its place. `Plan.tsx` gates it on
+`isConfigured`, so the Premium column shows its price and nothing to press.
+
+That is deliberate, and it is the same rule as the last-CV control above: a
+disabled button invites a click and then refuses it. A user cannot act on a
+missing environment variable and should not be shown one. The cancel policy
+still renders, because it is true whether or not checkout is wired.
+
+The explanation goes to the **dev console**, naming which var is unset. So: a
+Premium column with a price and no button in a deployed environment means these
+are not set, and nothing on the page will say so — check here. Vite reads env
+files at startup, so the dev server needs a restart, not a reload, after adding
+them.
 
 **If a CSP is ever added** to the app it has to allow Paddle: `cdn.paddle.com`
 for the script and `*.paddle.com` in `frame-src`. There is no CSP today.
