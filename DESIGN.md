@@ -118,10 +118,12 @@ monotonous by construction. See §3.
 success hue; if rejected, success states carry icon and label only) and `--color-accent-ink` for gold
 emphasis text on light.
 
-**`--color-text-muted` deviates from the skill file on purpose.** The upstream `var(--navy-300)` measures
-4.32:1 on paper and fails AA for the secondary text that carries most of both apps. Both apps ship
-`color-mix(in srgb, var(--navy-300) 84%, var(--navy))` — same hue, still visibly quieter, 5.46:1 on
-paper. **This document adopts the deviation as correct.** The skill copy is the file to fix.
+**`--color-text-muted` is a deepened tone, and that is deliberate.** The raw `var(--navy-300)` measures
+4.32:1 on paper and 3.70:1 on sand, failing AA for the secondary text that carries most of both apps. All
+three copies now ship `color-mix(in srgb, var(--navy-300) 84%, var(--navy))` — same hue, still visibly
+quieter than `--color-text`, and 5.46:1 on paper, 4.63:1 on sand, 5.79:1 on white. Muted is safe on any
+surface. Some lines on paper and sand still take `--color-text` from the era when it was not; restoring
+muted there is a hierarchy decision, not a fix.
 
 **Never encode meaning in colour alone.** Every capability, gap, confidence, error or success state also
 carries an icon, a label, or a shape. This is WCAG and it is also the sceptic's requirement.
@@ -171,9 +173,6 @@ sterility complaint, measured. See §3.1.
 | `--measure` | 68ch | Prose columns |
 | `--measure-narrow` | 48ch | Passage copy, bubbles, empty-state text |
 
-`--leading-snug` is **used in `Onboarding/src/styles/chrome.css:128` and defined nowhere**. Adding it to
-all three `tokens.css` copies is an outstanding defect, listed in Appendix C.
-
 **`--measure` binds prose, not data.** A table, a match grid, a dashboard row or a chip rail clamped to
 68ch is the hospital look. Hold paragraphs to the measure and let structured data use the column it has.
 
@@ -191,9 +190,9 @@ Arabic is not Latin with different glyphs. All four of these are non-negotiable:
 Latin tracking: `--tracking-tight-latin` (-0.02em) on display sizes, because large type sets too loose by
 default; `--tracking-wide-latin` (0.08em) on eyebrow labels and small caps.
 
-`--font-mono` is referenced once with an inline fallback in `VerifyPage.astro` and is not in the token
-set. Define it as `ui-monospace, SFMono-Regular, Menlo, monospace` — for codes, IDs and parsed raw values
-only, never for prose.
+`--font-mono` is `ui-monospace, SFMono-Regular, Menlo, monospace` — for codes, IDs and parsed raw values
+only, never for prose and never for Arabic. It is the one place the sole-typeface rule yields, because a
+verification code has to read as separate characters rather than as a word.
 
 ### 2.3 Spacing and layout widths
 
@@ -854,16 +853,22 @@ floor are all carried over unchanged.
   only.
 - `--color-accent-ink` for gold emphasis text on light.
 
-**Defects found during this audit, not yet fixed**
+**Defects found during this audit, since fixed**
 
-- `--leading-snug` is consumed by `Onboarding/src/styles/chrome.css:128` and **defined in no token
-  file**. The declaration is invalid at computed-value time and the bubble copy falls back to `normal`.
-  Add `--leading-snug: 1.35;` to all three copies.
-- `--font-mono` is consumed with an inline fallback in `itqan-website/src/components/pages/VerifyPage.astro:502`
-  and is not in the token set. Add it.
-- `--color-text-muted` still ships the failing `var(--navy-300)` in
-  `.claude/skills/itqan-design-system/references/tokens.css`. Both apps already carry the corrected
-  value; the skill copy is the one to fix, which then removes the documented three-way deviation.
+- `--leading-snug` was consumed by `Onboarding/src/styles/chrome.css:128` and **defined in no token
+  file**, so the declaration was invalid at computed-value time and Hud's bubble copy fell back to
+  `normal`. Added at 1.35 to all three copies.
+- `--font-mono` was consumed with an inline fallback in `VerifyPage.astro` and was not in the token set.
+  Added; the fallback in the component was removed with it.
+- `--color-text-muted` still shipped the AA-failing `var(--navy-300)` in the skill's copy while both apps
+  carried a corrected value. Fixed upstream, which retires the documented three-way deviation. **All
+  three `tokens.css` copies are now byte identical**, and the notes in `Onboarding/CLAUDE.md`,
+  `itqan-website/MOTION.md`, `Onboarding/README.md` and `app.css` that described the deviation or the
+  contrast failure were corrected with it.
+
+One consequence is left open on purpose: `.subhead` and a few other lines on paper or sand still take
+`--color-text` because muted used to fail there. They now have a legitimate muted option. Moving them is
+a hierarchy decision for the lead, not a defect.
 
 **Still TBD from the brand programme**
 

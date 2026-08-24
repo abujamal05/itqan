@@ -5,8 +5,9 @@ Every animation on the site, what triggers it, and its token. All durations/easi
 motion is RTL-aware, and **reduced motion** removes movement while keeping opacity/colour fades.
 
 > **Status: the 2026-08-03 revision has now LANDED.** `src/styles/tokens.css` is the design system's
-> `tokens.css` copied verbatim (one documented deviation, `--color-text-muted`, which fails AA upstream),
-> and `Onboarding/src/styles/tokens.css` is kept identical to it. Three consequences for everything
+> `tokens.css` copied verbatim, and `Onboarding/src/styles/tokens.css` is kept identical to it. The
+> `--color-text-muted` deviation this note used to record has been fixed upstream; all three copies are
+> byte identical again. Three consequences for everything
 > catalogued below, none of which changes what triggers what:
 >
 > - **The curves moved.** `--ease-out` is now `cubic-bezier(0.23, 1, 0.32, 1)`; the value this file was

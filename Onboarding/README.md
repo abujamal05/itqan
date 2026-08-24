@@ -353,9 +353,10 @@ addresses a background tab, because the pane composites the fronted one only. Se
 
 ## 11. Open items
 
-- **`--color-text-muted` fails AA on two of three surfaces** — 4.32:1 on paper, 3.70:1 on sand, against a
-  4.5 floor; it passes only on white. Tokens are locked, so muted is used only inside white cards here.
-  The design system needs a muted step that clears 4.5 on paper.
+- **`--color-text-muted` has been deepened and now clears AA on all three surfaces** — 5.46:1 on paper,
+  4.63:1 on sand, 5.79:1 on white — in all three copies of `tokens.css`. What remains is the workaround
+  it caused: `.subhead` and a few other lines sitting on paper or sand still take `--color-text` and
+  carry their hierarchy by size alone. Restoring muted there is a hierarchy decision, not a fix.
 - `components.md` specifies gold text for ghost buttons, contradicting the locked "gold is never body
   text on light". The locked rule was followed; worth reconciling upstream.
 - `react-router-dom@7.18.1` carries a high advisory for **RSC mode**, which is not reachable in library
