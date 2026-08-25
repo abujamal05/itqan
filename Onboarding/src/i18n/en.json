@@ -427,5 +427,22 @@
   "profile.contactTitle": "Contact Itqan",
   "profile.contactBody": "",
   "courses.saveFailed": "That did not save. Your progress is unchanged, and you can try again.",
-  "account.tokensLeft": "tokens left today"
+  "account.tokensLeft": "tokens left today",
+  "err.network": "We could not reach Itqan. Check your connection and try again.",
+  "err.refused": "That did not go through. Nothing has changed.",
+  "err.session": "You have been signed out. Sign in again to carry on.",
+  "err.credentials": "That email and password do not match.",
+  "err.emailTaken": "There is already an account with that email.",
+  "err.consentRequired": "Confirm the details are correct to continue.",
+  "err.cvRequired": "Add your CV first. It is the one document we cannot work without.",
+  "err.lastCv": "This is your only CV. Upload a replacement first, then remove this one.",
+  "err.invalidCode": "That code is not right. Check it and enter it again.",
+  "err.codeExpired": "That code has expired. Ask for a new one.",
+  "err.invalidInput": "Something in that is not valid. Check the fields and try again.",
+  "err.unreadable": "We could not read that document. Try a clearer scan or a PDF.",
+  "err.confirmationRequired": "Confirm what we read before this can continue.",
+  "err.noProfile": "There is no profile yet. Add your documents and we will build one.",
+  "err.notFound": "That is no longer there.",
+  "err.tokenLimit": "You have used today's tokens. They reset tomorrow.",
+  "err.tokenLimitDetail": "That costs {needed} tokens and you have {remaining} left today. They reset tomorrow."
 }

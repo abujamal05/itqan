@@ -24,6 +24,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RefreshCw, ShieldCheck } from 'lucide-react';
 import { useI18n } from '../i18n';
+import { errorText } from '../lib/errorText';
 import { useOnboarding } from '../state/onboarding';
 import { useApi } from '../state/api';
 import { useAsync } from '../lib/useAsync';
@@ -32,7 +33,6 @@ import {
   DocumentUpload, hasRequiredDocument, anyUploading, itemsFromDocuments,
 } from '../components/DocumentUpload';
 import type { Item } from '../components/DocumentUpload';
-import { HttpError } from '../api/http';
 
 export function Documents() {
   const { t, formatNumber } = useI18n();
@@ -106,34 +106,18 @@ export function Documents() {
 
          An unmapped code keeps the old message on purpose: this is additive,
          and a screen adopting one code at a time never loses what it had. */
-      const code = err instanceof HttpError ? err.code : undefined;
-      const detail = err instanceof HttpError ? err.details : {};
-      /* A refusal that DIAGNOSES. The server sends `needed` and `remaining`
-         with every `token_limit` for exactly this sentence — "a re-read costs
-         19 and you have 8 left" tells someone what to do; "you are out of
-         tokens" leaves them guessing what a re-read even costs. Falls back to
-         the plain wording when the numbers are absent, since a message with a
-         hole in it is worse than a vaguer one that reads properly. */
-      const needed = detail.needed;
-      const remaining = detail.remaining;
-      const outOfTokens = typeof needed === 'number' && typeof remaining === 'number'
-        ? t('documents.limitTokens', {
-          needed: formatNumber(needed),
-          remaining: formatNumber(remaining),
-        })
-        : t('documents.limitReached');
-      const specific: Record<string, string> = {
-        cv_required: t('documents.cvRequired'),
-        no_documents: t('documents.cvRequired'),
-        token_limit: outOfTokens,
-        /* Kept beside it: one line, and it covers a browser talking to a server
-           that predates the token budget. */
-        rescan_limit: t('documents.limitReached'),
-      };
-      setError(
-        (code && specific[code])
-        ?? (err instanceof HttpError ? t('documents.failedHelp') : t('state.errorSub')),
-      );
+      /* The shared mapping owns the codes and the token arithmetic now — see
+         `lib/errorText`. What stays here is the wording that is only true on
+         THIS screen: the documents are already stored, so a missing CV reads
+         differently here than it does during onboarding, and the fallback is
+         "try reading them again" rather than the generic refusal. */
+      setError(errorText(err, { t, formatNumber }, {
+        overrides: {
+          cv_required: t('documents.cvRequired'),
+          no_documents: t('documents.cvRequired'),
+        },
+        fallback: t('documents.failedHelp'),
+      }));
       setBusy(false);
     }
   };

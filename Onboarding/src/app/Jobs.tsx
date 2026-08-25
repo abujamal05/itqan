@@ -18,6 +18,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '../i18n';
+import { errorText } from '../lib/errorText';
 import { useChat } from '../state/chat';
 import { useApi } from '../state/api';
 import { useAsync } from '../lib/useAsync';
@@ -85,8 +86,10 @@ export function Jobs() {
         ? t('browse.foundNew', { n: formatNumber(added) })
         : t('browse.nothingNew'));
       reload();
-    } catch {
-      setStatus(t('state.errorSub'));
+    } catch (err: unknown) {
+      /* Was one sentence for every outcome. A token limit and a dropped
+         connection are different problems with different next steps. */
+      setStatus(errorText(err, { t, formatNumber }, { fallback: t('state.errorSub') }));
     } finally {
       setRefreshing(false);
     }
