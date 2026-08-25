@@ -32,8 +32,16 @@ const LOCALE_COOKIE = 'itqan_locale';
 
 /* ------------------------------------------------------------- accounts -- */
 
+/** One row of `app_consents`: which document, and when. `kind` keeps marketing
+ *  consent separate from service consent, so the sign up box can never satisfy
+ *  it and an absent row is an auditable no. */
+interface ConsentRecord { kind: 'service' | 'marketing'; policyVersion: string; grantedAt: string }
+
 interface Account { id: string; fullName: string; email: string; password: string;
-                    onboarded: boolean; emailVerified: boolean }
+                    onboarded: boolean; emailVerified: boolean;
+                    /** Optional only because the seeded accounts predate consent
+                     *  being recorded. A real signup always writes one. */
+                    consents?: ConsentRecord[] }
 
 /**
  * Seeded test accounts live HERE, on the server side, and are never rendered
@@ -462,6 +470,18 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
             && /\d/.test(pw) && /[^A-Za-z0-9]/.test(pw);
           if (!strongEnough) return json(res, 400, { error: 'invalid_input' });
 
+          /* CONSENT IS ENFORCED HERE BECAUSE IT IS ENFORCED IN PRODUCTION.
+             An unchecked box omits the field entirely, so absence is the refusal
+             case. The API refuses the same way, and the required attribute on
+             the checkbox is a courtesy to the user rather than the rule — this
+             repo has now found the same client-only-rule shape twice, in
+             `last_cv` and in `require_verified_user`.
+             A browser sends `on` for a ticked box; the JSON forms the e2e
+             helpers post send a real boolean. Both are accepted. */
+          const consent = f.consent;
+          const consented = consent === 'on' || consent === 'true' || consent === '1';
+          if (!consented) return json(res, 400, { error: 'consent_required' });
+
           const account: Account = {
             id: `u_${Date.now().toString(36)}`,
             fullName: (f.name ?? '').trim(),
@@ -473,6 +493,17 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
             // produce is how `null 0` on a price and a fabricated birthDate both
             // reached a real screen unnoticed.
             emailVerified: false,
+            /* What `app_consents` stores server side: which document, and when.
+               Recorded rather than dropped, because a stored tick with no
+               version answers "did they agree" and not "to what", and the
+               second is the question an audit asks. `kind` exists so marketing
+               consent is a SEPARATE row that the sign up box can never satisfy;
+               its absence is a clean no. */
+            consents: [{
+              kind: 'service',
+              policyVersion: (f.policy_version ?? '').trim() || 'unknown',
+              grantedAt: new Date().toISOString(),
+            }],
           };
           accounts.push(account);
           // Signup issues the code in production, and the countdown runs from

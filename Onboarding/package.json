@@ -14,7 +14,8 @@
     "test:e2e:chromium": "playwright test --project=chromium",
     "test:e2e:webkit": "playwright test --project=webkit",
     "test:e2e:report": "playwright show-report",
-    "lighthouse": "node scripts/lighthouse.mjs"
+    "lighthouse": "node scripts/lighthouse.mjs",
+    "check:copy": "node scripts/check-copy.mjs"
   },
   "dependencies": {
     "@paddle/paddle-js": "^1.6.4",

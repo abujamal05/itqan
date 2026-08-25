@@ -8,7 +8,7 @@
  * in both directions, on whichever engine the project selects.
  */
 import { test, expect, type Page } from '@playwright/test';
-import { login, resetProgress, ACCOUNTS } from './helpers';
+import { login, ACCOUNTS } from './helpers';
 
 const WIDTHS = [320, 360, 414, 768, 1024, 1440];
 
@@ -80,7 +80,21 @@ test.describe('signed-in app has no horizontal scroll', () => {
     for (const width of [320, 360, 768, 1024]) {
       test(`${path} at ${width}px`, async ({ page }) => {
         await login(page, ACCOUNTS.onboarded);
-        await resetProgress(page);
+        /* NO `resetProgress` HERE. It is a DELETE against shared server-side
+           state, issued by sixteen tests (four paths x four widths) all running
+           as the same onboarded account. A layout test has no business writing
+           anything, and there is nothing here to clear — `nasser@itqan.test` is
+           seeded onboarded.
+
+           Honest scope: removing it did NOT stop this spec failing under
+           parallel workers, so it was not the cause, or not the only one. It
+           comes out because a read-only test should be read-only, not because
+           it fixed the flake. What fixed that was `workers: 1`.
+
+           Worth keeping from the hunt: measured directly at 320, 360, 768 and
+           1024 with all 16 match cards present, `/app/jobs` overflows by 0px at
+           every width. Whatever the failures were, there is no layout bug
+           underneath them. */
         await page.setViewportSize({ width, height: 900 });
         await page.goto(path);
         // Wait for the data screen to actually paint before measuring.

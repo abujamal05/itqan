@@ -2,7 +2,7 @@
 import { Icon } from 'astro-icon/components';
 import Hud from '../Hud.astro';
 import { t, type Locale } from '../../i18n';
-import { formEndpoints } from '../../config';
+import { formEndpoints, privacyPolicyVersion } from '../../config';
 import '../../styles/forms.css';
 
 /* Signing up now lands on VERIFICATION, not on the app.
@@ -108,12 +108,21 @@ const base = `/${locale}`;
       </div>
 
       <!-- Consent: required, unticked by default. Explicit consent is the only
-           lawful basis available here; a pre ticked box is not consent. -->
+           lawful basis available here; a pre ticked box is not consent.
+
+           The hidden version travels WITH the tick, because the two are only
+           worth anything together: the checkbox records that this person
+           agreed, the version records what they agreed to. It is not a user
+           facing control and carries no label, so it stays outside the visible
+           field and out of the tab order. See `privacyPolicyVersion`. -->
+      <input type="hidden" name="policy_version" value={privacyPolicyVersion} />
       <div class="field field--checkbox" data-msg-required={s.signup.consent.error}>
         <div class="field__checkbox-row">
           <input id="su-consent" name="consent" type="checkbox" required aria-describedby="su-consent-error" />
           <label for="su-consent">
-            {s.signup.consent.labelBefore}<a href={`${base}/privacy/`}>{s.signup.consent.linkText}</a>{s.signup.consent.labelAfter}
+            {s.signup.consent.labelBefore}<a
+              href={`${base}/privacy/`}>{s.signup.consent.privacyLink}</a>{s.signup.consent.labelBetween}<a
+              href={`${base}/terms/`}>{s.signup.consent.termsLink}</a>{s.signup.consent.labelAfter}
           </label>
         </div>
         <p class="field__error" id="su-consent-error" hidden>

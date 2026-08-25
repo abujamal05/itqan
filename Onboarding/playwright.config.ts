@@ -56,14 +56,38 @@ export default defineConfig({
      it, and workers starting into that gap is what produced the wandering
      "flaky test". See the file for the full account. */
   globalSetup: './e2e/global-setup.ts',
-  // Every spec is independent (each logs itself in and resets its own state),
-  // so they parallelise cleanly.
+  /* THE SPECS ARE NOT INDEPENDENT, AND THE COMMENT HERE USED TO CLAIM THEY
+     WERE. "Each spec is independent, so they parallelise cleanly" was the
+     belief that produced a suite failing roughly one run in three on a
+     rotating cast of tests, which is why it read as flakiness rather than as
+     the shared resource it is.
+
+     What is certain: three spec files drive the same seeded accounts against
+     ONE dev server holding account state in memory, and the suite is green
+     single-worker and intermittently red parallel. `workers` below is what
+     holds the line.
+
+     What is NOT established, and should not be written here as though it were:
+     the precise interaction. The failures move around — `/app/jobs` overflow at
+     four widths, the first-run intent walk, the plain dashboard entry — and no
+     single write has been caught doing it. Left true because file-level
+     parallelism is not obviously the culprit and the site specs are genuinely
+     stateless. */
   fullyParallel: true,
   // A stray `test.only` left in a commit fails CI rather than silently
   // skipping the rest of the file.
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  /* ONE WORKER EVERYWHERE, not just in CI.
+     CI has always been single-worker and has always been green; local runs took
+     the default (half the cores) and were the only place this suite was ever
+     flaky. That is the entire difference, and it is worth the wall clock:
+     a run that is wrong one time in three is worse than a run that is slower,
+     because the first thing a false failure costs is the next hour.
+     The real fix is per-worker accounts in `dev/site-plugin.ts` so the specs
+     stop sharing `nasser@itqan.test`. Until that exists, this is the honest
+     setting. Override with `--workers=N` to reproduce the races deliberately. */
+  workers: 1,
   reporter: process.env.CI
     ? [['github'], ['html', { open: 'never' }]]
     : [['list'], ['html', { open: 'never' }]],

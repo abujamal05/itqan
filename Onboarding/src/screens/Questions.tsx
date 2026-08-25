@@ -183,7 +183,14 @@ export function Questions() {
                     >
                       <span className="choice__label">
                         {t(`q.${q.id}.opt.${opt}`)}
-                        <span className="choice__sub">{t(`q.${q.id}.optHelp.${opt}`)}</span>
+                        {/* An empty hint renders nothing rather than an empty
+                            line. Several options had a hint that only restated
+                            the label — "Remote" explained as "Work from
+                            anywhere" — and the fix is to let those be blank
+                            rather than to invent a second sentence for them. */}
+                        {t(`q.${q.id}.optHelp.${opt}`) && (
+                          <span className="choice__sub">{t(`q.${q.id}.optHelp.${opt}`)}</span>
+                        )}
                       </span>
                     </button>
                   );

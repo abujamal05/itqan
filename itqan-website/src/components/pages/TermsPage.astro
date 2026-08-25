@@ -1,13 +1,11 @@
 ---
-/* PLAIN LANGUAGE, NOT LAW. Same rule as the privacy page: no terms have been
-   drafted, so nothing here is written as one. These are statements about how
-   the product behaves and what it charges, which are true today and checkable,
-   with a notice naming what the binding document still has to settle.
-
-   "Itqan does not promise you a job" is a product commitment from PRODUCT.md
-   rather than a disclaimer invented here. */
-import NoticeBox from '../NoticeBox.astro';
+/* THE PUBLISHED TERMS. Same reasoning as PrivacyPage: this renders the
+   agreement itself rather than a description of one plus a notice saying the
+   real thing is coming. Structure and styling are deliberately identical to
+   the privacy page, because the two are read as a pair and a reader who has
+   learned to scan one should not have to learn the other. */
 import { t, type Locale } from '../../i18n';
+import { bidiParts } from '../../lib/bidi';
 
 interface Props {
   locale: Locale;
@@ -19,7 +17,7 @@ const s = t(locale);
 
 <div class="container legal">
   <header class="page-head" data-enter>
-    <p class="eyebrow">{s.terms.eyebrow}</p>
+    <p class="eyebrow">{s.terms.effective}</p>
     <h1>{s.terms.heading}</h1>
     <div class="page-head__rule" aria-hidden="true"></div>
     <p class="page-head__intro">{s.terms.intro}</p>
@@ -30,20 +28,17 @@ const s = t(locale);
       s.terms.sections.map((section) => (
         <section class="legal__section reveal">
           <h2>{section.heading}</h2>
-          <ul>
-            {section.points.map((point) => <li>{point}</li>)}
-          </ul>
+          {section.points.map((point) => (
+            <p>
+              {/* Latin runs are isolated so a domain or an address cannot
+                  drag the surrounding Arabic punctuation around it. */}
+              {bidiParts(point).map((part) => (part.latin ? <bdi>{part.text}</bdi> : part.text))}
+            </p>
+          ))}
         </section>
       ))
     }
   </div>
-
-  {/* The notice sits at the END now, not in place of the page. What is above it
-      is true and useful today; this says which parts are still with the lawyer,
-      once, rather than leaving the reader with nothing. */}
-  <NoticeBox>
-    <p>{s.terms.note}</p>
-  </NoticeBox>
 </div>
 
 <style>
@@ -59,26 +54,21 @@ const s = t(locale);
   }
 
   .legal__section h2 {
-    font-size: var(--text-xl);
+    font-size: var(--text-lg);
     font-weight: var(--weight-semibold);
     line-height: var(--leading-tight);
     margin-block-end: var(--space-4);
-  }
-
-  .legal__section ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    gap: var(--space-3);
-  }
-
-  /* A marker rather than a bullet glyph: these are statements of fact, and the
-     accent hairline ties them to the rest of the site's list treatments. */
-  .legal__section li {
     padding-inline-start: var(--space-4);
     border-inline-start: 2px solid var(--color-border-accent);
-    line-height: 1.6;
+  }
+
+  .legal__section p {
+    line-height: 1.7;
+    margin-block: 0 var(--space-4);
+  }
+
+  .legal__section p:last-child {
+    margin-block-end: 0;
   }
 
   /* .page-head now lives in global.css. */
