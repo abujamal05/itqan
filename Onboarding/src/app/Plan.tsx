@@ -89,6 +89,27 @@ export function Plan() {
 
   const paid = data.plan === 'paid';
 
+  /* WHAT EACH TIER BUYS, DERIVED RATHER THAN TYPED IN. The two rows below used
+     to be four hard-coded numbers, and two of them ("1 a week", "3 a week")
+     went on selling a weekly rescan allowance for as long as it took somebody
+     to notice — there is one daily pool now, spent at published prices.
+     Dividing the budget by the price cannot fall out of step with what the
+     server enforces the way a copied constant did.
+
+     The payload knows ONE ceiling: the tier this account is on. So that column
+     is read from the server and the other stays a constant — half the table
+     that cannot drift beats none of it, and the live half is the one a person
+     checks against their own bar. An unlimited account reports `limit: null`
+     and falls back, because "up to null a day" is worse than a stale 30. */
+  const budget = data.tokens?.limit ?? null;
+  const freeTokens = !paid && budget !== null ? budget : 30;
+  const paidTokens = paid && budget !== null ? budget : 90;
+  const priceMessage = Math.max(1, data.prices?.message ?? 1);
+  const priceReread = Math.max(1, data.prices?.documentReread ?? 19);
+  /* Floored, never rounded: a ceiling that rounds up promises an action the
+     budget cannot pay for. 90 tokens buys four 19-token re-reads, not five. */
+  const buys = (tokens: number, price: number) => Math.floor(tokens / price);
+
   return (
     <div className="stack stack--lg enter">
       <header>
@@ -133,15 +154,28 @@ export function Plan() {
                 <td data-tier={t('plan.freeName')}>{t('plan.rowMatchesFree')}</td>
                 <td data-tier={t('plan.paidName')}>{t('plan.rowMatchesPaid')}</td>
               </tr>
+              {/* "UP TO", ON BOTH ROWS, AND THE NOTE UNDERNEATH IS WHAT MAKES
+                  THAT HONEST. Each figure is true and they cannot both happen:
+                  together they promise 90 messages AND 4 re-reads, which is 166
+                  tokens of a 90-token budget. If the note ever goes for space,
+                  these rows go with it. */}
               <tr>
                 <th scope="row">{t('plan.rowMessages')}</th>
-                <td className="num" data-tier={t('plan.freeName')}>{t('plan.perDay', { n: formatNumber(30) })}</td>
-                <td className="num" data-tier={t('plan.paidName')}>{t('plan.perDay', { n: formatNumber(90) })}</td>
+                <td className="num" data-tier={t('plan.freeName')}>
+                  {t('plan.upToPerDay', { n: formatNumber(buys(freeTokens, priceMessage)) })}
+                </td>
+                <td className="num" data-tier={t('plan.paidName')}>
+                  {t('plan.upToPerDay', { n: formatNumber(buys(paidTokens, priceMessage)) })}
+                </td>
               </tr>
               <tr>
                 <th scope="row">{t('plan.rowRescans')}</th>
-                <td className="num" data-tier={t('plan.freeName')}>{t('plan.perWeek', { n: formatNumber(1) })}</td>
-                <td className="num" data-tier={t('plan.paidName')}>{t('plan.perWeek', { n: formatNumber(3) })}</td>
+                <td className="num" data-tier={t('plan.freeName')}>
+                  {t('plan.upToPerDay', { n: formatNumber(buys(freeTokens, priceReread)) })}
+                </td>
+                <td className="num" data-tier={t('plan.paidName')}>
+                  {t('plan.upToPerDay', { n: formatNumber(buys(paidTokens, priceReread)) })}
+                </td>
               </tr>
             </tbody>
 
@@ -176,6 +210,14 @@ export function Plan() {
             )}
           </table>
 
+          {/* Not a footnote to the table — the thing that keeps it true. */}
+          <p className="text-sm muted">
+            {t('plan.budgetNote', {
+              message: formatNumber(priceMessage),
+              reread: formatNumber(priceReread),
+            })}
+          </p>
+
           {/* The cancel policy is true whether or not checkout is wired, so it
               is no longer gated behind it. Previously an unconfigured build
               silently dropped the one piece of reassurance on the page. */}
@@ -193,7 +235,7 @@ export function Plan() {
       <Card>
         <div className="stack">
           <h2 className="section__title">{t('plan.usageTitle')}</h2>
-          <UsageMeters usage={data} />
+          <UsageMeters usage={data} prices={false} />
         </div>
       </Card>
     </div>

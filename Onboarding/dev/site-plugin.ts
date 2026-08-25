@@ -125,21 +125,19 @@ const CHAT_TURN_MS = 900;
 let rerunCredits = 1;
 
 /**
- * The AI allowances, per account.
+ * The AI allowance, per account: ONE daily pool of tokens.
  *
- * The free tier is one document rescan a week and 30 messages a day; the paid
- * tier is three and 90 (BACKEND.md §4). Counted here rather than faked, so the
- * meters on the profile screen move when you actually use the thing — a stub
- * that returned a constant would have let a broken counter ship.
+ * 30 a day free, 90 paid, spent at published prices — a message costs 1 and a
+ * document re-read costs 19, which is what the re-read was MEASURED to cost
+ * against a message. There is no separate weekly rescan allowance any more.
  *
- * `rescans` deliberately shares its meaning with `rerunCredits` above: both are
- * the weekly re-read. They are separate variables only because that one predates
- * this and gates the chat proposal.
+ * Counted here rather than faked, so the bar on the profile screen moves when
+ * you actually use the thing — a stub that returned a constant would have let a
+ * broken counter ship. And it moves by the RIGHT amount: a stub charging 1 for
+ * a re-read would hide the only interesting behaviour the budget has.
  */
-const PLAN_LIMITS = {
-  free: { rescans: 1, messages: 30 },
-  paid: { rescans: 3, messages: 90 },
-} as const;
+const PLAN_TOKENS = { free: 30, paid: 90 } as const;
+const TOKEN_PRICES = { message: 1, documentReread: 19 } as const;
 
 /**
  * How many job matches a free account sees. The rest are paid.
@@ -170,8 +168,32 @@ let jobGate = false;
 const plans = new Map<string, 'free' | 'paid'>();
 const planFor = (id: string) => plans.get(id) ?? 'free';
 
-const messagesUsed = new Map<string, number>();
-const rescansUsed = new Map<string, number>();
+/** One counter, because there is one pool. */
+const tokensUsed = new Map<string, number>();
+const spend = (id: string, amount: number) =>
+  tokensUsed.set(id, (tokensUsed.get(id) ?? 0) + amount);
+
+/**
+ * The refusal body, when a spend does not fit.
+ *
+ * `needed` and `remaining` are here because the SCREEN renders them: the
+ * Documents error path says "a re-read costs 19 and you have 8 left". Without
+ * these fields in the stub that sentence could only ever be seen on a real
+ * account with a genuinely spent budget, which is no way to develop it.
+ *
+ * Returns null when the spend fits, so a caller reads as `refuse ?? proceed`.
+ */
+function tokenRefusal(id: string, amount: number) {
+  const used = tokensUsed.get(id) ?? 0;
+  const limit = PLAN_TOKENS[planFor(id)];
+  if (used + amount <= limit) return null;
+  return {
+    error: 'token_limit',
+    needed: amount,
+    remaining: Math.max(0, limit - used),
+    resetsAt: resetsAt('day'),
+  };
+}
 
 /** Midnight tonight, and next Monday — when each counter goes back to zero. */
 function resetsAt(period: 'day' | 'week'): string {
@@ -628,6 +650,20 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           const haveCv = inRequest.some((d) => d.kind === 'cv')
             || onFile.some((d) => d.kind === 'cv');
           if (!haveCv) return json(res, 400, { error: 'cv_required' });
+
+          /* THE CHARGE, mirrored so the refusal is reachable locally.
+             Production spends a re-read here only when the account ALREADY has
+             a completed run — the first analysis is free, and a new user
+             spending two thirds of their first day before seeing a single
+             result would be the worst possible introduction. A confirmed
+             profile is the nearest thing this stub has to "completed run".
+             Charged after the validity check, like the chat route above. */
+          if (profiles.has(me.id)) {
+            const refused = tokenRefusal(me.id, TOKEN_PRICES.documentReread);
+            if (refused) return json(res, 429, refused);
+            spend(me.id, TOKEN_PRICES.documentReread);
+          }
+
           const jobId = `job_${Date.now().toString(36)}`;
           jobs_.set(jobId, { started: Date.now(), bad: ids.some((d) => unreadable.has(d)) });
           return json(res, 200, { jobId });
@@ -717,20 +753,26 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
            the other half of BACKEND.md §4. */
         if (url === '/api/usage' && req.method === 'GET') {
           const plan = planFor(me.id);
+          const used = tokensUsed.get(me.id) ?? 0;
+          const limit = PLAN_TOKENS[plan];
+          const tokens = {
+            used, limit,
+            remaining: Math.max(0, limit - used),
+            period: 'day' as const,
+            resetsAt: resetsAt('day'),
+          };
           return json(res, 200, {
             plan,
-            rescans: {
-              used: rescansUsed.get(me.id) ?? 0,
-              limit: PLAN_LIMITS[plan].rescans,
-              period: 'week',
-              resetsAt: resetsAt('week'),
-            },
-            messages: {
-              used: messagesUsed.get(me.id) ?? 0,
-              limit: PLAN_LIMITS[plan].messages,
-              period: 'day',
-              resetsAt: resetsAt('day'),
-            },
+            tokens,
+            prices: TOKEN_PRICES,
+            /* The aliases production still sends: the same pool under the two
+               names the old contract used, so nothing vanished the day the
+               budget deployed. They come off the wire a release after the app
+               stops reading them — mirrored here so the stub keeps telling the
+               truth about what the server sends, including the parts the app
+               is supposed to ignore. */
+            rescans: tokens,
+            messages: tokens,
           });
         }
 
@@ -804,7 +846,7 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           /* Counted after the validity check, before the answer: a rejected
              empty question costs nothing, and a question that was asked costs
              one whether or not the user likes the answer. */
-          messagesUsed.set(me.id, (messagesUsed.get(me.id) ?? 0) + 1);
+          spend(me.id, TOKEN_PRICES.message);
 
           await pause(CHAT_TURN_MS);
 
@@ -862,9 +904,14 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           if (String(sent.confirm) !== 'true') {
             return json(res, 400, { error: 'confirmation_required' });
           }
-          if (rerunCredits <= 0) return json(res, 429, { error: 'rerun_limit_reached' });
+          /* `token_limit`, not `rerun_limit_reached`: the same id production
+             returns at BOTH doors, because one budget whichever door should
+             mean one reason whichever door. `rerunCredits` stays only to gate
+             whether the chat OFFERS the proposal. */
+          const refused = tokenRefusal(me.id, TOKEN_PRICES.documentReread);
+          if (refused) return json(res, 429, refused);
           rerunCredits -= 1;
-          rescansUsed.set(me.id, (rescansUsed.get(me.id) ?? 0) + 1);
+          spend(me.id, TOKEN_PRICES.documentReread);
           return json(res, 200, { jobId: `job_rerun_${Date.now().toString(36)}` });
         }
 

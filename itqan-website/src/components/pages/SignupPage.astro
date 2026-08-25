@@ -36,6 +36,11 @@ const base = `/${locale}`;
       action={formEndpoints.signup}
       novalidate
       data-server-error={s.signup.serverError}
+      data-msg-taken={s.signup.emailTaken}
+      data-login-url={`${base}/login/`}
+      data-login-text={s.signup.loginLink}
+      data-forgot-url={`${base}/forgot-password/`}
+      data-forgot-text={s.login.forgot}
       data-success-url={`${base}/verify-email/`}
     >
       <div class="form-summary" role="alert" tabindex="-1" hidden>
@@ -136,10 +141,32 @@ const base = `/${locale}`;
 </div>
 
 <script>
-  import { initForm } from '../../scripts/form';
+  import { explainServerErrors, initForm } from '../../scripts/form';
   document
     .querySelectorAll<HTMLFormElement>('form.form-card')
-    .forEach((form) => initForm(form));
+    .forEach((form) => {
+      initForm(form);
+
+      /* An address that already has an account is the most common way this form
+         fails, and it used to be indistinguishable from a server outage: both
+         said "try again in a moment", and only one of them could ever come true.
+
+         Saying so DOES confirm the address is registered. That is admissible
+         here and not elsewhere: `POST /api/auth/signup` already answers 409
+         `email_taken` to anyone who posts this form, so the disclosure is on the
+         wire either way and this only stops the person in front of us being the
+         one kept in the dark. Forgot-password deliberately does NOT do this,
+         because there the server genuinely refuses to say. If that 409 is ever
+         removed, this message goes with it. */
+      explainServerErrors(
+        form,
+        { email_taken: form.dataset.msgTaken },
+        [
+          { href: form.dataset.loginUrl ?? '', text: form.dataset.loginText ?? '' },
+          { href: form.dataset.forgotUrl ?? '', text: form.dataset.forgotText ?? '' },
+        ],
+      );
+    });
 </script>
 
 <style>
