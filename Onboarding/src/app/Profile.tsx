@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { skillCase } from '../lib/skillCase';
+import { errorText } from '../lib/errorText';
 import { contact } from '../lib/contact';
 import { HttpError } from '../api/http';
 import { useApi } from '../state/api';
@@ -124,7 +125,7 @@ const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 function AvatarField({
   name, url, onChanged,
 }: { name: string; url: string | null; onChanged: () => void }) {
-  const { t } = useI18n();
+  const { t, formatNumber } = useI18n();
   const api = useApi();
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -139,8 +140,8 @@ function AvatarField({
     try {
       await api.uploadAvatar({ file });
       onChanged();
-    } catch {
-      setError(t('profile.photoFailed'));
+    } catch (err: unknown) {
+      setError(errorText(err, { t, formatNumber }, { fallback: t('profile.photoFailed') }));
     } finally {
       setBusy(false);
       // Same file twice in a row must still fire a change event.
@@ -154,8 +155,8 @@ function AvatarField({
     try {
       await api.removeAvatar();
       onChanged();
-    } catch {
-      setError(t('profile.photoFailed'));
+    } catch (err: unknown) {
+      setError(errorText(err, { t, formatNumber }, { fallback: t('profile.photoFailed') }));
     } finally {
       setBusy(false);
     }

@@ -24,6 +24,7 @@ import { ShieldCheck } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useOnboarding } from '../state/onboarding';
 import { Button, Callout } from '../components/ui';
+import { errorText } from '../lib/errorText';
 import { DocumentUpload, hasRequiredDocument, anyUploading, itemsFromDocuments } from '../components/DocumentUpload';
 import type { Item } from '../components/DocumentUpload';
 import { HudGuide } from '../components/HudGuide';
@@ -31,11 +32,14 @@ import { SiteHeader } from '../components/SiteHeader';
 import { ResumeBanner } from '../components/ResumeBanner';
 
 export function Upload() {
-  const { t } = useI18n();
+  const { t, formatNumber } = useI18n();
   const { begin, startManual, documents } = useOnboarding();
   const navigate = useNavigate();
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
+  /* Same silence as the confirmation screen had: the pipeline refused, the
+     spinner cleared, and nothing on the page said why. */
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Documents restored from saved progress are already stored, so they are
   // folded into the list as finished rows. Without this the user resumes and
@@ -58,7 +62,8 @@ export function Upload() {
     try {
       await begin(items.filter((i) => i.uploaded).map((i) => i.uploaded!));
       navigate('/questions');
-    } catch {
+    } catch (err: unknown) {
+      setSubmitError(errorText(err, { t, formatNumber }));
       setBusy(false);
     }
   };
@@ -112,6 +117,7 @@ export function Upload() {
 
                 `upload__routes` wraps to a column below 30rem, where two full
                 width buttons beat two cramped ones. */}
+            {submitError && <Callout tone="danger">{submitError}</Callout>}
             <div className="upload__routes">
               <Button onClick={submit} disabled={!ready || uploading} loading={busy}>
                 {t('upload.cta')}

@@ -32,6 +32,7 @@ import { clearUpgradeIntent, hasUpgradeIntent } from '../state/upgradeIntent';
 import { isStrong } from '../api';
 import type { Skill } from '../api';
 import { Button, Callout, Card, LoadingBlock } from '../components/ui';
+import { errorText } from '../lib/errorText';
 import {
   MIN_AGE, birthDateProblem, earliestBirthDate, isoDate, latestBirthDate,
 } from '../lib/age';
@@ -98,6 +99,11 @@ export function Confirm() {
   const [newSkill, setNewSkill] = useState('');
   const [touched, setTouched] = useState(false);
   const [busy, setBusy] = useState(false);
+  /* The submit used to fail in total silence: the catch cleared the spinner
+     and returned, so a refusal looked exactly like a button that had not
+     been pressed. This is the consent checkpoint, so it is the worst screen
+     in the product to say nothing on. */
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Seed once, when (and if) the reading lands. A later re-render must never
   // overwrite something the user has already corrected.
@@ -269,7 +275,8 @@ export function Confirm() {
         replace: true,
         state: { findRole: preferences.knowsRole === 'no' },
       });
-    } catch {
+    } catch (err: unknown) {
+      setSubmitError(errorText(err, { t, formatNumber }));
       setBusy(false);
     }
   };
@@ -539,6 +546,9 @@ export function Confirm() {
                   </div>
                 </Card>
 
+                {submitError && (
+                  <Callout tone="danger">{submitError}</Callout>
+                )}
                 <div className="row">
                   <Button variant="secondary" onClick={() => navigate(-1)}>
                     {t('action.back')}

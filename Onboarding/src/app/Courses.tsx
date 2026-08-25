@@ -30,6 +30,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '../i18n';
+import { errorText } from '../lib/errorText';
 import { useChat } from '../state/chat';
 import { useApi } from '../state/api';
 import { useAsync } from '../lib/useAsync';
@@ -108,11 +109,11 @@ export function Courses() {
         <Link to="/documents">{t('courses.updateCv')}</Link>
       </>,
     );
-    void api.completeCourse(course.id).catch(() => {
+    void api.completeCourse(course.id).catch((err: unknown) => {
       /* PUT IT BACK. A failed write that leaves the tick on screen is worse
          than no tick: the person believes the server knows, and it does not. */
       toggle(course.id, false);
-      setStatus(t('courses.saveFailed'));
+      setStatus(errorText(err, { t, formatNumber }, { fallback: t('courses.saveFailed') }));
     });
   }, [toggle, t, api]);
 
@@ -129,9 +130,9 @@ export function Courses() {
     setStatus(t('courses.undoneNoted'));
     /* Idempotent on the server, per BACKEND.md, so undoing something it never
        recorded is still a success and needs no special case here. */
-    void api.uncompleteCourse(course.id).catch(() => {
+    void api.uncompleteCourse(course.id).catch((err: unknown) => {
       toggle(course.id, true);
-      setStatus(t('courses.saveFailed'));
+      setStatus(errorText(err, { t, formatNumber }, { fallback: t('courses.saveFailed') }));
     });
   }, [toggle, t, api]);
 
@@ -155,8 +156,8 @@ export function Courses() {
         ? t('browse.foundNew', { n: formatNumber(added) })
         : t('browse.nothingNew'));
       reload();
-    } catch {
-      setStatus(t('state.errorSub'));
+    } catch (err: unknown) {
+      setStatus(errorText(err, { t, formatNumber }, { fallback: t('state.errorSub') }));
     } finally {
       setRefreshing(false);
     }
