@@ -26,6 +26,7 @@ import {
 import { useI18n } from '../i18n';
 import { skillCase } from '../lib/skillCase';
 import { contact } from '../lib/contact';
+import { HttpError } from '../api/http';
 import { useApi } from '../state/api';
 import { useAuth } from '../state/auth';
 import { useAsync } from '../lib/useAsync';
@@ -758,8 +759,18 @@ function DeleteDocument({ id, onDeleted }: { id: string; onDeleted: () => void }
   const api = useApi();
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [refused, setRefused] = useState<string | null>(null);
 
   if (busy) return <span className="text-sm muted">{t('profile.doc.removing')}</span>;
+
+  /* The server refused, and it said why.
+     This used to be a `try/finally` with no `catch`: the request threw, the
+     spinner stopped, the document stayed, and nothing on screen said anything.
+     Pressing a button and watching nothing happen is the worst of the available
+     outcomes — worse than an error, because there is nothing to act on. */
+  if (refused) {
+    return <span className="text-sm doc-remove__refused" role="alert">{refused}</span>;
+  }
 
   if (confirming) {
     return (
@@ -772,6 +783,17 @@ function DeleteDocument({ id, onDeleted }: { id: string; onDeleted: () => void }
             try {
               await api.deleteDocument(id);
               onDeleted();
+            } catch (err: unknown) {
+              /* `last_cv` is the one refusal a person can act on: it means this
+                 is the only CV and the pipeline cannot run without one, so the
+                 way out is to upload a replacement FIRST and then remove this.
+                 The interface normally hides the control on the only CV, so
+                 reaching this means a stale view — which is exactly why the
+                 server enforces it too. */
+              const code = err instanceof HttpError ? err.code : undefined;
+              setRefused(code === 'last_cv'
+                ? t('profile.doc.lastCv')
+                : t('profile.doc.removeFailed'));
             } finally {
               setBusy(false);
             }

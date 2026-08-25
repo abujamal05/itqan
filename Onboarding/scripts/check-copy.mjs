@@ -43,7 +43,7 @@ const HYPE = [
  * false positive that gets a checker switched off within a week. The lookarounds
  * require an Arabic-letter boundary on each side.
  */
-const DIALECT = ['عشان', 'اللي', 'تشوف', 'يبي', 'وش', 'ليش', 'هالشي'].map((word) => ({
+const DIALECT = ['عشان', 'اللي', 'تشوف', 'يبي', 'وش', 'ليش', 'هالشي', 'بكرة'].map((word) => ({
   word,
   re: new RegExp(`(?<![\\u0600-\\u06FF])${word}(?![\\u0600-\\u06FF])`),
 }));
@@ -53,6 +53,7 @@ DIALECT.push(
   { word: 'بدل ما', re: /بدل ما/ },
   { word: 'ما يشتغل', re: /ما يشتغل/ },
   { word: 'عشان كذا', re: /عشان كذا/ },
+  { word: 'ما باقي', re: /ما باقي/ },
 );
 
 const problems = [];

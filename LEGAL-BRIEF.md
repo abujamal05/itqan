@@ -330,7 +330,7 @@ screen before matching. This is already how the product behaves; the Terms have 
 ## Payment and currency conversion
 **Medium risk.**
 **Obligation:** State the price and the nature of the transaction clearly.
-**Why Itqan triggers it:** Itqan displays 2.9 OMR and executes 7.50 USD through a third-party
+**Why Itqan triggers it:** Itqan displays 2.9 OMR and executes 7.54 USD through a third-party
 processor, because the processor does not support the rial.
 **Must be decided:** Who bears conversion fees and fluctuation. That Itqan does not store card
 details. Renewal, cancellation and the "access until period end" rule.

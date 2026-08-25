@@ -327,10 +327,9 @@ export interface Course {
 /**
  * One AI allowance and how much of it is gone.
  *
- * TWO COUNTERS, NOT ONE, and they are separate types of thing measured on
- * separate clocks: document rescans reset weekly, messages with Hud reset
- * daily. A single used/limit pair cannot express that, and the product sells
- * both — see BACKEND.md §4.
+ * ONE COUNTER NOW, not two. Rescans and messages used to be separate things on
+ * separate clocks; they are one daily pool of tokens spent at published prices,
+ * so a single used/limit pair is exactly what the product sells.
  */
 export interface UsageCounter {
   used: number;
@@ -343,15 +342,42 @@ export interface UsageCounter {
 }
 
 /**
+ * What each action costs out of the daily pool.
+ *
+ * PUBLISHED DELIBERATELY, and the reason the bar is worth drawing at all. The
+ * meter says how much is left; these say what things cost. Together they make
+ * "spend it however you like" something a person can act on — a budget with no
+ * price list is a number that drains for reasons nobody can predict.
+ */
+export interface TokenPrices {
+  message: number;
+  documentReread: number;
+}
+
+/**
  * What this person has used of their AI allowance.
  *
- * Server-owned, and the server enforces it too: the rescan and chat routes
- * refuse with 429 once a counter is spent. This is for showing, not gating.
+ * Server-owned, and the server enforces it too: the chat and re-read routes
+ * refuse with `429 token_limit` once the pool is spent. This is for showing,
+ * not gating.
+ *
+ * `rescans` and `messages` are OPTIONAL because they are on their way out. The
+ * server still sends them, reporting the same pool under their old names so
+ * nothing vanished the day the token budget deployed — and they come off the
+ * wire one release after this ships, never the same day. `tokens` is optional
+ * for the mirror-image reason: this app deploys from its own job, so a build
+ * can reach a box whose API predates the budget, and a required field would
+ * render that as "NaN of 0". See `UsageMeters`, which falls back rather than
+ * inventing a number.
  */
 export interface Usage {
   plan: 'free' | 'paid';
-  rescans: UsageCounter;
-  messages: UsageCounter;
+  tokens?: UsageCounter;
+  prices?: TokenPrices;
+  /** @deprecated An alias of `tokens`. Reports the same pool; leaving the wire. */
+  rescans?: UsageCounter;
+  /** @deprecated An alias of `tokens`. Reports the same pool; leaving the wire. */
+  messages?: UsageCounter;
 }
 
 /**

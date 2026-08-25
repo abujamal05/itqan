@@ -271,7 +271,8 @@
     "serverError": "We could not create the account just now. Try again in a moment.",
     "haveAccount": "Already have an account?",
     "loginLink": "Log in",
-    "eyebrow": "Free account"
+    "eyebrow": "Free account",
+    "emailTaken": "That email already has an account."
   },
   "login": {
     "title": "Log in",
@@ -293,7 +294,8 @@
     "forgot": "Forgot your password?",
     "noAccount": "New to Itqan?",
     "signupLink": "Create a free account",
-    "eyebrow": "Your account"
+    "eyebrow": "Your account",
+    "invalidCredentials": "That email and password do not match."
   },
   "forgot": {
     "title": "Password reset",
@@ -569,7 +571,7 @@
         "heading": "8. Subscriptions and charges",
         "points": [
           "The service is offered on a free plan and on a paid plan. The free plan includes an assessment of your professional standing, your recommended pathway, access to the assistant, and your three strongest employment matches maintained on a current basis, together with one document reassessment each week and thirty messages each day. The paid plan includes all available matches, three document reassessments each week and ninety messages each day.",
-          "The paid plan is charged at 2.9 Omani Rials per month. As the payment facility available to us does not support settlement in Omani Rials, the corresponding amount is charged in United States Dollars at 7.50.",
+          "The paid plan is charged at 2.9 Omani Rials per month. As the payment facility available to us does not support settlement in Omani Rials, the corresponding amount is charged in United States Dollars at 7.54.",
           "We may vary the composition of either plan or the charges applicable to it. Where we do so, we will give you notice before the variation takes effect, and you may cancel in accordance with clause 9."
         ]
       },
@@ -744,7 +746,7 @@
       "name": "Premium",
       "price": "2.9 OMR",
       "period": "a month",
-      "priceUsd": "Billed as $7.50",
+      "priceUsd": "Billed as $7.54",
       "for": "For when the whole list is worth your time.",
       "items": [
         "Everything in the free plan",
