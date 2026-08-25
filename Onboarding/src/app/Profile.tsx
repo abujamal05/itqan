@@ -713,12 +713,11 @@ export function Profile() {
         )}
       </Section>
 
-      {/* CONTACT, and it belongs on this screen rather than in a menu. This is
-          the settings surface, so it is where somebody already is when they
-          decide the product has not answered them. */}
+      {/* CONTACT. A heading, an address and a number. It previously carried a
+          sentence explaining what you might write to them about, which told a
+          person who had found the contact section what contact is for. */}
       <Section id="contact" title={t('profile.contactTitle')} icon={Mail} editing={false}>
         <div className="stack stack--sm">
-          <p className="text-sm">{t('profile.contactBody')}</p>
           <p className="row profile__contact">
             <Mail size={16} aria-hidden="true" />
             <a href={`mailto:${contact.email}`}><bdi>{contact.email}</bdi></a>

@@ -35,6 +35,26 @@ const HYPE = [
   'dream job', 'get hired', 'land the job',
 ];
 
+/**
+ * Gulf spoken forms that do not belong in the product's register.
+ *
+ * WHOLE WORDS ONLY, and that is not pedantry. A plain substring test flagged
+ * `تقريبية` because the letters of `يبي` sit inside it, which is the kind of
+ * false positive that gets a checker switched off within a week. The lookarounds
+ * require an Arabic-letter boundary on each side.
+ */
+const DIALECT = ['عشان', 'اللي', 'تشوف', 'يبي', 'وش', 'ليش', 'هالشي'].map((word) => ({
+  word,
+  re: new RegExp(`(?<![\\u0600-\\u06FF])${word}(?![\\u0600-\\u06FF])`),
+}));
+
+/* Multi-word forms, where the space already provides the boundary. */
+DIALECT.push(
+  { word: 'بدل ما', re: /بدل ما/ },
+  { word: 'ما يشتغل', re: /ما يشتغل/ },
+  { word: 'عشان كذا', re: /عشان كذا/ },
+);
+
 const problems = [];
 
 for (const locale of LOCALES) {
@@ -53,6 +73,18 @@ for (const locale of LOCALES) {
        written. */
     if (locale === 'ar' && /[؀-ۿ][,;]\s/.test(value)) {
       problems.push(`${locale}: ${key} — Latin comma or semicolon in Arabic, use ، and ؛\n      ${value}`);
+    }
+
+    /* DIALECT. The ruleset welcomes colloquial rhythm and bans colloquial
+       grammar, and the difference is invisible to anyone reading the English.
+       Four strings had drifted into Gulf spoken Arabic — عشان, اللي, تشوف,
+       بدل ما — and nothing was going to catch them, because they are perfectly
+       ordinary words that simply belong in speech rather than in a product. */
+    if (locale === 'ar') {
+      const found = DIALECT.find(({ re }) => re.test(value));
+      if (found) {
+        problems.push(`${locale}: ${key} — dialect "${found.word}", the register is modern standard Arabic\n      ${value}`);
+      }
     }
   }
 }
