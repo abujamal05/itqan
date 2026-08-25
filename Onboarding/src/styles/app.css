@@ -2177,3 +2177,15 @@
 [dir='rtl'] .plan__back svg {
   transform: scaleX(-1);
 }
+
+/* Tokens left, in the account menu. A figure, not a meter: the profile screen
+   draws the bar and publishes the price list, and repeating that widget here
+   would make the dropdown a second dashboard. */
+.menu__tokens {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-block-start: var(--space-2);
+  color: var(--color-accent-ink);
+  font-weight: var(--weight-semibold);
+}

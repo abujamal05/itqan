@@ -426,5 +426,6 @@
   "plan.youAreOn": "You are on the {plan} plan",
   "profile.contactTitle": "Contact Itqan",
   "profile.contactBody": "",
-  "courses.saveFailed": "That did not save. Your progress is unchanged, and you can try again."
+  "courses.saveFailed": "That did not save. Your progress is unchanged, and you can try again.",
+  "account.tokensLeft": "tokens left today"
 }
