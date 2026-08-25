@@ -34,14 +34,18 @@ export const formEndpoints = {
  * One version covers both locales: `ar.json` and `en.json` ship from the same
  * commit, so they are two renderings of one revision rather than two documents.
  *
- * `placeholder` is in the string because it is true. The current pages describe
- * practice and say plainly that the binding notice is still being drafted, so
- * consent held today is consent to that. When the lawyer's text lands this
- * becomes a dated version without the suffix, and everyone who agreed to a
- * `-placeholder` revision needs asking again — which is exactly what this field
- * makes findable.
+ * THE VALUE IS THE EFFECTIVE DATE PRINTED ON THE PAGE, and deliberately so: an
+ * auditor asking "what did this person agree to" can read the date off the
+ * stored consent, find the document bearing that date, and be done. A version
+ * scheme that does not correspond to anything on the page makes that a lookup
+ * through someone's deployment history instead.
+ *
+ * It briefly carried a `-placeholder` suffix, while the pages described
+ * practice rather than stating terms. They now carry the policy itself, so the
+ * suffix was retired with the thing it described. Amendments after legal review
+ * take the date they take effect.
  */
-export const privacyPolicyVersion = '2026-08-24-placeholder';
+export const privacyPolicyVersion = '2026-08-24';
 
 /**
  * The deployed origin. Single-sourced from astro.config's `site` (Astro exposes

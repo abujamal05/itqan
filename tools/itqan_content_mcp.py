@@ -291,6 +291,7 @@ def generate_brand_content(
     feedback: str = "",
     variants: int = 1,
     temperature: float = 1.0,
+    research: bool = False,
 ) -> dict[str, Any]:
     """
     Draft Itqan copy under the full brand ruleset and anti-AI blacklist.
@@ -326,6 +327,14 @@ def generate_brand_content(
         temperature: 1.0 by default. Formulaic output is the failure mode
             here, so this is not lowered for "reliability" — the ruleset does
             the constraining, not a cold sampler.
+        research: let the model search the web before writing. Off by default.
+            Turn it ON when the brief depends on what the world currently says
+            rather than on what this repo knows: the register of a document
+            type, a regulator's own wording, conventions in a language you are
+            not writing from memory. Leave it OFF for product copy, where every
+            fact comes from this repo and a search result only imports someone
+            else's house style. It does NOT make the output true — grounding
+            changes where the model looked, not whether you have to check.
 
     Returns:
         copy: the draft, exactly as returned, unmodified.
@@ -386,6 +395,14 @@ def generate_brand_content(
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_INSTRUCTION,
                 temperature=temperature,
+                # OFF BY DEFAULT. Grounding is right for a brief that depends on
+                # what the world currently says — legal register, a regulator's
+                # wording, how a document of this kind is normally structured.
+                # It is wrong for ordinary UI copy, where the facts come from
+                # this repo and a search result is just a way to import someone
+                # else's house style.
+                tools=([types.Tool(google_search=types.GoogleSearch())]
+                       if research else None),
             ),
         )
         copy = (response.text or "").strip()
