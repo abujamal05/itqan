@@ -352,11 +352,131 @@
   },
   "privacy": {
     "title": "Privacy",
-    "metaDescription": "How Itqan collects, keeps and protects your data.",
-    "heading": "How your data is handled",
-    "intro": "The formal privacy notice is being written with a lawyer. Until it is published, this page says plainly what Itqan does with what you give it. Everything below is how the product works today, not a summary of a document you cannot read.",
-    "noticeLabel": "A lawyer completes this section. Questions to answer:",
-    "eyebrow": "Your data",
+    "heading": "Privacy policy",
+    "metaDescription": "What Itqan collects, why, who it goes to, and how to get it back or have it deleted.",
+    "effective": "Effective 24 August 2026",
+    "intro": "This policy explains what Itqan collects, why, who else sees it, and what you can ask us to do with it. It is written to be read. Where something is a limit rather than a promise, it says so.",
+    "sections": [
+      {
+        "heading": "1. Who we are",
+        "points": [
+          "Itqan is a career navigator for job seekers and career switchers in Oman and the Gulf, at tryitqan.com. We measure the distance between where you stand and the role you want, and show you the shortest way across it.",
+          "We are the controller of the personal data described here. Itqan operates under the laws of the Sultanate of Oman, and the supervisory authority is the Ministry of Transport, Communications and Information Technology."
+        ]
+      },
+      {
+        "heading": "2. What we collect",
+        "points": [
+          "Account details: your name, your email address, and your password. You may add a phone number and a profile photo, and you may leave both empty.",
+          "Documents you upload: your CV, and any certificates or academic transcripts you choose to add. These are often photographs of paper documents.",
+          "What we extract from those documents: your skills, education, work experience, projects and certifications.",
+          "What you tell us directly: the role you are aiming for, and your job preferences.",
+          "Your conversations with Hud, the assistant inside Itqan.",
+          "How much of the service you have used, counted against the limits of your plan: document rescans and messages.",
+          "Technical data your browser sends, including your IP address and browser type.",
+          "We do not receive your card details. Payments are handled entirely by our payment processor, and card numbers never reach our servers."
+        ]
+      },
+      {
+        "heading": "3. Sensitive information, and what happens to it",
+        "points": [
+          "We never ask for your religion, marital status, nationality, gender, date of birth or ethnicity. Our extraction system has no field capable of holding any of them, so none is ever recorded in your profile, used to match you, or shown to anyone.",
+          "There is one thing we will not overstate. To read a document we send its text to our AI provider, and if your CV states one of these details, that sentence is part of the text sent. It is not stored, it does not reach your profile, and it plays no part in any match or recommendation. We could filter the text first, and we do not, because a filter that removes the wrong sentence would quietly delete a real qualification.",
+          "Images never leave our servers. No picture of your CV or your certificate is sent to any AI provider at any point. Text is read from the document's own text layer where it has one, and where it does not, character recognition runs on our own machines."
+        ]
+      },
+      {
+        "heading": "4. Why we use it, and on what basis",
+        "points": [
+          "We use what you give us to tell you where you stand, suggest roles worth aiming for, build a path of real courses and certifications, and match you to jobs that are open now.",
+          "We also use it to run your account, send you service email such as verification codes, keep your usage within the limits of your plan, and keep the service secure.",
+          "The basis is your consent, given at sign up through a box that is not ticked for you and that stops the account being created if you leave it empty. We record which version of this policy you were shown when you agreed, so there is a record of what you actually agreed to.",
+          "Marketing email is separate and needs its own opt in. The sign up box does not cover it and never will."
+        ]
+      },
+      {
+        "heading": "5. How the automated part works, and your control over it",
+        "points": [
+          "Four steps run in order: your documents are read, your skills are extracted, jobs are matched, and a learning path is built. Matching you to a role is automated profiling, and we would rather name it than let you discover it.",
+          "A confirmation screen sits between the reading and everything after it. You see what was extracted, with where it was read from and how confident the system is, and you correct it. Nothing downstream happens until you do. That screen is the only thing that decides what the rest of the product believes about you.",
+          "Anything the system cannot evidence is labelled as suggested and asks you to confirm it, rather than being stated as fact. Every recommendation carries its reason and links to the live source with the date it was found.",
+          "You can ask for a person to review any automated result. Write to privacy@tryitqan.com and we will look at it ourselves."
+        ]
+      },
+      {
+        "heading": "6. Who else sees it",
+        "points": [
+          "This list is complete. We do not sell personal data, and we do not share it for advertising.",
+          "OVH hosts all of our storage, including the database and every uploaded file. Singapore.",
+          "OpenAI receives document text, your messages to Hud, and job and course text. United States. OpenAI's published policy states that data sent to its API is not used to train or improve its models. Its abuse monitoring logs are kept for up to thirty days.",
+          "Brevo sends account email such as verification codes, and receives your email address and name. European Union.",
+          "Paddle handles payments and receives your email address and your payment details.",
+          "We also read public job postings from a third party source. That flows towards you and carries no personal data of yours outward."
+        ]
+      },
+      {
+        "heading": "7. Information leaving Oman",
+        "points": [
+          "As section 6 makes plain, your information is stored and processed outside Oman. This happens on the basis of the consent you give at sign up, and you can withdraw it.",
+          "That does not move the responsibility off us. We remain accountable for every recipient protecting your information to a standard no lower than Omani law requires."
+        ]
+      },
+      {
+        "heading": "8. How long we keep it",
+        "points": [
+          "Your documents and the profile built from them are kept for as long as your account exists. This is deliberate: your history is the thing that makes the product useful to you a year later.",
+          "You can delete any individual document yourself, at any time, from the documents screen. That removes both the record and the file.",
+          "To erase your whole account and everything in it, write to privacy@tryitqan.com and we will carry it out. Backups are held on a rotating schedule, and erased information leaves those backups as that rotation completes rather than the same day."
+        ]
+      },
+      {
+        "heading": "9. Your rights",
+        "points": [
+          "You can ask us for a copy of what we hold about you, at any time.",
+          "You can correct anything that is wrong, and much of it you can correct yourself inside the product.",
+          "You can have it deleted, in whole or in part.",
+          "You can receive it in a portable form you can take elsewhere.",
+          "You can withdraw your consent. Doing so stops any further processing, and you can ask us in the same message to delete what already exists.",
+          "You can object to the automated parts and ask a person to look instead.",
+          "Write to privacy@tryitqan.com to use any of these. We answer within thirty days. If our answer does not satisfy you, you can complain to the Ministry of Transport, Communications and Information Technology in Oman."
+        ]
+      },
+      {
+        "heading": "10. Security",
+        "points": [
+          "Passwords are stored as a one way hash. We cannot read yours, and neither can anyone who obtains the file.",
+          "The session cookie is http only, so scripts running in your browser cannot read it, and it travels only over an encrypted connection.",
+          "Access to production data is limited to the people who need it to operate the service.",
+          "If a breach affects your information we will tell you and the Ministry without undue delay. We will say what happened rather than that an incident occurred."
+        ]
+      },
+      {
+        "heading": "11. Cookies",
+        "points": [
+          "We set two. One keeps you signed in. One remembers the language you chose.",
+          "There are no advertising cookies, no third party trackers, and no analytics that follow you off this site."
+        ]
+      },
+      {
+        "heading": "12. Age",
+        "points": [
+          "Itqan is for people aged 18 and over. We do not knowingly create an account for anyone younger, and if we learn that we have, we delete the account and everything in it."
+        ]
+      },
+      {
+        "heading": "13. Changes",
+        "points": [
+          "When this policy changes in a way that matters, we will tell you, and we will ask for your consent again where the law requires it. The version you agreed to stays recorded against your account."
+        ]
+      },
+      {
+        "heading": "14. Contact",
+        "points": [
+          "privacy@tryitqan.com for anything in this policy, including all of the rights in section 9.",
+          "You can also complain to the Ministry of Transport, Communications and Information Technology, the supervisory authority in Oman."
+        ]
+      }
+    ],
     "brief": [
       {
         "heading": "What is collected",
@@ -402,78 +522,164 @@
           "What is the official email and postal address?"
         ]
       }
-    ],
-    "sections": [
-      {
-        "heading": "What you give Itqan",
-        "points": [
-          "The account details you type at sign up: your name, your email, and a password.",
-          "The documents you upload. A CV is the one Itqan cannot work without; a transcript or certificates are optional and make the reading more accurate.",
-          "The answers you give during onboarding, such as the role you are aiming for and how you want to work."
-        ]
-      },
-      {
-        "heading": "What Itqan does with it",
-        "points": [
-          "Your documents are read so Itqan can work out where you stand, and measure that against openings that are live now.",
-          "Nothing moves forward until you have seen it. The confirmation screen shows you everything that was read, and you correct it before any of it is used.",
-          "Your answers decide which roles and courses you are shown, and nothing else."
-        ]
-      },
-      {
-        "heading": "What you can change",
-        "points": [
-          "You can replace your documents whenever you like, and Itqan reads the new ones instead.",
-          "You can edit what was extracted from them, from your profile.",
-          "Your CV cannot be removed while it is the only one, because nothing runs without it. Replacing it puts a new one in its place."
-        ]
-      },
-      {
-        "heading": "Payment",
-        "points": [
-          "Card details never reach Itqan. Payment is handled by an external processor, and Itqan is told only whether a subscription is active."
-        ]
-      }
-    ],
-    "note": "Retention periods, the providers Itqan uses and where their servers are, and how to request a copy of your data or withdraw consent, are all settled in the full notice. It is being prepared and will replace this page."
+    ]
   },
   "terms": {
     "title": "Terms",
-    "metaDescription": "Itqan's terms of use.",
     "heading": "Terms of use",
-    "eyebrow": "The basics",
-    "intro": "The full terms are being written with a lawyer. Until they are published, this is what using Itqan means in practice.",
+    "metaDescription": "The agreement between you and Itqan: what the service does, what it does not promise, and the rules for using it.",
+    "effective": "Effective 24 August 2026",
+    "intro": "These terms are the agreement between you and Itqan. They set out what the service does, what it deliberately does not promise, and what we each owe the other. Creating an account means accepting them.",
     "sections": [
       {
-        "heading": "What Itqan does",
+        "heading": "1. Who these terms are with",
         "points": [
-          "It reads what you upload, works out where you stand, and shows you the roles and courses that close the distance to the one you want.",
-          "Every match and every course carries its reason and a link to the source it came from, with the date it was retrieved."
+          "Itqan operates the career navigator at tryitqan.com and the application within it. In these terms, Itqan, we and us mean the operator of that service, and you means the person using it.",
+          "These terms apply together with our privacy policy, which explains what we do with your information."
         ]
       },
       {
-        "heading": "What Itqan does not promise",
+        "heading": "2. Who can use Itqan",
         "points": [
-          "Itqan does not promise you a job. It helps you see the distance to the one you want, and shorten it.",
-          "Matches and courses are suggestions with their working shown, not decisions. Anything Itqan is unsure of is labelled as such, and you are meant to check it."
+          "You must be 18 or over.",
+          "You must give accurate details when you register, and keep them accurate.",
+          "One account belongs to one person. Do not share it, and do not create an account on someone else's behalf without their knowledge."
         ]
       },
       {
-        "heading": "Your account",
+        "heading": "3. Your account",
         "points": [
-          "Your account is yours, and so is what you upload.",
-          "Itqan can only be as accurate as the documents it is given, so what you upload should be your own and should be current."
+          "You are responsible for your password and for what happens under your account. Choose a password you do not use elsewhere.",
+          "Tell us promptly at support@tryitqan.com if you believe someone else has access.",
+          "We may need to verify your email address before parts of the service become available."
         ]
       },
       {
-        "heading": "Paying",
+        "heading": "4. What Itqan does, and what it does not do",
         "points": [
-          "Most of Itqan is free and stays free.",
-          "Premium is 2.9 OMR a month, billed as $7.50. You can cancel at any time and it runs to the end of the month you paid for."
+          "Itqan reads the documents you give it, shows you where you stand, suggests roles worth aiming for, builds a path of real courses and certifications, and matches you to open jobs. Every recommendation carries its reason and a link to its source.",
+          "Itqan is not an employer, a recruiter, an employment agency, or an agent acting for you. We do not submit applications on your behalf and we have no relationship with the employers whose postings we show you.",
+          "Itqan does not promise you a job, an interview, a response, or any particular outcome. Nothing in the service should be read as a guarantee of employment.",
+          "Itqan is not a careers adviser, a legal adviser, or an immigration adviser. Information about visas, sponsorship or eligibility to work comes from the sources we link to and is for you to verify with the relevant authority."
+        ]
+      },
+      {
+        "heading": "5. Automated output, and your part in checking it",
+        "points": [
+          "Substantial parts of Itqan are produced by automated systems, including reading your documents, extracting your skills, matching jobs and building a learning path. These systems make mistakes, and mistakes in an early step affect the steps that follow.",
+          "We publish no accuracy figure, because we have not measured one, and we would rather say that than quote a number nobody checked.",
+          "This is why the confirmation screen exists. You review what was extracted before anything is built on it, and correcting it there is your responsibility as well as your right.",
+          "Check anything before you act on it. Verify a job posting with the employer, and confirm a course with its provider, before spending money or time on either.",
+          "You can ask a person to review any automated result. Write to support@tryitqan.com."
+        ]
+      },
+      {
+        "heading": "6. Your documents and what we may do with them",
+        "points": [
+          "Your documents remain yours. Uploading them gives us no ownership of them.",
+          "You give us permission to store, read, process and analyse them for the purpose of providing the service to you, and for no other purpose.",
+          "You confirm that you are entitled to upload what you upload, and that doing so breaks no one else's rights.",
+          "Itqan generates things from your documents, including your extracted profile, your learning path and your matches. Those outputs are yours to use as you wish. The systems, the design and the software that produced them remain ours."
+        ]
+      },
+      {
+        "heading": "7. Acceptable use",
+        "points": [
+          "Do not upload documents belonging to someone else, or claim qualifications that are not yours.",
+          "Do not attempt to reach another person's account or data.",
+          "Do not attempt to circumvent the limits of your plan, or to reach results the plan you are on does not include.",
+          "Do not scrape, resell or redistribute the job or course data Itqan shows you.",
+          "Do not use the service to break the law, to harass anyone, or to upload anything malicious.",
+          "Do not attempt to disrupt the service or the infrastructure it runs on."
+        ]
+      },
+      {
+        "heading": "8. Free and premium",
+        "points": [
+          "The free plan includes where you stand, your path, the advisor, and your three strongest job matches kept current, together with one document rescan a week and thirty messages a day with Hud.",
+          "Premium opens every match rather than three, and raises the allowances to three document rescans a week and ninety messages a day.",
+          "Premium costs 2.9 OMR a month, charged as 7.50 US dollars. Payment is not available in Omani rial, which is why the charge appears in dollars.",
+          "We may change what each plan includes, or its price. If we do, we will tell you before the change affects you, and you can cancel."
+        ]
+      },
+      {
+        "heading": "9. Payment, renewal and cancellation",
+        "points": [
+          "Payments are handled by our payment processor. We never see or hold your card details.",
+          "A premium subscription renews each month until you cancel it.",
+          "You can cancel at any time. Your access continues to the end of the period you have already paid for, and then the account returns to the free plan. Nothing is deleted when that happens.",
+          "We do not offer refunds for a period that has already begun, except where the law requires one.",
+          "You are responsible for any charge your bank applies for currency conversion."
+        ]
+      },
+      {
+        "heading": "10. Availability",
+        "points": [
+          "We work to keep Itqan available, but we do not promise it will be uninterrupted or free of faults.",
+          "We may change, suspend or withdraw parts of the service. Where a change is significant and affects you, we will tell you.",
+          "Parts of the service depend on third parties, and their interruptions become ours."
+        ]
+      },
+      {
+        "heading": "11. Ending it",
+        "points": [
+          "You can stop using Itqan whenever you like, and you can ask us to erase your account and everything in it by writing to privacy@tryitqan.com.",
+          "We may suspend or close an account that breaks section 7, that is used unlawfully, or that puts the service or other users at risk. Where it is reasonable to do so, we will tell you first and give you a chance to put it right.",
+          "Sections 4, 5, 6, 12, 13, 14 and 17 continue to apply after an account ends."
+        ]
+      },
+      {
+        "heading": "12. Disclaimers",
+        "points": [
+          "The service is provided as it is and as it is available.",
+          "To the extent the law allows, we exclude implied warranties, including any that the service is fit for a particular purpose, that it will be uninterrupted or error free, or that its output will be accurate or complete.",
+          "We do not warrant the accuracy of job postings, course details, prices or availability published by third parties. We link to the source and give you the date we read it so that you can check it yourself.",
+          "Nothing here excludes liability that cannot lawfully be excluded."
+        ]
+      },
+      {
+        "heading": "13. Limitation of liability",
+        "points": [
+          "To the extent the law allows, we are not liable for lost earnings, lost opportunities, lost job offers, wasted expenditure on courses or applications, or any indirect or consequential loss.",
+          "Where we are liable, our total liability to you in any twelve month period is limited to the greater of the amount you paid us in that period, or 10 OMR.",
+          "This section does not limit liability for death or personal injury caused by our negligence, for fraud, or for anything else that cannot lawfully be limited."
+        ]
+      },
+      {
+        "heading": "14. Your responsibility to us",
+        "points": [
+          "If a claim is brought against us because you uploaded something you had no right to upload, or because you used the service in breach of section 7, you are responsible for the cost of dealing with it."
+        ]
+      },
+      {
+        "heading": "15. Other people's content and sites",
+        "points": [
+          "Itqan links to job postings, courses and certifications published by others. We do not control them and we do not endorse them.",
+          "Following one of those links takes you somewhere governed by that party's own terms and privacy practices, not ours."
+        ]
+      },
+      {
+        "heading": "16. Changes to these terms",
+        "points": [
+          "We may update these terms. When a change is significant we will tell you before it takes effect, and continuing to use Itqan after that date means accepting the updated terms.",
+          "If you do not accept them, you can stop using the service and ask us to erase your account."
+        ]
+      },
+      {
+        "heading": "17. Governing law",
+        "points": [
+          "These terms are governed by the laws of the Sultanate of Oman, and the courts of Oman have jurisdiction over any dispute arising from them.",
+          "If any part of these terms is found unenforceable, the rest continues to apply."
+        ]
+      },
+      {
+        "heading": "18. Contact",
+        "points": [
+          "support@tryitqan.com for the service and for anything in these terms.",
+          "privacy@tryitqan.com for your information, your rights, and erasing your account."
         ]
       }
-    ],
-    "note": "Liability, termination and how any dispute is handled are settled in the full terms. They are being prepared and will replace this page."
+    ]
   },
   "notfound": {
     "title": "Page not found",

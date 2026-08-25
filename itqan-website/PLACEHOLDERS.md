@@ -39,11 +39,26 @@ Two things about them are still live constraints rather than gaps:
 | ~~Post sign up destination~~ | `src/config.ts` (`appUrl`) | **Resolved.** `/api/handoff` on this origin |
 | Password minimum length | Sign up form | 8 characters, an assumed product rule |
 
-## Legal text that a lawyer must write
+## Legal text — written, and now awaiting review rather than authoring
 
-- Every section of `/privacy` is a structured placeholder listing the questions to answer.
-- `/terms` is a stub with a visible draft notice.
-- The forgot password page is a stub until the accounts system exists.
+- **`/privacy` is complete**, fourteen sections, effective 24 August 2026, in both locales.
+- **`/terms` is complete**, eighteen sections, same date, both locales.
+- Written 2026-08-24 on the lead's instruction, to be **reviewed and amended by a lawyer** rather than
+  drafted by one. They are published text and neither page calls itself a draft.
+- `s.privacy.brief` stays in the locale files, unrendered, as the issue list for that review.
+  [`../LEGAL-BRIEF.md`](../LEGAL-BRIEF.md) is the fuller version and records what is still open.
+- ~~The forgot password page is a stub~~ — **resolved**, `/api/auth/forgot-password` and
+  `reset-password` are live.
+
+### Three things in that text that must become true, or must change
+
+Each is stated in the published policy, so each is now a promise rather than an intention:
+
+| Stated | Reality today | Owner |
+|---|---|---|
+| `privacy@tryitqan.com` and `support@tryitqan.com` reach a person | **Mailboxes do not exist yet.** Create them before launch. | Team |
+| Account erasure on request | No route exists; it is done by hand on the VPS. The policy says "write to us and we will carry it out", which is true only while somebody actually does. | Backend |
+| Backups release erased data as rotation completes | An OVH snapshot backup exists; the **rotation period is not yet decided or written down**. | Backend |
 
 ## Working assumptions awaiting a decision
 

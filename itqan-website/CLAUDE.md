@@ -87,9 +87,17 @@ node -e "const f=require('fs'),z=require('zlib');const h=f.readFileSync('dist/en
   the logo or favicon. All appearances go through `Hud.astro`.
   **One exception:** the Hud chat panel (`HudChat.astro`), where the assistant is named after him. He
   greets and orients; he never states a verdict.
-- **No invented statistics, no accuracy figure, no legal text.** None has been measured or drafted.
-  Terms and privacy are under construction and say exactly that; their question lists stay in the locale
-  files as the brief for whoever drafts them.
+- **No invented statistics and no accuracy figure.** None has been measured.
+- **The legal pages are now written, and that rule has changed.** `/privacy` and `/terms` carry a
+  complete policy and a complete agreement as of 2026-08-24, on the lead's explicit instruction, to be
+  taken to a lawyer for review rather than replaced by one. They are no longer under construction and
+  must not say they are.
+  **What still holds:** every factual claim in them is checkable against the product or against a
+  vendor's published policy, and nothing in them may be softened into a promise the software does not
+  keep. If you change what the software does with someone's data, the policy is part of that change.
+  `privacyPolicyVersion` in `src/config.ts` is posted with the sign up consent and **must be bumped
+  whenever the policy text changes**. `s.privacy.brief` stays in the locale files, unrendered, as the
+  issue list for the lawyer; `../LEGAL-BRIEF.md` is the fuller version.
 - **Motion:** `--motion-scale` is the live mechanism and components multiply their travel by it.
   `--reveal-rise` and `--hover-lift` are defined but unread; treat them as reserved.
 

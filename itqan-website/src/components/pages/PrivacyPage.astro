@@ -1,16 +1,20 @@
 ---
-/* PLAIN LANGUAGE, NOT LAW. There is still no drafted privacy notice, and
-   fabricating one in a regulated market would be worse than an empty page.
-   What this renders instead is a description of what the software actually
-   does with what it is given — every line of it checkable against the product
-   — plus one notice naming the parts only a lawyer can settle.
+/* THE PUBLISHED POLICY. This page used to render a description of what the
+   software does plus a notice saying the real notice was still with a lawyer.
+   It now renders the policy itself, and there is no draft notice, because a
+   document that keeps apologising for not being finished is not one anybody
+   can rely on.
 
-   The lawyer's own question list survives as `s.privacy.brief` in the locale
-   files. It is the brief for whoever drafts the real notice and is deliberately
-   not rendered: a visitor arriving here wants certainty, and a published list
-   of unanswered questions is the opposite of it. */
-import NoticeBox from '../NoticeBox.astro';
+   PARAGRAPHS, NOT BULLETS. The previous version set every point as a list item
+   with an accent hairline, which reads well for six short statements and badly
+   for fourteen sections of prose. Legal text is read in order and in full; the
+   job of the layout is to keep the measure short and the headings findable, not
+   to decorate each sentence.
+
+   The lawyer's question list survives as `s.privacy.brief` in the locale files
+   and is deliberately not rendered. */
 import { t, type Locale } from '../../i18n';
+import { bidiParts } from '../../lib/bidi';
 
 interface Props {
   locale: Locale;
@@ -22,7 +26,7 @@ const s = t(locale);
 
 <div class="container legal">
   <header class="page-head" data-enter>
-    <p class="eyebrow">{s.privacy.eyebrow}</p>
+    <p class="eyebrow">{s.privacy.effective}</p>
     <h1>{s.privacy.heading}</h1>
     <div class="page-head__rule" aria-hidden="true"></div>
     <p class="page-head__intro">{s.privacy.intro}</p>
@@ -33,20 +37,17 @@ const s = t(locale);
       s.privacy.sections.map((section) => (
         <section class="legal__section reveal">
           <h2>{section.heading}</h2>
-          <ul>
-            {section.points.map((point) => <li>{point}</li>)}
-          </ul>
+          {section.points.map((point) => (
+            <p>
+              {/* Latin runs are isolated so a domain or an address cannot
+                  drag the surrounding Arabic punctuation around it. */}
+              {bidiParts(point).map((part) => (part.latin ? <bdi>{part.text}</bdi> : part.text))}
+            </p>
+          ))}
         </section>
       ))
     }
   </div>
-
-  {/* The notice sits at the END now, not in place of the page. What is above it
-      is true and useful today; this says which parts are still with the lawyer,
-      once, rather than leaving the reader with nothing. */}
-  <NoticeBox>
-    <p>{s.privacy.note}</p>
-  </NoticeBox>
 </div>
 
 <style>
@@ -62,26 +63,23 @@ const s = t(locale);
   }
 
   .legal__section h2 {
-    font-size: var(--text-xl);
+    font-size: var(--text-lg);
     font-weight: var(--weight-semibold);
     line-height: var(--leading-tight);
     margin-block-end: var(--space-4);
-  }
-
-  .legal__section ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    gap: var(--space-3);
-  }
-
-  /* A marker rather than a bullet glyph: these are statements of fact, and the
-     accent hairline ties them to the rest of the site's list treatments. */
-  .legal__section li {
+    /* The one accent on the page, and it is structural: a reader scanning for
+       "how long do they keep it" is looking for the headings, not the prose. */
     padding-inline-start: var(--space-4);
     border-inline-start: 2px solid var(--color-border-accent);
-    line-height: 1.6;
+  }
+
+  .legal__section p {
+    line-height: 1.7;
+    margin-block: 0 var(--space-4);
+  }
+
+  .legal__section p:last-child {
+    margin-block-end: 0;
   }
 
   /* .page-head now lives in global.css. */

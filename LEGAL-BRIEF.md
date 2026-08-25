@@ -1,9 +1,22 @@
 # Legal brief — what the Privacy Policy and Terms have to address
 
-**This is not legal advice and not draft legal text.** It is the issue list for whoever drafts the
-real thing: what the obligation is, why Itqan specifically triggers it, and what has to be decided
-or found out first. `itqan-website/CLAUDE.md` locks the rule that no legal text is written here, and
-this document does not break it. It is the brief that rule says should exist.
+**This is not legal advice.** It is the obligation list behind Itqan's legal pages: what each duty is,
+why Itqan triggers it, what was verified against the running system, and what is still open.
+
+**Status changed 2026-08-24.** `/privacy` and `/terms` are no longer placeholders. Both are written in
+full, in both locales, on the lead's instruction, and go to a lawyer to **review and amend** rather
+than to author from nothing. This document is what that lawyer should read first, and it is also the
+list of things that must stay true for the published text to keep being true.
+
+**Three sentences in the published policy are promises the organisation has not finished keeping.**
+They are stated as fact on a live page, so they are commitments now, not intentions:
+
+1. `privacy@tryitqan.com` and `support@tryitqan.com` are given as the way to exercise every right in
+   the policy. **Neither mailbox exists yet.** Nothing else on this page matters more, because a right
+   with an address nobody reads is worse than no address.
+2. Account erasure "on request" is promised. There is still no route, and it is done by hand.
+3. Erased data is said to leave backups "as the rotation completes". That rotation period has not been
+   decided or written down.
 
 Produced 2026-08-24 through `tools/itqan_content_mcp.py` with Gemini in a legal-analyst role, over
 researched sources rather than recall, and reviewed against those sources before landing here. The

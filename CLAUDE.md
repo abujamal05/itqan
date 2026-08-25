@@ -45,10 +45,13 @@ cd Onboarding    && npm install && npm run dev   # http://localhost:4333/app/
   `itqan-*` skills and the three `tokens.css` copies remain in place; where they disagree with this file,
   they are the bug.
 - [`BACKEND.md`](BACKEND.md) — every HTTP call either front end makes, and which ones do not exist yet.
-- [`LEGAL-BRIEF.md`](LEGAL-BRIEF.md) — the issue list a lawyer needs to draft the real privacy policy
-  and terms, and the infrastructure questions that block it. **Not legal text, and not a licence to
-  write any**: Oman's PDPL has been enforceable since 5 February 2026, and the pages still ship as
-  placeholders.
+- [`LEGAL-BRIEF.md`](LEGAL-BRIEF.md) — the obligations behind the legal pages, what was verified against
+  the running system, and the questions still open for a person. Oman's PDPL has been enforceable since
+  5 February 2026.
+  **`/privacy` and `/terms` are now written in full** (2026-08-24, the lead's call) and go to a lawyer
+  for review rather than being replaced by one. They are no longer placeholders and must not describe
+  themselves as drafts. Every claim in them is checkable against the product or a vendor's published
+  policy; if you change what the software does with someone's data, the policy changes with it.
 - [`README.md`](README.md) — how the two apps are built and why the load bearing decisions went the way
   they did.
 
