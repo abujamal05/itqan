@@ -236,7 +236,8 @@ sentence count is not.
 ### Facts copy is allowed to state
 
 - Free: where you stand, the path, your **three strongest job matches** kept current, and the advisor.
-  **30 tokens a day**, spent however they like: a message costs 1, re-reading their documents costs 19.
+  **30 tokens a day**, covering everything the AI does rather than Hud alone: a message costs 1,
+  re-reading their documents costs 19.
 - Premium: **every** match and **90 tokens a day**. There is no weekly rescan allowance; do not write
   one. **2.9 OMR a month, charged as
   $7.54.** Both figures may be shown; the conversion is not explained.

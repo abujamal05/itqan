@@ -63,8 +63,9 @@ conversion is not explained on the page.
 
 **Extended use is ONE DAILY POOL OF TOKENS, plus the match list.** Free gets **30 tokens a day**
 and **the three strongest job matches, kept current**; paid gets **90 tokens a day and every
-match**. Tokens are spent however the person likes: a message costs 1, re-reading their documents
-costs 19. There is no separate weekly rescan allowance any more, and copy must not describe one
+match**. Tokens are ONE pool covering **everything the AI does**, not an allowance for the advisor: a
+message costs 1, re-reading their documents costs 19, and anything added later is priced out of the
+same budget. There is no separate weekly rescan allowance any more, and copy must not describe one
 (decided 2026-08-25).
 
 The published prices are the reason the meter is worth drawing: a budget with no price list is a
