@@ -103,12 +103,45 @@ jobs:
       # VITE_SITE_SAME_ORIGIN=1 makes links to the site relative paths, because
       # one host serves both — never leave VITE_API_BASE_URL set here, /api is
       # same-origin by default and that is the point (DEPLOY.md).
+      #
+      # The three VITE_PADDLE_* values are what make the upgrade button exist at
+      # all: `isConfigured = Boolean(TOKEN && PRICE_ID)` in src/lib/paddle.ts, so
+      # with either missing the Premium column renders its price and NOTHING to
+      # press. They are repo VARIABLES rather than secrets on purpose -- the
+      # client-side token and the price id are served to every visitor in the
+      # bundle, and filing a public value as a secret only makes it harder to
+      # read while implying a confidentiality it does not have. The API key is a
+      # secret and must never appear here or in any build.
+      #
+      # Vite inlines VITE_* only from the environment of the build that produces
+      # the bundle, which is why they belong in THIS step and nowhere else.
       - name: Build app (production, based at /app/)
         working-directory: Onboarding
         env:
           VITE_APP_BASE: /app/
           VITE_SITE_SAME_ORIGIN: "1"
-        run: npm run build
+          VITE_PADDLE_ENV: ${{ vars.VITE_PADDLE_ENV }}
+          VITE_PADDLE_TOKEN: ${{ vars.VITE_PADDLE_TOKEN }}
+          VITE_PADDLE_PRICE_ID: ${{ vars.VITE_PADDLE_PRICE_ID }}
+        run: |
+          # Unset is a VALID state -- a build with no billing configured simply
+          # cannot be upgraded from. It must not fail the deploy; it must not be
+          # silent either, because "the button is missing" has no other
+          # explanation anywhere on the page.
+          if [ -z "$VITE_PADDLE_TOKEN" ] || [ -z "$VITE_PADDLE_PRICE_ID" ]; then
+            echo "::warning::Paddle is not configured, so the upgrade button will NOT be rendered. Set VITE_PADDLE_TOKEN and VITE_PADDLE_PRICE_ID (repo -> Settings -> Variables)."
+          else
+            # The token prefix and the environment must agree: a live_ token
+            # against sandbox, or test_ against production, builds a button that
+            # looks correct and fails when somebody presses it. Cheaper to catch
+            # here than in a checkout that silently takes no money.
+            case "$VITE_PADDLE_TOKEN:$VITE_PADDLE_ENV" in
+              test_*:sandbox|live_*:production) ;;
+              *) echo "::error::VITE_PADDLE_TOKEN and VITE_PADDLE_ENV disagree -- test_ goes with sandbox, live_ with production. Got env='$VITE_PADDLE_ENV' and a token starting '$(printf %.5s "$VITE_PADDLE_TOKEN")'."
+                 exit 1 ;;
+            esac
+          fi
+          npm run build
 
       # Assemble the single tree Caddy serves: site at the root, app under /app/.
       - name: Assemble web tree
