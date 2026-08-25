@@ -22,6 +22,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, Sparkles } from 'lucide-react';
 import { useI18n } from '../i18n';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { useApi } from '../state/api';
 import { useAuth } from '../state/auth';
 import { useTheme } from '../lib/theme';
@@ -38,6 +40,7 @@ type Phase = 'idle' | 'confirming' | 'failed';
 
 export function Plan() {
   const { t, locale, formatNumber } = useI18n();
+  const navigate = useNavigate();
   const api = useApi();
   const { user } = useAuth();
   const { theme } = useTheme();
@@ -112,7 +115,20 @@ export function Plan() {
 
   return (
     <div className="stack stack--lg enter">
-      <header>
+      <header className="stack stack--sm">
+        {/* A WAY OUT. This screen is reached from the profile and from the
+            locked-jobs prompt, and it had no back control at all — the only
+            exit was the account menu, which means re-opening your own profile
+            to leave a page about billing.
+            `navigate(-1)` rather than a fixed link to /profile, because the
+            two entry points are different places and sending someone to the
+            profile from the jobs prompt would be a lie about where they were.
+            The icon flips with direction on its own: it is inside a flex row
+            whose order reverses under RTL. */}
+        <button type="button" className="btn btn--ghost btn--sm plan__back" onClick={() => navigate(-1)}>
+          <ArrowLeft size={16} aria-hidden="true" />
+          {t('action.back')}
+        </button>
         <h1 className="headline">{t('plan.title')}</h1>
       </header>
 

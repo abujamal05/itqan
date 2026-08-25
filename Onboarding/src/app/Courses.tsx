@@ -95,6 +95,12 @@ export function Courses() {
    * claim into evidence — so that is what the status line points at.
    */
   const markDone = useCallback((course: Course) => {
+    /* OPTIMISTIC, THEN TOLD TO THE SERVER. The local toggle is what makes the
+       map respond immediately; the call is what stops the server disagreeing.
+       Until this existed, completion was written to localStorage and nowhere
+       else, so `GET /api/dashboard` went on naming a finished course as the
+       next step — the map said done, the dashboard said do this next, and both
+       were reading their own truth. */
     toggle(course.id, true);
     setStatus(
       <>
@@ -102,7 +108,13 @@ export function Courses() {
         <Link to="/documents">{t('courses.updateCv')}</Link>
       </>,
     );
-  }, [toggle, t]);
+    void api.completeCourse(course.id).catch(() => {
+      /* PUT IT BACK. A failed write that leaves the tick on screen is worse
+         than no tick: the person believes the server knows, and it does not. */
+      toggle(course.id, false);
+      setStatus(t('courses.saveFailed'));
+    });
+  }, [toggle, t, api]);
 
   /**
    * Take it back out of completed.
@@ -115,7 +127,13 @@ export function Courses() {
   const markNotDone = useCallback((course: Course) => {
     toggle(course.id, false);
     setStatus(t('courses.undoneNoted'));
-  }, [toggle, t]);
+    /* Idempotent on the server, per BACKEND.md, so undoing something it never
+       recorded is still a success and needs no special case here. */
+    void api.uncompleteCourse(course.id).catch(() => {
+      toggle(course.id, true);
+      setStatus(t('courses.saveFailed'));
+    });
+  }, [toggle, t, api]);
 
   const filters: FilterDef<Filter>[] = [
     { id: 'all', label: t('browse.all') },

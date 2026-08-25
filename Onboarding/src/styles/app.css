@@ -2162,3 +2162,18 @@
    equal options. */
 .course__actions { flex-wrap: wrap; gap: var(--space-2); }
 .course__actions > :nth-child(2) { margin-inline-start: auto; }
+
+/* The back control on the plan screen sits at the inline start of its own row,
+   above the heading, rather than inline with it: the heading is the page's
+   identity and a control beside it competes for that. `align-self` because the
+   header is a stack, so without it the button stretches the full width and its
+   whole row becomes a click target. */
+.plan__back {
+  align-self: flex-start;
+}
+
+/* The arrow points back, and back is direction dependent. `scale` rather than
+   a different icon so there is one import and one truth. */
+[dir='rtl'] .plan__back svg {
+  transform: scaleX(-1);
+}

@@ -234,6 +234,12 @@ export function createHttpApi(): ItqanApi {
       return { ...raw, matches: raw.matches ?? [], locked: raw.locked ?? 0 };
     },
     getCourses(signal) { return req<Course[]>('/courses', { signal }); },
+    completeCourse(courseId, signal) {
+      return req<void>(`/courses/${encodeURIComponent(courseId)}/complete`, { method: 'POST', signal });
+    },
+    uncompleteCourse(courseId, signal) {
+      return req<void>(`/courses/${encodeURIComponent(courseId)}/complete`, { method: 'DELETE', signal });
+    },
     getUsage(signal) { return req<Usage>('/usage', { signal }); },
 
     rerunMatching(signal) {
