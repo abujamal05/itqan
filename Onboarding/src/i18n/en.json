@@ -416,5 +416,7 @@
   "plan.usageTitle": "What you have used",
   "nav.plan": "Your plan",
   "plan.priceUsd": "Billed as $7.50",
-  "plan.youAreOn": "You are on the {plan} plan"
+  "plan.youAreOn": "You are on the {plan} plan",
+  "profile.contactTitle": "Contact Itqan",
+  "profile.contactBody": "One address and one number for everything: your account, your data, a result that looks wrong, or a question the product did not answer."
 }

@@ -416,5 +416,7 @@
   "plan.usageTitle": "ما استهلكته",
   "nav.plan": "اشتراكك",
   "plan.priceUsd": "يُحصّل بمبلغ 7.50 دولار",
-  "plan.youAreOn": "أنت على الاشتراك {plan}"
+  "plan.youAreOn": "أنت على الاشتراك {plan}",
+  "profile.contactTitle": "التواصل مع إتقان",
+  "profile.contactBody": "عنوان واحد ورقم واحد لكل شيء: حسابك، وبياناتك، ونتيجة تبدو خاطئة، وسؤال لم يجب عنه المنتج."
 }

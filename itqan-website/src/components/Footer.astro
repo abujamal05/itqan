@@ -1,5 +1,6 @@
 ---
 import { t, isLocale, defaultLocale, type Locale } from '../i18n';
+import { contact } from '../config';
 
 const locale: Locale = isLocale(Astro.currentLocale) ? Astro.currentLocale : defaultLocale;
 const strings = t(locale);
@@ -49,6 +50,15 @@ const links = [
         }
       </ul>
     </nav>
+
+    {/* One address and one number for everything. A footer is where a person
+        looks for this after the page has failed to answer them, so it sits
+        beside the link list rather than under the copyright line. */}
+    <address class="footer-contact">
+      <p class="footer-contact__head">{strings.footer.contact}</p>
+      <p><a href={`mailto:${contact.email}`}><bdi>{contact.email}</bdi></a></p>
+      <p><a href={`tel:${contact.phoneHref}`}><bdi>{contact.phone}</bdi></a></p>
+    </address>
   </div>
 
   <div class="container footer-legal">
@@ -88,6 +98,28 @@ const links = [
 
   :global([data-theme='dark']) .footer-mark--dark {
     display: block;
+  }
+
+  /* `address` italicises by default in every engine, which reads as emphasis
+     rather than as contact details. */
+  .footer-contact {
+    font-style: normal;
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .footer-contact__head {
+    font-weight: var(--weight-semibold);
+    margin-block-end: var(--space-2);
+  }
+
+  .footer-contact a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .footer-contact a:hover {
+    text-decoration: underline;
   }
 
   .footer-tagline {

@@ -48,6 +48,26 @@ export const formEndpoints = {
 export const privacyPolicyVersion = '2026-08-24';
 
 /**
+ * How to reach Itqan. One address and one number for everything.
+ *
+ * NOT IN THE LOCALE FILES, because neither value is translatable and a string
+ * duplicated across two locales is a string that will eventually disagree with
+ * itself. The surrounding words are translated; these are not.
+ *
+ * ONE EXCEPTION TO THAT, and it is deliberate: the Privacy Policy and the Terms
+ * of Use carry the address and the number inside their own prose, where they
+ * cannot be interpolated without breaking the sentence in one language or the
+ * other. **If either value changes here, clause 14 of the policy and clause 18
+ * of the terms have to change with it, in both locales.**
+ */
+export const contact = {
+  email: 'ItqanTeam@outlook.com',
+  phone: '+968 7123 5872',
+  /** `tel:` wants no spaces; the displayed form keeps them. */
+  phoneHref: '+96871235872',
+} as const;
+
+/**
  * The deployed origin. Single-sourced from astro.config's `site` (Astro exposes
  * it as `import.meta.env.SITE`), so it can never drift from what canonical URLs
  * and hreflang use. Set it via the ITQAN_SITE_URL build env, not here.

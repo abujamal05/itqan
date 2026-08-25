@@ -115,7 +115,9 @@ const base = `/${locale}`;
         <div class="field__checkbox-row">
           <input id="su-consent" name="consent" type="checkbox" required aria-describedby="su-consent-error" />
           <label for="su-consent">
-            {s.signup.consent.labelBefore}<a href={`${base}/privacy/`}>{s.signup.consent.linkText}</a>{s.signup.consent.labelAfter}
+            {s.signup.consent.labelBefore}<a
+              href={`${base}/privacy/`}>{s.signup.consent.privacyLink}</a>{s.signup.consent.labelBetween}<a
+              href={`${base}/terms/`}>{s.signup.consent.termsLink}</a>{s.signup.consent.labelAfter}
           </label>
         </div>
         <p class="field__error" id="su-consent-error" hidden>

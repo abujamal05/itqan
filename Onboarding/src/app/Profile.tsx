@@ -20,11 +20,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight, Bot, Camera, Check, FileText, GraduationCap, Pencil, Sparkles,
-  Target, User as UserIcon, X,
+  ArrowRight, Bot, Camera, Check, FileText, GraduationCap, Mail, Pencil, Phone,
+  Sparkles, Target, User as UserIcon, X,
 } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { skillCase } from '../lib/skillCase';
+import { contact } from '../lib/contact';
 import { useApi } from '../state/api';
 import { useAuth } from '../state/auth';
 import { useAsync } from '../lib/useAsync';
@@ -710,6 +711,25 @@ export function Profile() {
             <Row label={t('q.openToOtherRoles.title')} value={prefLabel('openToOtherRoles', prefs.openToOtherRoles)} />
           </div>
         )}
+      </Section>
+
+      {/* CONTACT, and it belongs on this screen rather than in a menu. This is
+          the settings surface, so it is where somebody already is when they
+          decide the product has not answered them. */}
+      <Section id="contact" title={t('profile.contactTitle')} icon={Mail} editing={false}>
+        <div className="stack stack--sm">
+          <p className="text-sm">{t('profile.contactBody')}</p>
+          <p className="row profile__contact">
+            <Mail size={16} aria-hidden="true" />
+            <a href={`mailto:${contact.email}`}><bdi>{contact.email}</bdi></a>
+          </p>
+          <p className="row profile__contact">
+            <Phone size={16} aria-hidden="true" />
+            {/* A telephone number is a numeric axis and never mirrors, so it is
+                isolated in both directions rather than only under RTL. */}
+            <a href={`tel:${contact.phoneHref}`} dir="ltr"><bdi>{contact.phone}</bdi></a>
+          </p>
+        </div>
       </Section>
 
       {p.updatedAt && (

@@ -93,7 +93,8 @@
     "tagline": "Career intelligence for graduates and career switchers across MENA.",
     "privacy": "Privacy",
     "terms": "Terms",
-    "rights": "© Itqan 2026"
+    "rights": "© Itqan 2026",
+    "contact": "Contact"
   },
   "home": {
     "hero": {
@@ -258,8 +259,10 @@
     },
     "consent": {
       "labelBefore": "I agree to Itqan processing my academic record and my data as described in the ",
-      "linkText": "privacy policy",
-      "labelAfter": ".",
+      "privacyLink": "privacy policy",
+      "labelBetween": ", I accept the ",
+      "termsLink": "terms of use",
+      "labelAfter": ", and I agree that both are governed by the laws of the Sultanate of Oman.",
       "error": "Consent is required before the account can be created."
     },
     "submit": "Create your free account",
@@ -452,7 +455,7 @@
       {
         "heading": "14. Contact and complaints",
         "points": [
-          "Any enquiry concerning this Policy, and any request to exercise a right under clause 9, may be addressed to privacy@tryitqan.com.",
+          "Any enquiry concerning this Policy, and any request to exercise a right under clause 9, may be addressed to ItqanTeam@outlook.com or to +968 7123 5872.",
           "Where you consider that our processing of your personal data does not comply with applicable law, you are entitled to lodge a complaint with the Ministry of Transport, Communications and Information Technology in the Sultanate of Oman."
         ]
       }
@@ -639,7 +642,7 @@
         "points": [
           "These Terms are governed by the laws of the Sultanate of Oman, and the courts of the Sultanate of Oman shall have exclusive jurisdiction in respect of any dispute arising out of or in connection with them.",
           "If any provision of these Terms is held to be invalid or unenforceable, that provision shall be severed and the remaining provisions shall continue in full force. No failure or delay on our part in exercising any right constitutes a waiver of that right. You may not assign your rights under these Terms; we may assign ours upon notice to you.",
-          "Notices to you may be given by electronic mail to the address associated with your account. Notices to us should be addressed to support@tryitqan.com for matters concerning the service, and to privacy@tryitqan.com for matters concerning personal data."
+          "Notices to you may be given by electronic mail to the address associated with your account. Notices to us should be addressed to ItqanTeam@outlook.com, or given by telephone to +968 7123 5872."
         ]
       }
     ]
