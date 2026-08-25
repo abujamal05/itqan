@@ -748,9 +748,22 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           return json(res, 200, { ok: true, plan: next });
         }
 
-        /* What this account has used of its AI allowance. Everyone is on the
-           free tier here: there is no plan field on the account yet, which is
-           the other half of BACKEND.md §4. */
+        /* DEV ONLY, AND IT HAS NO PRODUCTION COUNTERPART. Production's budget
+           resets at midnight; nothing here can wait for that.
+           
+           It exists because the E2E suite runs the SAME spec once per browser
+           project against ONE dev server, and a spend test costs 20 of a
+           30-token budget. The second project therefore met a 429 and spent
+           nothing, which is exactly how the token spec passed on chromium and
+           failed on the other four in CI. A test that can only run once is not
+           a test; this is what makes it start from a known number every time. */
+        if (url === '/api/dev/tokens' && req.method === 'POST') {
+          tokensUsed.set(me.id, 0);
+          rerunCredits = 1;
+          return json(res, 200, { ok: true, used: 0 });
+        }
+
+        /* What this account has used of its AI allowance. */
         if (url === '/api/usage' && req.method === 'GET') {
           const plan = planFor(me.id);
           const used = tokensUsed.get(me.id) ?? 0;
@@ -910,7 +923,7 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
              whether the chat OFFERS the proposal. */
           const refused = tokenRefusal(me.id, TOKEN_PRICES.documentReread);
           if (refused) return json(res, 429, refused);
-          rerunCredits -= 1;
+          rerunCredits = Math.max(0, rerunCredits - 1);
           spend(me.id, TOKEN_PRICES.documentReread);
           return json(res, 200, { jobId: `job_rerun_${Date.now().toString(36)}` });
         }
