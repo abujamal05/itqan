@@ -26,7 +26,7 @@ export class HttpError extends Error {
   status: number;
   /**
    * The server's own name for what went wrong — `last_cv`, `email_taken`,
-   * `rescan_limit`. An ID, never a sentence.
+   * `token_limit`. An ID, never a sentence.
    *
    * It carries the code rather than a message because this product is
    * bilingual: an English string on the wire cannot be shown to an Arabic user,
@@ -41,21 +41,35 @@ export class HttpError extends Error {
    * answer when nothing more specific is known.
    */
   code?: string;
-  constructor(status: number, message: string, code?: string) {
+  /**
+   * Everything else the failed response carried.
+   *
+   * The server publishes numbers alongside a refusal precisely so the interface
+   * can be specific: a `token_limit` names what the action `needed`, what is
+   * `remaining`, and when it `resetsAt`. Keeping only `code` threw all of that
+   * away and left the screen saying "that did not work" over a body that could
+   * have said "a re-read costs 19 and you have 8 left until tomorrow".
+   *
+   * `{}` when the body was not JSON, so a caller can read a field without
+   * checking for the object first.
+   */
+  details: Record<string, unknown>;
+  constructor(status: number, message: string, body?: Record<string, unknown>) {
     super(message);
     this.status = status;
-    this.code = code;
+    this.details = body ?? {};
+    const code = body?.error;
+    this.code = typeof code === 'string' ? code : undefined;
   }
 }
 
-/** The error id from a failed response, or undefined. Never throws: a body that
+/** The parsed body of a failed response, or undefined. Never throws: a body that
  *  is not JSON is a normal failure mode here (a gateway error page), and it must
  *  not turn a handled rejection into an unhandled one. */
-async function errorCode(res: Response): Promise<string | undefined> {
+async function errorBody(res: Response): Promise<Record<string, unknown> | undefined> {
   try {
-    const body = await res.clone().json();
-    const code = (body as { error?: unknown })?.error;
-    return typeof code === 'string' ? code : undefined;
+    const body: unknown = await res.clone().json();
+    return body && typeof body === 'object' ? body as Record<string, unknown> : undefined;
   } catch {
     return undefined;
   }
@@ -65,10 +79,10 @@ async function errorCode(res: Response): Promise<string | undefined> {
  *  `Response`. They are where `file_too_large` and `empty_file` arrive, so
  *  dropping the code here would leave the two most explainable upload failures
  *  rendering as "something went wrong". */
-function errorCodeFrom(text: string): string | undefined {
+function errorBodyFrom(text: string): Record<string, unknown> | undefined {
   try {
-    const code = (JSON.parse(text) as { error?: unknown })?.error;
-    return typeof code === 'string' ? code : undefined;
+    const body: unknown = JSON.parse(text);
+    return body && typeof body === 'object' ? body as Record<string, unknown> : undefined;
   } catch {
     return undefined;
   }
@@ -83,7 +97,7 @@ async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
       : { 'Content-Type': 'application/json', ...init.headers },
   });
   if (!res.ok) {
-    throw new HttpError(res.status, `${res.status} on ${path}`, await errorCode(res));
+    throw new HttpError(res.status, `${res.status} on ${path}`, await errorBody(res));
   }
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
@@ -141,7 +155,7 @@ export function createHttpApi(): ItqanApi {
           if (xhr.status >= 200 && xhr.status < 300) {
             try { resolve(JSON.parse(xhr.responseText) as UploadedDocument); }
             catch { reject(new HttpError(xhr.status, 'bad json')); }
-          } else reject(new HttpError(xhr.status, 'upload failed', errorCodeFrom(xhr.responseText)));
+          } else reject(new HttpError(xhr.status, 'upload failed', errorBodyFrom(xhr.responseText)));
         });
         xhr.addEventListener('error', () => reject(new HttpError(0, 'network')));
         xhr.addEventListener('abort', () => reject(new HttpError(0, 'aborted')));
@@ -189,7 +203,7 @@ export function createHttpApi(): ItqanApi {
           if (xhr.status >= 200 && xhr.status < 300) {
             try { resolve(JSON.parse(xhr.responseText) as { avatarUrl: string }); }
             catch { reject(new HttpError(xhr.status, 'bad json')); }
-          } else reject(new HttpError(xhr.status, 'avatar upload failed', errorCodeFrom(xhr.responseText)));
+          } else reject(new HttpError(xhr.status, 'avatar upload failed', errorBodyFrom(xhr.responseText)));
         });
         xhr.addEventListener('error', () => reject(new HttpError(0, 'network')));
         xhr.addEventListener('abort', () => reject(new HttpError(0, 'aborted')));

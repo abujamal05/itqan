@@ -471,7 +471,7 @@
         "heading": "Paying",
         "points": [
           "Most of Itqan is free and stays free.",
-          "Premium is 2.9 OMR a month, billed as $7.50. You can cancel at any time and it runs to the end of the month you paid for."
+          "Premium is 2.9 OMR a month, billed as $7.54. You can cancel at any time and it runs to the end of the month you paid for."
         ]
       }
     ],
@@ -574,7 +574,7 @@
       "name": "Premium",
       "price": "2.9 OMR",
       "period": "a month",
-      "priceUsd": "Billed as $7.50",
+      "priceUsd": "Billed as $7.54",
       "for": "For when the whole list is worth your time.",
       "items": [
         "Everything in the free plan",

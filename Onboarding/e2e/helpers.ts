@@ -18,6 +18,18 @@ export const ACCOUNTS = {
   fresh: 'new@itqan.test',
   /** Already onboarded — lands straight on the dashboard. */
   onboarded: 'nasser@itqan.test',
+  /**
+   * Onboarded, and DELIBERATELY LOGGED INTO BY NOTHING ELSE.
+   *
+   * The stub keeps per-account state (the token counter, most of all) in memory
+   * for the life of the dev server, and the suite runs fully parallel. So a
+   * test that asserts an exact counter against a shared account is really
+   * asserting what every other worker happened to do first — which is how the
+   * token spec passed alone and failed in a full run. Anything that SPENDS
+   * belongs here; if a second spec ever takes this account, that isolation is
+   * gone and the flake comes back.
+   */
+  spender: 'maryam@itqan.test',
 } as const;
 
 export const PASSWORD = 'itqan1234';

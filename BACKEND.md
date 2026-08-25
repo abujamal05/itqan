@@ -706,50 +706,67 @@ rule is developed against rather than assumed. **Production still needs both.**
 ideally `isPrimary: boolean` so primacy is a server fact rather than something
 the client infers from sort order.
 
-### 4. AI usage — `GET /api/usage`  and  `User.plan`
+### 4. AI usage — `GET /api/usage`  and  `User.plan`  **(BUILT AND DEPLOYED — superseded 2026-08-24)**
 
-**The limits are decided** (product owner, 2026-08-21). There are two, they are
-measured in different units, and they reset on different clocks:
+**The two-allowance design below was replaced by ONE token budget** (product
+owner, 2026-08-24). What shipped, and what is live on tryitqan.com now:
 
 | | Free | Paid |
 |---|---|---|
-| Document rescans | 1 a week | 3 a week |
-| Messages with Hud | 30 a day | 90 a day |
+| **Daily tokens** | **30** | **90** |
+| a message costs | 1 token | 1 token |
+| a document re-read costs | 19 tokens | 19 tokens |
 
-The paid tier's rescan figure is taken as **per week**, mirroring the free
-tier's period — it was given as "3 document rescans" without one. Worth
-confirming before this is built.
-
-**The front end is built** (`components/UsageMeters.tsx`, on the profile screen)
-and `dev/site-plugin.ts` implements this contract, counting real sends so the
-meters move when Hud is actually used. In production the call 404s until this
-ships, and the section renders NOTHING rather than zeros — a meter reading
-"0 of 30" when the truth is unknown is a fabricated statistic.
-
-The tier comparison above is not on that screen: it is general information and
-belongs on a plan page of its own. Settings shows only what is specific to this
-person.
+Everything is spent from one daily pool, however the person likes. The prices
+are not guesses: a re-read was **measured** at 57,306 tokens against a message's
+3,081 — a ratio of 18.6 — so it is priced at what it costs rather than above it.
+The budget was sized so that a free account still cannot exceed **30 messages a
+day**, which is exactly what the old design allowed, and paid stays exactly 3x
+free on both of the old axes.
 
 ```jsonc
 GET /api/usage -> {
   "plan": "free",
-  "rescans":  { "used": 1,  "limit": 1,  "period": "week", "resetsAt": "2026-08-24T00:00:00Z" },
-  "messages": { "used": 12, "limit": 30, "period": "day",  "resetsAt": "2026-08-22T00:00:00Z" }
+  "tokens": { "used": 12, "limit": 30, "remaining": 18,
+              "period": "day", "resetsAt": "2026-08-25T00:00:00Z" },
+  "prices": { "message": 1, "documentReread": 19 },
+
+  // Deprecated aliases: the SAME object as `tokens`, under the two names the
+  // old contract used, so a build that predates the budget still draws a
+  // meter that moves. They come off the wire one release after the app stops
+  // reading them.
+  "rescans":  { "...": "identical to tokens" },
+  "messages": { "...": "identical to tokens" }
 }
 ```
 
-- **Two counters, not one.** A single `used`/`limit` pair cannot express a weekly
-  allowance and a daily one at the same time, which is what the product sells.
+- **One counter, not two.** There is one budget on one clock, so a single
+  `used`/`limit` pair is exactly what the product sells.
+- **`prices` is published deliberately.** The bar says how much is left; the
+  prices say what things cost. Together they make "spend it however you like"
+  a decision somebody can act on — a budget with no price list is a number that
+  drains for reasons nobody can predict.
 - `resetsAt` rather than a duration, so the UI can say when it comes back in
   both languages without doing calendar arithmetic against an unknown timezone.
-- `limit: null` means unlimited, and the UI renders no meter for that row.
-- **`User.plan: "free" | "paid"` is needed regardless of the usage route.**
-  Without it the settings screen cannot say which column is the user's, which is
-  exactly why it currently presents free-versus-paid rather than "your plan".
-- The server owns enforcement. When a limit is reached, the rescan and chat
-  routes should refuse with `429` and a machine-readable reason
-  (`{ error: "rescan_limit" | "message_limit", resetsAt }`) so the front end
-  keeps owning the wording in both languages — the same rule as `409 last_cv`.
+- `limit: null` means unlimited (developer accounts) and the UI renders **no
+  meter** — "12 of 100,000" is not a ceiling anybody can act on.
+- **`User.plan: "free" | "paid"`** is live and read from the account.
+- The server owns enforcement. Every door that refuses answers **`429`** with
+  the same machine-readable id and the numbers that explain it:
+  `{ error: "token_limit", needed, remaining, resetsAt }`. One budget whichever
+  door means one reason whichever door — `rescan_limit` and `message_limit` are
+  gone. `needed` and `remaining` are what let a screen say "a re-read costs 19
+  and you have 8 left" instead of a bare refusal.
+- **`POST /api/chat/ask` still answers `200` with a Hud turn** at the limit
+  rather than a 429, deliberately: it is a conversation, and a 429 there makes
+  the user's question vanish from the thread.
+
+**Front end (done 2026-08-24):** `components/UsageMeters.tsx` draws one bar from
+`usage.tokens` with the price list beneath it, on both the profile and plan
+screens. It falls back to the two old meters if `tokens` is absent, since the
+app deploys separately from the API. The plan comparison table derives what each
+tier buys by dividing the budget by the published prices, so it cannot drift
+from what the server enforces.
 
 ### 5. The job cut — `GET /api/jobs` returns an object, and the server decides  **(BUILT AND DEPLOYED)**
 
@@ -833,15 +850,24 @@ Those are what `GET /api/usage` is being polled against.
 What the server owes:
 
 - Handle the Paddle webhook and flip the account to `paid`.
-- Reflect it in `GET /api/usage` (`plan`) and in the limits it returns: 3 rescans
-  a week and 90 messages a day on paid, 1 and 30 on free.
+- Reflect it in `GET /api/usage` (`plan`) and in the limit it returns: **90
+  daily tokens on paid, 30 on free** (see section 4 — the two-allowance design
+  this line used to describe was replaced by one budget).
 - Reflect it in the job cut above.
 - On a lapsed or cancelled subscription, return to `free` at period end. The UI
   already treats free as the normal state, so nothing needs to be told.
 
 **Currency.** Paddle does not support OMR. The rial is pegged at a fixed
-1 OMR = 2.6008 USD, so the published 2.99 OMR is charged as **$7.78** and the
-two cannot drift. The Paddle price must be created in USD at 7.78.
+1 OMR = 2.6008 USD, so the published price and the charge cannot drift — as long
+as the arithmetic is actually done. It is shown here so the next reader can
+check it rather than trust it:
+
+    2.9 x 2.6008 = 7.5423  ->  $7.54     <- the pair in use, created in Paddle
+
+**Live figures (2026-08-25): 2.9 OMR displayed, $7.54 charged.** The price
+exists in Paddle at 7.54 USD, and the six places the figures are rendered — the
+app's plan screen and the site's pricing page, both languages — all read that
+pair. If either number moves, all seven move together.
 
 **Config** is three build-time vars, documented in `Onboarding/.env.example`:
 `VITE_PADDLE_ENV`, `VITE_PADDLE_TOKEN` (the client-side token, safe in the
