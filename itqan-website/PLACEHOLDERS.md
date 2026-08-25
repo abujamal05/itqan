@@ -56,9 +56,14 @@ Each is stated in the published policy, so each is now a promise rather than an 
 
 | Stated | Reality today | Owner |
 |---|---|---|
-| `privacy@tryitqan.com` and `support@tryitqan.com` reach a person | **Mailboxes do not exist yet.** Create them before launch. | Team |
+| ~~`privacy@` and `support@tryitqan.com` reach a person~~ | **Resolved 2026-08-24.** Both retired. One address now: `ItqanTeam@outlook.com`, with `+968 7123 5872` beside it. A real mailbox, so the addressing problem is closed — what replaces it is a **staffing** one: that inbox now carries every right in the policy and every notice in the terms, including a thirty day answer commitment. | Team |
 | Account erasure on request | No route exists; it is done by hand on the VPS. The policy says "write to us and we will carry it out", which is true only while somebody actually does. | Backend |
 | Backups release erased data as rotation completes | An OVH snapshot backup exists; the **rotation period is not yet decided or written down**. | Backend |
+
+**If the address or number ever changes, it changes in four places**, and only two of them are
+lint-checkable: `src/config.ts`, `../Onboarding/src/lib/contact.ts`, and inside the prose of privacy
+clause 14 and terms clause 18, in both locales, where it sits in a sentence and cannot be
+interpolated.
 
 ## Working assumptions awaiting a decision
 
