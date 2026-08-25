@@ -15,6 +15,7 @@
  * decorative, pushed the decision content below the fold on mobile, and a
  * stock photo cannot tell anyone whether a course is worth eight hours.
  */
+import type { ReactNode } from 'react';
 import { Clock, ExternalLink } from 'lucide-react';
 import { useI18n } from '../i18n';
 import type { Course } from '../api';
@@ -23,7 +24,7 @@ import { Badge, Card, GapChip } from './ui';
 import { FeedbackBar } from './FeedbackBar';
 
 export function CourseCard({
-  course, onReplace,
+  course, onReplace, action,
 }: {
   course: Course;
   /**
@@ -33,6 +34,16 @@ export function CourseCard({
    * where they are, with their filters and scroll position intact.
    */
   onReplace?: (next: Course) => void;
+  /**
+   * The one control that belongs to the USER rather than to the course.
+   *
+   * Marking a course done is a claim about yourself, so it is passed in rather
+   * than built here — this component knows about a course, not about who is
+   * looking at it. It renders INSIDE the card, beside "Open the course",
+   * because a button floating on its own surface underneath read as a separate
+   * object that happened to be nearby rather than as this card's action.
+   */
+  action?: ReactNode;
 }) {
   const { t, formatDate, formatNumber, formatMoney } = useI18n();
 
@@ -70,11 +81,12 @@ export function CourseCard({
           </div>
         </div>
 
-        <div className="row">
+        <div className="row course__actions">
           <a className="btn btn--secondary" href={course.source.url} target="_blank" rel="noopener noreferrer">
             {t('courses.view')}
             <ExternalLink size={16} aria-hidden="true" />
           </a>
+          {action}
         </div>
 
         <FeedbackBar subject="course" itemId={course.id} onReplace={onReplace} />

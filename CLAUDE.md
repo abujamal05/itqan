@@ -18,7 +18,7 @@ document the story, it is reproducing a superseded pitch.
 
 **Pricing.** Most of what gets someone started is free and stays free: where they stand, the path,
 their three strongest job matches, and the advisor. Premium opens the rest of the matches and raises
-AI usage. It is 2.99 OMR a month, charged as $7.78 through Paddle. Never write "free forever" or "no
+AI usage. It is 2.9 OMR a month, charged as $7.50 through Paddle. Never write "free forever" or "no
 payment at any point", and never "nobody pays to get hired" — that one is retired and now false.
 
 ## The two front ends
@@ -40,7 +40,15 @@ cd Onboarding    && npm install && npm run dev   # http://localhost:4333/app/
 
 - [`PRODUCT.md`](PRODUCT.md) — product truth: users, positioning, constraints, brand commitments. The
   source every other doc and skill defers to.
+- [`DESIGN.md`](DESIGN.md) — the consolidated design system: tokens, the three registers and the evidence
+  fence, component patterns, RTL, and the anti-slop directives. **It wins on anything visual.** The
+  `itqan-*` skills and the three `tokens.css` copies remain in place; where they disagree with this file,
+  they are the bug.
 - [`BACKEND.md`](BACKEND.md) — every HTTP call either front end makes, and which ones do not exist yet.
+- [`LEGAL-BRIEF.md`](LEGAL-BRIEF.md) — the issue list a lawyer needs to draft the real privacy policy
+  and terms, and the infrastructure questions that block it. **Not legal text, and not a licence to
+  write any**: Oman's PDPL has been enforceable since 5 February 2026, and the pages still ship as
+  placeholders.
 - [`README.md`](README.md) — how the two apps are built and why the load bearing decisions went the way
   they did.
 

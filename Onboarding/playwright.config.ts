@@ -51,6 +51,11 @@ const desktop = [
 
 export default defineConfig({
   testDir: './e2e',
+  /* `webServer.url` below only proves the PORT is open — it points at a static
+     page from the site build. `/api/*` and the app's module graph come up after
+     it, and workers starting into that gap is what produced the wandering
+     "flaky test". See the file for the full account. */
+  globalSetup: './e2e/global-setup.ts',
   // Every spec is independent (each logs itself in and resets its own state),
   // so they parallelise cleanly.
   fullyParallel: true,

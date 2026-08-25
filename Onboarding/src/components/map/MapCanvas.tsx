@@ -33,6 +33,16 @@ import {
   type NodeTypes,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { PathEdge } from './PathEdge';
+
+/**
+ * One edge type, shared by both maps.
+ *
+ * Declared at module scope, not inline: React Flow treats a new `edgeTypes`
+ * object as a new set of types and remounts every edge, which would restart the
+ * dash animation on every render — the exact flicker this edge exists to fix.
+ */
+const edgeTypes = { path: PathEdge };
 
 interface MapCanvasProps {
   nodes: Node[];
@@ -297,6 +307,7 @@ export function MapCanvas({
             nodes={nodes}
             edges={edges}
             nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
             /* The map is a map, not an editor. Nothing here is draggable,
                connectable or deletable; the only gestures are pan and zoom. */
             nodesDraggable={false}

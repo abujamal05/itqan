@@ -516,27 +516,53 @@ deployment avoids it entirely, and the front end is configured for both
 
 ---
 
-## Checklist
+## Checklist — superseded 2026-08-24, and deliberately not replaced
 
-| Endpoint | Status |
+**There is no hand-written status table here any more, and there should not be
+one.** This section used to list what was missing. Every entry on it is now
+built and deployed, which was discovered only when the API team read it and
+answered route by route: the table had been wrong for some time and nothing
+about it announced that.
+
+A table maintained by hand goes stale the week after it is written, and a stale
+one is worse than none because it is trusted. **The status of every route is
+served, generated, from the API itself:**
+
+| | |
 |---|---|
-| `POST /api/auth/forgot-password` | **missing** — front end complete and waiting |
-| `POST /api/auth/reset-password` | **missing** — front end complete and waiting |
-| `POST /api/profile/avatar` | **missing** |
-| `DELETE /api/profile/avatar` | **missing** |
-| `avatarUrl` on `GET /api/profile` | **missing field** |
-| `suggestedRole` on `GET /api/profile` | **missing field** |
-| `phone` through `POST`/`PUT`/`GET /api/profile` | **new field, must persist** |
-| `POST /api/preferences/feedback` | **missing** — front end complete, stubbed in dev. Must persist and reach the ranker |
-| `GET /api/preferences/feedback` | **missing** — needs storage; empty object is a 200 |
-| `POST /api/courses/similar` | **missing** — must honour `exclude` and match on `unlocks`; `null` is valid |
-| `POST /api/chat/ask` | **missing** — front end complete, stubbed in dev. Accepts multipart when files are attached |
-| `POST /api/chat/rate` | **missing** — fire and forget, any 2xx |
-| `GET /api/chat/threads` | **missing** — needs storage; Vercel twin answers `[]` |
-| `GET /api/chat/threads/:id` | **missing** — needs storage |
-| all chat routes | one Vercel function, `api/chat/[...path].js` — see the note in §1.4 |
-| `POST /api/placeholder/{signup,login}` | exists — **rename before launch** |
-| everything else in §2 | contracted, stubbed in dev, needs a real implementation |
+| Machine readable | `https://tryitqan.com/api/openapi.json` |
+| Human readable | `https://tryitqan.com/api/docs` |
+
+FastAPI generates that document from the routes, so it cannot drift from them.
+Ask it, not this file. Verified 2026-08-24: **36 routes**, and every endpoint
+this document contracts is among them.
+
+What this file is still for is the part OpenAPI cannot express — why a shape is
+what it is, which rules the server must enforce rather than merely accept, and
+where a contract is deliberately unimplemented. Those notes stay below.
+
+**The two things not in the OpenAPI document, and not derivable from it:**
+
+- **One origin.** Caddy serves the site, `/app/*` and `/api/*` from
+  `tryitqan.com`. `credentials: 'same-origin'` works because it is literally
+  true, and **no CORS is configured anywhere, deliberately**.
+- **The session cookie is `itqan_session`** — httpOnly, `SameSite=Lax`, Secure
+  in production, `path=/`. Set at sign in on the site, read by the API on the
+  same origin. The handoff is unchanged.
+
+Local: `uvicorn api.main:get_app --factory --port 8000`, which is what
+`ITQAN_API=http://127.0.0.1:8000` expects. Needs Postgres with pgvector.
+
+### `/api/placeholder/{signup,login}` is being removed
+
+The site has posted to `/api/auth/*` since this build; the old paths survived
+only for deployed HTML built before it. The API team confirmed the deployed
+HTML now references `/api/auth/*` exclusively, so the aliases are going.
+
+`dev/site-plugin.ts` answered **only** the old paths, which meant the dev stub
+and the real API disagreed about the primary route for sign in. Both are now
+accepted there, `/api/auth/*` first, and the alias comes out the day production
+drops it. `e2e/helpers.ts` and the two capture scripts have moved across.
 
 ---
 
@@ -725,13 +751,15 @@ GET /api/usage -> {
   (`{ error: "rescan_limit" | "message_limit", resetsAt }`) so the front end
   keeps owning the wording in both languages — the same rule as `409 last_cv`.
 
-### 5. The job cut — `GET /api/jobs` returns an object, and the server decides  **(NOT BUILT — the UI waits for you)**
+### 5. The job cut — `GET /api/jobs` returns an object, and the server decides  **(BUILT AND DEPLOYED)**
 
-> **Status: the front end is ready and dormant.** The client accepts the old
-> bare array AND the new object, so nothing is gated today and no job is
-> hidden from anyone. The moment this endpoint starts returning a `locked`
-> count above zero, the locked cards and the upgrade prompt appear on their
-> own. Nothing in the front end needs to change or be remembered.
+> **Status 2026-08-24: live.** The deployed `/api/jobs` returns
+> `{matches, locked, plan}`. The front end needed no change to receive it,
+> which was the point of accepting both shapes: the client was written to take
+> the object the day it arrived and it did.
+>
+> The client still tolerates a bare array. Leave that in. It is what makes the
+> next contract change safe, and it costs one branch.
 >
 > This is deliberate. Typing the client to the new shape alone emptied the job
 > list in every environment that had not shipped the cut — the page said "no
@@ -783,7 +811,26 @@ account, and passes `customer.email` to save the user retyping it.
 means Paddle took the money, not that the account changed. On that event the
 plan screen polls `GET /api/usage` until the SERVER reports `plan: "paid"`, and
 after 30 seconds says the payment is still landing rather than claiming it
-failed. What the server owes:
+failed.
+
+**`checkout.completed` is not a webhook, and nothing server-side listens for
+it.** It is a browser event from Paddle.js. The distinction matters because the
+two arrive by different routes and only one of them is trustworthy: the browser
+event is a hint that polling should start, the webhook is the fact. The webhook
+lands on `POST /api/paddle/webhook`, which is live.
+
+**The events that actually flip the plan are `subscription.activated`,
+`subscription.created` and `subscription.updated`** — not `checkout.completed`.
+Those are what `GET /api/usage` is being polled against.
+
+> **THE MOST LIKELY WAY THE FIRST SANDBOX TEST FAILS.** The Paddle price must be
+> created as **RECURRING**. Created as a one-time price, Paddle opens a checkout
+> that takes the money and creates no subscription, so no `subscription.*` event
+> ever fires and the plan never flips. The webhook would be correct, wired, and
+> silent, and the only symptom is a plan screen that polls for 30 seconds and
+> then says the payment is still landing. Check the price type first.
+
+What the server owes:
 
 - Handle the Paddle webhook and flip the account to `paid`.
 - Reflect it in `GET /api/usage` (`plan`) and in the limits it returns: 3 rescans
@@ -793,40 +840,27 @@ failed. What the server owes:
   already treats free as the normal state, so nothing needs to be told.
 
 **Currency.** Paddle does not support OMR. The rial is pegged at a fixed
-1 OMR = 2.6008 USD, so the published **2.9 OMR** is charged as **$7.54** and the
-two cannot drift. The Paddle price must be created in USD at **7.54**.
-
-The multiplication is written out because it is the only thing keeping the two
-figures together, and it has already come apart twice: this paragraph said
-2.99 OMR / $7.78 while the integration request asked for $7.50 against 2.9 OMR —
-three figures, none of which agreed.
-
-    2.9  x 2.6008 = 7.5423  ->  $7.54     <- the pair in use
-    2.99 x 2.6008 = 7.7764  ->  $7.78         (the previous pair)
-    7.50 / 2.6008 = 2.8837  ->  2.88 OMR      ($7.50 is not 2.9 OMR)
-
-**The price must be RECURRING.** A one-time price creates no subscription, so no
-`subscription.*` webhook ever fires and the account is never moved to paid — the
-webhook would be correct, silent, and blamed. This is the most likely way a
-first sandbox checkout appears to do nothing.
-
-**`checkout.completed` is a browser event, not a webhook.** Nothing server-side
-listens to it and nothing should. The plan flips on `subscription.activated`
-(and `.created` / `.updated` for later changes), which is what the plan screen's
-poll of `GET /api/usage` is waiting for.
+1 OMR = 2.6008 USD, so the published 2.99 OMR is charged as **$7.78** and the
+two cannot drift. The Paddle price must be created in USD at 7.78.
 
 **Config** is three build-time vars, documented in `Onboarding/.env.example`:
 `VITE_PADDLE_ENV`, `VITE_PADDLE_TOKEN` (the client-side token, safe in the
 browser — never the API key), `VITE_PADDLE_PRICE_ID`.
 
-**With the vars unset the upgrade button renders disabled and SAYS NOTHING.**
-That is deliberate. A user cannot act on a missing environment variable, and a
-sentence about an unfinished deployment in the middle of a plan they are reading
-is noise. The explanation goes to the console in dev, naming which var is
-missing. So: an upgrade button that is disabled in a deployed environment means
-these are not set, and there will be no message on the page saying so — check
-here. Vite reads env files at startup, so the dev server needs a restart, not a
-reload, after adding them.
+**With the vars unset the upgrade button is NOT RENDERED AT ALL** — it is not a
+disabled button, and there is no message in its place. `Plan.tsx` gates it on
+`isConfigured`, so the Premium column shows its price and nothing to press.
+
+That is deliberate, and it is the same rule as the last-CV control above: a
+disabled button invites a click and then refuses it. A user cannot act on a
+missing environment variable and should not be shown one. The cancel policy
+still renders, because it is true whether or not checkout is wired.
+
+The explanation goes to the **dev console**, naming which var is unset. So: a
+Premium column with a price and no button in a deployed environment means these
+are not set, and nothing on the page will say so — check here. Vite reads env
+files at startup, so the dev server needs a restart, not a reload, after adding
+them.
 
 **If a CSP is ever added** to the app it has to allow Paddle: `cdn.paddle.com`
 for the script and `*.paddle.com` in `frame-src`. There is no CSP today.
@@ -846,3 +880,33 @@ deliberately out of the pricing work rather than half done. What it needs:
 - An opt-out, stored with the account rather than the browser.
 
 Until it ships, no screen may claim the user will be notified.
+
+### 8. Carrying "I came here to buy" across the handoff
+
+Someone who presses the premium button on `/pricing` should land on the upgrade
+screen once they are through signup, verification and onboarding, rather than on
+the dashboard having to go and find it.
+
+**Built and working today, with one deployment assumption.** The pricing CTA
+links to `/signup/?intent=premium`; `form.ts` turns that into a cookie
+(`itqan_intent=premium`, 30 minutes) on a successful signup; the app reads it on
+boot, moves it into `sessionStorage`, deletes the cookie, and spends it once —
+at the end of `Confirm` for a first run, or at the app's landing route for
+someone who already had an account.
+
+**The assumption is a shared registrable domain.** A cookie set on
+`itqan.com` reaches `app.itqan.com`; it does not reach a different domain
+entirely. If the app ever moves off the site's domain, this stops working
+silently — nobody sees an error, the intent is simply lost and they land on the
+dashboard.
+
+To make it survive that, `/api/handoff` needs to forward the parameter:
+
+```
+GET /api/handoff?intent=premium   ->  302 <app>/?intent=premium
+```
+
+**The app already reads `?intent=premium` from its own URL**, with the same
+capture-and-clear path, so forwarding it is the only change required and nothing
+in the front end has to be touched. Pass through only the literal value
+`premium`; anything else should be dropped rather than reflected.

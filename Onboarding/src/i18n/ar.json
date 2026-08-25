@@ -401,7 +401,7 @@
   "plan.freeName": "المجاني",
   "plan.paidName": "المدفوع",
   "plan.current": "الحالي",
-  "plan.price": "2.99 ريال عماني في الشهر",
+  "plan.price": "2.9 ريال عماني في الشهر",
   "plan.rowMatches": "الوظائف المطابقة",
   "plan.rowMatchesFree": "أقوى ثلاث وظائف، محدّثة أولًا بأول",
   "plan.rowMatchesPaid": "كل وظيفة تناسبك",
@@ -419,6 +419,6 @@
   "plan.manage": "لإلغاء الاشتراك أو تغيير البطاقة، استخدم الإيصال المرسل إلى بريدك.",
   "plan.usageTitle": "ما استهلكته",
   "nav.plan": "اشتراكك",
-  "plan.priceUsd": "يُحصّل بمبلغ 7.78 دولار",
+  "plan.priceUsd": "يُحصّل بمبلغ 7.50 دولار",
   "plan.youAreOn": "أنت على الاشتراك {plan}"
 }

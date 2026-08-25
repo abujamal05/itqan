@@ -28,6 +28,7 @@ import { useI18n } from '../i18n';
 import { useOnboarding } from '../state/onboarding';
 import { useApi } from '../state/api';
 import { useAuth } from '../state/auth';
+import { clearUpgradeIntent, hasUpgradeIntent } from '../state/upgradeIntent';
 import { isStrong } from '../api';
 import type { Skill } from '../api';
 import { Button, Callout, Card, LoadingBlock } from '../components/ui';
@@ -251,6 +252,19 @@ export function Confirm() {
        * "how can I help". Read from the stored preference rather than from a
        * navigation flag, so it stays true if this call ever moves.
        */
+      /**
+       * UNLESS THEY CAME TO BUY. Someone who pressed the premium button on the
+       * marketing site has now signed up, verified an email and walked the
+       * whole of onboarding; dropping them on the first-run chat means they
+       * have to go and find the thing they arrived for. The intent is spent
+       * here, once, and never survives to a later session.
+       */
+      if (hasUpgradeIntent()) {
+        clearUpgradeIntent();
+        navigate('/plan', { replace: true });
+        return;
+      }
+
       navigate('/chat', {
         replace: true,
         state: { findRole: preferences.knowsRole === 'no' },

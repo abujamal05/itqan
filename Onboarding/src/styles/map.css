@@ -111,41 +111,51 @@
   overflow: visible;
 }
 
-/* The path. Behind the user it is solid accent; ahead of them it is a hairline.
-   `--color-border-accent` rather than the brand gold: gold measures 2.0:1 on
-   light and is barred from being a meaningful edge. */
+/* ---- The three states of the road -----------------------------------------
+   Every edge reports `pathLength="100"` (see PathEdge.tsx), so the dash values
+   below are PERCENTAGES of the run rather than pixels. Two things follow, and
+   both were broken before:
+
+     Every edge gets the same number of dashes whatever its length, so a short
+     hop between neighbours and a long return across a serpentine row read as
+     the same road instead of two different textures.
+
+     Every period divides 100 exactly, so the pattern ends flush at both ends.
+     A period that does not divide the length leaves a permanently half-drawn
+     dash at the far end, which blinks once per cycle — that was the flicker.
+
+   Change a dasharray here and check the period still divides 100.
+
+   AHEAD: dotted. Not yet travelled, and the dots say so more plainly than the
+   hairline that used to be here. 0.5 + 3.5 = 4, so 25 dots. */
 .map__canvas .react-flow__edge-path {
   stroke: var(--color-border-strong);
   stroke-width: 3;
   stroke-linecap: round;
+  stroke-dasharray: 0.5 3.5;
 }
 
+/* BEHIND: solid, and accented. The part already walked is the one thing on the
+   map that is finished, so it is the only unbroken line. */
 .map__canvas .mapedge--reached .react-flow__edge-path {
   stroke: var(--color-border-accent);
   stroke-width: 4;
+  stroke-dasharray: none;
 }
 
-/* The one edge into the current node.
-   THE DASH PERIOD AND THE ANIMATION HAVE TO AGREE, and this is why the line
-   looked like it was stuttering. React Flow ships `stroke-dasharray: 5` with a
-   keyframe that runs `stroke-dashoffset` from 10 to 0 — one whole period, so it
-   loops seamlessly. Overriding the dash to `7 8` made the period 15 while the
-   offset still travelled only 10, so every cycle ended 5px short of where it
-   started and the whole dash pattern visibly snapped back.
-
-   Own keyframe, own period, and they match: 7 + 8 = 15, offset 15 to 0. Slower
-   than React Flow's 0.5s too — this is a route being followed, not a loading
-   barber pole. */
+/* THE LIVE ONE: marching, and now seamless. 2 + 3 = 5, so 20 dashes, and the
+   offset travels exactly one period per cycle. Slower than React Flow's own
+   0.5s: this is a route being followed, not a loading barber pole. */
 @keyframes mapdash {
-  from { stroke-dashoffset: 15; }
+  from { stroke-dashoffset: 5; }
   to { stroke-dashoffset: 0; }
 }
 
 .map__canvas .react-flow__edge.animated .react-flow__edge-path {
   stroke: var(--color-accent);
   stroke-width: 4;
-  stroke-dasharray: 7 8;
-  animation: mapdash 1.1s linear infinite;
+  stroke-dasharray: 2 3;
+  animation: mapdash 1.4s linear infinite;
 }
 
 /* The dash stays — it is what distinguishes the live segment from the rest —
@@ -572,15 +582,8 @@
 
 .sheet__close:hover { background-color: var(--color-surface-sunken); }
 
-.sheet__foot {
-  display: flex;
-  padding: var(--space-3);
-  border-radius: var(--radius-lg);
-  background-color: var(--color-surface);
-  box-shadow: var(--shadow-md), var(--rim-light);
-}
-
-.sheet__foot .btn { inline-size: 100%; justify-content: center; }
+/* `.sheet__foot` is gone. The Done and Undo controls moved INSIDE the card,
+   beside "Open the course", so there is no separate surface under it any more. */
 
 @media (max-width: 40rem) {
   .sheet {

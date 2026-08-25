@@ -67,14 +67,10 @@
 
   /* Text (LOCKED RULE: body text is navy; the brand gold is never body text) */
   --color-text:          var(--navy);    /* primary */
-  /* DEVIATION FROM THE SKILL, deliberate and measured.
-     The system ships raw `var(--navy-300)` here, which is #6B72A6 and measures
-     4.32:1 on --paper and 3.90:1 on --sand — below WCAG AA for the secondary
-     text that carries most of both apps. Deepened toward the navy anchor: same
-     hue, still visibly quieter than --color-text, and 5.46:1 on paper, 4.63:1
-     on sand, 5.79:1 on white. This is an upstream bug to fix in
-     itqan-design-system/references/tokens.css; until then this line is the one
-     place these two files are allowed to differ from the skill. */
+  /* Deepened from the raw --navy-300 (#6B72A6), which measures 4.32:1 on
+     --paper and 3.90:1 on --sand and fails AA for the secondary text that
+     carries most of both apps. Same hue, still visibly quieter than
+     --color-text: 5.46:1 on paper, 4.63:1 on sand, 5.79:1 on white. */
   --color-text-muted:    color-mix(in srgb, var(--navy-300) 84%, var(--navy));
   --color-text-on-gold:  var(--navy);    /* text on a gold fill = navy, always */
   --color-text-on-navy:  var(--paper);   /* text on a navy fill */
@@ -116,6 +112,8 @@
 
   /* ---- TYPOGRAPHY --------------------------------------------------------- */
   --font-family: 'Rubik', system-ui, sans-serif;   /* Arabic + Latin, sole family */
+  /* Codes, IDs and parsed raw values only. Never prose, and never Arabic. */
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --weight-regular: 400;   /* body */
   --weight-medium: 500;    /* emphasis, labels */
   --weight-semibold: 600;  /* subheads, verdicts */
@@ -143,6 +141,7 @@
 
   /* Line-height: Arabic needs more vertical room than Latin (diacritics). */
   --leading-tight: 1.2;     /* display / headings */
+  --leading-snug: 1.35;     /* lead paragraphs, bubble copy, two-line labels */
   --leading-latin: 1.5;     /* Latin body */
   --leading-arabic: 1.75;   /* Arabic body — apply on [lang="ar"] / [dir="rtl"] */
 

@@ -253,6 +253,21 @@ export function initForm(form: HTMLFormElement): void {
         cancelable: true,
       }));
       if (response.ok) {
+        /* CARRY "I CAME HERE TO BUY" ACROSS THE HANDOFF.
+           Someone who pressed the premium button on /pricing should land on the
+           upgrade screen once they are through verification and onboarding, not
+           on the dashboard having to find it again. The site cannot tell the app
+           directly — they are separate origins in production and the app cannot
+           read this page's storage — so the intent rides in a cookie, which is
+           the one thing that crosses when both sit under the same registrable
+           domain. Half an hour is enough for signup plus verification and short
+           enough that it cannot resurface weeks later.
+
+           Set on SUCCESS rather than on page load: the intent is only real once
+           an account exists. See BACKEND.md §8 for the cross-domain case. */
+        if (new URLSearchParams(location.search).get('intent') === 'premium') {
+          document.cookie = 'itqan_intent=premium; path=/; max-age=1800; SameSite=Lax';
+        }
         if (form.dataset.successUrl) window.location.assign(form.dataset.successUrl);
         return;
       }
