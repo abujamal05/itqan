@@ -61,9 +61,15 @@ Premium is **2.9 OMR a month, charged as $7.54** through Paddle, which does not 
 The peg is fixed at 1 OMR = 2.6008 USD, so the two figures do not drift apart. Both are shown; the
 conversion is not explained on the page.
 
-"Extended use" is two allowances plus the match list. Free is **one document rescan a week, 30
-messages a day** with Hud, and **the three strongest job matches, kept current**; paid is **three
-rescans, 90 messages, and every match**. The profile screen shows a person their own consumption
+**Extended use is ONE DAILY POOL OF TOKENS, plus the match list.** Free gets **30 tokens a day**
+and **the three strongest job matches, kept current**; paid gets **90 tokens a day and every
+match**. Tokens are ONE pool covering **everything the AI does**, not an allowance for the advisor: a
+message costs 1, re-reading their documents costs 19, and anything added later is priced out of the
+same budget. There is no separate weekly rescan allowance any more, and copy must not describe one
+(decided 2026-08-25).
+
+The published prices are the reason the meter is worth drawing: a budget with no price list is a
+number that drains for reasons nobody can predict. The profile screen shows a person their own consumption
 against these limits, never the price list; the tier comparison lives on `/app/plan`. The contract
 behind it is [`BACKEND.md`](BACKEND.md) §4, and the job cut is §5; where usage is unavailable, no
 screen may show a usage number at all.

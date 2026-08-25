@@ -544,6 +544,15 @@
   border: 0;
   background: transparent;
   overflow: visible;
+  /* EXPLICIT, BECAUSE `dialog` DOES NOT INHERIT IT. The UA stylesheet gives
+     `dialog` its own `color: CanvasText`, which is black, and that beats
+     inheritance from `body`. Every child here without a colour rule of its own
+     therefore rendered black: in dark mode the course title and the "Unlocks"
+     label measured 1.1:1 against the card behind them, which is invisible
+     rather than merely low contrast.
+     Setting `background: transparent` above is what made it survive unnoticed —
+     the dialog has no surface of its own, so the only clue was the text. */
+  color: var(--color-text);
 }
 
 .sheet::backdrop {

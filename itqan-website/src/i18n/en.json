@@ -725,7 +725,7 @@
   },
   "pricing": {
     "title": "Pricing",
-    "metaDescription": "Start for free. Premium is 2.9 OMR a month and opens every job match you fit.",
+    "metaDescription": "Start for free. Premium is 2.9 OMR a month and opens every job you fit.",
     "eyebrow": "Pricing",
     "heading": "Start for free.",
     "intro": "Everything that gets you moving costs nothing: where you stand, your path to the role you want, your three strongest job matches, and Hud. Premium opens the rest of the list and triples what you can ask of the AI.",
@@ -736,8 +736,8 @@
       "items": [
         "Where you stand today, and the path to the role you want",
         "Your three strongest job matches, kept current",
-        "30 messages a day with Hud",
-        "One document rescan a week"
+        "30 tokens a day, across everything the AI does",
+        "A message costs 1 token. Re-reading your documents costs 19."
       ],
       "cta": "Create your free account",
       "period": "a month"
@@ -750,10 +750,9 @@
       "for": "For when the whole list is worth your time.",
       "items": [
         "Everything in the free plan",
-        "Every job match you fit, not only your strongest three",
-        "Triple the messages with Hud, every day",
-        "Triple the document rescans, every week",
-        "Rescan the week you finish a course, not the week after",
+        "Every job you fit, not only your strongest three",
+        "90 tokens a day, three times the pool",
+        "Enough to re-read your documents four times in one day",
         "Work through a whole shortlist in one sitting"
       ],
       "cancel": "Cancel any time. Premium runs to the end of the month you paid for.",

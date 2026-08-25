@@ -693,6 +693,22 @@ export interface ItqanApi {
   getDashboard(signal?: AbortSignal): Promise<DashboardData>;
   getJobs(signal?: AbortSignal): Promise<JobsResult>;
   getCourses(signal?: AbortSignal): Promise<Course[]>;
+
+  /**
+   * Mark a course finished, and take it back.
+   *
+   * LIVE, and this client did not call it. Completion was written to
+   * localStorage and nowhere else, so the courses map moved on while the
+   * server kept its own idea of the next step — which is what the dashboard
+   * reads. The two disagreed from the moment anything was completed.
+   *
+   * Per BACKEND.md these must NOT touch readiness: finishing a course is a
+   * claim, readiness is evidence, and the CV re-upload is what turns one into
+   * the other. `DELETE` is idempotent, so undoing something never completed is
+   * still a success.
+   */
+  completeCourse(courseId: string, signal?: AbortSignal): Promise<void>;
+  uncompleteCourse(courseId: string, signal?: AbortSignal): Promise<void>;
   /** Not built yet in production — BACKEND.md §4. Callers must tolerate a 404. */
   getUsage(signal?: AbortSignal): Promise<Usage>;
 

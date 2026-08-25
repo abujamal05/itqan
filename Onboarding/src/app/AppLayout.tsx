@@ -15,18 +15,20 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import {
-  BookOpen, Briefcase, ExternalLink, LayoutDashboard, LogOut,
-  PanelLeftClose, SquarePen, User as UserIcon, Waypoints,
+  BookOpen, Briefcase, LayoutDashboard, LogOut,
+  PanelLeftClose, Sparkles, SquarePen, User as UserIcon, Waypoints,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useAuth } from '../state/auth';
+import { useApi } from '../state/api';
 import { useChat } from '../state/chat';
 import { Logo } from '../components/Logo';
 import { PipelineProgress } from '../components/PipelineProgress';
 import { LangToggle, ThemeToggle } from '../components/Controls';
 import { Menu, MenuItem } from '../components/Menu';
-import { siteHome, siteLogin } from '../lib/site';
+import { siteLogin } from '../lib/site';
+import type { Usage } from '../api';
 
 /**
  * Order is the user's journey, not the data model: see where you stand, then
@@ -71,9 +73,35 @@ function initials(name: string) {
 }
 
 function AccountMenu() {
-  const { t, locale } = useI18n();
+  const { t, locale, formatNumber } = useI18n();
   const { user, logout } = useAuth();
+  const api = useApi();
+
+  /**
+   * What is left of today's tokens, shown as a figure and nothing else.
+   *
+   * NOT A BAR. The profile screen already draws the meter, with the price list
+   * under it; repeating that here would put the same widget in two places and
+   * make the menu a second dashboard. What a person wants from a dropdown is
+   * the number.
+   *
+   * SILENT WHEN UNAVAILABLE, which is a product rule rather than a nicety: if
+   * `/api/usage` is missing or fails, no screen may show a usage figure at
+   * all. A zero here would read as "you have none left" and send someone to
+   * the plan page to fix a problem they do not have.
+   */
+  const [usage, setUsage] = useState<Usage | null>(null);
+  useEffect(() => {
+    if (!user) return undefined;
+    const ac = new AbortController();
+    api.getUsage(ac.signal).then(setUsage).catch(() => { /* stays silent */ });
+    return () => ac.abort();
+  }, [api, user]);
+
   if (!user) return null;
+
+  const tokens = usage?.tokens;
+  const left = tokens && tokens.limit !== null ? Math.max(0, tokens.limit - tokens.used) : null;
 
   return (
     <Menu
@@ -90,6 +118,15 @@ function AccountMenu() {
           <div className="menu__head">
             <p className="menu__headName"><bdi>{user.fullName}</bdi></p>
             <p className="menu__headMail"><bdi>{user.email}</bdi></p>
+            {left !== null && (
+              /* The icon is the same Sparkles the profile meter uses, so the
+                 two read as one thing seen twice rather than two features. */
+              <p className="menu__tokens">
+                <Sparkles size={14} aria-hidden="true" />
+                <span className="num">{formatNumber(left)}</span>
+                <span className="sr-only">{t('account.tokensLeft')}</span>
+              </p>
+            )}
           </div>
           {/* Your account, under your own name — where this audience looks for
               it first, and no longer competing with the daily loop in the nav. */}
@@ -97,11 +134,6 @@ function AccountMenu() {
             <UserIcon size={16} aria-hidden="true" />
             {t('nav.profile')}
           </Link>
-          {/* A real navigation, not a route: the site is the other half. */}
-          <a className="menu__item" role="menuitem" href={siteHome(locale)} onClick={close}>
-            <ExternalLink size={16} aria-hidden="true" />
-            {t('nav.site')}
-          </a>
           <MenuItem
             danger
             onSelect={async () => {

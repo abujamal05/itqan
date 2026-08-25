@@ -82,6 +82,17 @@ const profiles = new Map<string, Record<string, unknown>>();
    working in production. */
 const uploads = new Map<string, Record<string, unknown>[]>();
 
+/**
+ * Which courses each account has marked finished.
+ *
+ * Production has had `POST/DELETE /api/courses/:id/complete` for a while and
+ * this client called neither, so completion lived only in the browser's
+ * localStorage. The courses map moved on, the server did not, and the
+ * dashboard — which reads the server — went on naming a finished course as the
+ * next step. Recording it here is what lets dev reproduce that at all.
+ */
+const completedByUser = new Map<string, Set<string>>();
+
 /** Hud's threads per account. */
 interface ChatThreadRow {
   id: string;
@@ -758,6 +769,23 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           });
         }
         if (url === '/api/courses') return json(res, 200, courses(locale));
+
+        /* Completion, POST to set and DELETE to undo.
+           Production has had these since before this stub did, and the client
+           was calling neither — so dev could not reproduce the bug where the
+           server's next step and the local one disagreed. Recorded per user,
+           in memory, because that is what this stub is: the point is that the
+           route EXISTS and answers, so the client's write path is exercised.
+           DELETE is idempotent, matching the documented contract. */
+        if (/^\/api\/courses\/[^/]+\/complete$/.test(url)
+            && (req.method === 'POST' || req.method === 'DELETE')) {
+          const courseId = decodeURIComponent(url.split('/')[3]);
+          const set = completedByUser.get(me.id) ?? new Set<string>();
+          if (req.method === 'POST') set.add(courseId);
+          else set.delete(courseId);
+          completedByUser.set(me.id, set);
+          return json(res, 204, undefined);
+        }
 
         /* DEV ONLY. Turns the job cut on so the locked cards can be seen; it
            is off by default because production does not cut yet. */

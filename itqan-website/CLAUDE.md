@@ -23,8 +23,12 @@ earlier pitch led with it; if a page makes decoding a document the story, it is 
 
 **Pricing.** Most of what gets someone started is free and stays free: where they stand, the path,
 their three strongest job matches, and the advisor. Premium opens the rest of the matches and raises
-AI usage. It is 2.9 OMR a month, charged as $7.54 through Paddle. Never write "free forever" or "no
-payment at any point", and never "nobody pays to get hired" — that one is retired and now false.
+the daily token pool from **30 to 90**. It is 2.9 OMR a month, charged as $7.54 through Paddle.
+
+**Tokens are ONE DAILY POOL, spent however the person likes**: a message costs 1, re-reading their
+documents costs 19. There is no separate weekly rescan allowance any more and copy must not describe
+one (decided 2026-08-25). Never write "free forever" or "no payment at any point", and never "nobody
+pays to get hired" — that one is retired and now false.
 
 **Scope stops at the sign up and log in pages.** The product itself is `../Onboarding/`. If a task feels
 like product work, stop and ask.

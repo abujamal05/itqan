@@ -409,7 +409,7 @@
   "plan.rowRescans": "إعادة قراءة المستندات",
   "plan.rowCore": "أين تقف، ومسارك، والمستشار",
   "plan.included": "مشمول",
-  "plan.upToPerDay": "إلى {n} في اليوم",
+  "plan.upToPerDay": "{n}/يوم",
   "plan.budgetNote": "رصيد واحد في اليوم، تصرفه على راحتك. الرسالة تكلف {message}، وإعادة قراءة مستنداتك تكلف {reread}.",
   "plan.upgrade": "اشترك في المدفوع",
   "plan.cancelNote": "تقدر تلغي في أي وقت، ويبقى الاشتراك شغّالًا إلى نهاية الشهر المدفوع.",
@@ -425,5 +425,7 @@
   "profile.contactBody": "",
   "documents.cvRequired": "نحتاج إلى سيرة ذاتية لنقرأها. أضف واحدة ثم أعد المحاولة.",
   "documents.limitReached": "استنفدت رصيد اليوم. وتعرض صفحة ملفك موعد تجدّده.",
-  "documents.limitTokens": "إعادة قراءة مستنداتك تكلّف {needed} من الرصيد، ولم يتبقَّ لك اليوم سوى {remaining}. ويتجدّد الرصيد غدًا."
+  "documents.limitTokens": "إعادة قراءة مستنداتك تكلّف {needed} من الرصيد، ولم يتبقَّ لك اليوم سوى {remaining}. ويتجدّد الرصيد غدًا.",
+  "courses.saveFailed": "لم يُحفظ ذلك. تقدّمك كما هو، ويمكنك المحاولة مرة أخرى.",
+  "account.tokensLeft": "رمزًا متبقيًا اليوم"
 }
