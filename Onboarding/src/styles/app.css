@@ -1893,25 +1893,50 @@
    tag answers "why can I not delete this" better than a disabled button would. */
 .doclist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
 
+/* A MANAGED ROW, NOT A LINE OF TEXT. Identity on top, controls beneath, one
+   layout at every width — the arrangement the upload screen arrived at by
+   measurement: the category select needs about 12rem to show its longest
+   option, which does not fit beside a filename and two buttons on a phone. */
 .doclist__item {
   display: flex;
-  align-items: center;
-  /* WRAPS, because the remove control changes width. The quiet state is a 32px
-     X; the confirm state is two buttons, and on a narrow row that stole the
-     space from the filename and broke "transcript.pdf" across three lines. The
-     confirm drops to its own line instead of crushing the thing it is about. */
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: var(--space-3);
-  row-gap: var(--space-2);
   padding: var(--space-3);
-  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
+  /* A WELL, NOT A NESTED CARD. The design system's own recipe: sunken fill, no
+     shadow, transparent border. It sat inside a card with a hairline of its
+     own for a moment, which is the card-inside-a-card read the craft floor
+     rules out — and the fill was already doing the separating. */
+  border: 1px solid transparent;
   background-color: var(--color-surface-sunken);
 }
 
+/* Busy is stated by the progress line below, not by fading the row out: a
+   dimmed row with a moving bar in it reads as two contradictory signals. */
+.doclist__item[data-busy] .select,
+.doclist__item[data-busy] .btn { pointer-events: none; }
+
+.doclist__head { display: flex; align-items: flex-start; gap: var(--space-3); }
+
+/* Wraps, because the remove control changes width. The quiet state is a 32px
+   X; the confirm state is two buttons, and on a narrow row that stole the
+   space from the category select. The confirm drops to its own line instead
+   of crushing the thing it is about. */
+.doclist__controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.doclist__controls .select { flex: 0 1 12rem; min-inline-size: 0; }
+
+.doclist__progress { display: flex; align-items: center; gap: var(--space-3); }
+.doclist__progress .meter { flex: 1 1 auto; }
+.doclist__status { font-size: var(--text-xs); color: var(--color-text-muted); white-space: nowrap; }
+
 .doclist__icon { color: var(--color-text-muted); flex: 0 0 auto; }
 
-.doclist__main { display: flex; flex-direction: column; gap: 2px; min-inline-size: 0; flex: 1 1 11rem; }
+.doclist__main { display: flex; flex-direction: column; gap: 2px; min-inline-size: 0; flex: 1 1 auto; }
 
 /* A filename is one long unbroken token more often than not, and left to
    itself it pushes the required tag off the row on a phone. */

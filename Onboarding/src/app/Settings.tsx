@@ -31,7 +31,6 @@ import {
 import { useI18n } from '../i18n';
 import { skillCase } from '../lib/skillCase';
 import { contact } from '../lib/contact';
-import { fileSize } from '../lib/fileSize';
 import { SITE_ORIGIN } from '../lib/site';
 import { useApi } from '../state/api';
 import { useAsync } from '../lib/useAsync';
@@ -39,15 +38,15 @@ import { Card, Chip, ErrorState, LoadingBlock } from '../components/ui';
 import { Section, Row } from '../components/Section';
 import { UsageMeters } from '../components/UsageMeters';
 import { CloseAccount } from '../components/CloseAccount';
-import { DeleteDocument } from '../components/DeleteDocument';
+import { DocumentManager } from '../components/DocumentManager';
 import type { ConfirmedProfile, Preferences, StoredProfile, Usage } from '../api';
-import { emptyPreferences, REQUIRED_KIND } from '../api';
+import { emptyPreferences } from '../api';
 
 /** The only section here that is editable. Named, so the hash can open it. */
 type EditKey = 'prefs';
 
 export function Settings() {
-  const { t, locale, formatNumber } = useI18n();
+  const { t, locale } = useI18n();
   const api = useApi();
   const { hash } = useLocation();
   const { data, loading, error, reload } = useAsync((s) => api.getProfile(s), [api, locale]);
@@ -188,62 +187,28 @@ export function Settings() {
       </Section>
 
       {/* ---- Documents ------------------------------------------------------
-          The CV is the one document the pipeline cannot run without, so the
-          LAST one cannot be removed. It is replaced instead, which is what the
-          button below does.
+          MANAGEMENT, NOT A LIST. Every document can have its file swapped and
+          its category corrected in place; the CV is the one that cannot be
+          removed and cannot be duplicated, so it is replaced instead. See
+          `DocumentManager` for the two halves of that rule.
 
-          The protected row shows a "Required" tag WHERE the remove control
-          would have been, rather than a disabled X. A blocked control invites a
-          click and then refuses it; a label answers "why can I not remove this"
-          before the question is asked. A second CV makes the first deletable
-          again, and both rows get their control back.
-
-          The client rule is a courtesy. The server must enforce it too — see
-          BACKEND.md §3 — because a stale build of this app is not a way in. */}
+          The client rules are a courtesy. The server enforces both — the last
+          CV and the only CV — because a stale build of this app is not a way in.
+          BACKEND.md §3. */}
       <Section id="documents" title={t('profile.documents')} icon={FileText} editing={false}>
         <div className="stack stack--sm">
-          {p.documents?.length ? (
-            <ul className="doclist">
-              {p.documents.map((d) => {
-                /* Counted over the WHOLE list, not this row: what protects a CV
-                   is being the only one, and that is a fact about the set. */
-                const lastCv = d.kind === REQUIRED_KIND
-                  && p.documents.filter((o) => o.kind === REQUIRED_KIND).length === 1;
-
-                return (
-                  <li key={d.id} className="doclist__item">
-                    <FileText size={16} className="doclist__icon" aria-hidden="true" />
-                    <span className="doclist__main">
-                      <span className="doclist__name"><bdi>{d.fileName}</bdi></span>
-                      <span className="doclist__meta">
-                        {t(`doc.${d.kind}`)}
-                        {Number.isFinite(d.sizeBytes) && d.sizeBytes > 0 && (
-                          <> · <span className="num">{fileSize(d.sizeBytes, t, formatNumber)}</span></>
-                        )}
-                      </span>
-                    </span>
-
-                    {lastCv
-                      ? <span className="doclist__tag">{t('profile.docRequired')}</span>
-                      : <DeleteDocument id={d.id} onDeleted={reload} />}
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <p className="text-sm muted">{t('profile.noDocuments')}</p>
-          )}
+          <DocumentManager documents={p.documents ?? []} onChanged={reload} />
 
           <p className="text-sm">{t('profile.docsCvRequired')}</p>
 
-          {/* Says the consequence before the action, not after it. Replacing a
-              document re-runs the pipeline and rewrites the skills, courses and
-              matches this person may have spent time reading — that is worth
-              knowing before the click. NOT `muted`: demoting a warning to the
-              weight of an empty-state placeholder was a regression once. */}
-          <p className="text-sm">{t('profile.docsRereads')}</p>
+          {/* THE OTHER DOOR, and it is a different act. Managing a document
+              here changes what Itqan holds; reading it again is an extraction
+              that spends tokens and ends at a screen where the person checks
+              what was read. Naming that plainly is what stops someone
+              replacing a CV and wondering why their skills did not move. */}
+          <p className="text-sm">{t('docs.rereadNote')}</p>
           <div className="row">
-            <Link className="btn btn--secondary" to="/documents">{t('profile.docsReplace')}</Link>
+            <Link className="btn btn--secondary" to="/documents">{t('docs.rereadCta')}</Link>
           </div>
         </div>
       </Section>

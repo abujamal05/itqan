@@ -668,6 +668,15 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
         /* ---- the agent services ---- */
         const locale = (cookies[LOCALE_COOKIE] === 'en' ? 'en' : 'ar') as Locale;
 
+        /* Every document on the account, from BOTH stores. `uploads` is this
+           session's and `profiles` is what a confirmed profile carries; a rule
+           that read only one of them would be enforced against half the truth,
+           which is how the last-CV check nearly shipped broken. */
+        const allDocuments = () => {
+          const prof = profiles.get(me.id) as { documents?: Record<string, unknown>[] } | undefined;
+          return [...(uploads.get(me.id) ?? []), ...(prof?.documents ?? [])];
+        };
+
         if (url === '/api/documents' && req.method === 'POST') {
           const f = parseBody(await body(req), req.headers['content-type'] ?? '');
           const id = `doc_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
@@ -675,9 +684,26 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           // Any file named "unreadable" fails the pipeline, so the recovery
           // path is reachable without breaking a real file.
           if (/unreadable/i.test(fileName)) unreadable.add(id);
+          const kind = f.kind ?? 'transcript';
+          /* THERE IS ONLY EVER ONE CV, AND UPLOADING ONE REPLACES IT.
+             Not a refusal: `/app/documents` exists precisely so somebody can
+             hand over a newer CV, and answering that with "you already have
+             one" would break the screen's whole purpose to enforce a rule the
+             screen was trying to keep. The row and its id survive, which is
+             what a stored profile's `documentId` and every past analysis point
+             at. Mirrors BACKEND.md §3; production needs it too. */
+          const heldCv = kind === 'cv' && allDocuments().find((d) => d.kind === 'cv');
+          if (heldCv) {
+            heldCv.fileName = fileName;
+            heldCv.mimeType = f.__mimetype ?? heldCv.mimeType;
+            heldCv.sizeBytes = Number(f.__size ?? 0);
+            if (/unreadable/i.test(fileName)) unreadable.add(String(heldCv.id));
+            else unreadable.delete(String(heldCv.id));
+            return json(res, 200, heldCv);
+          }
           const doc = {
             id, fileName, mimeType: f.__mimetype ?? 'application/pdf',
-            sizeBytes: Number(f.__size ?? 0), kind: f.kind ?? 'other',
+            sizeBytes: Number(f.__size ?? 0), kind,
           };
           uploads.set(me.id, [doc, ...(uploads.get(me.id) ?? [])]);
           return json(res, 200, doc);
@@ -694,11 +720,60 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
            Removed from BOTH stores: `uploads` is this session's, `profiles` is
            what a confirmed profile carries, and a document left in the second
            would come straight back on the next fetch. */
+        /* Replacing the FILE, keeping the row. The id survives, which is the
+           whole reason this route exists rather than a delete plus an upload: a
+           stored profile references `documentId`, past analyses reference the
+           ids they read, and the CV cannot be deleted at all. It does not read
+           anything — extraction stays a separate, reviewed, paid act. */
+        if (url.startsWith('/api/documents/') && req.method === 'PUT') {
+          const id = decodeURIComponent(url.slice('/api/documents/'.length));
+          const f = parseBody(await body(req), req.headers['content-type'] ?? '');
+          const doc = allDocuments().find((d) => d.id === id);
+          if (!doc) return json(res, 404, { error: 'not_found' });
+
+          doc.fileName = f.__filename ?? doc.fileName;
+          doc.mimeType = f.__mimetype ?? doc.mimeType;
+          doc.sizeBytes = Number(f.__size ?? doc.sizeBytes);
+          /* The same escape hatch the upload has: a file named "unreadable"
+             fails the pipeline, so the recovery path stays reachable. */
+          if (/unreadable/i.test(String(doc.fileName))) unreadable.add(id);
+          else unreadable.delete(id);
+          return json(res, 200, doc);
+        }
+
+        /* Recategorising. The CV slot has a floor and a ceiling: it cannot
+           reach zero, because the pipeline cannot run without one, and it
+           cannot reach two, because a second makes "your CV" ambiguous on every
+           screen that names it. Both refusals are machine readable, so the
+           front end keeps owning the wording in its two languages. */
+        if (url.startsWith('/api/documents/') && req.method === 'PATCH') {
+          const id = decodeURIComponent(url.slice('/api/documents/'.length));
+          const f = parseBody(await body(req), req.headers['content-type'] ?? '');
+          const kind = String((f as unknown as { kind?: string }).kind ?? '');
+          if (!['cv', 'transcript', 'certificate'].includes(kind)) {
+            return json(res, 400, { error: 'bad_kind' });
+          }
+
+          const onFile = allDocuments();
+          const doc = onFile.find((d) => d.id === id);
+          if (!doc) return json(res, 404, { error: 'not_found' });
+
+          if (kind === 'cv' && onFile.some((d) => d.id !== id && d.kind === 'cv')) {
+            return json(res, 409, { error: 'cv_exists' });
+          }
+          if (doc.kind === 'cv' && kind !== 'cv') {
+            return json(res, 409, { error: 'last_cv' });
+          }
+
+          doc.kind = kind;
+          return json(res, 200, doc);
+        }
+
         if (url.startsWith('/api/documents/') && req.method === 'DELETE') {
           const id = decodeURIComponent(url.slice('/api/documents/'.length));
           const mine = uploads.get(me.id) ?? [];
           const prof = profiles.get(me.id) as { documents?: Record<string, unknown>[] } | undefined;
-          const onFile = [...mine, ...(prof?.documents ?? [])];
+          const onFile = allDocuments();
 
           const doomed = onFile.find((d) => d.id === id);
           if (!doomed) return json(res, 404, { error: 'not_found' });

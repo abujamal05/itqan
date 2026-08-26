@@ -163,6 +163,41 @@ export function createHttpApi(): ItqanApi {
         xhr.send(form);
       });
     },
+    /**
+     * The same XHR shape as `uploadDocument`, for the same reason: a document
+     * scan on a phone connection is not instant, and a row that says only
+     * "replacing" for twenty seconds is indistinguishable from a stalled one.
+     */
+    replaceDocument({ id, file, onProgress }, signal) {
+      return new Promise<UploadedDocument>((resolve, reject) => {
+        const form = new FormData();
+        form.append('file', file);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', `${BASE}/documents/${encodeURIComponent(id)}`);
+        xhr.withCredentials = true;
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) onProgress?.(e.loaded / e.total);
+        });
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try { resolve(JSON.parse(xhr.responseText) as UploadedDocument); }
+            catch { reject(new HttpError(xhr.status, 'bad json')); }
+          } else reject(new HttpError(xhr.status, 'replace failed', errorBodyFrom(xhr.responseText)));
+        });
+        xhr.addEventListener('error', () => reject(new HttpError(0, 'network')));
+        xhr.addEventListener('abort', () => reject(new HttpError(0, 'aborted')));
+        signal?.addEventListener('abort', () => xhr.abort());
+        xhr.send(form);
+      });
+    },
+    updateDocumentKind(id, kind, signal) {
+      return req<UploadedDocument>(`/documents/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ kind }),
+        signal,
+      });
+    },
     startAnalysis(documentIds, signal) {
       return req<{ jobId: string }>('/analysis', {
         method: 'POST', body: JSON.stringify({ documentIds }), signal,

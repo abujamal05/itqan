@@ -680,11 +680,68 @@ POST /api/analysis  { "documentIds": ["…"], "mode": "merge" } -> { jobId }
 That keeps the human confirmation checkpoint, which is the thing that must not be
 routed around.
 
-### 3. Deleting a document — `DELETE /api/documents/:id`
+### 3. Managing documents — `DELETE`, `PUT` and `PATCH /api/documents/:id`
 
 ```
-DELETE /api/documents/:id  -> { ok: true } | 409 { error: "last_cv" }
+DELETE /api/documents/:id  -> { ok: true }        | 409 { error: "last_cv" }
+PUT    /api/documents/:id  -> UploadedDocument    | 404 { error: "not_found" }
+PATCH  /api/documents/:id  -> UploadedDocument    | 409 { error: "cv_exists" | "last_cv" }
+POST   /api/documents      -> UploadedDocument    (a CV REPLACES the held one)
 ```
+
+**`PUT` and `PATCH` are new (2026-08-26) and NEITHER IS BUILT.** Settings gained
+document management: swap the file behind a document, or correct its category,
+without deleting anything.
+
+`PUT` is multipart with a `file` field and **keeps the id**. That is the whole
+reason it exists rather than the client deleting and re-uploading: a stored
+profile references `documentId`, every past analysis references the ids it read,
+and the CV cannot be deleted at all while it is the only one. Replacing is how a
+CV changes. It returns the updated `UploadedDocument`.
+
+**`PUT` must not start an extraction.** Reading documents again is a separate,
+paid, reviewed act the person starts from `/app/documents`, ending at the confirm
+screen. A file swap that quietly spent 19 tokens and rewrote somebody's skills is
+exactly what that confirm step exists to prevent, and the settings screen says in
+as many words that nothing has been read yet.
+
+`PATCH` takes `{ kind }` and is where **the one-CV rule** is enforced from both
+directions.
+
+**There is exactly one CV, always.** It cannot reach zero, because the pipeline
+cannot run without one; it cannot reach two, because a second makes "your CV"
+ambiguous on every screen that names it. So:
+
+- `POST /api/documents` with `kind: "cv"` when one exists **replaces it and
+  returns the existing row, id and all**. Not a refusal, and the distinction is
+  load bearing: `/app/documents` exists precisely so somebody can hand over a
+  newer CV, and answering that with "you already have one" would break the
+  screen's whole purpose in order to enforce a rule the screen was keeping.
+  The client drops any row already holding the returned id, so one document is
+  one row.
+- `PATCH` to `cv` when another document is already the CV -> `409 cv_exists`.
+  A recategorisation is not a replacement: it names a DIFFERENT file as the CV
+  and leaves the old one on the account, which is the state that must not exist.
+- `PATCH` the CV to anything else -> `409 last_cv`.
+- `DELETE` the only CV -> `409 last_cv`, as before.
+
+The app disables the taken option and renders the CV's category as a label
+rather than a select, so any of these that arrives is a stale view. **The server
+still has to refuse it**, for the reason the last-CV rule was already enforced
+there: a stale build of the app is not a way in. Machine-readable reasons, never
+messages, so the front end keeps owning the wording in both languages.
+
+### `certificate` is a third kind, and the pipeline does not read one
+
+`DocumentKind` is `cv | transcript | certificate` as of 2026-08-26 (the lead's
+call). The kinds were narrowed from six to two precisely because Agent A takes
+`--cv` and an optional `--transcript` and nothing else, so every other option was
+a decision that changed no outcome. That reasoning has not gone away.
+
+**A certificate is stored and categorised. It is not extracted from.** Nothing in
+the interface implies otherwise, and nothing should be added that does until the
+pipeline can act on one. If a certificate should contribute evidence, that is
+pipeline work with its own brief, not a front-end change.
 
 **The front end is built.** `api.deleteDocument` and the two-tap remove control
 on the profile screen came from `amin-dev`; the last-CV rule was added when that
