@@ -88,9 +88,13 @@
    cards still does, and the arrows now cover the rest. */
 .map__canvas .react-flow__node { pointer-events: auto; }
 
-/* A static map is a picture, so nothing about it should offer to move. */
+/* A static map is a picture, so nothing about it should offer to move. A
+   guided one moves, but never under the finger — the arrows are the only way,
+   and a grab cursor over the paper would promise a drag that does nothing. */
 .map__canvas[data-static] .react-flow__pane,
-.map__canvas[data-static] .react-flow__pane.draggable { cursor: default; }
+.map__canvas[data-static] .react-flow__pane.draggable,
+.map__canvas[data-guided] .react-flow__pane,
+.map__canvas[data-guided] .react-flow__pane.draggable { cursor: default; }
 
 /* ---- Edges ----------------------------------------------------------------
    THE RESET COLLIDES WITH REACT FLOW, and this is the whole reason the path was
@@ -525,6 +529,14 @@
 }
 
 .map__tool:hover { background-color: var(--color-surface-sunken); }
+
+/* The arrows point along the DIRECTION OF TRAVEL, and both maps run right to
+   left in Arabic — `arc()` and `serpentine()` negate x rather than mirroring
+   the canvas, so "next" is genuinely the other way. A chevron has no logical
+   equivalent to flip it, so the mirror is written by hand, as it is for the
+   milestone's own go arrow above. */
+[dir='rtl'] .map__tool-back,
+[dir='rtl'] .map__tool-fwd { transform: scaleX(-1); }
 
 .map__hint {
   margin-block-start: var(--space-2);

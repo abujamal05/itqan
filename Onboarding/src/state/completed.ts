@@ -14,8 +14,11 @@
  *   evidence, and readiness is evidence-derived. The UI says so and offers the
  *   CV re-upload as the way to make it count. See BACKEND.md §1.
  *
- *   It never removes a course. Completed nodes stay on the map, greyed — seeing
- *   what you finished is the progress signal.
+ *   It never removes a course FROM THE MAP. Completed nodes stay there, greyed
+ *   and struck through, because seeing what you finished is the progress signal
+ *   on the page that is the path. The dashboard's two-card shelf is the one
+ *   place that filters them out: it holds two cards, its whole job is "what to
+ *   do next", and a finished course spends half that answer on the past.
  *
  *   It is forward-compatible. When the route lands, `Course.completedAt` from
  *   the API becomes authoritative and this becomes a pending-writes cache; the

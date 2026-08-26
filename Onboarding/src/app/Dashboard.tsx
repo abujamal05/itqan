@@ -10,6 +10,11 @@
  * what is at the end of the road.
  *
  * VOLUME — courses and jobs show two each with a way through to the full page.
+ * The two courses are the two still OPEN: a course the user has marked done
+ * leaves this shelf, and the next step names the one after it. It keeps its
+ * place on the courses map, struck through, because seeing what you finished is
+ * the progress signal there — but here there is room for two cards and their
+ * only job is "what to do next".
  * Skills sit behind ONE closed disclosure carrying all of them, rather than the
  * first four with a "show more" underneath: a partial list cut at an arbitrary
  * number is the worst of both, and the skills are this card's detail, not its
@@ -44,6 +49,7 @@ import { useChat } from '../state/chat';
 import { useApi } from '../state/api';
 import { useAsync } from '../lib/useAsync';
 import { useOnboarding } from '../state/onboarding';
+import { useCompletedCourses } from '../state/completed';
 import { useAuth } from '../state/auth';
 import { Card, EmptyState, ErrorState, GapChip, LoadingBlock } from '../components/ui';
 import { CareerGoal } from '../components/CareerGoal';
@@ -82,6 +88,21 @@ function standingOf(
   return grad > thisMonth ? t('dash.standingStudent') : t('dash.standingGraduate');
 }
 
+/**
+ * "SQL, data modelling and Power BI", in the reader's own language.
+ *
+ * `Intl.ListFormat` rather than a join on ", ": Arabic separates a list with
+ * the Arabic comma and joins the last pair with a word, and hard-coding either
+ * writes English punctuation into an Arabic sentence.
+ */
+function listOf(items: string[], locale: string): string {
+  try {
+    return new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' }).format(items);
+  } catch {
+    return items.join(', ');
+  }
+}
+
 export function Dashboard() {
   const { t, locale, formatNumber } = useI18n();
   // A re-run finishing must be visible here without a manual reload.
@@ -114,6 +135,18 @@ export function Dashboard() {
    */
   const { data: stored, reload: reloadProfile } = useAsync((s) => api.getProfile(s),
                                                           [api, locale, settled, resultsVersion]);
+
+  /**
+   * Which courses the user has told us they finished.
+   *
+   * The same local store the courses map reads. `POST /api/courses/:id/complete`
+   * is called now, but nothing comes BACK to say a course is done — BACKEND.md
+   * §1 specifies `completedAt` on `GET /api/courses` and it is not built — so
+   * this is the only place the dashboard can learn it. Not learning it was the
+   * bug: the shelf went on offering a finished course, and the next step, which
+   * the service authors around a specific course, went on naming it.
+   */
+  const { completed } = useCompletedCourses(user?.id);
 
   // Closed by default: the skills are the card's DETAIL, not its point.
   const [showAllSkills, setShowAllSkills] = useState(false);
@@ -195,8 +228,56 @@ export function Dashboard() {
     );
   }
 
-  const topCourses = (editedCourses ?? courses ?? []).slice(0, CARDS_SHOWN);
+  const allCourses = editedCourses ?? courses ?? [];
+  const remaining = allCourses.filter((c) => !completed.has(c.id));
+  const topCourses = remaining.slice(0, CARDS_SHOWN);
   const topMatches = data.topMatches.slice(0, CARDS_SHOWN);
+
+  /**
+   * The one named action on the page, and it has to survive being acted on.
+   *
+   * The service authors this card and its copy names a specific course, so the
+   * moment that course is marked done the dashboard is telling someone to do a
+   * thing they have just told it they did. The service cannot know: completion
+   * is a write it accepts and does not feed back.
+   *
+   * So the server's step stands until the user finishes ANY course, and from
+   * then on the card names the next one still open. Its copy states only what
+   * the card beside it already states — the title, the provider, the skills it
+   * opens. Nothing here invents a reason ("three roles ask for this"): that
+   * figure is the service's to make, and making one up is the fabricated
+   * statistic the trust rules bar outright.
+   */
+  const nextCourse = remaining[0];
+  const nextStep: { title: React.ReactNode; body: string; action: string; cta: string } =
+    !allCourses.some((c) => completed.has(c.id))
+      ? {
+        title: data.nextStep.title,
+        body: data.nextStep.body,
+        action: data.nextStep.action,
+        cta: t('dash.startNextStep'),
+      }
+      : nextCourse
+        ? {
+          title: <bdi>{nextCourse.title}</bdi>,
+          body: nextCourse.unlocks.length > 0
+            ? t('dash.nextCourse', {
+              provider: nextCourse.provider,
+              skills: listOf(nextCourse.unlocks.map(skillCase), locale),
+            })
+            : t('dash.nextCoursePlain', { provider: nextCourse.provider }),
+          action: 'courses',
+          cta: t('dash.startNextStep'),
+        }
+        : {
+          /* Nothing left on the path. The honest next move is not another
+             course — it is the CV re-upload, which is the only thing that turns
+             what they have finished into evidence readiness can read. */
+          title: t('dash.pathClear'),
+          body: t('dash.pathClearBody'),
+          action: 'documents',
+          cta: t('courses.updateCv'),
+        };
 
   /**
    * Below this the matches are withheld deliberately.
@@ -401,13 +482,13 @@ export function Dashboard() {
             {/* `card__title`, not `section__title`: an h3 nested inside a
                 section must not render at the same size and weight as the five
                 h2s around it, or the DOM has a hierarchy the eye cannot see. */}
-            <h3 className="card__title">{data.nextStep.title}</h3>
-            <p>{data.nextStep.body}</p>
+            <h3 className="card__title">{nextStep.title}</h3>
+            <p>{nextStep.body}</p>
             <div className="row" style={{ marginBlockStart: 'var(--space-2)' }}>
               {/* Was labelled "See all courses", the same string as the section
                   link above it — two different destinations wearing one name. */}
-              <Link className="btn btn--primary" to={`/${data.nextStep.action}`}>
-                {t('dash.startNextStep')}
+              <Link className="btn btn--primary" to={`/${nextStep.action}`}>
+                {nextStep.cta}
                 <ArrowRight size={16} aria-hidden="true" className="go" />
               </Link>
             </div>
