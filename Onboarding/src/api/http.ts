@@ -163,9 +163,14 @@ export function createHttpApi(): ItqanApi {
         xhr.send(form);
       });
     },
-    startAnalysis(documentIds, signal) {
+    startAnalysis(documentIds, mode, signal) {
+      // `mode` is OMITTED rather than sent as 'replace' when absent, so the
+      // onboarding request stays byte-identical to what it has always been and
+      // the server's own default remains the single source of that decision.
       return req<{ jobId: string }>('/analysis', {
-        method: 'POST', body: JSON.stringify({ documentIds }), signal,
+        method: 'POST',
+        body: JSON.stringify(mode ? { documentIds, mode } : { documentIds }),
+        signal,
       });
     },
     getAnalysis(jobId, signal) {

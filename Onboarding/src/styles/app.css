@@ -274,6 +274,37 @@
 }
 .chip--action:hover { border-color: var(--color-border-accent); background: var(--color-accent-wash); }
 .chip--action:hover .go { transform: translateX(calc(3px * var(--motion-scale))); }
+
+/* WHAT A RE-READ CHANGED. A second CV adds to a profile rather than replacing
+   it, so most chips are unchanged and only a few are news. Small, quiet and
+   inside the chip on purpose: it annotates a skill, it does not compete with
+   one. Silent on a first run, where there is no previous profile to differ
+   from. */
+.chip__badge {
+  font-size: var(--text-2xs, 0.6875rem);
+  font-weight: var(--weight-medium);
+  color: var(--color-accent-ink);
+  background: var(--color-surface);
+  border-radius: var(--radius-full);
+  padding: 0 var(--space-1);
+  flex: 0 0 auto;
+}
+
+/* An OFFER, not a state. Skills the person deleted before that a new document
+   mentions again — a BUTTON, because nothing happens until they press it, which
+   is the whole distinction from the chips above. Dashed to read as provisional,
+   matching `chip--gap`'s use of the same edge for "not settled". */
+.chip--offer {
+  cursor: pointer;
+  background: var(--color-surface-sunken);
+  border: 1px dashed var(--color-border-strong);
+  color: var(--color-text);
+}
+.chip--offer:hover {
+  border-style: solid;
+  border-color: var(--color-border-accent);
+  background: var(--color-accent-wash);
+}
 /* `transform-origin` and translate directions have no logical equivalents, so
    the mirror is written by hand. */
 [dir='rtl'] .chip--action .go { transform: scaleX(-1); }

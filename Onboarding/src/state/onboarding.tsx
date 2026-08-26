@@ -245,13 +245,19 @@ export function OnboardingProvider({
    * step counter drives the onboarding progress record, and this user has no
    * onboarding left to record. Everything else is the same pipeline, so the
    * confirm screen and the poll behave exactly as they do first time round.
+   *
+   * **The only caller that merges**, and that is the whole distinction: someone
+   * here already has an approved profile, so a second CV should ADD to it.
+   * Without the mode the server defaults to `replace` and every skill the new
+   * document happens not to mention is deleted — which is exactly what
+   * re-uploading a CV used to do.
    */
   const beginReupload = useCallback(async (docs: UploadedDocument[]) => {
     setReuploading(true);
     setEntry('document');
     setDocuments(docs);
     setAnalysis(null);
-    const { jobId: id } = await api.startAnalysis(docs.map((d) => d.id));
+    const { jobId: id } = await api.startAnalysis(docs.map((d) => d.id), 'merge');
     setJobId(id);
   }, [api]);
 
