@@ -31,7 +31,7 @@
  * server mints a session with the payment provider and returns a URL; naming
  * the provider would tell a person cancelling a subscription something that
  * cannot help them, and would make a vendor swap a copy change across two
- * locales. See BACKEND.md §8.
+ * locales. See BACKEND.md §10.
  *
  * WHAT YOU HAVE USED IS NOT HERE. It moved to Settings, whole. Someone's own
  * consumption beside a price list turns a comparison into a sales screen, and

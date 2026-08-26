@@ -307,6 +307,13 @@ and that is a 200, not a 404.
 
 ```jsonc
 // POST /api/courses/similar   -> a Course, or null
+//
+// SUPERSEDED 2026-08-26 by §12, and the front end no longer calls it. That
+// route replaces a recommendation of EITHER kind and carries the rejection
+// reason into the search, which this one could not: it took a course id and an
+// exclusion list, so "too expensive" and "too basic" returned the same course.
+// Kept documented because production may still serve it; nothing should be
+// built against it.
 { "courseId": "c1", "exclude": ["c1", "c2", "c3"] }
 ```
 
@@ -994,7 +1001,7 @@ capture-and-clear path, so forwarding it is the only change required and nothing
 in the front end has to be touched. Pass through only the literal value
 `premium`; anything else should be dropped rather than reflected.
 
-### 7. Closing an account — `POST /api/account/deactivate` and `DELETE /api/account`  **(NEITHER IS BUILT)**
+### 9. Closing an account — `POST /api/account/deactivate` and `DELETE /api/account`  **(NEITHER IS BUILT)**
 
 ```
 POST   /api/account/deactivate  -> 204, and the session cookie is cleared
@@ -1078,7 +1085,7 @@ is **not a specification**: it clears four Maps and a cookie, and restores a
 paused account on the next login. It reaches no disk, no derived table and no
 snapshot.
 
-### 8. Cancelling a subscription — `POST /api/subscription/cancel`  **(NOT BUILT)**
+### 10. Cancelling a subscription — `POST /api/subscription/cancel`  **(NOT BUILT)**
 
 ```
 POST /api/subscription/cancel  ->  200 { "url": "https://…" }
@@ -1118,7 +1125,7 @@ Three screens turn on this field and each reads it differently:
 - **The plan screen** offers "Cancel your subscription" only while `active`. An
   already-cancelled account gets the date instead of a button, because there is
   nothing left to cancel and a control with no act behind it is worse than none.
-- **Closing the account** refuses deletion while `active` (§7 above) and, once
+- **Closing the account** refuses deletion while `active` (§9 above) and, once
   `cancelled`, names `currentPeriodEnd` in the confirmation so the person knows
   what they are giving up.
 - **A free account carries no subscription at all.** `null` and absent must mean
@@ -1135,7 +1142,7 @@ window can be walked locally, since that window is the only reason the delete
 guard exists. `POST /api/dev/plan` accepts `status=cancelled` to reach it
 directly. Neither is a specification.
 
-### 9. Keeping the journey in step — `GET/POST /api/update`, `POST /api/update/defer`  **(NOT BUILT)**
+### 11. Keeping the journey in step — `GET/POST /api/update`, `POST /api/update/defer`  **(NOT BUILT)**
 
 ```
 GET  /api/update         -> { scope, reasons[], cost, remaining, affordable, deferred }
@@ -1256,7 +1263,7 @@ update run, and whether the person has seen it, that would be exact.** It is not
 required for the feature to work, and a missed celebration is the only failure
 mode of the current approach — never a false one.
 
-### 10. One replacement for a recommendation that does not fit — `POST /api/recommendations/alternative`  **(NOT BUILT)**
+### 12. One replacement for a recommendation that does not fit — `POST /api/recommendations/alternative`  **(NOT BUILT)**
 
 ```
 POST /api/recommendations/alternative
@@ -1324,7 +1331,7 @@ somebody's budget.
 `chat.rerun.cost` had gone on describing the weekly re-run allowance retired on
 2026-08-25. Every quoted price in the product now comes from `prices`.
 
-### 11. What the person thinks of Itqan — `POST /api/feedback/rating`  **(NOT BUILT)**
+### 13. What the person thinks of Itqan — `POST /api/feedback/rating`  **(NOT BUILT)**
 
 ```
 POST /api/feedback/rating  { stars: 1..5, comment: string | null }  -> 204

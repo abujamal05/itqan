@@ -157,7 +157,7 @@ let rerunCredits = 1;
  */
 const PLAN_TOKENS = { free: 30, paid: 90 } as const;
 /* `alternative` is one agent call over one item, so it sits between a message
-   and a full re-read. A STUB'S FIGURE, like the update costs: BACKEND.md §10
+   and a full re-read. A STUB'S FIGURE, like the update costs: BACKEND.md §12
    says production must publish a measured one the way the re-read's 19 was
    measured. */
 const TOKEN_PRICES = { message: 1, documentReread: 19, alternative: 2 } as const;
@@ -193,7 +193,7 @@ const plans = new Map<string, 'free' | 'paid'>();
 /**
  * Accounts this dev server has been told to pause.
  *
- * Deactivation's MEANING is the server's, not this file's — BACKEND.md §7 says
+ * Deactivation's MEANING is the server's, not this file's — BACKEND.md §9 says
  * what production has to do, and a stub cannot stand in for stopping a
  * pipeline. What this proves is the contract: the route exists, it answers, and
  * the account it names cannot log back in without being restored. That last
@@ -216,7 +216,7 @@ const stale = new Map<string, StaleRow>();
  * A skills-only run costs less than a document re-read because it does less
  * work: the documents are not read again. Priced at the message rate times the
  * agents it still has to run, which is a STUB'S GUESS and labelled as one —
- * BACKEND.md §9 says production must publish a measured figure the same way the
+ * BACKEND.md §11 says production must publish a measured figure the same way the
  * re-read's 19 was measured.
  */
 const UPDATE_COST = { documents: 19, skills: 5 } as const;
@@ -629,7 +629,7 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           /* AND "REMIND ME LATER" MEANS THE NEXT SIGN IN, not never. Without
              this the deferral was permanent and the offer never came back,
              which is precisely the quietly stale journey the whole mechanism
-             exists to prevent. BACKEND.md §9 states it as a requirement. */
+             exists to prevent. BACKEND.md §11 states it as a requirement. */
           const pendingRow = stale.get(hit.id);
           if (pendingRow?.deferred) stale.set(hit.id, { ...pendingRow, deferred: false });
           return json(res, 200, { ok: true }, [
@@ -983,7 +983,7 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           return json(res, 204, undefined);
         }
 
-        /* ---- Closing the account (BACKEND.md §7) ----
+        /* ---- Closing the account (BACKEND.md §9) ----
            NEITHER ROUTE EXISTS IN PRODUCTION. They are specified there and
            built nowhere, which is precisely why they are stubbed here: without
            them the client's write path could not be exercised at all, and the
@@ -1000,7 +1000,7 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           return json(res, 204, undefined, [`${COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`]);
         }
 
-        /* ---- Cancelling (BACKEND.md §8) ----
+        /* ---- Cancelling (BACKEND.md §10) ----
            NOT BUILT IN PRODUCTION. The real route opens a session with the
            payment provider and hands back its URL; nothing is cancelled until
            that provider's webhook lands, exactly as the upgrade already works.
@@ -1161,7 +1161,7 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
            Ranked rather than picked at random: something sharing an `unlocks`
            entry with the rejected course comes first, because "similar" has to
            mean "same gap" or the replacement is just the next row down. */
-        /* ---- One replacement, of either kind (BACKEND.md §10) ----
+        /* ---- One replacement, of either kind (BACKEND.md §12) ----
            NOT BUILT IN PRODUCTION. What the stub reproduces is the shape the
            screens depend on: the REASON reaches the search and changes what
            comes back, a posting can be replaced as well as a course, the spend
@@ -1267,7 +1267,7 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
              message for it — the case was unreachable in development.
 
              Same code and same fields as every other door that spends, per
-             BACKEND.md §9, so the front end has one sentence for one refusal
+             BACKEND.md §11, so the front end has one sentence for one refusal
              wherever it happens. */
           const noTokens = tokenRefusal(me.id, TOKEN_PRICES.message);
           if (noTokens) return json(res, 429, noTokens);
@@ -1413,7 +1413,7 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           return json(res, 200, { ok: true });
         }
 
-        /* ---- Bringing the journey up to date (BACKEND.md §9) ----
+        /* ---- Bringing the journey up to date (BACKEND.md §11) ----
            NOT BUILT IN PRODUCTION. The route exists here so the client's whole
            path is exercised: ask what is stale, show the price, get a yes, run
            the scope, poll it like any other run. */
@@ -1452,7 +1452,7 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
              pause — `confirmedAt` set — so it goes straight to matching. It is
              not a fresh run: nobody changed an extraction, so there is nothing
              to re-read and nothing to confirm. Production has to preserve that
-             distinction; BACKEND.md §9 says so in the contract's own words. */
+             distinction; BACKEND.md §11 says so in the contract's own words. */
           jobs_.set(jobId, {
             started: row.scope === 'documents' ? Date.now() : Date.now() - PHASE_ONE_MS,
             bad: false,
@@ -1463,7 +1463,7 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           return json(res, 200, { jobId });
         }
 
-        /* ---- What they think of Itqan (BACKEND.md §11) ----
+        /* ---- What they think of Itqan (BACKEND.md §13) ----
            NOT BUILT IN PRODUCTION. Stored per account so the stub can prove the
            one rule that matters to the client: a rating given is a rating that
            does not get asked for again. */

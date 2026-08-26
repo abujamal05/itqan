@@ -391,13 +391,5 @@ export function createHttpApi(): ItqanApi {
         method: 'POST', body: JSON.stringify(input), signal,
       });
     },
-    findSimilarCourse({ courseId, exclude }, signal) {
-      return req<Course | null>('/courses/similar', {
-        method: 'POST', body: JSON.stringify({ courseId, exclude }), signal,
-      // Null is a real answer here ("nothing else closes this gap"), and so is a
-      // failed lookup. The screen says the same thing for both, because to the
-      // user they are the same thing: no replacement arrived.
-      }).catch(() => null);
-    },
   };
 }

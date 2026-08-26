@@ -25,7 +25,7 @@
  * you sure", and for where focus lands.
  *
  * NEITHER ACTION IS PERFORMED HERE. The server owns what deactivation and
- * deletion mean; this screen states them, asks, and calls. See BACKEND.md §7 —
+ * deletion mean; this screen states them, asks, and calls. See BACKEND.md §9 —
  * both routes are specified and neither is built in production yet, so both
  * calls must survive a 404 without leaving someone believing their account is
  * gone when it is not.
@@ -76,7 +76,7 @@ export function CloseAccount({ usage }: { usage: Usage | 'unavailable' | null })
    * just deleted their account landed on a form asking them to sign in, roughly
    * half the time.
    *
-   * The server already cleared the cookie (BACKEND.md §7 requires it), and a
+   * The server already cleared the cookie (BACKEND.md §9 requires it), and a
    * full page navigation discards every bit of client state anyway, so the only
    * thing `logout()` added here was the race. The bare API call stays as
    * insurance for a server that forgets, and it touches no React state.

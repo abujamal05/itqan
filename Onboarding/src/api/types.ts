@@ -794,7 +794,7 @@ export interface ItqanApi {
   /**
    * What is out of date and what bringing it up to date would cost.
    *
-   * PENDING BACKEND — `GET /api/update`. BACKEND.md §9. Callers must tolerate a
+   * PENDING BACKEND — `GET /api/update`. BACKEND.md §11. Callers must tolerate a
    * 404 and treat it as "nothing pending": a missing route may not put an
    * update prompt in front of anybody, and it may not block them either.
    */
@@ -811,7 +811,7 @@ export interface ItqanApi {
   deferUpdate(signal?: AbortSignal): Promise<void>;
 
   /**
-   * What the person thinks of Itqan. PENDING BACKEND — BACKEND.md §11.
+   * What the person thinks of Itqan. PENDING BACKEND — BACKEND.md §13.
    *
    * `POST /api/feedback/rating` with `{ stars, comment }`. Five stars, and a
    * comment only when they wrote one — an empty string and "they did not
@@ -911,7 +911,7 @@ export interface ItqanApi {
   deleteDocument(id: string, signal?: AbortSignal): Promise<void>;
 
   /**
-   * Closing the account. PENDING BACKEND — see BACKEND.md §7.
+   * Closing the account. PENDING BACKEND — see BACKEND.md §9.
    *
    * `POST /api/account/deactivate` pauses it: the documents, the profile and
    * the matches are kept, and the server stops analysing and stops matching
@@ -934,7 +934,7 @@ export interface ItqanApi {
   deleteAccount(signal?: AbortSignal): Promise<void>;
 
   /**
-   * Begin cancelling the subscription. PENDING BACKEND — BACKEND.md §8.
+   * Begin cancelling the subscription. PENDING BACKEND — BACKEND.md §10.
    *
    * `POST /api/subscription/cancel` -> `{ url }`. The server mints a session
    * with the payment provider and returns where to finish; the client's whole
@@ -988,28 +988,12 @@ export interface ItqanApi {
    */
   getFeedback(signal?: AbortSignal): Promise<FeedbackState>;
   /**
-   * A different course that closes the SAME gap, to drop into the slot the
-   * rejected one occupied.
-   *
-   * `exclude` carries every course already on screen, not just the rejected
-   * one: without it the obvious implementation hands back the card sitting
-   * directly below, and the user watches a course they can already see slide
-   * into the gap they just made.
-   *
-   * Null when there is genuinely nothing else — which the UI must say, rather
-   * than leaving a hole or silently restoring the disliked course.
-   */
-  findSimilarCourse(
-    input: { courseId: string; exclude: string[] },
-    signal?: AbortSignal,
-  ): Promise<Course | null>;
-
-  /**
    * One replacement for a recommendation that does not fit, of either kind.
    *
-   * THE REASON IS THE REQUEST. `findSimilarCourse` recorded why the person said
-   * no and then searched without it, so "too expensive" and "too basic" both
-   * produced the same next course and the panel's own question was decoration.
+   * THE REASON IS THE REQUEST. The course-only route this replaces recorded why
+   * the person said no and then searched without it, so "too expensive" and
+   * "too basic" both produced the same next course and the question was
+   * decoration.
    * The reason and the note go to the agent, which is what makes this "find me
    * a cheaper one" rather than "shuffle".
    *
@@ -1020,7 +1004,7 @@ export interface ItqanApi {
    * `why`, its own source and its own retrieval date, exactly as the rejected
    * one did, and `null` stays an honest answer.
    *
-   * PENDING BACKEND — `POST /api/recommendations/alternative`. BACKEND.md §10.
+   * PENDING BACKEND — `POST /api/recommendations/alternative`. BACKEND.md §12.
    * Refuses with 429 `token_limit` and its numbers when the pool is spent.
    */
   findAlternative(

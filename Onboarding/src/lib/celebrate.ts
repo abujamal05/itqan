@@ -17,7 +17,7 @@
  * LOCAL, AND HONEST ABOUT IT. This is the browser's memory of what it last put
  * on screen, which is exactly the right home for "what did this person last
  * see". The cost is that a run started on a phone is not celebrated on a laptop.
- * BACKEND.md §9 records the server-side version, which would fix that; until
+ * BACKEND.md §11 records the server-side version, which would fix that; until
  * then a missed celebration is the failure mode, never a false one.
  */
 const KEY = 'itqan.readiness';

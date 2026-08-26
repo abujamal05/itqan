@@ -113,7 +113,7 @@ export function Courses() {
     toggle(course.id, true);
     /* THE SKILLS ARE THE POINT OF FINISHING, so the server adds them to the
        skill set on completion rather than asking the person to type in what
-       the course they just finished taught them. See BACKEND.md §9: the course
+       the course they just finished taught them. See BACKEND.md §11: the course
        already carries `unlocks`, and a completion is the only evidence anyone
        could want that those skills were earned.
 

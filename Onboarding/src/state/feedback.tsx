@@ -36,7 +36,6 @@ interface FeedbackValue {
   /** Drop a verdict locally. Used by undo, which also re-sends the opposite. */
   clear: (subject: FeedbackSubject, itemId: string) => void;
   /** A replacement course for one the user rejected, or null if none exists. */
-  findSimilar: (input: { courseId: string; exclude: string[] }) => Promise<Course | null>;
   /**
    * One replacement for a rejected recommendation of either kind, carrying the
    * reason it was rejected. Throws the server's refusal rather than swallowing
@@ -94,19 +93,14 @@ export function FeedbackProvider({
     });
   }, []);
 
-  const findSimilar = useCallback(
-    (input: { courseId: string; exclude: string[] }) => api.findSimilarCourse(input),
-    [api],
-  );
-
   const findAlternative = useCallback(
     (input: Parameters<FeedbackValue['findAlternative']>[0]) => api.findAlternative(input),
     [api],
   );
 
   const value = useMemo<FeedbackValue>(
-    () => ({ verdictFor, send, clear, findSimilar, findAlternative }),
-    [verdictFor, send, clear, findSimilar, findAlternative],
+    () => ({ verdictFor, send, clear, findAlternative }),
+    [verdictFor, send, clear, findAlternative],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
