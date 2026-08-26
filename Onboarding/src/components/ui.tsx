@@ -99,8 +99,10 @@ export function Badge({ children, tone = 'neutral' }: { children: ReactNode; ton
  * Deciding the element from the props fixes both, and any future caller.
  */
 export function Chip({
-  children, selected, onToggle, ...rest
-}: { children: ReactNode; selected?: boolean; onToggle?: () => void } & ButtonHTMLAttributes<HTMLButtonElement>) {
+  children, selected, onToggle, ref, ...rest
+}: { children: ReactNode; selected?: boolean; onToggle?: () => void;
+  /** So a dialog can put focus on the first choice it is asking for. */
+  ref?: Ref<HTMLButtonElement> } & ButtonHTMLAttributes<HTMLButtonElement>) {
   const interactive = !!onToggle || !!rest.onClick;
 
   if (!interactive) {
@@ -113,7 +115,7 @@ export function Chip({
   }
 
   return (
-    <button type="button" className="chip" aria-pressed={selected} onClick={onToggle} {...rest}>
+    <button type="button" ref={ref} className="chip" aria-pressed={selected} onClick={onToggle} {...rest}>
       {selected && <Check size={14} aria-hidden="true" />}
       {children}
     </button>

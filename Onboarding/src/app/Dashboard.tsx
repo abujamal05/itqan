@@ -53,7 +53,7 @@ import { useCompletedCourses } from '../state/completed';
 import { useAuth } from '../state/auth';
 import { Card, EmptyState, ErrorState, GapChip, LoadingBlock } from '../components/ui';
 import { CareerGoal } from '../components/CareerGoal';
-import type { Course } from '../api';
+import type { Course, JobMatch } from '../api';
 import { MatchCard } from '../components/MatchCard';
 import { CourseCard } from '../components/CourseCard';
 import { JourneyMap, LOW_READINESS } from '../components/map/JourneyMap';
@@ -137,6 +137,17 @@ export function Dashboard() {
    */
   const { data: stored, reload: reloadProfile } = useAsync((s) => api.getProfile(s),
                                                           [api, locale, settled, resultsVersion]);
+  /** The token pool, so a card can price a replacement before spending one. */
+  const { data: usage } = useAsync((s) => api.getUsage(s), [api, locale, resultsVersion]);
+
+  /* The same in-place replacement the jobs page has, for the two cards shown
+     here. Rejecting a posting must not throw the reader off the dashboard. */
+  const [editedMatches, setEditedMatches] = useState<JobMatch[] | null>(null);
+  const [matchNotice, setMatchNotice] = useState<string | null>(null);
+  const replaceMatch = useCallback((id: string, next: JobMatch) => {
+    setEditedMatches((cur) => (cur ?? data?.topMatches ?? []).map((j) => (j.id === id ? next : j)));
+    setMatchNotice(t('fb.replacedJob'));
+  }, [data, t]);
 
   /**
    * Which courses the user has told us they finished.
@@ -195,6 +206,7 @@ export function Dashboard() {
    */
   const [editedCourses, setEditedCourses] = useState<Course[] | null>(null);
   useEffect(() => { setEditedCourses(null); }, [courses]);
+  useEffect(() => { setEditedMatches(null); }, [data]);
   const [courseNotice, setCourseNotice] = useState<string | null>(null);
   const replaceCourse = useCallback((id: string, next: Course) => {
     setEditedCourses((cur) => (cur ?? courses ?? []).map((c) => (c.id === id ? next : c)));
@@ -262,7 +274,7 @@ export function Dashboard() {
   const allCourses = editedCourses ?? courses ?? [];
   const remaining = allCourses.filter((c) => !completed.has(c.id));
   const topCourses = remaining.slice(0, CARDS_SHOWN);
-  const topMatches = data.topMatches.slice(0, CARDS_SHOWN);
+  const topMatches = (editedMatches ?? data.topMatches).slice(0, CARDS_SHOWN);
 
   /**
    * The one named action on the page, and it has to survive being acted on.
@@ -495,6 +507,7 @@ export function Dashboard() {
               <CourseCard
                 key={c.id}
                 course={c}
+                usage={usage}
                 onReplace={(next) => replaceCourse(c.id, next)}
               />
             ))}
@@ -562,9 +575,22 @@ export function Dashboard() {
             />
           </Card>
         ) : (
-          <div className="grid grid--2">
-            {topMatches.map((j) => <MatchCard key={j.id} job={j} />)}
-          </div>
+          <>
+            <div className="grid grid--2">
+              {topMatches.map((j) => (
+                <MatchCard
+                  key={j.id}
+                  job={j}
+                  usage={usage}
+                  onReplace={(next) => replaceMatch(j.id, next)}
+                />
+              ))}
+            </div>
+            {/* Outlives the card it describes, like the course notice above. */}
+            {matchNotice && (
+              <p className="text-sm" role="status" aria-live="polite">{matchNotice}</p>
+            )}
+          </>
         )}
       </section>
     </div>

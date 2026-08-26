@@ -64,6 +64,8 @@ export function Courses() {
      it. `refresh` re-asks the server what is stale; the dialog prices it. */
   const { refresh: refreshUpdate } = useUpdate();
   const [offerUpdate, setOfferUpdate] = useState<string | null>(null);
+  /** The token pool, so the sheet's feedback panel can price a replacement. */
+  const { data: usage } = useAsync((s) => api.getUsage(s), [api, locale, resultsVersion]);
   const inFlight = useRunInFlight();
   // Re-fetch when the run lands; see the same note in Dashboard.tsx.
   const { data, loading, error, reload } = useAsync((s) => api.getCourses(s),
@@ -256,6 +258,7 @@ export function Courses() {
 
       <CourseSheet
         course={open}
+        usage={usage}
         done={open ? completed.has(open.id) : false}
         onClose={() => setOpen(null)}
         onReplace={replaceCourse}

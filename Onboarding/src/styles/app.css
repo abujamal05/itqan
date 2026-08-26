@@ -391,45 +391,49 @@
 }
 .fb__state { font-size: var(--text-sm); color: var(--color-text-muted); }
 
-/* The reason panel. A sunken well INSIDE the card, so it reads as part of the
-   card rather than as a popover that happens to overlap one. */
-.fb__panel {
-  display: flex; flex-direction: column; gap: var(--space-3);
-  padding: var(--space-4);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-sunken);
-  border: 1px solid var(--color-border);
-  animation: fb-open var(--duration-base) var(--ease-out) both;
-}
-@keyframes fb-open {
+/* The reason panel is a DIALOG now, so `.fb__panel`, `.fb__q` and `.fb__help`
+   went with it — the dialog brings its own surface, its own entrance and its
+   own heading styles from `.confirm`.
+
+   The KEYFRAME did not go with them, and nearly did: the dashboard's skills
+   disclosure animates with it too, under the name it was given when this panel
+   was its only user. It is `panel-open` now, which is what it always was. */
+@keyframes panel-open {
   from { opacity: 0; transform: translateY(calc(-4px * var(--motion-scale))); }
   to   { opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  /* Duration stays, distance goes: --motion-scale is 0 here, so the transform
-     is already the identity. The keyframe is kept rather than killed so the
+  /* Duration stays, distance goes: `--motion-scale` is 0 here, so the transform
+     is already the identity. The keyframe is swapped rather than killed so the
      fade still marks the panel arriving. */
-  .fb__panel { animation-name: fb-open-reduced; }
-  @keyframes fb-open-reduced { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes panel-open-reduced { from { opacity: 0; } to { opacity: 1; } }
 }
-/* The reasons wrap inside a card column, so they are sized for THAT, not for a
-   full width row. Measured at 1280 on the courses grid: the column's content
-   box is ~224px, full size chips are 94-160px wide, so exactly one fitted per
-   line and seven of them made the panel 822px tall inside a 257px card.
-   Compact chips plus shorter labels put most pairs on one line. */
+
+/* THE CHIPS GET THEIR REAL SIZE BACK. They were shrunk to `--text-xs` with
+   tightened padding because the panel lived in a ~224px grid column, where full
+   size chips fit exactly one per line and built an 822px tower inside a 257px
+   card. In a dialog there is room, so they are ordinary chips again — and
+   ordinary chips clear the 44px touch floor, which the shrunken ones did not. */
 .fb__reasons {
   display: flex; flex-wrap: wrap; gap: var(--space-2);
 }
-.fb__reasons .chip {
-  font-size: var(--text-xs);
-  padding-block: var(--space-1);
-  padding-inline: var(--space-3);
-}
 
-.fb__q { font-weight: var(--weight-medium); }
-.fb__help { font-size: var(--text-sm); color: var(--color-text-muted); }
 /* NOT muted. This confirms an action the user took and, on a replacement, is
    the only thing explaining why the card under their cursor just changed. */
+/* The price, in a well of its own inside the dialog, so the number the person
+   is about to spend is not just another line of prose. */
+.fb__confirm {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+}
+.fb__cost { font-size: var(--text-sm); font-weight: var(--weight-medium); }
+
+/* A refusal, in words with its numbers. Never a coloured sentence: danger text
+   on the dark theme's surface fails AA, so the weight comes from position and
+   an icon rather than from the hue. */
+.fb__refused { font-size: var(--text-sm); color: var(--color-text); }
+
 .fb__done { font-size: var(--text-sm); }
 
 /* ---- SKILLS ITQAN IS NOT SURE ABOUT --------------------------------------
@@ -972,9 +976,9 @@
 .skills__count { margin-inline-start: auto; font-size: var(--text-sm); color: var(--color-text-muted); }
 .skills__panel {
   display: flex; flex-direction: column; gap: var(--space-4);
-  animation: fb-open var(--duration-base) var(--ease-out) both;
+  animation: panel-open var(--duration-base) var(--ease-out) both;
 }
-@media (prefers-reduced-motion: reduce) { .skills__panel { animation-name: fb-open-reduced; } }
+@media (prefers-reduced-motion: reduce) { .skills__panel { animation-name: panel-open-reduced; } }
 
 /* ---- The career goal -----------------------------------------------------
    Deliberately NOT a card. It is the second half of the readiness statement,

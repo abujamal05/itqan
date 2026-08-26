@@ -1255,3 +1255,71 @@ last showed, which means a run started on a phone is not celebrated on a laptop.
 update run, and whether the person has seen it, that would be exact.** It is not
 required for the feature to work, and a missed celebration is the only failure
 mode of the current approach — never a false one.
+
+### 10. One replacement for a recommendation that does not fit — `POST /api/recommendations/alternative`  **(NOT BUILT)**
+
+```
+POST /api/recommendations/alternative
+  { subject: "job" | "course", itemId, reason, note, exclude[] }
+  -> Course | JobMatch | null
+  -> 429 { error: "token_limit", needed, remaining, resetsAt }
+```
+
+Added 2026-08-26. A person looking at a recommendation that is wrong for them
+should be able to say so, say WHY, and get one better answer in its place —
+from the card, or by telling Hud, which is the same thing because his answers
+are attached as the same cards.
+
+#### The reason is the request
+
+`reason` is one of the closed per-subject lists the app already sends with a
+dislike (`price`, `tooLong`, `tooAdvanced`, `wrongLevel`, `wrongLocation`, …),
+plus `other` carrying `note` in the person's own words.
+
+**It must change what comes back.** The previous route recorded the reason and
+then searched without it, so "too expensive" and "too basic" produced the same
+next course and the panel's own question was decoration. "Too expensive" means a
+cheaper one; "wrong level" means a different level; `other` means read the note.
+
+#### Postings can be replaced, and nothing is invented
+
+This reverses an earlier decision in the front end, whose note read: *a vacancy
+is a real thing at a real employer, not an interchangeable slot to be refilled.*
+That is an argument against **inventing** a posting, and it still holds. It was
+never an argument against finding a different **real** one.
+
+What comes back is another real match carrying its own `why`, its own source and
+its own retrieval date, exactly as the rejected one did. **`null` is an honest
+answer** and the screen has copy for it: nothing else fits better right now.
+
+Never return something the account has already turned down, and never return
+something in `exclude` — that list is what is currently on the person's screen,
+and watching a card they can already see slide into the gap they just made is
+the failure this field exists to prevent.
+
+#### It is an agent call, so it is priced
+
+`GET /api/usage` gains `prices.alternative`. Like `message` (1) and
+`documentReread` (19), **publish a measured figure** — the front end will not
+invent one, and where the price is absent the offer is not made at all rather
+than made for free.
+
+The price is on the control before it is pressed, a second tap confirms it, and
+a spent budget is refused with **429 `token_limit` and its numbers** so the card
+can say "that costs 2 and you have 0 left today" instead of "nothing else fits".
+Those two must never be confused: one is about the catalogue and the other is
+about the wallet.
+
+**Charge only for an answer.** A search that returns `null` found nothing and
+should cost nothing.
+
+#### Hud reaches the same routes
+
+Asking Hud to redo the matching, or to find something else, ends at the same
+confirmations with the same prices — he proposes, the person disposes, the
+server executes. `proposedRerun` stays a chip that OPENS a confirmation and
+never one that runs, because a persuasive sentence must not be able to spend
+somebody's budget.
+
+`chat.rerun.cost` had gone on describing the weekly re-run allowance retired on
+2026-08-25. Every quoted price in the product now comes from `prices`.

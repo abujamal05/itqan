@@ -22,11 +22,13 @@
  * NO LABELS over the cards or the chips. They are self-evident, and a heading
  * over three pills is the kind of caption that turns a conversation into a form.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, Copy, Paperclip, RefreshCw, ThumbsDown, ThumbsUp } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useChat } from '../state/chat';
-import type { ChatMessage, ChatVerdict } from '../api';
+import { useApi } from '../state/api';
+import { useAsync } from '../lib/useAsync';
+import type { ChatMessage, ChatVerdict, Course, JobMatch } from '../api';
 import { Logo } from './Logo';
 import { MatchCard } from './MatchCard';
 import { CourseCard } from './CourseCard';
@@ -48,6 +50,18 @@ export function Message({
   onWritten: (id: string) => void;
 }) {
   const { t, formatNumber } = useI18n();
+  const api = useApi();
+  /** Priced so a card attached to an answer can offer a replacement too. */
+  const { data: usage } = useAsync((s) => api.getUsage(s), [api]);
+
+  /* The cards AS SHOWN, which is not the same as the cards in the message. A
+     replacement changes what is on screen; a thread is a record of what was
+     said and is not rewritten under the person who read it. */
+  const [jobs, setJobs] = useState<JobMatch[]>(message.jobs ?? []);
+  const [shownCourses, setCourses] = useState<Course[]>(message.courses ?? []);
+  useEffect(() => { setJobs(message.jobs ?? []); }, [message.jobs]);
+  useEffect(() => { setCourses(message.courses ?? []); }, [message.courses]);
+
   const mine = message.role === 'user';
 
   if (mine) {
@@ -110,15 +124,39 @@ export function Message({
             place under a paragraph the reader is still following. */}
         {!writing && (
           <>
-            {message.jobs?.length ? (
+            {/* HUD'S OWN ANSWER CAN BE TURNED DOWN, and this is the whole of
+                "he can do it through the UI or through Hud". Nothing new is
+                added to his prose — the fence forbids that — because the card
+                already carries the feedback panel, so saying "this one is too
+                expensive" to a card he attached is the same act as saying it to
+                a card on the courses page. The swap is local to this turn: a
+                message is a record of what was said, so replacing a card here
+                changes what is on screen, not what is in the thread. */}
+            {jobs.length ? (
               <div className="grid grid--chat">
-                {message.jobs.map((job) => <MatchCard key={job.id} job={job} />)}
+                {jobs.map((job) => (
+                  <MatchCard
+                    key={job.id}
+                    job={job}
+                    usage={usage}
+                    onReplace={(next) => setJobs((cur) =>
+                      cur.map((j) => (j.id === job.id ? next : j)))}
+                  />
+                ))}
               </div>
             ) : null}
 
-            {message.courses?.length ? (
+            {shownCourses.length ? (
               <div className="grid grid--chat">
-                {message.courses.map((course) => <CourseCard key={course.id} course={course} />)}
+                {shownCourses.map((course) => (
+                  <CourseCard
+                    key={course.id}
+                    course={course}
+                    usage={usage}
+                    onReplace={(next) => setCourses((cur) =>
+                      cur.map((c) => (c.id === course.id ? next : c)))}
+                  />
+                ))}
               </div>
             ) : null}
 
@@ -257,8 +295,26 @@ function RerunProposal({
 }) {
   const { t, formatNumber } = useI18n();
   const { rerunStage, rerunProgress } = useChat();
+  const api = useApi();
   const [confirming, setConfirming] = useState(false);
   const [spending, setSpending] = useState(false);
+
+  /**
+   * PRICED IN TOKENS, from the server, like every other spend.
+   *
+   * The line here said "this uses your re-run for this week, you have N left" —
+   * the weekly allowance that was retired on 2026-08-25 and which the root
+   * CLAUDE.md says copy must not describe. So Hud was quoting a budget that no
+   * longer exists, on the one control in this conversation that charges for
+   * something. Asking Hud to redo the matching now costs and reads exactly what
+   * it costs and reads everywhere else.
+   */
+  const { data: usage } = useAsync((s) => api.getUsage(s), [api]);
+  const cost = usage?.prices?.documentReread;
+  const left = usage?.tokens && usage.tokens.limit !== null
+    ? Math.max(0, usage.tokens.limit - usage.tokens.used)
+    : null;
+  const affordable = typeof cost !== 'number' || left === null || left >= cost;
 
   // The server has settled it; stop showing a meter for finished work.
   const running = spending && rerunStage !== null && rerunStage !== 'done'
@@ -292,7 +348,12 @@ function RerunProposal({
         <div className="rerun__confirm">
           {/* The cost, stated before the tap that spends it — not after. */}
           <p className="rerun__cost">
-            {t('chat.rerun.cost', { n: formatNumber(proposal.credits.remaining) })}
+            {typeof cost === 'number'
+              ? t(affordable ? 'chat.rerun.cost' : 'chat.rerun.cannotAfford', {
+                cost: formatNumber(cost),
+                remaining: formatNumber(left ?? 0),
+              })
+              : t('chat.rerun.offer')}
           </p>
           {/* `btn`, not `button`. These two carried `button button--primary`
               and `button button--ghost` — classes that exist in the MARKETING
@@ -302,10 +363,15 @@ function RerunProposal({
               cancelling it, on the one control in the whole product that spends
               the user's weekly re-run allowance. */}
           <div className="rerun__actions">
-            <button type="button" className="btn btn--primary" disabled={busy}
-                    onClick={async () => { setSpending(true); await onRerun(); }}>
-              {t('chat.rerun.confirm')}
-            </button>
+            {/* Withheld rather than disabled when the budget will not cover it:
+                the sentence above already carries both numbers, and a button
+                that fails on press adds nothing but a wasted tap. */}
+            {affordable && (
+              <button type="button" className="btn btn--primary" disabled={busy}
+                      onClick={async () => { setSpending(true); await onRerun(); }}>
+                {t('chat.rerun.confirm')}
+              </button>
+            )}
             <button type="button" className="btn btn--ghost"
                     onClick={() => setConfirming(false)}>
               {t('chat.rerun.cancel')}

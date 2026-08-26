@@ -18,15 +18,18 @@
 import type { ReactNode } from 'react';
 import { Clock, ExternalLink } from 'lucide-react';
 import { useI18n } from '../i18n';
-import type { Course } from '../api';
+import type { Course, Usage } from '../api';
+import { isJobMatch } from '../api';
 import { courseFacts } from '../lib/courseFacts';
 import { Badge, Card, GapChip } from './ui';
 import { FeedbackBar } from './FeedbackBar';
 
 export function CourseCard({
-  course, onReplace, action,
+  course, onReplace, action, usage,
 }: {
   course: Course;
+  /** The token pool, so the feedback panel can price a replacement. */
+  usage?: Usage | null;
   /**
    * Swap this card for another course closing the same gap. Passed by the
    * screens that own a course LIST, because only the owner of the list can
@@ -89,7 +92,14 @@ export function CourseCard({
           {action}
         </div>
 
-        <FeedbackBar subject="course" itemId={course.id} onReplace={onReplace} />
+        {/* Narrowed, not cast: `findAlternative` answers with whichever kind the
+            subject asked for, and this list only holds courses. */}
+        <FeedbackBar
+          subject="course"
+          itemId={course.id}
+          usage={usage}
+          onReplace={onReplace && ((next) => { if (!isJobMatch(next)) onReplace(next); })}
+        />
 
         <p className="source">
           {t('jobs.source', { source: course.source.name, date: formatDate(course.source.retrievedAt) })}

@@ -375,6 +375,17 @@ export function createHttpApi(): ItqanApi {
       return req<FeedbackState>('/preferences/feedback', { signal })
         .catch(() => emptyFeedback());
     },
+    /**
+     * NOT `.catch(() => null)` like its predecessor. A refusal has to reach the
+     * caller: `token_limit` is the one outcome the panel can act on, and
+     * swallowing it into "nothing else fits" would tell somebody the catalogue
+     * was empty when their budget was spent.
+     */
+    findAlternative(input, signal) {
+      return req<Course | JobMatch | null>('/recommendations/alternative', {
+        method: 'POST', body: JSON.stringify(input), signal,
+      });
+    },
     findSimilarCourse({ courseId, exclude }, signal) {
       return req<Course | null>('/courses/similar', {
         method: 'POST', body: JSON.stringify({ courseId, exclude }), signal,

@@ -19,6 +19,7 @@
  * below, with the reasons.
  */
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useModalDialog } from '../lib/useModalDialog';
 import { AlertTriangle, type LucideIcon } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { errorText } from '../lib/errorText';
@@ -109,7 +110,6 @@ export function ConfirmDialog({
   secondary, error: externalError, children,
 }: ConfirmDialogProps) {
   const { t, locale, formatNumber } = useI18n();
-  const ref = useRef<HTMLDialogElement>(null);
   const field = useRef<HTMLInputElement>(null);
   const cancelBtn = useRef<HTMLButtonElement>(null);
   const [typed, setTyped] = useState('');
@@ -120,46 +120,30 @@ export function ConfirmDialog({
   const gated = Boolean(typePhrase);
   const unlocked = !typePhrase || matchesPhrase(typed, typePhrase.phrase, locale);
 
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    if (open && !el.open) {
-      setTyped('');
-      setError(null);
-      setBusy(false);
-      el.showModal();
-      /**
-       * FOCUS NEVER LANDS ON THE DESTRUCTIVE BUTTON. `showModal` gives focus to
-       * the first focusable child, and a dialog that opens with "Delete
-       * everything" already focused is one stray Enter away from doing it. It
-       * goes to the field the person has to fill, or to the way out.
-       */
-      requestAnimationFrame(() => { (field.current ?? cancelBtn.current)?.focus(); });
-    }
-    if (!open && el.open) el.close();
-  }, [open]);
-
   /**
-   * ESCAPE AND THE BACKDROP GO THROUGH THE SAME DOOR AS THE BUTTON.
+   * FOCUS NEVER LANDS ON THE DESTRUCTIVE BUTTON. `showModal` gives focus to the
+   * first focusable child, and a dialog that opens with "Delete everything"
+   * already focused is one stray Enter away from doing it. It goes to the field
+   * the person has to fill, or to the way out.
    *
-   * A real `cancel` listener rather than React's `onCancel` prop, which is what
-   * `CourseSheet` already learned here: left to the platform the dialog closes
-   * without React knowing, the caller's state stays open, and the next open
-   * call finds the element already `open` and does nothing. So the native close
-   * is prevented and the state is asked to close instead, which then calls
-   * `el.close()` above — one path, whichever way the person leaves.
-   *
-   * While a request is in flight Escape does nothing at all. The account is
-   * mid-change, and a dialog that vanishes at that moment leaves someone with
-   * no idea whether it went through.
+   * `busy` locks Escape and the backdrop: mid-request the account is being
+   * changed, and a dialog that vanishes then tells nobody what happened.
    */
+  const ref = useModalDialog({
+    open,
+    onClose,
+    locked: busy,
+    focus: () => field.current ?? cancelBtn.current,
+  });
+
+  /* Reset on each open, so a second visit starts clean rather than showing the
+     phrase and the error from the last one. */
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const cancel = (e: Event) => { e.preventDefault(); if (!busy) onClose(); };
-    el.addEventListener('cancel', cancel);
-    return () => el.removeEventListener('cancel', cancel);
-  }, [busy, onClose]);
+    if (!open) return;
+    setTyped('');
+    setError(null);
+    setBusy(false);
+  }, [open]);
 
   const run = useCallback(async () => {
     if (busy || !unlocked) return;

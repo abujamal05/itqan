@@ -361,6 +361,20 @@ export interface UsageCounter {
 export interface TokenPrices {
   message: number;
   documentReread: number;
+  /**
+   * Finding ONE replacement for a recommendation the person turned down.
+   *
+   * A published price like the other two, and for the same reason: the meter on
+   * the settings screen is only worth drawing because every spend has a number
+   * next to it. It is small — one item, not a whole path — but it is an agent
+   * call, so it is priced, stated before the tap, and refused with its numbers
+   * when the budget will not cover it.
+   *
+   * OPTIONAL ON THE WIRE, because a server that has not shipped it yet must not
+   * make the feedback panel unusable. Absent means the alternative is not
+   * offered rather than offered for free — see `FeedbackBar`.
+   */
+  alternative?: number;
 }
 
 /**
@@ -973,6 +987,51 @@ export interface ItqanApi {
     input: { courseId: string; exclude: string[] },
     signal?: AbortSignal,
   ): Promise<Course | null>;
+
+  /**
+   * One replacement for a recommendation that does not fit, of either kind.
+   *
+   * THE REASON IS THE REQUEST. `findSimilarCourse` recorded why the person said
+   * no and then searched without it, so "too expensive" and "too basic" both
+   * produced the same next course and the panel's own question was decoration.
+   * The reason and the note go to the agent, which is what makes this "find me
+   * a cheaper one" rather than "shuffle".
+   *
+   * JOBS TOO, which reverses an earlier decision here. The old note said a
+   * vacancy is a real thing at a real employer and not an interchangeable slot
+   * to be refilled — true, and it is an argument against INVENTING a posting,
+   * not against finding a different real one. What comes back carries its own
+   * `why`, its own source and its own retrieval date, exactly as the rejected
+   * one did, and `null` stays an honest answer.
+   *
+   * PENDING BACKEND — `POST /api/recommendations/alternative`. BACKEND.md §10.
+   * Refuses with 429 `token_limit` and its numbers when the pool is spent.
+   */
+  findAlternative(
+    input: {
+      subject: FeedbackSubject;
+      itemId: string;
+      /** Why it was rejected, as the closed list has it. Null when skipped. */
+      reason: DislikeReason | null;
+      /** The person's own words, only ever alongside `other`. */
+      note: string | null;
+      /** Everything already on screen, so the answer is not something visible. */
+      exclude: string[];
+    },
+    signal?: AbortSignal,
+  ): Promise<Course | JobMatch | null>;
 }
 
 export const isStrong = (c: Confidence) => c >= TRUST_THRESHOLD;
+
+/**
+ * Which kind of recommendation came back from `findAlternative`.
+ *
+ * A REAL RUNTIME CHECK, not a cast. The route answers with whichever kind the
+ * subject asked for, and the two screens that receive it hold lists of exactly
+ * one kind — so a card handed the wrong shape would render `undefined` where an
+ * employer or a provider should be. `employer` is on every posting and on no
+ * course, which makes it the honest discriminator.
+ */
+export const isJobMatch = (x: Course | JobMatch): x is JobMatch =>
+  typeof (x as JobMatch).employer === 'string';

@@ -18,7 +18,7 @@
 import { useEffect, useRef } from 'react';
 import { Check, RotateCcw, X } from 'lucide-react';
 import { useI18n } from '../../i18n';
-import type { Course } from '../../api';
+import type { Course, Usage } from '../../api';
 import { CourseCard } from '../CourseCard';
 
 export function CourseSheet({
@@ -28,6 +28,7 @@ export function CourseSheet({
   onDone,
   onUndo,
   done,
+  usage,
 }: {
   /** Null closes it. Kept mounted so the close transition has something to run on. */
   course: Course | null;
@@ -36,6 +37,9 @@ export function CourseSheet({
   onDone: (course: Course) => void;
   onUndo: (course: Course) => void;
   done: boolean;
+  /** Passed straight through so the card's feedback panel can price a
+   *  replacement. Without it the offer is simply not made. */
+  usage?: Usage | null;
 }) {
   const { t } = useI18n();
   const ref = useRef<HTMLDialogElement>(null);
@@ -76,6 +80,7 @@ export function CourseSheet({
 
           <CourseCard
             course={course}
+            usage={usage}
             onReplace={(next) => { onReplace(course.id, next); onClose(); }}
             /* INSIDE the card, beside "Open the course". It used to sit on its
                own surface underneath, which made the one control the user came

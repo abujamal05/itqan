@@ -156,7 +156,11 @@ let rerunCredits = 1;
  * a re-read would hide the only interesting behaviour the budget has.
  */
 const PLAN_TOKENS = { free: 30, paid: 90 } as const;
-const TOKEN_PRICES = { message: 1, documentReread: 19 } as const;
+/* `alternative` is one agent call over one item, so it sits between a message
+   and a full re-read. A STUB'S FIGURE, like the update costs: BACKEND.md §10
+   says production must publish a measured one the way the re-read's 19 was
+   measured. */
+const TOKEN_PRICES = { message: 1, documentReread: 19, alternative: 2 } as const;
 
 /**
  * How many job matches a free account sees. The rest are paid.
@@ -1154,6 +1158,57 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
            Ranked rather than picked at random: something sharing an `unlocks`
            entry with the rejected course comes first, because "similar" has to
            mean "same gap" or the replacement is just the next row down. */
+        /* ---- One replacement, of either kind (BACKEND.md §10) ----
+           NOT BUILT IN PRODUCTION. What the stub reproduces is the shape the
+           screens depend on: the REASON reaches the search and changes what
+           comes back, a posting can be replaced as well as a course, the spend
+           is refused with its numbers, and `null` is an honest answer. */
+        if (url === '/api/recommendations/alternative' && req.method === 'POST') {
+          const f = parseBody(await body(req), req.headers['content-type'] ?? '') as unknown as
+            { subject?: string; itemId?: string; reason?: string | null; exclude?: string[] };
+
+          const refusedAlt = tokenRefusal(me.id, TOKEN_PRICES.alternative);
+          if (refusedAlt) return json(res, 429, refusedAlt);
+
+          const excluded = new Set([...(f.exclude ?? []), f.itemId ?? '']);
+          const rows = feedback.get(me.id) ?? [];
+
+          if (f.subject === 'job') {
+            const disliked = new Set(rows
+              .filter((r) => r.subject === 'job' && r.verdict === 'dislike')
+              .map((r) => r.itemId));
+            const pool = jobs(locale)
+              .filter((j) => !excluded.has(j.id) && !disliked.has(j.id));
+            /* Nothing is invented: this is another REAL posting off the same
+               list, or nothing at all. */
+            if (!pool.length) return json(res, 200, null);
+            spend(me.id, TOKEN_PRICES.alternative);
+            return json(res, 200, pool[0]);
+          }
+
+          const all = [...courses(locale), ...alternateCourses(locale)];
+          const rejected = all.find((c) => c.id === f.itemId);
+          const wanted = new Set(rejected?.unlocks ?? []);
+          const disliked = new Set(rows
+            .filter((r) => r.subject === 'course' && r.verdict === 'dislike')
+            .map((r) => r.itemId));
+          let pool = all.filter((c) => !excluded.has(c.id) && !disliked.has(c.id));
+
+          /* THE REASON CHANGES THE ANSWER, which is the whole point of asking
+             it. Production's ranker will do something far better than this;
+             what matters is that the field is USED, because a search that
+             ignores it makes the panel's question decoration. */
+          if (f.reason === 'price') pool = [...pool].sort((a, b) => (a.price ?? 1e9) - (b.price ?? 1e9));
+          if (f.reason === 'tooLong') {
+            pool = [...pool].sort((a, b) => (a.hoursMin ?? 1e9) - (b.hoursMin ?? 1e9));
+          }
+
+          const sameGap = pool.find((c) => c.unlocks.some((u) => wanted.has(u)));
+          const answer = sameGap ?? pool[0] ?? null;
+          if (answer) spend(me.id, TOKEN_PRICES.alternative);
+          return json(res, 200, answer);
+        }
+
         if (url === '/api/courses/similar' && req.method === 'POST') {
           const f = parseBody(await body(req), req.headers['content-type'] ?? '') as unknown as
             { courseId?: string; exclude?: string[] };
