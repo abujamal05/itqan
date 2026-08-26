@@ -68,6 +68,13 @@ const accounts: Account[] = [
    * fresh-flow tests at her is exactly what turned CI red.
    */
   { id: 'u_new', fullName: 'Salim Al Amri', email: 'new@itqan.test', password: 'itqan1234', onboarded: false, emailVerified: true },
+  /**
+   * The MERGE fixture. Like `maryam` it is SPENT against — a re-upload costs a
+   * document re-read — so it gets its own account rather than sharing one. Two
+   * specs spending the same in-memory counter is precisely what made the token
+   * spec pass alone and fail in a full run.
+   */
+  { id: 'u_reader', fullName: 'Huda Al Zadjali', email: 'reader@itqan.test', password: 'itqan1234', onboarded: true, emailVerified: true },
 ];
 
 /** Progress and profile per account, so a reload does not restart onboarding. */
@@ -353,6 +360,8 @@ const PHASE_ONE_MS = 5000;
 const PHASE_TWO_MS = 6000;
 const jobs_ = new Map<string, {
   started: number; bad: boolean; confirmedAt?: number;
+  /** `merge` on a re-upload, which changes the shape of the poll's result. */
+  mode?: 'replace' | 'merge';
 }>();
 /** Document ids the pipeline will refuse, so the failure path is reachable. */
 const unreadable = new Set<string>();
@@ -707,7 +716,15 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           }
 
           const jobId = `job_${Date.now().toString(36)}`;
-          jobs_.set(jobId, { started: Date.now(), bad: ids.some((d) => unreadable.has(d)) });
+          /* THE MODE IS CARRIED, because the confirm screen renders a different
+             thing on a re-upload: the union of old and new skills, plus what
+             changed. A stub that always answered `replace` would let the merge
+             screen be built against a shape production never sends. */
+          const mode = (f as never as { mode?: string }).mode === 'merge' ? 'merge' : 'replace';
+          jobs_.set(jobId, {
+            started: Date.now(), mode,
+            bad: ids.some((d) => unreadable.has(d)),
+          });
           return json(res, 200, { jobId });
         }
 
@@ -732,12 +749,44 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
               stage: stepped > 0.25 ? 'translating' : 'reading',
             });
           }
+          /* On a merge the server publishes the UNION -- this run's extraction
+             plus the already-approved skills it did not find again -- and a
+             delta describing what moved. A carried-over skill has
+             `confidence: null` and `origin: 'confirmed'`, never a fabricated
+             1.0: nothing measured it on this run. */
+          const merged = () => {
+            const base = analysisResult(locale);
+            if (job.mode !== 'merge') return base;
+            const approved = (profiles.get(me.id)?.skills ?? []) as string[];
+            const found = new Set(base.skills.map((x) => x.name.toLowerCase()));
+            const carried = approved
+              .filter((n) => !found.has(String(n).toLowerCase()))
+              .map((n, i) => ({
+                id: `c${i + 1}`, name: String(n),
+                confidence: null, origin: 'confirmed' as const,
+              }));
+            const approvedSet = new Set(approved.map((n) => String(n).toLowerCase()));
+            const unapproved = base.skills.filter((x) => !approvedSet.has(x.name.toLowerCase()));
+            return {
+              ...base,
+              skills: [...base.skills, ...carried],
+              delta: {
+                // First unapproved skill stands in for one they removed before,
+                // so the OFFER path is reachable locally and not only in prod.
+                addedSkills: unapproved.slice(1),
+                changedSkills: [],
+                previouslyRemoved: unapproved.slice(0, 1),
+                unchangedCount: base.skills.length - unapproved.length,
+              },
+            };
+          };
+
           if (job.confirmedAt === undefined) {
             // The extraction is attached AT THE PAUSE. That is what lets the
             // confirm screen show the details instead of a skeleton.
             return json(res, 200, {
               jobId, stage: 'awaiting_confirmation', progress: 0.75,
-              result: analysisResult(locale),
+              result: merged(),
             });
           }
           // Phase two: matching -> done.
@@ -745,7 +794,7 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           return json(res, 200, {
             jobId, stage: two >= 1 ? 'done' : 'matching',
             progress: 0.75 + (Math.floor(two * 12) / 12) * 0.25,
-            result: analysisResult(locale),
+            result: merged(),
           });
         }
 

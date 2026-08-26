@@ -28,12 +28,51 @@ export interface Extracted<T> {
   evidence?: string;
 }
 
+/**
+ * Where a skill on the confirm screen came from, which decides whether
+ * `confidence` means anything.
+ *
+ * `extracted` — read from the documents on THIS run, and scored.
+ * `confirmed` — already on the person's profile and not found again by a
+ *   re-read. Carried over rather than dropped, because a second CV is an
+ *   addition to what we know and not a replacement for it.
+ */
+export type SkillOrigin = 'extracted' | 'confirmed';
+
 export interface Skill {
   id: string;
   name: string;
-  confidence: Confidence;
+  /**
+   * NULL for a carried-over skill, and deliberately not 1.0.
+   *
+   * The stored profile keeps names and no scores, so nothing measured this
+   * skill on this run. A fabricated number would read as certainty the system
+   * does not have — the same bug class as a `0` price rendering as "free".
+   * `origin: 'confirmed'` carries the real justification instead: the person
+   * approved it, which the interface treats as settled without inventing a
+   * measurement.
+   */
+  confidence: Confidence | null;
+  origin?: SkillOrigin;
   /** The transcript course this skill was translated from. */
   fromCourse?: string;
+}
+
+/**
+ * What a re-read changed, so somebody is not asked to re-approve a profile they
+ * have already approved. Present only on a `merge` run.
+ *
+ * `previouslyRemoved` is separate from `addedSkills` on purpose: those are
+ * skills a past run extracted and the person chose not to keep. They are
+ * OFFERED again, unticked, never silently restored — re-adding a deliberate
+ * deletion behind someone's back is what the confirm step exists to prevent.
+ */
+export interface ProfileDelta {
+  addedSkills: Skill[];
+  changedSkills: (Skill & { previousConfidence: Confidence })[];
+  previouslyRemoved: Skill[];
+  /** A count, not a list — "and 24 others unchanged". */
+  unchangedCount: number;
 }
 
 /* ------------------------------------------------------------ DOCUMENTS -- */
@@ -112,8 +151,27 @@ export interface AnalysisResult {
   fullName: Extracted<string> | null;
   birthDate: Extracted<string> | null;      // ISO yyyy-mm-dd
   graduationDate: Extracted<string> | null; // ISO yyyy-mm
+  /**
+   * On a `replace` run: what the documents said, and nothing else.
+   *
+   * On a `merge` run: the UNION of that with the skills already on the profile,
+   * so re-uploading a CV adds to what is known instead of overwriting it. The
+   * confirm screen seeds its draft from this list, which is why the union is
+   * published here rather than left for the client to assemble.
+   */
   skills: Skill[];
+  /** Only on a `merge` run — what actually changed. */
+  delta?: ProfileDelta;
 }
+
+/**
+ * How a run treats the profile that already exists.
+ *
+ * `replace` — the default, and first-time onboarding: there is nothing to merge
+ *   with, and the extraction stands alone.
+ * `merge` — a re-upload. Keeps what was already approved, adds what is new.
+ */
+export type AnalysisMode = 'replace' | 'merge';
 
 /**
  * `awaiting_confirmation` is the pause, and it is different in kind from the
@@ -656,7 +714,9 @@ export interface ItqanApi {
   ): Promise<UploadedDocument>;
 
   /** Starts the pipeline over the whole set. Returns the job to poll. */
-  startAnalysis(documentIds: string[], signal?: AbortSignal): Promise<{ jobId: string }>;
+  /** `mode` defaults to `replace`; only a re-upload passes `merge`. */
+  startAnalysis(documentIds: string[], mode?: AnalysisMode,
+                signal?: AbortSignal): Promise<{ jobId: string }>;
   getAnalysis(jobId: string, signal?: AbortSignal): Promise<AnalysisJob>;
   confirmProfile(profile: ConfirmedProfile, signal?: AbortSignal): Promise<ConfirmProfileResult>;
   /** Reads the stored profile back. Null when nothing has been confirmed yet. */
@@ -795,4 +855,22 @@ export interface ItqanApi {
   ): Promise<Course | null>;
 }
 
-export const isStrong = (c: Confidence) => c >= TRUST_THRESHOLD;
+/**
+ * Null is NOT strong. An absent score is the absence of evidence, and treating
+ * it as a pass would let anything unmeasured render as fact — use `isSettled`
+ * for a skill, which knows the one case where a missing score is fine.
+ */
+export const isStrong = (c: Confidence | null | undefined) =>
+  typeof c === 'number' && c >= TRUST_THRESHOLD;
+
+/**
+ * Whether a skill can be shown as established rather than needing a look.
+ *
+ * Two ways to qualify, different in kind: the documents evidenced it strongly
+ * enough this run, OR the person already approved it and a re-read did not find
+ * it again. The second has no confidence to test — that is why it carries
+ * `origin` instead of a fabricated 1.0 — and a human decision is better
+ * evidence than a model score, so it does not belong in the "please check" pile.
+ */
+export const isSettled = (s: Skill) =>
+  s.origin === 'confirmed' || isStrong(s.confidence);

@@ -29,7 +29,7 @@ import { useOnboarding } from '../state/onboarding';
 import { useApi } from '../state/api';
 import { useAuth } from '../state/auth';
 import { clearUpgradeIntent, hasUpgradeIntent } from '../state/upgradeIntent';
-import { isStrong } from '../api';
+import { isSettled, isStrong } from '../api';
 import type { Skill } from '../api';
 import { Button, Callout, Card, LoadingBlock } from '../components/ui';
 import { errorText } from '../lib/errorText';
@@ -105,6 +105,18 @@ export function Confirm() {
      in the product to say nothing on. */
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  /**
+   * Skills a past run extracted and this person chose NOT to keep. The server
+   * ships them inside `result.skills` — the re-read did find them again — so
+   * they are held OUT of the draft here and offered separately below.
+   *
+   * Offered, never applied. Putting a deliberately deleted skill back because
+   * somebody uploaded a new CV would override a decision they already made,
+   * which is the thing this screen exists to prevent.
+   */
+  const offered = useMemo(() => result?.delta?.previouslyRemoved ?? [], [result]);
+  const offeredIds = useMemo(() => new Set(offered.map((s) => s.id)), [offered]);
+
   // Seed once, when (and if) the reading lands. A later re-render must never
   // overwrite something the user has already corrected.
   useEffect(() => {
@@ -113,10 +125,23 @@ export function Confirm() {
       name: result.fullName?.value ?? '',
       birth: result.birthDate?.value ?? '',
       graduation: result.graduationDate?.value ?? '',
-      skills: result.skills,
+      skills: result.skills.filter((s) => !offeredIds.has(s.id)),
     });
     setSeeded(true);
-  }, [result, seeded]);
+  }, [result, seeded, offeredIds]);
+
+  /** What the re-read newly found, and what moved — for the badges. */
+  const addedIds = useMemo(
+    () => new Set((result?.delta?.addedSkills ?? []).map((s) => s.id)), [result]);
+  const changedFrom = useMemo(
+    () => new Map((result?.delta?.changedSkills ?? [])
+      .map((s) => [s.id, s.previousConfidence])), [result]);
+
+  /** Put an offered skill back — at the end, where it is visible that it landed. */
+  const acceptOffered = (skill: Skill) => setDraft((d) => (
+    d.skills.some((x) => x.id === skill.id)
+      ? d
+      : { ...d, skills: [...d.skills, skill] }));
 
   const uncertain = useMemo(() => {
     if (!result) return [] as string[];
@@ -124,7 +149,7 @@ export function Confirm() {
     if (result.fullName && !isStrong(result.fullName.confidence)) list.push(t('confirm.name'));
     if (result.birthDate && !isStrong(result.birthDate.confidence)) list.push(t('confirm.birth'));
     if (result.graduationDate && !isStrong(result.graduationDate.confidence)) list.push(t('confirm.graduation'));
-    if (result.skills.some((s) => !isStrong(s.confidence))) list.push(t('confirm.skills'));
+    if (result.skills.some((s) => !isSettled(s))) list.push(t('confirm.skills'));
     return list;
   }, [result, t]);
 
@@ -163,9 +188,9 @@ export function Confirm() {
    * descending confidence; resorting would hide that.
    */
   const sureSkills = useMemo(
-    () => draft.skills.filter((s) => isStrong(s.confidence)), [draft.skills]);
+    () => draft.skills.filter(isSettled), [draft.skills]);
   const unsureSkills = useMemo(
-    () => draft.skills.filter((s) => !isStrong(s.confidence)), [draft.skills]);
+    () => draft.skills.filter((s) => !isSettled(s)), [draft.skills]);
 
   /**
    * Removal is undoable, because it is the one destructive act on this screen
@@ -403,6 +428,17 @@ export function Confirm() {
                             >
                               <Check size={14} aria-hidden="true" />
                               <bdi>{s.name}</bdi>
+                              {addedIds.has(s.id) && (
+                                <span className="chip__badge">{t('confirm.skillNew')}</span>
+                              )}
+                              {changedFrom.has(s.id) && s.confidence !== null && (
+                                <span className="chip__badge num">
+                                  {t('confirm.skillMoved', {
+                                    from: formatNumber(Math.round(changedFrom.get(s.id)! * 100)),
+                                    to: formatNumber(Math.round(s.confidence * 100)),
+                                  })}
+                                </span>
+                              )}
                               <button
                                 type="button"
                                 className="chip__x"
@@ -417,6 +453,32 @@ export function Confirm() {
                       </ul>
                     ) : (
                       <p className="text-sm muted">{t('confirm.skillsEmpty')}</p>
+                    )}
+
+                    {/* OFFERED, NOT APPLIED. Extracted before and removed by
+                        this person; a new CV mentioning them again is not
+                        permission to put them back. Unticked by construction —
+                        simply not in the draft until one is pressed. */}
+                    {offered.length > 0 && (
+                      <div className="stack stack--sm">
+                        <p className="text-sm">{t('confirm.skillsRemovedBefore')}</p>
+                        <ul className="row" style={{ gap: 'var(--space-2)' }}>
+                          {offered.filter((s) => !draft.skills.some((x) => x.id === s.id))
+                            .map((s) => (
+                              <li key={s.id}>
+                                <button
+                                  type="button"
+                                  className="chip chip--offer"
+                                  onClick={() => acceptOffered(s)}
+                                  aria-label={`${t('confirm.skillRestore')}: ${s.name}`}
+                                >
+                                  <Plus size={14} aria-hidden="true" />
+                                  <bdi>{s.name}</bdi>
+                                </button>
+                              </li>
+                            ))}
+                        </ul>
+                      </div>
                     )}
 
                     {/* Rendered only when there IS one. A permanent empty panel
@@ -450,11 +512,13 @@ export function Confirm() {
                                 {s.fromCourse
                                   ? t('confirm.skillFrom', { course: s.fromCourse })
                                   : t('confirm.skillFromUnknown')}
-                                <span className="unsure__pct num">
-                                  {t('confirm.skillConfidence', {
-                                    n: formatNumber(Math.round(s.confidence * 100)),
-                                  })}
-                                </span>
+                                {s.confidence !== null && (
+                                  <span className="unsure__pct num">
+                                    {t('confirm.skillConfidence', {
+                                      n: formatNumber(Math.round(s.confidence * 100)),
+                                    })}
+                                  </span>
+                                )}
                               </span>
                               <button
                                 type="button"
