@@ -58,6 +58,8 @@ import { MatchCard } from '../components/MatchCard';
 import { CourseCard } from '../components/CourseCard';
 import { JourneyMap, LOW_READINESS } from '../components/map/JourneyMap';
 import { useRunInFlight } from '../components/PipelineProgress';
+import { Celebrate, CountUp } from '../components/Celebrate';
+import { takeCelebration, type Celebration } from '../lib/celebrate';
 
 /** How much of each list the dashboard shows before handing off to its page.
  *  Skills are no longer truncated — they live behind one disclosure instead. */
@@ -147,6 +149,21 @@ export function Dashboard() {
    * the service authors around a specific course, went on naming it.
    */
   const { completed } = useCompletedCourses(user?.id);
+
+  /**
+   * Did the score move because of something this person did?
+   *
+   * Taken ONCE per arrival, and taking it is what records the new value as
+   * seen — so a second visit has nothing to celebrate and the number is simply
+   * the number. `data.readiness` is in the deps rather than the whole payload
+   * because a refetch that returns the same score is not a new event.
+   */
+  const [celebration, setCelebration] = useState<Celebration | null>(null);
+  const readiness = data?.readiness;
+  useEffect(() => {
+    if (!user || typeof readiness !== 'number') return;
+    setCelebration(takeCelebration(user.id, readiness));
+  }, [user, readiness]);
 
   // Closed by default: the skills are the card's DETAIL, not its point.
   const [showAllSkills, setShowAllSkills] = useState(false);
@@ -305,13 +322,18 @@ export function Dashboard() {
     <div className="stack stack--page seq" aria-busy={loading || undefined}>
       {header}
 
+      {/* The one moment this page cheers, and only after a run that moved the
+          number. See `Celebrate` for why the score is allowed to travel here
+          and nowhere else. */}
+      {celebration && <Celebrate celebration={celebration} />}
+
       {/* 1. Where you stand. */}
       <section aria-labelledby="dash-readiness">
         {/* The page's one expressive surface — see the depth block in app.css.
             Everything below this stays product register. */}
         <Card className="card--anchor">
           <div className="readiness">
-            <Ring value={data.readiness} />
+            <Ring value={data.readiness} from={celebration?.from} />
             {/* `min(16rem, 100%)`, not a bare 16rem. The bare value is a hard
                 floor: on a 320px phone the card's content box is 215px, the
                 block refused to go under 256, and the readiness sentence — the
@@ -594,11 +616,16 @@ function Meter({ value }: { value: number }) {
  * and it is the right one: drawing the arc is choreography, animating the figure
  * would be dressing up a score so it looks more impressive than it is.
  */
-function Ring({ value }: { value: number }) {
+function Ring({ value, from }: { value: number; from?: number }) {
   const { t, formatNumber } = useI18n();
   const r = 48;
   const c = 2 * Math.PI * r;
-  const target = (Math.min(100, Math.max(0, value)) / 100) * c;
+  const clamp = (n: number) => Math.min(100, Math.max(0, n));
+  const target = (clamp(value) / 100) * c;
+  /* THE ARC STARTS WHERE THE NUMBER DOES. Given a `from`, both travel the same
+     distance over the same beat, so the ring and the figure read as one
+     movement rather than two things that happen to change at once. */
+  const start = typeof from === 'number' ? (clamp(from) / 100) * c : 0;
 
   // Starts empty, fills on the frame after mount so the transition has two
   // values to move between. Under reduced motion the CSS drops the transition
@@ -624,10 +651,14 @@ function Ring({ value }: { value: number }) {
           cx="54" cy="54" r={r} fill="none"
           stroke="var(--color-accent)" strokeWidth="8" strokeLinecap="round"
           strokeDasharray={c}
-          strokeDashoffset={drawn ? c - target : c}
+          strokeDashoffset={drawn ? c - target : c - start}
         />
         </svg>
-        <span className="ring__val num">{formatNumber(value)}</span>
+        <span className="ring__val num">
+          {typeof from === 'number'
+            ? <CountUp from={from} to={value} format={formatNumber} />
+            : formatNumber(value)}
+        </span>
       </div>
       <span className="ring__of">{t('dash.outOf100')}</span>
     </div>

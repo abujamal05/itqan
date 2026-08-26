@@ -198,6 +198,48 @@ const plans = new Map<string, 'free' | 'paid'>();
 const deactivated = new Set<string>();
 
 /**
+ * What is out of date per account, and whether the offer has been deferred.
+ *
+ * THE PRICE IS THE SERVER'S TO STATE, which is the half of this a stub can
+ * genuinely stand in for: the client asks what a run costs and shows that
+ * figure, so a browser is never doing arithmetic about somebody's budget. The
+ * numbers here are the documented token prices; production measures its own.
+ */
+interface StaleRow { scope: 'documents' | 'skills'; reasons: string[]; deferred: boolean }
+const stale = new Map<string, StaleRow>();
+
+/**
+ * A skills-only run costs less than a document re-read because it does less
+ * work: the documents are not read again. Priced at the message rate times the
+ * agents it still has to run, which is a STUB'S GUESS and labelled as one —
+ * BACKEND.md §9 says production must publish a measured figure the same way the
+ * re-read's 19 was measured.
+ */
+const UPDATE_COST = { documents: 19, skills: 5 } as const;
+
+/**
+ * How far readiness has moved for this account since the seed.
+ *
+ * DEV ONLY, AND CRUDE ON PURPOSE. Production computes readiness from evidence;
+ * nothing here can. What the stub has to reproduce is the SHAPE of the thing —
+ * a run finishes, the score is higher than it was, and the dashboard has
+ * something real to congratulate. Without it the celebration path could not be
+ * walked locally at all, because the seeded score is a constant.
+ */
+const readinessGain = new Map<string, number>();
+
+const markStale = (userId: string, scope: 'documents' | 'skills', reason: string) => {
+  const row = stale.get(userId);
+  /* DOCUMENTS WINS. If both are pending, the documents run subsumes the skills
+     one — it rebuilds the skills on its way past — and charging for both would
+     be charging twice for work done once. */
+  const next: StaleRow = row?.scope === 'documents' || scope === 'documents'
+    ? { scope: 'documents', reasons: [...new Set([...(row?.reasons ?? []), reason])], deferred: false }
+    : { scope, reasons: [...new Set([...(row?.reasons ?? []), reason])], deferred: false };
+  stale.set(userId, next);
+};
+
+/**
  * The subscription behind a paid plan.
  *
  * TWO STATES, and the second is the one worth having a stub for: `cancelled`
@@ -694,6 +736,7 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
              at. Mirrors BACKEND.md §3; production needs it too. */
           const heldCv = kind === 'cv' && allDocuments().find((d) => d.kind === 'cv');
           if (heldCv) {
+            markStale(me.id, 'documents', 'document_replaced');
             heldCv.fileName = fileName;
             heldCv.mimeType = f.__mimetype ?? heldCv.mimeType;
             heldCv.sizeBytes = Number(f.__size ?? 0);
@@ -738,6 +781,7 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
              fails the pipeline, so the recovery path stays reachable. */
           if (/unreadable/i.test(String(doc.fileName))) unreadable.add(id);
           else unreadable.delete(id);
+          markStale(me.id, 'documents', 'document_replaced');
           return json(res, 200, doc);
         }
 
@@ -785,6 +829,9 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
 
           uploads.set(me.id, mine.filter((d) => d.id !== id));
           if (prof?.documents) prof.documents = prof.documents.filter((d) => d.id !== id);
+          /* A document leaving the corpus changes what the reading was built
+             from, exactly as replacing one does. */
+          markStale(me.id, 'documents', 'document_removed');
           return json(res, 200, { ok: true });
         }
 
@@ -860,7 +907,14 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           });
         }
 
-        if (url === '/api/dashboard') return json(res, 200, dashboard(locale));
+        if (url === '/api/dashboard') {
+          const base = dashboard(locale);
+          /* Capped at 100, because a readiness of 104 is not a number this
+             product would ever show and a stub that produced one would send
+             somebody hunting for a bug in the ring. */
+          const readiness = Math.min(100, base.readiness + (readinessGain.get(me.id) ?? 0));
+          return json(res, 200, { ...base, readiness });
+        }
         /* THE JOB CUT, MADE SERVER SIDE. A free account gets its three
            strongest matches and a COUNT of the rest; the locked ones are never
            serialised, so there is nothing in the response for an extension or
@@ -895,6 +949,23 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           if (req.method === 'POST') set.add(courseId);
           else set.delete(courseId);
           completedByUser.set(me.id, set);
+
+          /* FINISHING A COURSE ADDS WHAT IT TEACHES. The catalogue already
+             says which skills the course unlocks, and completing it is the
+             only evidence anyone could ask for that they were earned — so the
+             person is not made to type them in, and the matches that depend on
+             them are marked as a step behind. */
+          if (req.method === 'POST') {
+            const course = [...courses(locale), ...alternateCourses(locale)]
+              .find((c) => c.id === courseId);
+            const prof = profiles.get(me.id) as { skills?: string[] } | undefined;
+            if (course && prof) {
+              const held = new Set((prof.skills ?? []).map((x) => x.toLowerCase()));
+              const added = course.unlocks.filter((x) => !held.has(x.toLowerCase()));
+              if (added.length) prof.skills = [...(prof.skills ?? []), ...added];
+            }
+            markStale(me.id, 'skills', 'course_completed');
+          }
           return json(res, 204, undefined);
         }
 
@@ -1124,6 +1195,18 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
              attachment would make "here, read this" impossible to express. */
           if (!question && !attachments.length) return json(res, 400, { error: 'empty_question' });
 
+          /* REFUSED BEFORE IT IS SPENT, and this was missing: the stub charged
+             for every question and never once said no, so an account could run
+             to 31 of a 30 token budget and the "you have none left" path could
+             not be reached locally at all. That is why the chat screen had no
+             message for it — the case was unreachable in development.
+
+             Same code and same fields as every other door that spends, per
+             BACKEND.md §9, so the front end has one sentence for one refusal
+             wherever it happens. */
+          const noTokens = tokenRefusal(me.id, TOKEN_PRICES.message);
+          if (noTokens) return json(res, 429, noTokens);
+
           /* Counted after the validity check, before the answer: a rejected
              empty question costs nothing, and a question that was asked costs
              one whether or not the user likes the answer. */
@@ -1249,12 +1332,76 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
         if (url === '/api/profile' && req.method === 'PUT') {
           const edited = parseBody(await body(req), req.headers['content-type'] ?? '');
           const prev = profiles.get(me.id) ?? {};
+          /* ONLY A CHANGED SKILL SET MAKES ANYTHING STALE. Saving a preference
+             or a phone number changes nothing downstream, and offering to spend
+             tokens after either would train people to dismiss the offer. */
+          const before = JSON.stringify((prev as { skills?: string[] }).skills ?? []);
+          const after = JSON.stringify(
+            (edited as unknown as { skills?: string[] }).skills ?? [],
+          );
           profiles.set(me.id, {
             ...prev,
             ...(edited as unknown as Record<string, unknown>),
             updatedAt: Date.now(),
           });
+          if (before !== after) markStale(me.id, 'skills', 'skills_edited');
           return json(res, 200, { ok: true });
+        }
+
+        /* ---- Bringing the journey up to date (BACKEND.md §9) ----
+           NOT BUILT IN PRODUCTION. The route exists here so the client's whole
+           path is exercised: ask what is stale, show the price, get a yes, run
+           the scope, poll it like any other run. */
+        if (url === '/api/update' && req.method === 'GET') {
+          const row = stale.get(me.id);
+          const cost = row ? UPDATE_COST[row.scope] : 0;
+          const remaining = Math.max(0, PLAN_TOKENS[planFor(me.id)] - (tokensUsed.get(me.id) ?? 0));
+          return json(res, 200, {
+            scope: row?.scope ?? null,
+            reasons: row?.reasons ?? [],
+            cost,
+            remaining,
+            /* THE SERVER ANSWERS THIS, not the browser. One place doing the
+               arithmetic is one place that can be wrong about it. */
+            affordable: cost > 0 && cost <= remaining,
+            deferred: row?.deferred ?? false,
+          });
+        }
+
+        if (url === '/api/update' && req.method === 'POST') {
+          const row = stale.get(me.id);
+          if (!row) return json(res, 409, { error: 'nothing_stale' });
+          const cost = UPDATE_COST[row.scope];
+          /* The refusal carries its numbers, so the screen can say "that costs
+             19 and you have 8 left" rather than "that did not work". */
+          const refused = tokenRefusal(me.id, cost);
+          if (refused) return json(res, 429, refused);
+          spend(me.id, cost);
+          stale.delete(me.id);
+
+          const jobId = `job_update_${Date.now().toString(36)}`;
+          /* THE SCOPES ARE DIFFERENT JOBS, and this is where that is real.
+             A `documents` run starts at the beginning and PAUSES at
+             `awaiting_confirmation`, because the extraction changed and the
+             person has to check it. A `skills` run is created already past that
+             pause — `confirmedAt` set — so it goes straight to matching. It is
+             not a fresh run: nobody changed an extraction, so there is nothing
+             to re-read and nothing to confirm. Production has to preserve that
+             distinction; BACKEND.md §9 says so in the contract's own words. */
+          jobs_.set(jobId, {
+            started: row.scope === 'documents' ? Date.now() : Date.now() - PHASE_ONE_MS,
+            bad: false,
+            confirmedAt: row.scope === 'documents' ? undefined : Date.now(),
+          });
+          /* The score moves, which is the point of having run it. */
+          readinessGain.set(me.id, (readinessGain.get(me.id) ?? 0) + 6);
+          return json(res, 200, { jobId });
+        }
+
+        if (url === '/api/update/defer' && req.method === 'POST') {
+          const row = stale.get(me.id);
+          if (row) stale.set(me.id, { ...row, deferred: true });
+          return json(res, 204, undefined);
         }
 
         return next();

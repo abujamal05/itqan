@@ -49,6 +49,24 @@ export interface ConfirmDialogProps {
   onConfirm: () => Promise<void>;
   /** Shown when `onConfirm` throws something with no message of its own. */
   errorFallback: string;
+  /**
+   * Withhold the confirm control entirely.
+   *
+   * For the case where the act is not available rather than not yet unlocked —
+   * a token budget that will not cover the run. The `note` above has already
+   * said what it costs and what is left, and a disabled button would add
+   * nothing to that but a tap that fails.
+   */
+  hideConfirm?: boolean;
+  /**
+   * A third choice beside Cancel, for the cases where leaving and declining are
+   * different answers. "Remind me later" is a decision about the future;
+   * closing the dialog is not, and collapsing them would silently record one as
+   * the other.
+   */
+  secondary?: { label: string; onSelect: () => void };
+  /** An error the CALLER owns, shown in the same place as the dialog's own. */
+  error?: string | null;
   /** Extra content between the note and the controls. Rarely needed. */
   children?: ReactNode;
 }
@@ -81,7 +99,8 @@ function matchesPhrase(typed: string, phrase: string, locale: string): boolean {
 
 export function ConfirmDialog({
   open, onClose, tone = 'neutral', icon: Icon, title, lead, items, note,
-  typePhrase, confirmLabel, onConfirm, errorFallback, children,
+  typePhrase, confirmLabel, onConfirm, errorFallback, hideConfirm, secondary,
+  error: externalError, children,
 }: ConfirmDialogProps) {
   const { t, locale, formatNumber } = useI18n();
   const ref = useRef<HTMLDialogElement>(null);
@@ -205,10 +224,10 @@ export function ConfirmDialog({
             />
           )}
 
-          {error && (
+          {(externalError ?? error) && (
             <p className="field__error" role="alert">
               <AlertTriangle size={14} aria-hidden="true" />
-              {error}
+              {externalError ?? error}
             </p>
           )}
 
@@ -224,18 +243,30 @@ export function ConfirmDialog({
             >
               {t('action.cancel')}
             </button>
+            {secondary && (
+              <button
+                type="button"
+                className="btn btn--ghost"
+                onClick={secondary.onSelect}
+                disabled={busy}
+              >
+                {secondary.label}
+              </button>
+            )}
             <span className="spacer" />
-            <Button
-              variant={danger ? 'danger' : 'primary'}
-              onClick={run}
-              loading={busy}
-              /* Disabled until the phrase is typed. It stays visibly a button
-                 rather than disappearing, so the gate reads as a gate and not
-                 as a missing control. */
-              disabled={gated && !unlocked}
-            >
-              {confirmLabel}
-            </Button>
+            {!hideConfirm && (
+              <Button
+                variant={danger ? 'danger' : 'primary'}
+                onClick={run}
+                loading={busy}
+                /* Disabled until the phrase is typed. It stays visibly a button
+                   rather than disappearing, so the gate reads as a gate and not
+                   as a missing control. */
+                disabled={gated && !unlocked}
+              >
+                {confirmLabel}
+              </Button>
+            )}
           </div>
         </div>
       )}

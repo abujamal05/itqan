@@ -1389,6 +1389,47 @@
 }
 .profile__icon { flex: 0 0 auto; color: var(--color-accent-ink); }
 
+/* ------------------------------------------------------- UPDATE / CELEBRATE -- */
+/* The banner that says the journey is a step behind. It rides in the app shell
+   beside the pipeline's own bar, so it follows the person rather than waiting
+   on a screen they might not open. Sunken with a gold hairline — the same
+   quiet-but-findable recipe the dashboard's next step uses, because this is the
+   same kind of object: one offer, not an alarm. */
+.update__body {
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: var(--space-3) var(--space-5);
+}
+.update__what { flex: 1 1 20rem; min-inline-size: 0; }
+.update__body > .btn { flex: 0 0 auto; margin-inline-start: auto; }
+
+/* ---- The one moment this product cheers -----------------------------------
+   The canvas is behind everything and cannot be touched, so it never
+   intercepts a tap on the page it is celebrating. It is created and destroyed
+   with the component; under reduced motion it is never created at all. */
+.celebrate { position: relative; }
+
+.celebrate__canvas {
+  position: fixed;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  pointer-events: none;
+  z-index: var(--z-toast);
+}
+
+/* The news, in words, for anyone the confetti never reaches: reduced motion, a
+   blocked canvas, a screen reader. It carries the whole message on its own. */
+.celebrate__line {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-warm);
+  border: 1px solid var(--color-border-accent);
+  color: var(--color-text);
+  font-weight: var(--weight-medium);
+}
+.celebrate__line svg { color: var(--color-accent-ink); flex: 0 0 auto; }
+
 /* --------------------------------------------------------------- SETTINGS -- */
 /* CLOSING THE ACCOUNT — one card, one danger edge.
    Two danger-edged panels stacked at the end of the page would end Settings in

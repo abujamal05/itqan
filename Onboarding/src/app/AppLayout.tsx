@@ -25,6 +25,7 @@ import { useApi } from '../state/api';
 import { useChat } from '../state/chat';
 import { Logo } from '../components/Logo';
 import { PipelineProgress } from '../components/PipelineProgress';
+import { UpdateBanner } from '../components/UpdateJourney';
 import { LangToggle, ThemeToggle } from '../components/Controls';
 import { Menu, MenuItem } from '../components/Menu';
 import { siteLogin } from '../lib/site';
@@ -328,6 +329,10 @@ export function AppLayout() {
               screen they have already left. It renders nothing once the run is
               done, or for a session that ran no agents at all. */}
           <PipelineProgress />
+          {/* Beside the pipeline's own bar, and for the same reason: an out of
+              date journey is not something a person should have to visit a
+              screen to discover. It follows them. */}
+          <UpdateBanner />
           <Outlet />
         </main>
       </div>

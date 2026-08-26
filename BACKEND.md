@@ -1134,3 +1134,124 @@ which production **must not** do — it is there so the cancelled-but-still-runn
 window can be walked locally, since that window is the only reason the delete
 guard exists. `POST /api/dev/plan` accepts `status=cancelled` to reach it
 directly. Neither is a specification.
+
+### 9. Keeping the journey in step — `GET/POST /api/update`, `POST /api/update/defer`  **(NOT BUILT)**
+
+```
+GET  /api/update         -> { scope, reasons[], cost, remaining, affordable, deferred }
+POST /api/update         -> { jobId }   | 429 { error: "token_limit", needed, remaining, resetsAt }
+                                        | 409 { error: "nothing_stale" }
+POST /api/update/defer   -> 204
+```
+
+Added 2026-08-26. Three things a person does make the answers wrong, and until
+now none of them changed the answers: replacing a document, correcting a skill,
+and finishing a course. Someone could add three skills and watch a readiness
+score, a course path and a job list go on describing the person they were last
+week, with nothing on screen admitting it.
+
+This section says **what has to happen**. How to arrange the graph, cache the
+intermediate state or name the internal steps is yours.
+
+#### The scope is the whole idea
+
+`scope` is `"documents"` or `"skills"`, and they are **not the same run**.
+
+- **`documents`** — a file changed, so the extraction itself is wrong. Read the
+  documents again, rebuild the skills from what that finds, and rebuild
+  everything downstream from those. This one **pauses at
+  `awaiting_confirmation`** exactly as onboarding does: the extraction changed
+  and the person has to check it before it is used. That pause is the product's
+  consent checkpoint and it is not optional here.
+
+- **`skills`** — the skills changed and nothing else did. The reading was fine;
+  the person is correcting or adding to what it produced.
+
+#### `skills` must not be a fresh run, and this is the part to get right
+
+**Do not re-read the documents.** Nobody changed them. Re-reading them costs the
+person a document re-read they did not ask for, takes the time it takes, and can
+produce a *different* extraction from the same files, which would silently
+overwrite the correction they just made.
+
+**Do not stop at `awaiting_confirmation`.** There is no new extraction to
+confirm. Sending someone to the confirmation screen after they edited one skill
+asks them to re-approve an extraction they never touched, and the screen has
+nothing new to show them.
+
+**Start from the state the account is already in, not from zero.** The run
+begins with the skill set as it now stands and carries forward everything
+already established about this person — the target role, the stated preferences,
+the documents on file, the courses marked done, and any feedback given on
+matches. What comes out has to be a *continuation*: a course already completed
+stays completed, a job the person dismissed does not come back, and a path they
+are three steps into does not restart at step one. A rerun that produced a fresh
+path each time would punish people for correcting their own profile.
+
+**What it produces:** readiness, the course path and the job matches, rebuilt
+from the current skills.
+
+#### Finishing a course adds what the course teaches
+
+`POST /api/courses/:id/complete` (§1) now has a second job: **add the course's
+`unlocks` to the account's skill set.** The catalogue already names those skills
+and a completion is the evidence they were earned, so the person is not made to
+type in what the course they just finished taught them.
+
+Adding them makes the matches a step behind, so completion also leaves a
+`skills` update pending. It does **not** run anything: the person is asked
+first, with the price on screen.
+
+Duplicates are the server's to avoid, case insensitively. Two chips reading
+"SQL" and "sql" is a profile that looks careless.
+
+#### Nothing runs without a price on screen and a yes
+
+Every path into this ends at a confirmation naming the token cost, so
+`GET /api/update` has to carry it.
+
+- **`cost` is the server's figure.** There is no published price for a partial
+  run the way there is for a message (1) or a document re-read (19), and the
+  browser will not invent one — a guessed number in front of somebody about to
+  spend their day's budget is exactly the fabricated statistic the trust rules
+  bar. **Publish a measured price the way the re-read's 19 was measured.** A
+  `skills` run should cost meaningfully less than a `documents` one, because it
+  does meaningfully less work; if it does not, say so and the interface will
+  stop implying otherwise.
+- **`affordable` is the server's verdict too**, not `cost <= remaining` computed
+  in the browser. One place doing the arithmetic is one place that can be wrong.
+- **`reasons` are ids, never sentences** — `document_replaced`, `skills_edited`,
+  `course_completed`. The front end owns the wording in both languages.
+- If both scopes are pending, **`documents` wins and subsumes the other**: it
+  rebuilds the skills on its way past, and charging for both would be charging
+  twice for work done once.
+
+#### Refusing for lack of tokens, everywhere
+
+`POST /api/update` refuses with **429 `token_limit` carrying `needed`,
+`remaining` and `resetsAt`**, which is what lets the screen say "that costs 19
+and you have 8 left today" instead of "that did not work".
+
+**This applies to every route that spends, including `POST /api/chat`.** Hud's
+own answer was showing "that did not come back" for a spent budget, which tells
+someone their question was lost when it was not, and offers a retry that can
+only be refused again. Same code, same fields, everywhere something is charged
+for.
+
+#### "Remind me later" is a promise about the next sign in
+
+`POST /api/update/defer` hides the offer. It must come back on the person's
+**next sign in**, not never: a prompt that disappeared for good would leave a
+journey quietly stale, which is the state this whole mechanism exists to
+prevent. Completing the run, or a new change, clears the deferral.
+
+#### The celebration, and the one thing the server could do better
+
+When a run raises readiness the dashboard congratulates the person and the score
+travels from the old value to the new one. Today the browser remembers what it
+last showed, which means a run started on a phone is not celebrated on a laptop.
+
+**If `GET /api/dashboard` reported the readiness before the last completed
+update run, and whether the person has seen it, that would be exact.** It is not
+required for the feature to work, and a missed celebration is the only failure
+mode of the current approach — never a false one.

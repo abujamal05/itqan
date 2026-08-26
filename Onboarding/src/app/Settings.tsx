@@ -26,9 +26,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  Bot, FileText, LifeBuoy, Mail, Phone, ScrollText, Shield, Sparkles,
+  Bot, FileText, LifeBuoy, Mail, Phone, Plus, ScrollText, Shield, Sparkles, X,
 } from 'lucide-react';
 import { useI18n } from '../i18n';
+import { useUpdate } from '../state/update';
 import { skillCase } from '../lib/skillCase';
 import { contact } from '../lib/contact';
 import { SITE_ORIGIN } from '../lib/site';
@@ -42,13 +43,17 @@ import { DocumentManager } from '../components/DocumentManager';
 import type { ConfirmedProfile, Preferences, StoredProfile, Usage } from '../api';
 import { emptyPreferences } from '../api';
 
-/** The only section here that is editable. Named, so the hash can open it. */
-type EditKey = 'prefs';
+/** Which sections can be edited in place. Named, so the hash can open them. */
+type EditKey = 'prefs' | 'skills';
 
 export function Settings() {
   const { t, locale } = useI18n();
   const api = useApi();
   const { hash } = useLocation();
+  /* Editing a skill makes the matches stale, and the person is told so rather
+     than left with a course path built from what they just corrected. */
+  const { refresh: refreshUpdate } = useUpdate();
+  const [newSkill, setNewSkill] = useState('');
   const { data, loading, error, reload } = useAsync((s) => api.getProfile(s), [api, locale]);
 
   /**
@@ -104,7 +109,7 @@ export function Settings() {
   useEffect(() => {
     if (!data || !hash.startsWith('#sec-')) return;
     const key = hash.slice('#sec-'.length);
-    if (key === 'prefs') startEdit('prefs', data);
+    if (key === 'prefs' || key === 'skills') startEdit(key, data);
     const id = requestAnimationFrame(() => {
       const el = document.getElementById(`sec-${key}`);
       if (!el) return;
@@ -156,6 +161,11 @@ export function Settings() {
       await api.updateProfile(next);
       setEditing(null);
       reload();
+      /* The server decides whether that actually made anything stale — this
+         only asks the question again. Assuming a save always needs a run would
+         put a paid offer in front of somebody who changed their mind about
+         remote work. */
+      refreshUpdate();
     } finally {
       setSaving(false);
     }
@@ -168,22 +178,95 @@ export function Settings() {
     <div className="stack stack--lg enter">
       {header}
 
-      {/* Skills, read only on purpose: they come from the documents, and the
-          honest way to change them is to re-read the documents. */}
-      <Section id="skills" title={t('profile.skills')} icon={Sparkles} editing={false}>
-        <div className="stack stack--sm">
-          {p.skills?.length ? (
+      {/* ---- Skills ---------------------------------------------------------
+          EDITABLE NOW, and the reason it was not is worth keeping in view: the
+          skills come from the documents, and a screen that let someone type a
+          skill nothing evidences would be putting an unevidenced claim into the
+          thing this product's whole argument rests on.
+
+          What changed is that the same editing already exists in onboarding, on
+          the confirmation screen, where correcting a misread skill is the
+          product's first trust moment. Refusing it afterwards said the person
+          could be trusted to correct an extraction on Tuesday and not on
+          Wednesday. So it is the same act, in the same shape, and the honest
+          part is preserved: a correction makes the matches stale, and the
+          prompt that follows says so and prices the rerun. */}
+      <Section
+        id="skills"
+        title={t('profile.skills')}
+        icon={Sparkles}
+        editing={editing === 'skills'}
+        onEdit={() => startEdit('skills', p)}
+        onCancel={() => setEditing(null)}
+        onSave={() => draft && save(draft)}
+        saving={saving}
+      >
+        {editing === 'skills' && draft ? (
+          <div className="stack stack--sm">
             <div className="row" style={{ gap: 'var(--space-2)' }}>
-              {p.skills.map((skill) => <Chip key={skill}>{skillCase(skill)}</Chip>)}
+              {draft.skills.map((skill) => (
+                <span key={skill} className="chip chip--capability chip--removable">
+                  {skillCase(skill)}
+                  <button
+                    type="button"
+                    className="chip__x"
+                    aria-label={`${t('action.remove')}: ${skillCase(skill)}`}
+                    onClick={() => setDraft({
+                      ...draft,
+                      skills: draft.skills.filter((x) => x !== skill),
+                    })}
+                  >
+                    <X size={14} aria-hidden="true" />
+                  </button>
+                </span>
+              ))}
             </div>
-          ) : (
-            <p className="text-sm muted">{t('profile.noSkills')}</p>
-          )}
-          <p className="text-sm muted">{t('profile.skillsFromDocs')}</p>
-          <div className="row">
-            <Link className="btn btn--secondary" to="/documents">{t('profile.updateDocs')}</Link>
+
+            {/* A form, so Enter submits the field rather than the section. The
+                same add-one-at-a-time shape the confirmation screen uses. */}
+            <form
+              className="row"
+              style={{ gap: 'var(--space-2)' }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                const name = newSkill.trim();
+                if (!name) return;
+                /* Case insensitive, because "SQL" and "sql" are one skill and
+                   two chips saying so is a list that looks careless. */
+                if (!draft.skills.some((x) => x.toLowerCase() === name.toLowerCase())) {
+                  setDraft({ ...draft, skills: [...draft.skills, name] });
+                }
+                setNewSkill('');
+              }}
+            >
+              <input
+                className="input"
+                value={newSkill}
+                onChange={(e) => setNewSkill(e.target.value)}
+                placeholder={t('confirm.addSkillPlaceholder')}
+                aria-label={t('confirm.addSkill')}
+                style={{ flex: '1 1 12rem', minInlineSize: 0 }}
+              />
+              <button type="submit" className="btn btn--secondary" disabled={!newSkill.trim()}>
+                <Plus size={16} aria-hidden="true" />
+                {t('action.add')}
+              </button>
+            </form>
+
+            <p className="text-sm muted">{t('skills.editNote')}</p>
           </div>
-        </div>
+        ) : (
+          <div className="stack stack--sm">
+            {p.skills?.length ? (
+              <div className="row" style={{ gap: 'var(--space-2)' }}>
+                {p.skills.map((skill) => <Chip key={skill}>{skillCase(skill)}</Chip>)}
+              </div>
+            ) : (
+              <p className="text-sm muted">{t('profile.noSkills')}</p>
+            )}
+            <p className="text-sm muted">{t('profile.skillsFromDocs')}</p>
+          </div>
+        )}
       </Section>
 
       {/* ---- Documents ------------------------------------------------------
@@ -197,7 +280,14 @@ export function Settings() {
           BACKEND.md §3. */}
       <Section id="documents" title={t('profile.documents')} icon={FileText} editing={false}>
         <div className="stack stack--sm">
-          <DocumentManager documents={p.documents ?? []} onChanged={reload} />
+          {/* `refreshUpdate` alongside the reload, because every act in that
+              list changes what Itqan is working from: a replaced file, a
+              recategorised one, a removed one. The server decides whether any
+              of them actually made something stale; this only asks. */}
+          <DocumentManager
+            documents={p.documents ?? []}
+            onChanged={() => { reload(); refreshUpdate(); }}
+          />
 
           <p className="text-sm">{t('profile.docsCvRequired')}</p>
 

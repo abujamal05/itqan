@@ -460,6 +460,58 @@ export interface JourneyStage {
   detail?: string;
 }
 
+/* ------------------------------------------------- UPDATING THE JOURNEY -- */
+
+/**
+ * How much of the pipeline a change actually invalidates.
+ *
+ * THE POINT IS THAT THESE ARE NOT THE SAME RUN. Replacing a document makes the
+ * extraction itself wrong, so the documents have to be read again and
+ * everything downstream rebuilt from what that finds. Editing a skill does not:
+ * the reading was fine, the person is correcting what it produced, so the work
+ * starts from the corrected skills and carries on. Treating the second as the
+ * first re-reads documents nobody changed, charges for it, and drops the person
+ * back at the confirmation screen for an extraction they never asked to redo.
+ */
+export type UpdateScope = 'documents' | 'skills';
+
+/**
+ * What is out of date, what bringing it up to date costs, and whether this
+ * account can pay for it.
+ *
+ * EVERY NUMBER HERE IS THE SERVER'S. The cost of a partial run is not something
+ * the browser can derive — there is no published price for "agent B onwards"
+ * the way there is for a message or a full re-read, and inventing one would put
+ * a fabricated figure in front of somebody about to spend their day's budget.
+ * `affordable` is the server's answer too, so the two cannot disagree about
+ * arithmetic the client should not be doing.
+ */
+export interface PendingUpdate {
+  /** Null when nothing is stale and there is nothing to offer. */
+  scope: UpdateScope | null;
+  /**
+   * Why, as ids the interface translates (`update.reason.*`) — never
+   * sentences, because this product is bilingual and prose on the wire cannot
+   * be shown to an Arabic reader.
+   */
+  reasons: string[];
+  /** Tokens this run costs. */
+  cost: number;
+  /** What is left in today's pool, so the refusal can be specific. */
+  remaining: number;
+  /** The server's own verdict on `cost <= remaining`. */
+  affordable: boolean;
+  /**
+   * True when the person chose "remind me later".
+   *
+   * It does not hide the offer forever: it hides it for THIS session, and the
+   * server brings it back on the next sign-in. A prompt that never returned
+   * would leave someone's journey quietly stale, which is the state this whole
+   * mechanism exists to prevent.
+   */
+  deferred: boolean;
+}
+
 export interface DashboardData {
   readiness: number;          // 0..100, agent-computed
   readinessNote: string;      // plain-language explanation, authored by the agent
@@ -724,6 +776,25 @@ export interface ItqanApi {
    * reach zero, and it is unique, so it cannot reach two.
    */
   updateDocumentKind(id: string, kind: DocumentKind, signal?: AbortSignal): Promise<UploadedDocument>;
+
+  /**
+   * What is out of date and what bringing it up to date would cost.
+   *
+   * PENDING BACKEND — `GET /api/update`. BACKEND.md §9. Callers must tolerate a
+   * 404 and treat it as "nothing pending": a missing route may not put an
+   * update prompt in front of anybody, and it may not block them either.
+   */
+  getPendingUpdate(signal?: AbortSignal): Promise<PendingUpdate>;
+
+  /**
+   * Run it. PENDING BACKEND — `POST /api/update` with `{ scope }`, returning a
+   * job to poll exactly like every other run. Refuses with 409 `token_limit`
+   * and the numbers, so the screen can say what it costs and what is left.
+   */
+  runUpdate(scope: UpdateScope, signal?: AbortSignal): Promise<{ jobId: string }>;
+
+  /** "Remind me later." PENDING BACKEND — `POST /api/update/defer`. */
+  deferUpdate(signal?: AbortSignal): Promise<void>;
 
   /** Starts the pipeline over the whole set. Returns the job to poll. */
   startAnalysis(documentIds: string[], signal?: AbortSignal): Promise<{ jobId: string }>;

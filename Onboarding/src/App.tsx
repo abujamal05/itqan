@@ -23,6 +23,7 @@ import { ApiProvider, useApi } from './state/api';
 import { AuthProvider, useAuth } from './state/auth';
 import { OnboardingProvider, useOnboarding } from './state/onboarding';
 import { ChatProvider } from './state/chat';
+import { UpdateProvider } from './state/update';
 import { FeedbackProvider } from './state/feedback';
 import { siteLogin, siteVerify } from './lib/site';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -211,7 +212,14 @@ function WithOnboarding({ children }: { children: ReactNode }) {
  */
 function WithChat({ children }: { children: ReactNode }) {
   const api = useApi();
-  return <ChatProvider api={api}>{children}</ChatProvider>;
+  /* INSIDE the chat provider, because the update run reuses its poll loop and
+     its results counter. Two poll loops racing one counter is a bug nobody
+     would find until two screens disagreed about the same run. */
+  return (
+    <ChatProvider api={api}>
+      <UpdateProvider>{children}</UpdateProvider>
+    </ChatProvider>
+  );
 }
 
 /**

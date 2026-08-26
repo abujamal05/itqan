@@ -39,7 +39,7 @@ export function Chat() {
   const navigate = useNavigate();
 
   const {
-    threadId, messages, loading, pending, failed, writingId, verdicts,
+    threadId, messages, loading, pending, failed, failedReason, writingId, verdicts,
     ask, retryMessage, retry, rate, rerun, open, reset, doneWriting,
     setOnAwaitingConfirmation,
   } = useChat();
@@ -196,8 +196,15 @@ export function Chat() {
       {failed && (
         <Callout tone="danger">
           <div className="stack stack--sm">
-            <p>{t('chat.failed')}</p>
-            <div><Button variant="secondary" onClick={retry}>{t('action.retry')}</Button></div>
+            {/* THE SERVER'S REASON WHERE THERE IS ONE. Every failure used to
+                read "that did not come back", including the one a person can
+                act on: no tokens left today. That told somebody their question
+                was lost when their budget was spent, and offered a retry that
+                could only be refused again. */}
+            <p>{failedReason ?? t('chat.failed')}</p>
+            {!failedReason && (
+              <div><Button variant="secondary" onClick={retry}>{t('action.retry')}</Button></div>
+            )}
           </div>
         </Callout>
       )}

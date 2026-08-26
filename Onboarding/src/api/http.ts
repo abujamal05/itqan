@@ -16,6 +16,7 @@ import type {
   ConfirmedProfile, Course, DashboardData, Feedback, FeedbackState, ItqanApi,
   JobMatch, JobsResult, OnboardingProgress, Session, StoredProfile, UploadedDocument,
   Usage,
+  PendingUpdate,
 } from './types';
 import { emptyFeedback } from './types';
 import { takeHandoffToken } from '../lib/site';
@@ -197,6 +198,24 @@ export function createHttpApi(): ItqanApi {
         body: JSON.stringify({ kind }),
         signal,
       });
+    },
+    /**
+     * A MISSING ROUTE MEANS "NOTHING PENDING", never a broken screen. This is
+     * not built in production, and a 404 that surfaced as an error would put a
+     * failure banner on every page in the app.
+     */
+    getPendingUpdate(signal) {
+      return req<PendingUpdate>('/update', { signal }).catch(() => ({
+        scope: null, reasons: [], cost: 0, remaining: 0, affordable: false, deferred: false,
+      }));
+    },
+    runUpdate(scope, signal) {
+      return req<{ jobId: string }>('/update', {
+        method: 'POST', body: JSON.stringify({ scope }), signal,
+      });
+    },
+    async deferUpdate(signal) {
+      await req<void>('/update/defer', { method: 'POST', signal }).catch(() => {});
     },
     startAnalysis(documentIds, signal) {
       return req<{ jobId: string }>('/analysis', {
