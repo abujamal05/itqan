@@ -989,6 +989,27 @@ from the list or missing from the delete, and both are defects. The two must be
 purged together: a profile that outlives its source documents is an incomplete
 deletion, not a partial one.
 
+**Delete refuses while a subscription is still renewing.**
+
+```
+DELETE /api/account  ->  409 { "error": "subscription_active" }
+```
+
+Deleting the account does not stop the billing: the subscription lives with the
+payment provider, and a row disappearing from a table is not a message to it. A
+person who believed otherwise would go on being charged for an account that no
+longer exists, and would have no account left to cancel it from.
+
+The app does not offer deletion in that state at all — the row says why and
+links to the plan screen — so a request that reaches this is a stale view. The
+server still has to refuse it, for the same reason the last-CV rule is enforced
+server side: a stale build of the app is not a way in.
+
+**Once cancelled, deletion is allowed immediately**, with paid time still on the
+clock. The confirmation states the date and the person decides; refusing to let
+someone leave until their month runs out would be holding an account hostage to
+a subscription they have already ended.
+
 **Neither route may accept the typed phrase as its authorisation.** The typed
 "Delete my account" is a UI gate against a mis-tap and nothing more; it is never
 sent, and a server that trusted it would be trusting a string the client made
@@ -999,3 +1020,60 @@ before erasure, that is a password or an emailed code, decided server side.
 is **not a specification**: it clears four Maps and a cookie, and restores a
 paused account on the next login. It reaches no disk, no derived table and no
 snapshot.
+
+### 8. Cancelling a subscription — `POST /api/subscription/cancel`  **(NOT BUILT)**
+
+```
+POST /api/subscription/cancel  ->  200 { "url": "https://…" }
+                               ->  409 { "error": "no_subscription" }
+```
+
+Added 2026-08-26 with the plan screen's full-width action. **It cancels
+nothing.** The server opens a session with Paddle scoped to this subscription
+and returns where the person finishes it; the subscription changes when Paddle
+says so and its webhook reaches the server. That is the same rule the upgrade
+already follows in the other direction, and for the same reason: the browser
+never decides what somebody is paying for.
+
+**The front end never names the provider.** Not in the button, not in the
+confirmation, not in an error. A person cancelling a subscription is not helped
+by learning which company processes the card, and naming it would turn a vendor
+swap into a copy change across two locales. The client's whole job is to
+navigate to the `url` it is handed.
+
+**The client re-reads `GET /api/usage` when it comes back**, because that is the
+only thing that can say whether the cancellation landed.
+
+### `GET /api/usage` gains `subscription`
+
+```jsonc
+{
+  "plan": "paid",
+  "subscription": {
+    "status": "active",           // "active" renews · "cancelled" runs out
+    "currentPeriodEnd": "2026-09-26T00:00:00Z"   // null if the dates are unknown
+  }
+}
+```
+
+Three screens turn on this field and each reads it differently:
+
+- **The plan screen** offers "Cancel your subscription" only while `active`. An
+  already-cancelled account gets the date instead of a button, because there is
+  nothing left to cancel and a control with no act behind it is worse than none.
+- **Closing the account** refuses deletion while `active` (§7 above) and, once
+  `cancelled`, names `currentPeriodEnd` in the confirmation so the person knows
+  what they are giving up.
+- **A free account carries no subscription at all.** `null` and absent must mean
+  the same thing.
+
+**Absent is "not known", never "none".** `GET /api/usage` is itself unbuilt in
+production, so the app treats a missing subscription as an absence of
+information: it will not claim one exists, and it will not block anybody's
+deletion on a guess. The 409 above is what makes that safe.
+
+`dev/site-plugin.ts` stubs the route and marks the row cancelled immediately,
+which production **must not** do — it is there so the cancelled-but-still-running
+window can be walked locally, since that window is the only reason the delete
+guard exists. `POST /api/dev/plan` accepts `status=cancelled` to reach it
+directly. Neither is a specification.

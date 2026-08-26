@@ -18,18 +18,35 @@
  * reaches the server. So a completed checkout puts this screen into a
  * CONFIRMING state and polls `GET /api/usage` until the server agrees, rather
  * than flipping a badge the server would contradict on the next request.
+ *
+ * ONE ACTION, UNDER THE TABLE, THE WIDTH OF THE TABLE. The upgrade used to live
+ * inside the Premium column's footer cell, which priced that column correctly
+ * and made the single most important control on the page a third of its width.
+ * It is now a full-width control under the comparison, and it is the ONE thing
+ * the state of the account changes: Free is offered the way up, Premium is
+ * offered the way out. The price stays in the footer cell, because a price
+ * belongs to the column it prices.
+ *
+ * CANCELLING IS FINISHED SOMEWHERE ELSE, and this screen never says where. The
+ * server mints a session with the payment provider and returns a URL; naming
+ * the provider would tell a person cancelling a subscription something that
+ * cannot help them, and would make a vendor swap a copy change across two
+ * locales. See BACKEND.md §8.
+ *
+ * WHAT YOU HAVE USED IS NOT HERE. It moved to Settings, whole. Someone's own
+ * consumption beside a price list turns a comparison into a sales screen, and
+ * the meter answers a different question from the one this page is for.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, Sparkles } from 'lucide-react';
-import { useI18n } from '../i18n';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Check, CircleX, Sparkles } from 'lucide-react';
+import { useI18n } from '../i18n';
 import { useApi } from '../state/api';
 import { useAuth } from '../state/auth';
 import { useTheme } from '../lib/theme';
 import { useAsync } from '../lib/useAsync';
-import { Callout, Card, ErrorState, LoadingBlock } from '../components/ui';
-import { UsageMeters } from '../components/UsageMeters';
+import { Button, Callout, Card, ErrorState, LoadingBlock } from '../components/ui';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { isConfigured, openCheckout } from '../lib/paddle';
 
 /** How long to wait for the webhook before saying so, and how often to ask. */
@@ -39,7 +56,7 @@ const POLL_FOR_MS = 30000;
 type Phase = 'idle' | 'confirming' | 'failed';
 
 export function Plan() {
-  const { t, locale, formatNumber } = useI18n();
+  const { t, locale, formatDate, formatNumber } = useI18n();
   const navigate = useNavigate();
   const api = useApi();
   const { user } = useAuth();
@@ -74,6 +91,29 @@ export function Plan() {
     timers.current.push(window.setTimeout(tick, POLL_EVERY_MS));
   }, [api, reload]);
 
+  /**
+   * Begin cancelling, and go where it is finished.
+   *
+   * NOTHING IS CANCELLED BY THIS CALL and the copy is careful not to imply it
+   * was — the server opens a session with the payment provider and hands back a
+   * URL, and the subscription changes when that provider says so and its
+   * webhook lands. Exactly the rule the upgrade already follows in the other
+   * direction.
+   *
+   * A full navigation rather than a new tab: this is a payment surface and the
+   * person is meant to finish there, not to be left with two windows and no
+   * idea which one is current. Coming back re-mounts this screen, which
+   * re-reads `GET /api/usage` and shows whatever the server now says.
+   */
+  const [cancelling, setCancelling] = useState(false);
+  const startCancel = useCallback(async () => {
+    const { url } = await api.startCancellation();
+    window.location.assign(url);
+    /* Held open deliberately. The navigation is in flight and closing the
+       dialog first would flash the plan screen back with no explanation. */
+    await new Promise(() => {});
+  }, [api]);
+
   const upgrade = useCallback(() => {
     if (!user) return;
     setPhase('idle');
@@ -91,6 +131,11 @@ export function Plan() {
   if (error || !data) return <div className="stack stack--lg enter"><ErrorState onRetry={reload} /></div>;
 
   const paid = data.plan === 'paid';
+  /* When the paid period runs to, if the server said. Only a subscription that
+     still renews can be cancelled; one already cancelled is running out on its
+     own and offering to cancel it again would be a control with no act. */
+  const endsAt = data.subscription?.currentPeriodEnd ?? null;
+  const renewing = data.subscription?.status !== 'cancelled';
 
   /* WHAT EACH TIER BUYS, DERIVED RATHER THAN TYPED IN. The two rows below used
      to be four hard-coded numbers, and two of them ("1 a week", "3 a week")
@@ -209,51 +254,82 @@ export function Plan() {
                     {/* Quiet, and underneath. Not what anyone is quoted, but it
                         is what reaches the statement. */}
                     <p className="tiers__usd num">{t('plan.priceUsd')}</p>
-                    {isConfigured && (
-                      <button
-                        className="btn btn--primary tiers__buy"
-                        type="button"
-                        onClick={upgrade}
-                        disabled={phase === 'confirming'}
-                      >
-                        <Sparkles size={16} aria-hidden="true" />
-                        {t('plan.upgrade')}
-                      </button>
-                    )}
+                    {/* The button used to sit here, a third of the table wide.
+                        It is under the table now, full width. */}
                   </td>
                 </tr>
               </tfoot>
             )}
           </table>
 
-          {/* Not a footnote to the table — the thing that keeps it true. */}
-          <p className="text-sm muted">
-            {t('plan.budgetNote', {
-              message: formatNumber(priceMessage),
-              reread: formatNumber(priceReread),
-            })}
-          </p>
+          {paid && <p className="text-sm">{t('plan.onPaid')}</p>}
 
-          {/* The cancel policy is true whether or not checkout is wired, so it
-              is no longer gated behind it. Previously an unconfigured build
-              silently dropped the one piece of reassurance on the page. */}
-          {!paid && <p className="text-sm muted">{t('plan.cancelNote')}</p>}
+          {/* THE ONE ACTION, THE WIDTH OF THE THING IT ACTS ON.
+              Free is offered the way up and Premium the way out, and which one
+              renders is the only thing the account's state changes here.
 
-          {paid ? (
-            <div className="stack stack--sm">
-              <p className="text-sm">{t('plan.onPaid')}</p>
-              <p className="text-sm muted">{t('plan.manage')}</p>
-            </div>
-          ) : null}
+              The upgrade is omitted rather than disabled when checkout is not
+              configured — a disabled button invites a click and then refuses
+              it, and a missing environment variable is not something a job
+              seeker can act on. Cancelling has no such gate: the server owns
+              that session, so the control is honest in any build. */}
+          {paid && renewing && (
+            <Button variant="secondary" block onClick={() => setCancelling(true)}>
+              <CircleX size={16} aria-hidden="true" />
+              {t('plan.cancel')}
+            </Button>
+          )}
+          {!paid && isConfigured && (
+            <Button block onClick={upgrade} disabled={phase === 'confirming'}>
+              <Sparkles size={16} aria-hidden="true" />
+              {t('plan.upgrade')}
+            </Button>
+          )}
+
+          {/* ALREADY CANCELLED IS ITS OWN STATE, and it gets no button: there
+              is nothing left to cancel, and offering it again would be a
+              control with no act behind it. What it needs instead is the date,
+              because "am I still paying" is the only question left here. */}
+          {paid && !renewing && (
+            <p className="text-sm">
+              {endsAt
+                ? t('plan.alreadyCancelled', { date: formatDate(endsAt) })
+                : t('plan.alreadyCancelledNoDate')}
+            </p>
+          )}
+
+          {/* Under the button it qualifies, and only where there is one. Buying,
+              it is the reassurance; cancelling, it is the fact that answers "do
+              I lose it today". True whether or not checkout is wired, so it is
+              not gated behind that — an unconfigured build used to drop the one
+              piece of reassurance on the page. */}
+          {(!paid || renewing) && <p className="text-sm muted">{t('plan.cancelNote')}</p>}
+
+          {paid && <p className="text-sm muted">{t('plan.card')}</p>}
         </div>
       </Card>
 
-      <Card>
-        <div className="stack">
-          <h2 className="section__title">{t('plan.usageTitle')}</h2>
-          <UsageMeters usage={data} prices={false} />
-        </div>
-      </Card>
+      <ConfirmDialog
+        open={cancelling}
+        onClose={() => setCancelling(false)}
+        icon={CircleX}
+        title={t('plan.cancelConfirmTitle')}
+        lead={t('plan.cancelConfirmLead')}
+        items={[
+          /* The date, when the server knows it. "Premium runs until null" is
+             worse than the general form, and a date reconstructed from a
+             month's arithmetic would be an invented fact about money. */
+          endsAt
+            ? t('plan.cancelItemUntil', { date: formatDate(endsAt) })
+            : t('plan.cancelItemUntilNoDate'),
+          t('plan.cancelItemAfter'),
+          t('plan.cancelItemBilling'),
+        ]}
+        note={t('plan.cancelComeBack')}
+        confirmLabel={t('plan.cancelConfirmAction')}
+        onConfirm={startCancel}
+        errorFallback={t('plan.cancelFailed')}
+      />
     </div>
   );
 }

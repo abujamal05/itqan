@@ -2195,7 +2195,9 @@
    quiet: not what anyone is quoted, but what reaches the statement. */
 .tiers__usd { font-size: var(--text-sm); color: var(--color-text-muted); }
 
-.tiers__buy { margin-block-start: var(--space-3); }
+/* `.tiers__buy` is gone with the footer button. The one action now sits UNDER
+   the table at its full width, as `.btn--block`, so it is the width of the
+   thing it acts on rather than a third of it. */
 
 /* Only where the column headers are gone. Above 40rem the table's own
    "Current" marker says this, and two of them would be one too many. */
@@ -2272,7 +2274,6 @@
 
   .tiers tfoot td { padding: var(--space-4) 0 0; }
   .tiers tfoot td:empty { display: none; }
-  .tiers__buy { inline-size: 100%; justify-content: center; }
 }
 
 /* The card's own action row. "Open the course" is the course's link; whatever

@@ -370,8 +370,37 @@ export interface TokenPrices {
  * render that as "NaN of 0". See `UsageMeters`, which falls back rather than
  * inventing a number.
  */
+/**
+ * The subscription behind a paid plan.
+ *
+ * TWO STATES, AND THE SECOND ONE IS THE WHOLE REASON THIS EXISTS. `active`
+ * means it renews. `cancelled` means it will not renew and the account is
+ * still entitled until `currentPeriodEnd` — which is a real period, sometimes
+ * most of a month, during which the person is premium and paying for nothing
+ * further.
+ *
+ * Two screens turn on that distinction. The plan screen offers to cancel only
+ * while it is active, and closing the account refuses to delete while it is
+ * active, because deleting the account does not stop the billing and a person
+ * who believed it did would keep being charged for an account that no longer
+ * exists.
+ *
+ * ABSENT MEANS "NOT KNOWN", NEVER "NONE". `GET /api/usage` is not built in
+ * production, and neither is this field, so both screens have to treat a
+ * missing subscription as an absence of information: they may not claim there
+ * is a subscription, and they may not block anybody on a guess.
+ */
+export interface Subscription {
+  status: 'active' | 'cancelled';
+  /** ISO. The last day the paid period covers. Null when the server has the
+   *  subscription but not its dates. */
+  currentPeriodEnd: string | null;
+}
+
 export interface Usage {
   plan: 'free' | 'paid';
+  /** Present on a paid plan. See `Subscription` for why absent is not "none". */
+  subscription?: Subscription | null;
   tokens?: UsageCounter;
   prices?: TokenPrices;
   /** @deprecated An alias of `tokens`. Reports the same pool; leaving the wire. */
@@ -754,7 +783,29 @@ export interface ItqanApi {
    * failure, says plainly that nothing did.
    */
   deactivateAccount(signal?: AbortSignal): Promise<void>;
+  /**
+   * `DELETE /api/account` refuses with 409 `subscription_active` while the
+   * account still has a renewing subscription. The UI does not offer deletion
+   * in that state at all, so reaching this is a stale view — which is exactly
+   * why the server has to enforce it as well.
+   */
   deleteAccount(signal?: AbortSignal): Promise<void>;
+
+  /**
+   * Begin cancelling the subscription. PENDING BACKEND — BACKEND.md §8.
+   *
+   * `POST /api/subscription/cancel` -> `{ url }`. The server mints a session
+   * with the payment provider and returns where to finish; the client's whole
+   * job is to go there. **The provider is never named in the interface** — a
+   * person cancelling a subscription is not helped by learning which company
+   * processes the card, and naming it would make a vendor swap a copy change
+   * across two locales.
+   *
+   * IT DOES NOT CANCEL ANYTHING. Nothing is cancelled until the provider says
+   * so and its webhook reaches the server, the same rule the upgrade already
+   * follows — so callers must re-read `GET /api/usage` rather than assuming.
+   */
+  startCancellation(signal?: AbortSignal): Promise<{ url: string }>;
 
   listThreads(signal?: AbortSignal): Promise<ChatThreadSummary[]>;
   /** A thread with no messages is a normal answer, not an error. */

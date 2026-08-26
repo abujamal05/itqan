@@ -267,6 +267,9 @@ export function createHttpApi(): ItqanApi {
     async deleteAccount(signal) {
       await req<void>('/account', { method: 'DELETE', signal });
     },
+    startCancellation(signal) {
+      return req<{ url: string }>('/subscription/cancel', { method: 'POST', signal });
+    },
     listThreads(signal) {
       // No threads yet is a normal state on a new account, not a failure.
       return req<ChatThreadSummary[]>('/chat/threads', { signal }).catch(() => []);

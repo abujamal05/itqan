@@ -143,7 +143,7 @@ export function Settings() {
             <Link className="btn btn--primary" to="/documents">{t('profile.emptyCta')}</Link>
           </div>
         </Card>
-        <CloseAccount />
+        <CloseAccount usage={usage} />
       </div>
     );
   }
@@ -358,8 +358,13 @@ export function Settings() {
         </div>
       </Section>
 
-      {/* Last, and deliberately so. Nothing follows the way out. */}
-      <CloseAccount />
+      {/* Last, and deliberately so. Nothing follows the way out.
+          `usage` is HANDED DOWN rather than fetched again: this screen already
+          has it, and the account-closing card needs it only to know whether a
+          subscription is still renewing. A second request for the same payload
+          would also be a second chance for the two copies to disagree about
+          whether deletion is allowed. */}
+      <CloseAccount usage={usage} />
     </div>
   );
 }

@@ -17,22 +17,26 @@ import { test, expect } from '@playwright/test';
 import { ACCOUNTS, login } from './helpers';
 
 test.describe('the token bar', () => {
-  test('draws ONE meter, on both screens that show one', async ({ page }) => {
+  test('draws ONE meter, and only on the screen that owns it', async ({ page }) => {
     await login(page);
 
     /* `settings`, not `profile`: "Your AI usage" moved there when the profile
-       screen split in two. The meter is the same component in the same place on
-       the page; only its address changed. */
-    for (const screen of ['plan', 'settings']) {
-      await page.goto(`/app/${screen}`);
-      // TWO was the bug, and it was visible on both screens rather than only
-      // the one anybody would have thought to check.
-      await expect(page.locator('.usage'), screen).toHaveCount(1);
-      await expect(page.locator('.usage__count'), screen).toContainText('30');
-    }
+       screen split in two. TWO was the bug this file exists for, and it was
+       visible on more than one screen rather than only the one anybody would
+       have thought to check. */
+    await page.goto('/app/settings');
+    await expect(page.locator('.usage')).toHaveCount(1);
+    await expect(page.locator('.usage__count')).toContainText('30');
+
+    /* NONE on the plan screen, and that is the assertion now. Somebody's own
+       consumption beside a price list turns a comparison into a sales screen,
+       so the meter was removed from it entirely — leaving one meter in the
+       whole app, which is the strongest form of the rule this file defends. */
+    await page.goto('/app/plan');
+    await expect(page.locator('.usage')).toHaveCount(0);
   });
 
-  test('the settings bar carries the price list, and the plan bar does not', async ({ page }) => {
+  test('the settings bar carries the price list, and the plan screen no longer does', async ({ page }) => {
     await login(page);
 
     // The reason a bar is worth drawing: "29 left" of what, costing what? Both
@@ -40,11 +44,12 @@ test.describe('the token bar', () => {
     await page.goto('/app/settings');
     await expect(page.locator('.usage')).toContainText('19');
 
-    // The plan screen states the same prices under its comparison table, so
-    // the meter one card below must not repeat them.
+    /* The plan screen used to repeat the token prices in a note under the
+       table. That note went with the meter: the prices are one screen's
+       business now, and the comparison sells what the tiers include rather
+       than what each action costs. */
     await page.goto('/app/plan');
-    await expect(page.locator('.usage')).not.toContainText('19');
-    await expect(page.locator('.tiers + p, .tiers ~ p').first()).toContainText('19');
+    await expect(page.locator('main')).not.toContainText('19');
   });
 
   test('the plan table sells what the budget actually buys', async ({ page }) => {

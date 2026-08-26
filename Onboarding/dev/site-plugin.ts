@@ -196,6 +196,25 @@ const plans = new Map<string, 'free' | 'paid'>();
  * part is the half a stub CAN test, and it is the half the UI promises.
  */
 const deactivated = new Set<string>();
+
+/**
+ * The subscription behind a paid plan.
+ *
+ * TWO STATES, and the second is the one worth having a stub for: `cancelled`
+ * means it will not renew and the account is still entitled until
+ * `currentPeriodEnd`. That window is exactly when the settings screen allows
+ * deletion and warns about the paid time being given up, and it is unreachable
+ * locally without somewhere to hold the flag.
+ */
+interface SubscriptionRow { status: 'active' | 'cancelled'; currentPeriodEnd: string }
+const subscriptions = new Map<string, SubscriptionRow>();
+
+/** A month out, which is what a monthly subscription renews on. */
+const monthFromNow = () => {
+  const d = new Date();
+  d.setMonth(d.getMonth() + 1);
+  return d.toISOString();
+};
 const planFor = (id: string) => plans.get(id) ?? 'free';
 
 /** One counter, because there is one pool. */
@@ -821,7 +840,49 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           return json(res, 204, undefined, [`${COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`]);
         }
 
+        /* ---- Cancelling (BACKEND.md §8) ----
+           NOT BUILT IN PRODUCTION. The real route opens a session with the
+           payment provider and hands back its URL; nothing is cancelled until
+           that provider's webhook lands, exactly as the upgrade already works.
+
+           This stub flips the row IMMEDIATELY, which production must not do,
+           and it is the deliberate simplification: without it the
+           cancelled-but-still-running state cannot be reached locally, and that
+           state is the whole reason the delete guard below exists. The URL it
+           returns is a dev-only page standing in for the provider's, so the
+           client's "navigate to where the server sent you" path is exercised. */
+        if (url === '/api/subscription/cancel' && req.method === 'POST') {
+          const row = subscriptions.get(me.id);
+          if (planFor(me.id) !== 'paid' || !row) {
+            return json(res, 409, { error: 'no_subscription' });
+          }
+          subscriptions.set(me.id, { ...row, status: 'cancelled' });
+          return json(res, 200, { url: '/api/dev/provider' });
+        }
+
+        if (url === '/api/dev/provider') {
+          /* DEV ONLY, and it exists so the navigation lands somewhere that says
+             what it is instead of a 404 that looks like a broken cancel. */
+          res.statusCode = 200;
+          res.setHeader('content-type', 'text/html; charset=utf-8');
+          return res.end('<!doctype html><meta charset="utf-8">'
+            + '<title>Payment provider (dev)</title>'
+            + '<body style="font:16px/1.6 system-ui;margin:4rem auto;max-width:34rem">'
+            + '<h1>This stands in for the payment provider</h1>'
+            + '<p>In production the server sends you to the provider to finish '
+            + 'cancelling, and the subscription changes when its webhook lands. '
+            + 'This dev server has already marked it cancelled.</p>'
+            + '<p><a href="/app/plan">Back to your plan</a></p>');
+        }
+
         if (url === '/api/account' && req.method === 'DELETE') {
+          /* THE SERVER ENFORCES IT TOO. The settings screen does not offer
+             deletion while a subscription still renews, so reaching this is a
+             stale view — and a stale build of the app is not a way to leave
+             somebody paying for an account that no longer exists. */
+          if (subscriptions.get(me.id)?.status === 'active') {
+            return json(res, 409, { error: 'subscription_active' });
+          }
           /* Everything this stub holds about the person, named one at a time.
              A loop over "all the maps" would silently stop covering a store
              added later, and a deletion that misses a store is the failure mode
@@ -834,6 +895,7 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           plans.delete(me.id);
           tokensUsed.delete(me.id);
           deactivated.delete(me.id);
+          subscriptions.delete(me.id);
           const at = accounts.findIndex((a) => a.id === me.id);
           if (at >= 0) accounts.splice(at, 1);
           return json(res, 204, undefined, [`${COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`]);
@@ -856,6 +918,16 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           const f = parseBody(await body(req), req.headers['content-type'] ?? '');
           const next = f.plan === 'paid' ? 'paid' : 'free';
           plans.set(me.id, next);
+          /* `status=cancelled` puts the account in the window that matters:
+             paid, not renewing, and still entitled until the period ends. */
+          if (next === 'paid') {
+            subscriptions.set(me.id, {
+              status: f.status === 'cancelled' ? 'cancelled' : 'active',
+              currentPeriodEnd: monthFromNow(),
+            });
+          } else {
+            subscriptions.delete(me.id);
+          }
           return json(res, 200, { ok: true, plan: next });
         }
 
@@ -885,8 +957,18 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
             period: 'day' as const,
             resetsAt: resetsAt('day'),
           };
+          /* A paid account has a subscription; the stub mints one on the way
+             past if `/api/dev/plan` did not. Production reads it from the
+             payment provider, and a FREE account carries none at all — which is
+             what the client reads as "nothing to cancel". */
+          if (plan === 'paid' && !subscriptions.has(me.id)) {
+            subscriptions.set(me.id, { status: 'active', currentPeriodEnd: monthFromNow() });
+          }
+          if (plan === 'free') subscriptions.delete(me.id);
+
           return json(res, 200, {
             plan,
+            subscription: subscriptions.get(me.id) ?? null,
             tokens,
             prices: TOKEN_PRICES,
             /* The aliases production still sends: the same pool under the two
