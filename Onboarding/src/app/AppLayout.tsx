@@ -12,7 +12,7 @@
  * action that should not sit a stray tap from the nav. It closes on Escape,
  * outside click, selection, and focus leaving — see Menu.tsx.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import {
   BookOpen, Briefcase, LayoutDashboard, LogOut, PanelLeftClose,
@@ -26,6 +26,8 @@ import { useChat } from '../state/chat';
 import { Logo } from '../components/Logo';
 import { PipelineProgress } from '../components/PipelineProgress';
 import { UpdateBanner } from '../components/UpdateJourney';
+import { RatePrompt } from '../components/RatePrompt';
+import { useRate } from '../state/rate';
 import { LangToggle, ThemeToggle } from '../components/Controls';
 import { Menu, MenuItem } from '../components/Menu';
 import { siteLogin } from '../lib/site';
@@ -73,10 +75,35 @@ function initials(name: string) {
   return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');
 }
 
-function AccountMenu() {
+function AccountMenu({ askToRate }: {
+  /**
+   * Ask for a rating first, then run the callback. Returns false when the
+   * moment is wrong — still onboarding, mid-run, already asked — and the
+   * caller carries on immediately.
+   */
+  askToRate: (then: () => void) => boolean;
+}) {
   const { t, locale, formatNumber } = useI18n();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const api = useApi();
+
+  /**
+   * SIGN OUT WITHOUT RACING OURSELVES.
+   *
+   * `useAuth().logout()` sets `user` to null, React re-renders, and `RequireApp`
+   * sends the now-anonymous visitor to the site's log in page under its own
+   * steam — then this line navigates there too, and one of the two aborts. Both
+   * targets happen to be the same page, so it looked harmless and stayed;
+   * `CloseAccount` hit the identical race with two DIFFERENT targets and that is
+   * where it was finally visible.
+   *
+   * The bare API call ends the session without touching React state, and a full
+   * navigation discards everything the store was holding anyway.
+   */
+  const leave = useCallback(async () => {
+    await api.logout().catch(() => { /* the session is going either way */ });
+    window.location.assign(siteLogin(locale));
+  }, [api, locale]);
 
   /**
    * What is left of today's tokens, shown as a figure and nothing else.
@@ -150,10 +177,13 @@ function AccountMenu() {
           </Link>
           <MenuItem
             danger
-            onSelect={async () => {
+            onSelect={() => {
               close();
-              await logout();
-              window.location.assign(siteLogin(locale));
+              /* ASKED BEFORE THE DOOR CLOSES, and never instead of it. If the
+                 gates say no — still onboarding, mid-run, already asked — this
+                 signs out immediately and nothing appears. If they say yes, the
+                 prompt takes over and logs out on either answer. */
+              if (!askToRate(() => void leave())) void leave();
             }}
           >
             <LogOut size={16} aria-hidden="true" />
@@ -170,6 +200,20 @@ export function AppLayout() {
   // rather than to a locale-prefixed marketing URL. The account menu still uses
   // it for the "visit the site" item, where leaving the product is deliberate.
   const { t } = useI18n();
+  const rate = useRate();
+  /**
+   * What to do once the prompt is done with, when it was opened on the way OUT.
+   *
+   * Held here rather than inside the menu because the menu unmounts the moment
+   * it closes, and the callback has to outlive it — the person is answering a
+   * question that was asked by something no longer on screen.
+   */
+  const afterRating = useRef<(() => void) | null>(null);
+  const askToRate = useCallback((then: () => void) => {
+    if (!rate.ask()) return false;
+    afterRating.current = then;
+    return true;
+  }, [rate]);
   const { threads, reset: resetChat } = useChat();
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     try { return localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { return false; }
@@ -300,7 +344,7 @@ export function AppLayout() {
             <LangToggle compact />
             <ThemeToggle compact />
           </div>
-          <AccountMenu />
+          <AccountMenu askToRate={askToRate} />
         </div>
       </nav>
 
@@ -313,7 +357,7 @@ export function AppLayout() {
           <span className="spacer" />
           <LangToggle compact />
           <ThemeToggle compact />
-          <AccountMenu />
+          <AccountMenu askToRate={askToRate} />
         </header>
 
         {/* tabIndex -1: the skip link and the route-change focus move both
@@ -335,6 +379,19 @@ export function AppLayout() {
           <UpdateBanner />
           <Outlet />
         </main>
+
+      {/* ONE INSTANCE, in the shell, so whichever trigger fires — the account
+          menu on its way out, or the pointer heading for the tab bar — there is
+          exactly one prompt and one answer. */}
+      <RatePrompt
+        open={rate.open}
+        onClose={() => { rate.dismiss(); afterRating.current?.(); afterRating.current = null; }}
+        onDone={(rated) => {
+          rate.finish(rated);
+          afterRating.current?.();
+          afterRating.current = null;
+        }}
+      />
       </div>
 
       <nav className="tabbar" aria-label={t('a11y.mainNav')}>

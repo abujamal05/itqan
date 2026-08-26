@@ -27,6 +27,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { useChat } from '../state/chat';
+import { useApi } from '../state/api';
+import { useAsync } from '../lib/useAsync';
 import { Message } from '../components/Message';
 import { Composer } from '../components/Composer';
 import { Hud } from '../components/Hud';
@@ -37,6 +39,17 @@ export function Chat() {
   const { t } = useI18n();
   const { threadId: param } = useParams();
   const navigate = useNavigate();
+  const api = useApi();
+
+  /**
+   * ONE FETCH FOR THE WHOLE THREAD, handed down to every turn.
+   *
+   * It lived inside `Message` for a moment, which renders once per turn — so a
+   * twenty message conversation asked the server for the same token pool twenty
+   * times on open. The thread is the thing that has one budget, so the thread is
+   * what asks.
+   */
+  const { data: usage } = useAsync((s) => api.getUsage(s), [api]);
 
   const {
     threadId, messages, loading, pending, failed, failedReason, writingId, verdicts,
@@ -176,6 +189,7 @@ export function Chat() {
               isLast={i === count - 1}
               writing={writingId === m.id}
               onWritten={doneWriting}
+              usage={usage}
             />
             ))}
           </ol>

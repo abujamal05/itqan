@@ -1393,6 +1393,65 @@
 }
 .profile__icon { flex: 0 0 auto; color: var(--color-accent-ink); }
 
+/* --------------------------------------------------------------- RATING -- */
+/* Five stars, and they are the only control on the screen that is allowed a
+   character moment: this is the motion skill's "rare / first-time" row, and
+   nothing here is a verdict, a score or a match, so the evidence fence is not
+   in play. Feedback is the job — a star that does not answer the pointer is a
+   control nobody trusts they have pressed. */
+.rate {
+  display: flex;
+  gap: var(--space-2);
+  align-self: center;
+  padding-block: var(--space-2);
+}
+
+.rate__star {
+  display: grid;
+  place-items: center;
+  /* The 44px floor, on a control whose glyph is 30px. */
+  inline-size: 44px;
+  block-size: 44px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-border-strong);
+  cursor: pointer;
+  transition:
+    color var(--duration-fast) var(--ease-hover),
+    transform var(--duration-base) var(--ease-overshoot);
+}
+
+/* Filled up to the star under the pointer, so the row previews the value
+   before it is committed. Gold FILL on a glyph, which is what gold is for —
+   this is not text and not a border. */
+.rate__star[data-on] {
+  color: var(--color-accent);
+  /* The settle. Travel multiplies by the scalar, so reduced motion keeps the
+     colour change and loses the movement. */
+  transform: scale(calc(1 + 0.12 * var(--motion-scale)));
+}
+
+.rate__star:active:not(:disabled) {
+  transform: scale(calc(1 - 0.08 * var(--motion-scale)));
+  transition-duration: var(--duration-quick);
+}
+
+.rate__star:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.rate__star:disabled { cursor: default; }
+
+/* The value in words. The row above is fill and shape only, so this is the
+   whole of it for anyone not looking at the colour. */
+.rate__value {
+  align-self: center;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
 /* ------------------------------------------------------- UPDATE / CELEBRATE -- */
 /* The banner that says the journey is a step behind. It rides in the app shell
    beside the pipeline's own bar, so it follows the person rather than waiting

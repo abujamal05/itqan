@@ -214,6 +214,11 @@ export function createHttpApi(): ItqanApi {
         method: 'POST', body: JSON.stringify({ scope }), signal,
       });
     },
+    async submitRating(input, signal) {
+      await req<void>('/feedback/rating', {
+        method: 'POST', body: JSON.stringify(input), signal,
+      });
+    },
     async deferUpdate(signal) {
       await req<void>('/update/defer', { method: 'POST', signal }).catch(() => {});
     },

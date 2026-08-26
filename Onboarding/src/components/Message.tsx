@@ -26,18 +26,26 @@ import { useEffect, useState } from 'react';
 import { Check, Copy, Paperclip, RefreshCw, ThumbsDown, ThumbsUp } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useChat } from '../state/chat';
-import { useApi } from '../state/api';
-import { useAsync } from '../lib/useAsync';
-import type { ChatMessage, ChatVerdict, Course, JobMatch } from '../api';
+import type { ChatMessage, ChatVerdict, Course, JobMatch, Usage } from '../api';
 import { Logo } from './Logo';
 import { MatchCard } from './MatchCard';
 import { CourseCard } from './CourseCard';
 import { useTypewriter } from '../lib/useTypewriter';
 
 export function Message({
-  message, onSuggest, onRetry, onRate, onRerun, verdict, busy, isLast, writing, onWritten,
+  message, onSuggest, onRetry, onRate, onRerun, verdict, busy, isLast, writing, onWritten, usage,
 }: {
   message: ChatMessage;
+  /**
+   * The token pool, so a card attached to an answer can price a replacement and
+   * Hud's re-run offer can price itself.
+   *
+   * A PROP, NOT A FETCH. This renders once per message: fetching here put a
+   * `GET /api/usage` on the wire for every turn in the thread, so opening a
+   * twenty message conversation fired twenty identical requests. The thread
+   * owns it and hands it down.
+   */
+  usage?: Usage | null;
   onSuggest: (question: string) => void;
   /** Confirmed re-run. Reaching this already required a second, deliberate tap. */
   onRerun: () => Promise<void> | void;
@@ -50,9 +58,6 @@ export function Message({
   onWritten: (id: string) => void;
 }) {
   const { t, formatNumber } = useI18n();
-  const api = useApi();
-  /** Priced so a card attached to an answer can offer a replacement too. */
-  const { data: usage } = useAsync((s) => api.getUsage(s), [api]);
 
   /* The cards AS SHOWN, which is not the same as the cards in the message. A
      replacement changes what is on screen; a thread is a record of what was
@@ -169,7 +174,12 @@ export function Message({
             />
 
             {isLast && message.proposedRerun ? (
-              <RerunProposal proposal={message.proposedRerun} onRerun={onRerun} busy={busy} />
+              <RerunProposal
+                proposal={message.proposedRerun}
+                onRerun={onRerun}
+                busy={busy}
+                usage={usage}
+              />
             ) : null}
 
             {isLast && message.suggestions?.length ? (
@@ -287,15 +297,15 @@ function Actions({
  * disposes, the server executes.
  */
 function RerunProposal({
-  proposal, onRerun, busy,
+  proposal, onRerun, busy, usage,
 }: {
   proposal: NonNullable<ChatMessage['proposedRerun']>;
   onRerun: () => Promise<void> | void;
   busy: boolean;
+  usage?: Usage | null;
 }) {
   const { t, formatNumber } = useI18n();
   const { rerunStage, rerunProgress } = useChat();
-  const api = useApi();
   const [confirming, setConfirming] = useState(false);
   const [spending, setSpending] = useState(false);
 
@@ -309,7 +319,6 @@ function RerunProposal({
    * something. Asking Hud to redo the matching now costs and reads exactly what
    * it costs and reads everywhere else.
    */
-  const { data: usage } = useAsync((s) => api.getUsage(s), [api]);
   const cost = usage?.prices?.documentReread;
   const left = usage?.tokens && usage.tokens.limit !== null
     ? Math.max(0, usage.tokens.limit - usage.tokens.used)

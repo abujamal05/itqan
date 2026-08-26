@@ -1323,3 +1323,48 @@ somebody's budget.
 
 `chat.rerun.cost` had gone on describing the weekly re-run allowance retired on
 2026-08-25. Every quoted price in the product now comes from `prices`.
+
+### 11. What the person thinks of Itqan — `POST /api/feedback/rating`  **(NOT BUILT)**
+
+```
+POST /api/feedback/rating  { stars: 1..5, comment: string | null }  -> 204
+                                                                    -> 400 { error: "invalid_input" }
+```
+
+Added 2026-08-26. Five stars and an optional comment, asked once.
+
+- **`comment` is `null` when they did not write one.** An empty string and "they
+  chose not to comment" are different facts and must not arrive as the same
+  value; one of them is data and the other is a silence worth counting.
+- **`stars` is an integer 1 to 5.** Anything else is `invalid_input` — the UI
+  cannot produce it, so a value that arrives is a client nobody wrote.
+- **One per account.** A second submission replaces the first rather than
+  appending; nobody is being polled over time here.
+
+**Nothing reads it back.** No average is shown to anybody, no screen renders it,
+and there is no score in the product to inflate. It goes one way, which is worth
+stating because a rating that becomes a visible number is a rating people start
+gaming.
+
+#### When the app asks, and the one thing it cannot do
+
+The prompt is gated in the client and the gates are a product decision, not a
+detail: **onboarded**, **not mid-run**, and **has actually looked at a result in
+this session**. A rating from somebody halfway through onboarding, or watching
+their documents being read, is noise — and the ask itself reads as the product
+interrupting its own first impression.
+
+It fires on **logging out**, and on the pointer leaving the top of the window.
+
+**A page cannot show its own dialog when the window closes.** `beforeunload` can
+only ask the browser to show ITS generic "leave site?" box, which is not a rating
+and which browsers increasingly suppress; `pagehide` fires too late to render
+anything. The pointer heading for the tab bar is the closest honest signal, and
+it exists only on a desktop. **If the rating needs to reach people who close the
+tab on a phone, that is an email or an in-app prompt on their NEXT visit**, and
+either is a server-side decision rather than something the front end can fake.
+
+**Ask-once is remembered in the browser today.** A rating given is never asked
+for again; a rating declined is not asked again for ninety days. Moving both to
+the account would make that survive a new device, and is the natural home for it
+once this route exists.

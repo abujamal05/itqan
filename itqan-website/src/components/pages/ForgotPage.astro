@@ -70,6 +70,23 @@ const base = `/${locale}`;
       action="/api/auth/forgot-password"
       novalidate
       data-server-error={s.forgot.serverError}
+      {/* The shared refusals, rendered here because this script cannot read the
+      locale: a string baked into the bundle would be English on an Arabic
+      page. See `serverErrorMessage` — the page's own `data-server-error`
+      stays the last resort. */}
+      data-err-network={s.err.network}
+      data-err-server={s.err.server}
+      data-err-session={s.err.session}
+      data-err-credentials={s.err.credentials}
+      data-err-email-taken={s.err.emailTaken}
+      data-err-unverified={s.err.unverified}
+      data-err-consent-required={s.err.consentRequired}
+      data-err-invalid-code={s.err.invalidCode}
+      data-err-code-expired={s.err.codeExpired}
+      data-err-invalid-input={s.err.invalidInput}
+      data-err-not-found={s.err.notFound}
+      data-err-rate-limited={s.err.rateLimited}
+      data-err-rate-limited-in={s.err.rateLimitedIn}
     >
       <div class="form-summary" role="alert" tabindex="-1" hidden>
         <Icon class="form-summary__icon" name="ph:warning-duotone" width="22" height="22" aria-hidden="true" />
@@ -163,6 +180,23 @@ const base = `/${locale}`;
       action="/api/auth/reset-password"
       novalidate
       data-server-error={s.forgot.serverError}
+      {/* The shared refusals, rendered here because this script cannot read the
+      locale: a string baked into the bundle would be English on an Arabic
+      page. See `serverErrorMessage` — the page's own `data-server-error`
+      stays the last resort. */}
+      data-err-network={s.err.network}
+      data-err-server={s.err.server}
+      data-err-session={s.err.session}
+      data-err-credentials={s.err.credentials}
+      data-err-email-taken={s.err.emailTaken}
+      data-err-unverified={s.err.unverified}
+      data-err-consent-required={s.err.consentRequired}
+      data-err-invalid-code={s.err.invalidCode}
+      data-err-code-expired={s.err.codeExpired}
+      data-err-invalid-input={s.err.invalidInput}
+      data-err-not-found={s.err.notFound}
+      data-err-rate-limited={s.err.rateLimited}
+      data-err-rate-limited-in={s.err.rateLimitedIn}
       data-msg-weak={s.signup.password.errorWeak}
       data-success-url={`${base}/login/`}
     >

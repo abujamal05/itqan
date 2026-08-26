@@ -24,6 +24,7 @@ import { AuthProvider, useAuth } from './state/auth';
 import { OnboardingProvider, useOnboarding } from './state/onboarding';
 import { ChatProvider } from './state/chat';
 import { UpdateProvider } from './state/update';
+import { RateProvider } from './state/rate';
 import { FeedbackProvider } from './state/feedback';
 import { siteLogin, siteVerify } from './lib/site';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -215,9 +216,14 @@ function WithChat({ children }: { children: ReactNode }) {
   /* INSIDE the chat provider, because the update run reuses its poll loop and
      its results counter. Two poll loops racing one counter is a bug nobody
      would find until two screens disagreed about the same run. */
+  /* `RateProvider` reads the route and the pipeline, so it sits inside both the
+     router and the onboarding state. It renders nothing on its own — the prompt
+     is mounted by the app shell. */
   return (
     <ChatProvider api={api}>
-      <UpdateProvider>{children}</UpdateProvider>
+      <UpdateProvider>
+        <RateProvider>{children}</RateProvider>
+      </UpdateProvider>
     </ChatProvider>
   );
 }

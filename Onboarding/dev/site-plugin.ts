@@ -232,6 +232,9 @@ const UPDATE_COST = { documents: 19, skills: 5 } as const;
  */
 const readinessGain = new Map<string, number>();
 
+/** One rating per account, which is all the product ever asks for. */
+const ratings = new Map<string, { stars: number; comment: string | null; at: number }>();
+
 const markStale = (userId: string, scope: 'documents' | 'skills', reason: string) => {
   const row = stale.get(userId);
   /* DOCUMENTS WINS. If both are pending, the documents run subsumes the skills
@@ -1458,6 +1461,21 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           /* The score moves, which is the point of having run it. */
           readinessGain.set(me.id, (readinessGain.get(me.id) ?? 0) + 6);
           return json(res, 200, { jobId });
+        }
+
+        /* ---- What they think of Itqan (BACKEND.md §11) ----
+           NOT BUILT IN PRODUCTION. Stored per account so the stub can prove the
+           one rule that matters to the client: a rating given is a rating that
+           does not get asked for again. */
+        if (url === '/api/feedback/rating' && req.method === 'POST') {
+          const f = parseBody(await body(req), req.headers['content-type'] ?? '') as unknown as
+            { stars?: number; comment?: string | null };
+          const stars = Number(f.stars);
+          if (!Number.isInteger(stars) || stars < 1 || stars > 5) {
+            return json(res, 400, { error: 'invalid_input' });
+          }
+          ratings.set(me.id, { stars, comment: f.comment ?? null, at: Date.now() });
+          return json(res, 204, undefined);
         }
 
         if (url === '/api/update/defer' && req.method === 'POST') {

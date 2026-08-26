@@ -810,6 +810,22 @@ export interface ItqanApi {
   /** "Remind me later." PENDING BACKEND — `POST /api/update/defer`. */
   deferUpdate(signal?: AbortSignal): Promise<void>;
 
+  /**
+   * What the person thinks of Itqan. PENDING BACKEND — BACKEND.md §11.
+   *
+   * `POST /api/feedback/rating` with `{ stars, comment }`. Five stars, and a
+   * comment only when they wrote one — an empty string and "they did not
+   * comment" are different facts and must not arrive as the same value.
+   *
+   * The rating is not a product signal the interface reads back: nothing in the
+   * app renders it, no average is shown to anybody, and there is no score to
+   * inflate. It goes one way.
+   */
+  submitRating(
+    input: { stars: number; comment: string | null },
+    signal?: AbortSignal,
+  ): Promise<void>;
+
   /** Starts the pipeline over the whole set. Returns the job to poll. */
   startAnalysis(documentIds: string[], signal?: AbortSignal): Promise<{ jobId: string }>;
   getAnalysis(jobId: string, signal?: AbortSignal): Promise<AnalysisJob>;
