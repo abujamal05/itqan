@@ -3,8 +3,8 @@
  *
  * WHY THIS IS AN E2E TEST AND NOT A UNIT TEST. The failure it exists to catch
  * shipped to production and no test saw it: `rescans` and `messages` became
- * aliases of one token pool, and the profile and plan screens went on drawing
- * two meters — the same number under two labels, with a 19-token document
+ * aliases of one token pool, and the two screens that draw a meter went on
+ * drawing two — the same number under two labels, with a 19-token document
  * re-read moving the one captioned "Messages with Hud". Every piece of that was
  * individually correct. Only the rendered screen was wrong, so only something
  * that looks at the rendered screen can defend it.
@@ -20,7 +20,10 @@ test.describe('the token bar', () => {
   test('draws ONE meter, on both screens that show one', async ({ page }) => {
     await login(page);
 
-    for (const screen of ['plan', 'profile']) {
+    /* `settings`, not `profile`: "Your AI usage" moved there when the profile
+       screen split in two. The meter is the same component in the same place on
+       the page; only its address changed. */
+    for (const screen of ['plan', 'settings']) {
       await page.goto(`/app/${screen}`);
       // TWO was the bug, and it was visible on both screens rather than only
       // the one anybody would have thought to check.
@@ -29,12 +32,12 @@ test.describe('the token bar', () => {
     }
   });
 
-  test('the profile bar carries the price list, and the plan bar does not', async ({ page }) => {
+  test('the settings bar carries the price list, and the plan bar does not', async ({ page }) => {
     await login(page);
 
     // The reason a bar is worth drawing: "29 left" of what, costing what? Both
     // figures come from the server, not from the bundle.
-    await page.goto('/app/profile');
+    await page.goto('/app/settings');
     await expect(page.locator('.usage')).toContainText('19');
 
     // The plan screen states the same prices under its comparison table, so
@@ -94,7 +97,7 @@ test.describe('the token bar', () => {
     expect(afterReread - afterMessage, 'a re-read costs 19').toBe(19);
 
     // And the number the person actually sees is the one the server holds.
-    await page.goto('/app/profile');
+    await page.goto('/app/settings');
     await expect(page.locator('.usage__count')).toContainText(String(afterReread));
   });
 });

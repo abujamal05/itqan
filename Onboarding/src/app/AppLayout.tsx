@@ -15,8 +15,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import {
-  BookOpen, Briefcase, LayoutDashboard, LogOut,
-  PanelLeftClose, Sparkles, SquarePen, User as UserIcon, Waypoints,
+  BookOpen, Briefcase, LayoutDashboard, LogOut, PanelLeftClose,
+  Settings as SettingsIcon, Sparkles, SquarePen, User as UserIcon, Waypoints,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useI18n } from '../i18n';
@@ -129,10 +129,23 @@ function AccountMenu() {
             )}
           </div>
           {/* Your account, under your own name — where this audience looks for
-              it first, and no longer competing with the daily loop in the nav. */}
+              it first, and no longer competing with the daily loop in the nav.
+
+              TWO ENTRIES, because they answer different questions. Profile is
+              "is this me, and is it right"; Settings is what Itqan holds, what
+              it spends, and how to stop. One screen carrying both had grown to
+              eight sections, and the menu is where the two become findable
+              rather than scrollable. */}
           <Link className="menu__item" role="menuitem" to="/profile" onClick={close}>
             <UserIcon size={16} aria-hidden="true" />
             {t('nav.profile')}
+          </Link>
+          <Link className="menu__item" role="menuitem" to="/settings" onClick={close}>
+            {/* A cog is one of the icons that must NOT mirror in Arabic: it
+                encodes a thing, not a direction. Nothing flips it, which is
+                the correct default and worth not "fixing" later. */}
+            <SettingsIcon size={16} aria-hidden="true" />
+            {t('nav.settings')}
           </Link>
           <MenuItem
             danger

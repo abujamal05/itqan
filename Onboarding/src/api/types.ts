@@ -739,6 +739,23 @@ export interface ItqanApi {
   /** Removes one uploaded document, from the list AND from the server's disk. */
   deleteDocument(id: string, signal?: AbortSignal): Promise<void>;
 
+  /**
+   * Closing the account. PENDING BACKEND — see BACKEND.md §7.
+   *
+   * `POST /api/account/deactivate` pauses it: the documents, the profile and
+   * the matches are kept, and the server stops analysing and stops matching
+   * until the person logs in again. `DELETE /api/account` erases it.
+   *
+   * BOTH ARE THE SERVER'S TO DEFINE, and this client must not simulate either.
+   * There is no route in production today — LEGAL-BRIEF.md records that the
+   * only account deletion this system has ever performed was hand-written SQL —
+   * so both calls will 404 until one lands. That is why neither returns
+   * anything the UI branches on: the caller shows what happened and, on a
+   * failure, says plainly that nothing did.
+   */
+  deactivateAccount(signal?: AbortSignal): Promise<void>;
+  deleteAccount(signal?: AbortSignal): Promise<void>;
+
   listThreads(signal?: AbortSignal): Promise<ChatThreadSummary[]>;
   /** A thread with no messages is a normal answer, not an error. */
   getThread(id: string, signal?: AbortSignal): Promise<ChatThread>;

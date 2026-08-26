@@ -38,6 +38,7 @@ import { Jobs } from './app/Jobs';
 import { Courses } from './app/Courses';
 import { Documents } from './app/Documents';
 import { Profile } from './app/Profile';
+import { Settings } from './app/Settings';
 import { Plan } from './app/Plan';
 import { captureUpgradeIntent, clearUpgradeIntent, hasUpgradeIntent } from './state/upgradeIntent';
 
@@ -386,6 +387,7 @@ export default function App() {
                         <Route path="/courses" element={<Courses />} />
                         <Route path="/documents" element={<Documents />} />
                         <Route path="/profile" element={<Profile />} />
+                        <Route path="/settings" element={<Settings />} />
                         <Route path="/plan" element={<Plan />} />
                       </Route>
 

@@ -936,3 +936,66 @@ GET /api/handoff?intent=premium   ->  302 <app>/?intent=premium
 capture-and-clear path, so forwarding it is the only change required and nothing
 in the front end has to be touched. Pass through only the literal value
 `premium`; anything else should be dropped rather than reflected.
+
+### 7. Closing an account — `POST /api/account/deactivate` and `DELETE /api/account`  **(NEITHER IS BUILT)**
+
+```
+POST   /api/account/deactivate  -> 204, and the session cookie is cleared
+DELETE /api/account             -> 204, and the session cookie is cleared
+```
+
+Added 2026-08-26, when Settings shipped with both controls. **The front end
+calls these and simulates neither.** Until they exist both calls 404, the
+confirmation dialog says plainly that nothing happened, and the account is left
+exactly as it was — which is the correct behaviour for a missing route and the
+reason the UI could ship ahead of it.
+
+`LEGAL-BRIEF.md` is the reason this matters more than a normal pending route:
+the right to erasure is promised and **the only account deletion this system has
+ever performed was hand-written SQL on the VPS**. A user cannot exercise it.
+That brief also records the two facts any implementation has to answer to: there
+is no automatic retention limit on uploaded documents or derived profiles, and
+there is an OVH snapshot backup that a row-level delete will not reach. **A
+stated snapshot-rotation period is part of shipping this, not a follow-up.**
+
+**Deactivate — a reversible pause.**
+
+- Everything is KEPT: documents, the extracted profile, skills, the course path,
+  job matches, chat threads, the plan and its billing state.
+- The account stops being worked on. No pipeline run starts for it, no match
+  refresh runs, and it is matched to nothing while it is paused.
+- The session ends with the same response.
+- **Logging in restores it.** No separate reactivation route and no support
+  ticket: the credentials that could sign in before still can, and doing so
+  clears the flag. The settings screen promises exactly this, in both languages.
+- An account that is paused must not be billed for a period it cannot use. What
+  happens to a live Paddle subscription is **undecided** and needs the lead:
+  pausing the subscription and cancelling it are different promises.
+
+**Delete — erasure, and it must be complete.**
+
+The confirmation screen lists what goes, and the list is a contract with the
+user rather than reassuring copy. It names, in both languages:
+
+- every uploaded document, including the CV, **on disk as well as in the table** —
+  `DELETE /api/documents/:id` already unlinks the file and is the model to follow;
+- the profile and every skill derived from those documents;
+- job matches, readiness and the course path;
+- chat threads with Hud;
+- the account row and its email address.
+
+Anything derived from the documents that is not in that list is either missing
+from the list or missing from the delete, and both are defects. The two must be
+purged together: a profile that outlives its source documents is an incomplete
+deletion, not a partial one.
+
+**Neither route may accept the typed phrase as its authorisation.** The typed
+"Delete my account" is a UI gate against a mis-tap and nothing more; it is never
+sent, and a server that trusted it would be trusting a string the client made
+up. The session is the authorisation. If a re-authentication step is wanted
+before erasure, that is a password or an emailed code, decided server side.
+
+`dev/site-plugin.ts` stubs both so the client's write path is exercised, and it
+is **not a specification**: it clears four Maps and a cookie, and restores a
+paused account on the next login. It reaches no disk, no derived table and no
+snapshot.

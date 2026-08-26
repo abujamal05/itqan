@@ -2,7 +2,9 @@
  * Shared primitives. Each one carries its full interaction-state set in
  * app.css; this file only decides structure and semantics.
  */
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'react';
+import type {
+  ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, Ref, TextareaHTMLAttributes,
+} from 'react';
 import { useId } from 'react';
 import { AlertCircle, Check, HelpCircle, Info, Plus, X } from 'lucide-react';
 import { useI18n } from '../i18n';
@@ -11,7 +13,11 @@ import { skillCase } from '../lib/skillCase';
 /* ------------------------------------------------------------------ Button */
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost';
+  /* `danger` is a VARIANT rather than a class a caller adds on top of primary,
+     because it has to REPLACE the gold fill rather than sit over it. Composed
+     as an extra class it depended on stylesheet order to win, which is the kind
+     of thing that holds until someone reorders an import. */
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
   block?: boolean;
   loading?: boolean;
   children: ReactNode;
@@ -196,8 +202,8 @@ export function TextField({
  * the two are interchangeable to a reader of the markup.
  */
 export function InputField({
-  label, hint, error, ...rest
-}: FieldShell & InputHTMLAttributes<HTMLInputElement>) {
+  label, hint, error, ref, ...rest
+}: FieldShell & InputHTMLAttributes<HTMLInputElement> & { ref?: Ref<HTMLInputElement> }) {
   const id = useId();
   const errId = `${id}-err`;
   return (
@@ -205,6 +211,7 @@ export function InputField({
       <label className="field__label" htmlFor={id}>{label}</label>
       <input
         id={id}
+        ref={ref}
         className="input"
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? errId : undefined}

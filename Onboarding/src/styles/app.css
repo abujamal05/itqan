@@ -151,6 +151,30 @@
 .btn--ghost { background: transparent; color: var(--color-text); border-color: transparent; }
 .btn--ghost:hover:not(:disabled) { background: var(--color-accent-tint); }
 
+/* The one filled danger button in the app. It is a VARIANT rather than a class
+   layered over primary, because it has to replace the gold fill rather than sit
+   over it and win on stylesheet order.
+
+   Text is `--color-text-on-navy`, which resolves to paper in both themes — the
+   value a maroon fill and a red-400 fill both need. The system has no
+   `--color-text-on-danger`, and inventing one locally would break the
+   three-copy lockstep the tokens are held to; it belongs upstream.
+
+   Hover mixes the fill TOWARD `--color-text`, so it darkens on light and
+   lightens on dark, which is how the gold ramp already behaves. Two semantic
+   tokens, no invented value. */
+.btn--danger {
+  background: var(--color-danger);
+  color: var(--color-text-on-navy);
+  border-color: transparent;
+}
+.btn--danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-danger) 86%, var(--color-text));
+  transform: translateY(calc(-1px * var(--motion-scale)));
+  box-shadow: var(--shadow-sm);
+}
+.btn--danger:active:not(:disabled) { transform: translateY(0); transition-duration: var(--duration-instant); }
+
 .btn--icon { padding: var(--space-2); min-width: 44px; }
 .btn--block { width: 100%; }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
@@ -1364,6 +1388,101 @@
   gap: var(--space-2);
 }
 .profile__icon { flex: 0 0 auto; color: var(--color-accent-ink); }
+
+/* --------------------------------------------------------------- SETTINGS -- */
+/* CLOSING THE ACCOUNT — one card, one danger edge.
+   Two danger-edged panels stacked at the end of the page would end Settings in
+   a wall of alarm and make neither of them the emphasis, which is the same
+   argument the design system makes about accent edges being scarce. The card
+   keeps the ordinary surface: it is a boundary, not an alarm, and the alarm
+   belongs to the confirmation the buttons open. */
+.card--danger { border-color: var(--color-danger); }
+.profile__icon--danger { color: var(--color-danger); }
+
+/* Description and its control on one line while there is room; the control
+   drops to its own line rather than squeezing a two word button to one word. */
+.close__act {
+  display: flex; align-items: flex-start; flex-wrap: wrap;
+  gap: var(--space-3) var(--space-6);
+}
+.close__what {
+  flex: 1 1 20rem; min-inline-size: 0;
+  display: flex; flex-direction: column; gap: var(--space-1);
+}
+/* `--text-base`, not the section size. An h3 nested inside a section must not
+   render at the weight of the h2 above it, or the DOM has a hierarchy the eye
+   cannot see. */
+.close__name { font-size: var(--text-base); font-weight: var(--weight-medium); }
+.close__act > .btn { flex: 0 0 auto; margin-inline-start: auto; }
+
+/* ---- The confirmation dialog ----------------------------------------------
+   Built on `.sheet`, which already solves the trap: the UA stylesheet gives
+   `dialog` its own `color: CanvasText`, so a panel that inherits nothing renders
+   black text in dark mode. `.sheet` sets `color` explicitly; this only widens
+   it and gives the panel inside a real surface. */
+.sheet--confirm { inline-size: min(34rem, calc(100vw - var(--space-6))); }
+
+.confirm {
+  display: flex; flex-direction: column; gap: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl), var(--rim-light);
+  padding: var(--space-6);
+  max-block-size: min(85svh, 44rem);
+  overflow-y: auto;
+}
+
+.confirm__head { display: flex; align-items: center; gap: var(--space-3); }
+.confirm__title { font-size: var(--text-xl); font-weight: var(--weight-semibold); }
+
+/* The mark states the tone before a word is read, and it is the only place the
+   danger hue is allowed to be the loud thing — it carries an icon, so nothing
+   here depends on the colour being perceived. */
+.confirm__mark {
+  flex: 0 0 auto; display: grid; place-items: center;
+  inline-size: 40px; block-size: 40px;
+  border-radius: var(--radius-full);
+  background: var(--color-accent-tint); color: var(--color-accent-ink);
+}
+.confirm__mark[data-danger] { background: var(--color-danger-tint); color: var(--color-danger); }
+
+/* WHAT ACTUALLY HAPPENS, in a well of its own. A second ground inside the panel
+   separates the consequences from the sentence introducing them, so the list
+   reads as the thing being agreed to rather than as more prose. */
+.confirm__list {
+  display: flex; flex-direction: column; gap: var(--space-2);
+  margin: 0; padding: var(--space-4); list-style: none;
+  background: var(--color-surface-sunken);
+  background-image: var(--texture-hairline);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}
+.confirm__list li { position: relative; padding-inline-start: var(--space-5); }
+.confirm__list li::before {
+  content: ''; position: absolute; inset-inline-start: 0; inset-block-start: 0.55em;
+  inline-size: 6px; block-size: 6px; border-radius: var(--radius-full);
+  background: var(--color-border-strong);
+}
+
+/* The way out on the reading-start side, the act on the reading-end side, and
+   `.spacer` between them — so the destructive control is never the thing under
+   a thumb reaching for the corner it just came from. */
+.confirm__actions { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+
+/* The panel arrives; the backdrop is already there. Scale starts at
+   `--reveal-scale-from`, never at 0, and both scalars collapse under reduced
+   motion — `--reveal-scale-from` to 1 and `--motion-scale` to 0 — so the
+   movement disappears while the fade keeps its full duration. That is the
+   mechanism, and it is why this keyframe needs no separate override. */
+@keyframes confirm-in {
+  from {
+    opacity: 0;
+    transform: scale(var(--reveal-scale-from)) translateY(calc(8px * var(--motion-scale)));
+  }
+  to { opacity: 1; transform: none; }
+}
+.sheet--confirm[open] .confirm { animation: confirm-in var(--duration-base) var(--ease-out) both; }
 
 /* ------------------------------------------------------------ CHAT / HUD -- */
 /* A conversation, kept deliberately bare. The only weight on this screen belongs

@@ -261,6 +261,12 @@ export function createHttpApi(): ItqanApi {
     async deleteDocument(id, signal) {
       await req<void>(`/documents/${encodeURIComponent(id)}`, { method: 'DELETE', signal });
     },
+    async deactivateAccount(signal) {
+      await req<void>('/account/deactivate', { method: 'POST', signal });
+    },
+    async deleteAccount(signal) {
+      await req<void>('/account', { method: 'DELETE', signal });
+    },
     listThreads(signal) {
       // No threads yet is a normal state on a new account, not a failure.
       return req<ChatThreadSummary[]>('/chat/threads', { signal }).catch(() => []);

@@ -185,6 +185,17 @@ let jobGate = false;
  * no Paddle webhook locally. Production reads this from the account.
  */
 const plans = new Map<string, 'free' | 'paid'>();
+
+/**
+ * Accounts this dev server has been told to pause.
+ *
+ * Deactivation's MEANING is the server's, not this file's — BACKEND.md §7 says
+ * what production has to do, and a stub cannot stand in for stopping a
+ * pipeline. What this proves is the contract: the route exists, it answers, and
+ * the account it names cannot log back in without being restored. That last
+ * part is the half a stub CAN test, and it is the half the UI promises.
+ */
+const deactivated = new Set<string>();
 const planFor = (id: string) => plans.get(id) ?? 'free';
 
 /** One counter, because there is one pool. */
@@ -540,6 +551,12 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           // The site shows its own "could not log you in" message on any
           // non-ok response, so 401 needs no body it would have to understand.
           if (!hit) return json(res, 401, { error: 'invalid_credentials' });
+          /* LOGGING BACK IN IS WHAT RESTORES A PAUSED ACCOUNT, and the settings
+             screen says so in as many words. Restoring it here is the one half
+             of deactivation a stub can actually prove; without it the promise
+             on that screen would be untested in the only place it can be
+             walked before production has the route at all. */
+          deactivated.delete(hit.id);
           return json(res, 200, { ok: true }, [
             `${COOKIE}=${tokenFor(hit.id)}; Path=/; SameSite=Lax`,
             setLocale,
@@ -785,6 +802,41 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           else set.delete(courseId);
           completedByUser.set(me.id, set);
           return json(res, 204, undefined);
+        }
+
+        /* ---- Closing the account (BACKEND.md §7) ----
+           NEITHER ROUTE EXISTS IN PRODUCTION. They are specified there and
+           built nowhere, which is precisely why they are stubbed here: without
+           them the client's write path could not be exercised at all, and the
+           screen that calls them would only ever be seen in its failure state.
+
+           A stub is not a specification. Production has to reach the documents
+           on disk, every derived row, and the snapshot rotation LEGAL-BRIEF.md
+           records; this reaches four Maps and a cookie. */
+        if (url === '/api/account/deactivate' && req.method === 'POST') {
+          deactivated.add(me.id);
+          /* Signed out with it. The account is paused, so the session that was
+             using it has to end in the same response rather than lingering
+             until the browser is closed. */
+          return json(res, 204, undefined, [`${COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`]);
+        }
+
+        if (url === '/api/account' && req.method === 'DELETE') {
+          /* Everything this stub holds about the person, named one at a time.
+             A loop over "all the maps" would silently stop covering a store
+             added later, and a deletion that misses a store is the failure mode
+             the legal brief is actually about. */
+          profiles.delete(me.id);
+          uploads.delete(me.id);
+          completedByUser.delete(me.id);
+          chatThreads.delete(me.id);
+          feedback.delete(me.id);
+          plans.delete(me.id);
+          tokensUsed.delete(me.id);
+          deactivated.delete(me.id);
+          const at = accounts.findIndex((a) => a.id === me.id);
+          if (at >= 0) accounts.splice(at, 1);
+          return json(res, 204, undefined, [`${COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`]);
         }
 
         /* DEV ONLY. Turns the job cut on so the locked cards can be seen; it
