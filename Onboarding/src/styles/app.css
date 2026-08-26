@@ -1408,6 +1408,16 @@
    with the component; under reduced motion it is never created at all. */
 .celebrate { position: relative; }
 
+/* THE WHOLE VIEWPORT, and it lives on the BODY rather than inside the banner:
+   a fixed element is positioned against the nearest transformed ancestor, and
+   the dashboard staggers its children in with `transform` — which was sizing
+   this to one card for the length of that entrance.
+
+   THE EXPLICIT 100% IS LOAD BEARING. `inset: 0` stretches a normal block, but
+   a <canvas> is a REPLACED element: its auto width resolves to the intrinsic
+   300x150 and the insets are then over-constrained and ignored. Dropping these
+   two lines as a tidy-up put a 300px canvas in the corner of a 1280px screen,
+   which is a confetti burst nobody can see. */
 .celebrate__canvas {
   position: fixed;
   inset: 0;

@@ -59,6 +59,12 @@ export interface ConfirmDialogProps {
    */
   hideConfirm?: boolean;
   /**
+   * Present but not yet pressable — for the case where the act is coming
+   * rather than unavailable. `hideConfirm` says "not on offer"; this says
+   * "not yet", and a person waiting on a price needs to be told which.
+   */
+  confirmDisabled?: boolean;
+  /**
    * A third choice beside Cancel, for the cases where leaving and declining are
    * different answers. "Remind me later" is a decision about the future;
    * closing the dialog is not, and collapsing them would silently record one as
@@ -99,8 +105,8 @@ function matchesPhrase(typed: string, phrase: string, locale: string): boolean {
 
 export function ConfirmDialog({
   open, onClose, tone = 'neutral', icon: Icon, title, lead, items, note,
-  typePhrase, confirmLabel, onConfirm, errorFallback, hideConfirm, secondary,
-  error: externalError, children,
+  typePhrase, confirmLabel, onConfirm, errorFallback, hideConfirm, confirmDisabled,
+  secondary, error: externalError, children,
 }: ConfirmDialogProps) {
   const { t, locale, formatNumber } = useI18n();
   const ref = useRef<HTMLDialogElement>(null);
@@ -262,7 +268,7 @@ export function ConfirmDialog({
                 /* Disabled until the phrase is typed. It stays visibly a button
                    rather than disappearing, so the gate reads as a gate and not
                    as a missing control. */
-                disabled={gated && !unlocked}
+                disabled={confirmDisabled || (gated && !unlocked)}
               >
                 {confirmLabel}
               </Button>

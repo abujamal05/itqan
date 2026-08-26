@@ -618,6 +618,13 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
              on that screen would be untested in the only place it can be
              walked before production has the route at all. */
           deactivated.delete(hit.id);
+
+          /* AND "REMIND ME LATER" MEANS THE NEXT SIGN IN, not never. Without
+             this the deferral was permanent and the offer never came back,
+             which is precisely the quietly stale journey the whole mechanism
+             exists to prevent. BACKEND.md §9 states it as a requirement. */
+          const pendingRow = stale.get(hit.id);
+          if (pendingRow?.deferred) stale.set(hit.id, { ...pendingRow, deferred: false });
           return json(res, 200, { ok: true }, [
             `${COOKIE}=${tokenFor(hit.id)}; Path=/; SameSite=Lax`,
             setLocale,

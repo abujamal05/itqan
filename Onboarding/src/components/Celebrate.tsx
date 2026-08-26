@@ -21,7 +21,7 @@
  * would leave someone who asked for less movement with no idea anything had
  * happened.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
 import { PartyPopper } from 'lucide-react';
 import { useI18n } from '../i18n';
@@ -29,6 +29,13 @@ import type { Celebration } from '../lib/celebrate';
 
 /** Longer than a routine transition, because this one is the authored moment. */
 const COUNT_MS = 900;
+
+/** How long confetti keeps arriving. Past about this it stops reading as a
+ *  burst and starts reading as weather. */
+const RAIN_MS = 1600;
+
+/** Navy, gold and paper. Even the confetti is recognisably this product. */
+const COLORS = ['#F39F1C', '#FFB443', '#071055', '#FAF8F3'];
 
 /** True when the person has asked the system for less movement. */
 const reduced = () =>
@@ -88,34 +95,66 @@ export function CountUp({ from, to, format }: {
  */
 export function Celebrate({ celebration }: { celebration: Celebration }) {
   const { t, formatNumber } = useI18n();
-  const host = useRef<HTMLDivElement>(null);
   const gained = celebration.to - celebration.from;
 
   useEffect(() => {
-    if (reduced() || !host.current) return undefined;
+    if (reduced()) return undefined;
 
+    /**
+     * THE CANVAS GOES ON THE BODY, not inside this component, and that is a
+     * fix rather than a preference. It is `position: fixed`, and a fixed
+     * element is positioned against the nearest ancestor with a transform
+     * rather than against the viewport — the dashboard staggers its children
+     * in with `transform`, so for the length of that entrance the canvas was
+     * being sized and clipped to this one banner. The confetti was firing
+     * correctly into a box a few hundred pixels tall.
+     */
     const canvas = document.createElement('canvas');
     canvas.className = 'celebrate__canvas';
-    host.current.appendChild(canvas);
+    document.body.appendChild(canvas);
 
     const fire = confetti.create(canvas, { resize: true, useWorker: true });
-    /* TWO BURSTS FROM THE EDGES, not one from the middle. A centred burst over
-       a centred glow is the stock-template move the design system names by
-       hand; from the sides it reads as something thrown rather than something
-       generated. Navy, gold and paper only — the brand five, so even the
-       confetti is recognisably this product. */
-    const common = { particleCount: 34, spread: 62, startVelocity: 42, ticks: 140, disableForReducedMotion: true, colors: ['#F39F1C', '#071055', '#FAF8F3', '#FFB443'] };
-    void fire({ ...common, angle: 60, origin: { x: 0.08, y: 0.7 } });
-    void fire({ ...common, angle: 120, origin: { x: 0.92, y: 0.7 } });
+    const base = { ticks: 260, disableForReducedMotion: true, colors: COLORS };
+
+    /* TWO CANNONS FROM THE EDGES for the opening pop. Not one from the middle:
+       a centred burst over a centred glow is the stock-template move the design
+       system names by hand, and from the sides it reads as something thrown
+       rather than something generated. */
+    void fire({ ...base, particleCount: 70, spread: 78, startVelocity: 52, angle: 60, origin: { x: 0, y: 0.75 } });
+    void fire({ ...base, particleCount: 70, spread: 78, startVelocity: 52, angle: 120, origin: { x: 1, y: 0.75 } });
+
+    /* Then it falls across the WHOLE width. The cannons alone only ever dressed
+       the two bottom corners; the screen is what is being celebrated, so the
+       screen is what it covers. Fired in small handfuls from random points
+       above the top edge, which reads as fall rather than as one wall of
+       colour arriving at once. */
+    const until = Date.now() + RAIN_MS;
+    let timer = 0;
+    const rain = () => {
+      fire({
+        ...base,
+        particleCount: 7,
+        spread: 70,
+        startVelocity: 24,
+        gravity: 0.85,
+        scalar: 0.95,
+        origin: { x: Math.random(), y: -0.15 },
+      });
+      if (Date.now() < until) timer = window.setTimeout(rain, 100);
+    };
+    rain();
 
     return () => {
+      window.clearTimeout(timer);
+      /* `reset` stops the worker's animation loop; without it a celebration
+         left behind on an unmounted component goes on painting. */
       fire.reset();
       canvas.remove();
     };
   }, []);
 
   return (
-    <div className="celebrate" ref={host}>
+    <div className="celebrate">
       <p className="celebrate__line" role="status">
         <PartyPopper size={18} aria-hidden="true" />
         {/* The news is in words first. Someone with reduced motion, a blocked

@@ -360,6 +360,7 @@
   "update.confirmAction": "Update now",
   "update.later": "Remind me later",
   "update.cost": "This costs {cost} tokens, and you have {remaining} left today.",
+  "update.pricing": "Working out what this costs…",
   "update.cannotAfford": "This costs {cost} tokens and you have {remaining} left today, so it cannot run yet. Your tokens reset tomorrow.",
   "update.failed": "That could not be started just now. Nothing has changed, and you can try again.",
   "update.docsItemRead": "Itqan reads your documents again, from the files you have now.",

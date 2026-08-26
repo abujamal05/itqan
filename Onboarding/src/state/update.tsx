@@ -25,6 +25,7 @@ import {
   createContext, useCallback, useContext, useEffect, useMemo, useState,
   type ReactNode,
 } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApi } from './api';
 import { useAuth } from './auth';
 import { useChat } from './chat';
@@ -41,6 +42,15 @@ interface UpdateValue {
   refresh: () => void;
   /** True while the agents are working, so callers can show it rather than guess. */
   running: boolean;
+  /**
+   * False until the server has answered what is stale and what it costs.
+   *
+   * The difference between "you cannot afford this" and "nobody has said yet"
+   * is the whole reason this exists: the empty state has `affordable: false`,
+   * and a dialog that trusted it told people their budget would not cover a
+   * price it had not been given.
+   */
+  known: boolean;
   /** Runs the pending scope. Throws the server's refusal for the caller to show. */
   run: () => Promise<void>;
   /** "Remind me later." Hidden for this session; the server brings it back. */
@@ -61,7 +71,9 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
   const api = useApi();
   const { user } = useAuth();
   const { runAgents, resultsVersion } = useChat();
+  const navigate = useNavigate();
   const [pending, setPending] = useState<PendingUpdate>(NOTHING);
+  const [known, setKnown] = useState(false);
   const [running, setRunning] = useState(false);
   const [silenced, setSilenced] = useState(false);
   const [asked, setAsked] = useState(0);
@@ -73,7 +85,7 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     if (!user) { setPending(NOTHING); return undefined; }
     const ac = new AbortController();
     api.getPendingUpdate(ac.signal)
-      .then((p) => { if (!ac.signal.aborted) setPending(p); })
+      .then((p) => { if (!ac.signal.aborted) { setPending(p); setKnown(true); } })
       .catch(() => { /* a missing route means nothing pending, never a failure */ });
     return () => ac.abort();
   }, [api, user, asked, resultsVersion]);
@@ -93,11 +105,21 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
          has not moved anything, and congratulating someone for it would be the
          product cheering at nothing. */
       if (outcome === 'done' && user) markRunFinished(user.id);
+
+      /**
+       * A DOCUMENTS RUN ENDS AT THE CONFIRMATION SCREEN, and somebody has to
+       * take the person there. That handoff existed only on the chat screen,
+       * where Hud's own re-run registers it — so a documents update started
+       * from the banner on any other page paid its tokens, read the documents,
+       * stopped at the pause, and left the person exactly where they were with
+       * nothing on screen. The run is owned here, so the destination is too.
+       */
+      if (outcome === 'awaiting') navigate('/confirm');
       setSilenced(true);
     } finally {
       setRunning(false);
     }
-  }, [pending.scope, runAgents, user]);
+  }, [pending.scope, runAgents, user, navigate]);
 
   const defer = useCallback(() => {
     setSilenced(true);
@@ -105,8 +127,8 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
   }, [api]);
 
   const value = useMemo(
-    () => ({ pending, refresh, running, run, defer, silenced }),
-    [pending, refresh, running, run, defer, silenced],
+    () => ({ pending, refresh, running, run, defer, silenced, known }),
+    [pending, refresh, running, run, defer, silenced, known],
   );
 
   return <UpdateContext.Provider value={value}>{children}</UpdateContext.Provider>;

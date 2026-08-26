@@ -77,8 +77,18 @@ export function UpdateDialog({
   lead?: string;
 }) {
   const { t, formatNumber } = useI18n();
-  const { pending, run, defer } = useUpdate();
+  const { pending, run, defer, known } = useUpdate();
   const [error, setError] = useState<string | null>(null);
+
+  /**
+   * "NOT YET ANSWERED" IS NOT "CANNOT AFFORD", and conflating them was a live
+   * bug on the course flow: finishing a course re-asks the server and opens
+   * this dialog in the same breath, so for the first moment `pending` is still
+   * the empty value — which carries `affordable: false`. The dialog read that
+   * as a refusal, told the person their budget would not cover a price it had
+   * not been given, and withheld the button that would have run it.
+   */
+  const priced = known && pending.scope !== null;
 
   const confirm = useCallback(async () => {
     setError(null);
@@ -116,22 +126,28 @@ export function UpdateDialog({
       title={t('update.confirmTitle')}
       lead={lead ?? t(`update.scope.${scope}`)}
       items={items}
-      note={pending.affordable
-        ? t('update.cost', {
-          cost: formatNumber(pending.cost),
-          remaining: formatNumber(pending.remaining),
-        })
-        : t('update.cannotAfford', {
-          cost: formatNumber(pending.cost),
-          remaining: formatNumber(pending.remaining),
-        })}
+      note={!priced
+        ? t('update.pricing')
+        : pending.affordable
+          ? t('update.cost', {
+            cost: formatNumber(pending.cost),
+            remaining: formatNumber(pending.remaining),
+          })
+          : t('update.cannotAfford', {
+            cost: formatNumber(pending.cost),
+            remaining: formatNumber(pending.remaining),
+          })}
       confirmLabel={t('update.confirmAction')}
       onConfirm={confirm}
       errorFallback={t('update.failed')}
-      /* NOT OFFERED WHEN IT CANNOT BE PAID FOR. The note above has already
-         said what it costs and what is left; a button that fails on press
-         would add nothing to that but a wasted tap. */
-      hideConfirm={!pending.affordable}
+      /* NOT OFFERED WHEN IT CANNOT BE PAID FOR — but only once the server has
+         actually said so. The note above has already given both numbers; a
+         button that fails on press would add nothing but a wasted tap. While
+         the price is still being fetched the control is shown and disabled
+         instead, because "wait a moment" and "you cannot do this" are
+         different answers. */
+      hideConfirm={priced && !pending.affordable}
+      confirmDisabled={!priced}
       secondary={{ label: t('update.later'), onSelect: () => { defer(); onClose(); } }}
       error={error}
     />

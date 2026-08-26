@@ -40,7 +40,7 @@
  * Hud is deliberately absent from this whole page: the brand locks the mascot out
  * of verdicts, scores, real matches and data tables, all of which are here.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check, ChevronDown, Plus, Target } from 'lucide-react';
 import { useI18n } from '../i18n';
@@ -160,8 +160,22 @@ export function Dashboard() {
    */
   const [celebration, setCelebration] = useState<Celebration | null>(null);
   const readiness = data?.readiness;
+  /**
+   * TAKEN ONCE PER SCORE, and the ref is what makes that true rather than
+   * hoped for. `takeCelebration` both reads and CONSUMES — it clears the mark
+   * and records the new value as seen — so calling it twice returns null the
+   * second time and wipes the celebration that the first call earned.
+   *
+   * StrictMode invokes every effect twice on mount, so this was one render
+   * away from never celebrating at all: it survived only because the dashboard
+   * happens to mount with no data, which makes both invocations return early
+   * before the score exists. A cached first paint would have eaten it.
+   */
+  const taken = useRef<number | null>(null);
   useEffect(() => {
     if (!user || typeof readiness !== 'number') return;
+    if (taken.current === readiness) return;
+    taken.current = readiness;
     setCelebration(takeCelebration(user.id, readiness));
   }, [user, readiness]);
 
