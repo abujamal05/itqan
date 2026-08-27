@@ -30,6 +30,13 @@ export const ACCOUNTS = {
    * gone and the flake comes back.
    */
   spender: 'maryam@itqan.test',
+  /**
+   * Onboarded, and the ONLY account the merge spec touches — for the same
+   * reason `spender` exists. A re-upload spends a document re-read, so sharing
+   * an account here would reintroduce the exact cross-project flake documented
+   * above.
+   */
+  merger: 'reader@itqan.test',
 } as const;
 
 export const PASSWORD = 'itqan1234';
