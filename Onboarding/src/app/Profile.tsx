@@ -1,5 +1,19 @@
 /**
- * Profile — one place to see and correct everything Itqan holds about you.
+ * Profile — who you are, and where you are heading.
+ *
+ * WHAT IS NOT HERE ANY MORE. This screen used to hold everything Itqan knows,
+ * which grew to eight sections: someone looking for their document list scrolled
+ * past their own birth date to find it. What the product HOLDS and DOES — the
+ * skills it read, the documents it read them from, the AI allowance, the
+ * preferences it matches against, support, and closing the account — moved to
+ * `Settings.tsx`. What is left is the answer to "is this me, and is it right":
+ * your details, your photo, the role you are working towards, and how to reach
+ * a person. Both screens compose the same `<Section>` and `<Row>`, so the split
+ * is a change of address rather than a change of design.
+ *
+ * Education went the other way and merged UP into personal details. It held one
+ * field, and a card containing a single date between two substantial ones read
+ * as something unfinished rather than as a category.
  *
  * Two decisions shape this screen.
  *
@@ -18,91 +32,29 @@
  * that reads as a record of the user, and this is exactly that.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
-  ArrowRight, Bot, Camera, Check, FileText, GraduationCap, Mail, Pencil, Phone,
-  Sparkles, Target, User as UserIcon, X,
+  ArrowRight, Camera, Mail, Phone, Target, User as UserIcon, X,
 } from 'lucide-react';
 import { useI18n } from '../i18n';
-import { skillCase } from '../lib/skillCase';
 import { errorText } from '../lib/errorText';
 import { contact } from '../lib/contact';
-import { HttpError } from '../api/http';
 import { useApi } from '../state/api';
 import { useAuth } from '../state/auth';
 import { useAsync } from '../lib/useAsync';
-import {
-  Button, Card, Chip, ErrorState, InputField, LoadingBlock,
-} from '../components/ui';
-import type { ConfirmedProfile, Preferences, StoredProfile, Usage } from '../api';
-import { emptyPreferences, REQUIRED_KIND } from '../api';
+import { Card, ErrorState, InputField, LoadingBlock } from '../components/ui';
+import { Section, Row } from '../components/Section';
+import type { ConfirmedProfile, Preferences, StoredProfile } from '../api';
+import { emptyPreferences } from '../api';
 import {
   MIN_AGE, birthDateProblem, earliestBirthDate, isoDate, latestBirthDate,
 } from '../lib/age';
-import { fileSize } from '../lib/fileSize';
-import { UsageMeters } from '../components/UsageMeters';
 
 /* ------------------------------------------------------------------ parts -- */
 
 /** Same rule as the account menu's avatar, so one person reads as one person. */
 function initials(name: string) {
   return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');
-}
-
-/**
- * A section that flips between reading and editing. The heading, the edit
- * control and the saved state all live here so no section has to re-implement
- * them and drift.
- */
-function Section({
-  id, title, icon: Icon, editing, onEdit, onCancel, onSave, saving, children,
-}: {
-  /** Anchors the section so the missing-information box can send you to it. */
-  id: string;
-  title: string;
-  icon: typeof UserIcon;
-  editing: boolean;
-  onEdit?: () => void;
-  onCancel?: () => void;
-  onSave?: () => void;
-  saving?: boolean;
-  children: React.ReactNode;
-}) {
-  const { t } = useI18n();
-  return (
-    <Card id={`sec-${id}`}>
-      <div className="stack">
-        <div className="section__head">
-          <h2 className="section__title">
-            <Icon size={18} aria-hidden="true" className="profile__icon" />
-            {title}
-          </h2>
-          <span className="spacer" />
-          {onEdit && !editing && (
-            <button type="button" className="btn btn--ghost btn--sm" onClick={onEdit}>
-              <Pencil size={15} aria-hidden="true" />
-              {t('profile.edit')}
-            </button>
-          )}
-        </div>
-
-        {children}
-
-        {editing && (
-          <div className="row">
-            <Button onClick={onSave} loading={saving}>
-              <Check size={16} aria-hidden="true" />
-              {t('profile.save')}
-            </Button>
-            <button type="button" className="btn btn--ghost" onClick={onCancel} disabled={saving}>
-              <X size={16} aria-hidden="true" />
-              {t('action.cancel')}
-            </button>
-          </div>
-        )}
-      </div>
-    </Card>
-  );
 }
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
@@ -207,68 +159,38 @@ function AvatarField({
   );
 }
 
-/** One read only row. Missing values say so rather than rendering blank. */
-function Row({ label, value }: { label: string; value: string | null | undefined }) {
-  const { t } = useI18n();
-  const missing = value == null || value === '';
-  return (
-    <div className="profile__row">
-      <span className="profile__label">{label}</span>
-      <span className={missing ? 'profile__value profile__value--missing' : 'profile__value'}>
-        {missing ? t('profile.notSet') : value}
-      </span>
-    </div>
-  );
-}
-
 /* ---------------------------------------------------------------- screen -- */
 
-/** Which sections can be edited in place. */
-type EditKey = 'details' | 'roles' | 'education' | 'prefs';
+/** Which sections can be edited in place. Education merged into details. */
+type EditKey = 'details' | 'roles';
 
 /**
  * One entry in the missing-information box.
  *
- * The box itself is unchanged by request — same card, same wording, same place.
- * What changed is that its items now know where they live, so naming a gap and
- * fixing it are one action instead of two. `section` is where the value is
- * edited; `edit` is false for the one gap that is not editable here, because
- * skills come from the documents and the honest fix is to re-read them.
+ * The box stays HERE, whole, and that is the decision worth stating: it is the
+ * screen's answer to "is my profile finished", and splitting the count across
+ * two pages would leave neither able to answer it. So it still names every gap,
+ * including the two whose fields now live in Settings.
+ *
+ * `section` is the anchor to land on and `page` is which screen carries it, so
+ * naming a gap and fixing it stays ONE action across the split rather than
+ * becoming a list of complaints with directions attached. `edit` is false for
+ * the one gap nothing can open a form for: skills come from the documents, and
+ * the honest fix is to re-read the documents.
  */
 interface MissingItem {
   label: string;
-  section: EditKey | 'skills';
+  section: string;
+  page: 'profile' | 'settings';
   edit: boolean;
 }
 
 export function Profile() {
-  const { t, locale, formatDate, formatNumber } = useI18n();
+  const { t, locale, formatDate } = useI18n();
   const api = useApi();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { data, loading, error, reload } = useAsync((s) => api.getProfile(s), [api, locale]);
-
-  /**
-   * The AI allowance. Its own request, and its own failure.
-   *
-   * Deliberately NOT folded into the profile fetch: `GET /api/usage` does not
-   * exist in production yet (BACKEND.md §4), and a 404 there must not take the
-   * whole profile screen down with it.
-   *
-   * THREE STATES, NOT TWO, and the third is the point. This used to render
-   * nothing at all when the call failed, which is honest about the numbers and
-   * useless to the person reading — a section that is absent looks exactly like
-   * a section that is broken, and it cost real time working out which. It now
-   * says the usage is unavailable. Still no zeros: an invented figure is worse
-   * than an admitted gap, but an unexplained gap is worse than an admitted one.
-   */
-  const [usage, setUsage] = useState<Usage | 'unavailable' | null>(null);
-  useEffect(() => {
-    const ac = new AbortController();
-    api.getUsage(ac.signal)
-      .then(setUsage)
-      .catch(() => { if (!ac.signal.aborted) setUsage('unavailable'); });
-    return () => ac.abort();
-  }, [api, locale]);
 
   const [editing, setEditing] = useState<EditKey | null>(null);
   const [saving, setSaving] = useState(false);
@@ -322,14 +244,15 @@ export function Profile() {
    * the product does not need.
    */
   const missing: MissingItem[] = [];
-  if (!p.birthDate) missing.push({ label: t('confirm.birth'), section: 'details', edit: true });
-  if (!p.graduationDate) missing.push({ label: t('confirm.graduation'), section: 'education', edit: true });
-  // Not editable here on purpose: skills are read from the documents, so the
-  // link goes to the section and its "update documents" action rather than
+  if (!p.birthDate) missing.push({ label: t('confirm.birth'), section: 'details', page: 'profile', edit: true });
+  // Graduation lives in personal details now, so both dates open one form.
+  if (!p.graduationDate) missing.push({ label: t('confirm.graduation'), section: 'details', page: 'profile', edit: true });
+  // Not editable anywhere on purpose: skills are read from the documents, so
+  // this lands on the section and its "update documents" action rather than
   // opening a form that would let someone type a skill nothing evidences.
-  if (!p.skills?.length) missing.push({ label: t('profile.skills'), section: 'skills', edit: false });
-  if (!prefs.preferredRole) missing.push({ label: t('profile.targetedRole'), section: 'roles', edit: true });
-  if (!prefs.workArrangement) missing.push({ label: t('q.workArrangement.title'), section: 'prefs', edit: true });
+  if (!p.skills?.length) missing.push({ label: t('profile.skills'), section: 'skills', page: 'settings', edit: false });
+  if (!prefs.preferredRole) missing.push({ label: t('profile.targetedRole'), section: 'roles', page: 'profile', edit: true });
+  if (!prefs.workArrangement) missing.push({ label: t('q.workArrangement.title'), section: 'prefs', page: 'settings', edit: true });
 
   /**
    * Take the user to the thing they just tapped.
@@ -342,6 +265,14 @@ export function Profile() {
    * before there is anything to focus.
    */
   const goToMissing = (item: MissingItem) => {
+    /* ACROSS THE SPLIT, the anchor rides in the hash rather than in router
+       state. Settings reads it on arrival and does the same three things this
+       branch does — open, scroll, focus — and because it is in the URL the
+       landing survives a reload and can be linked to. */
+    if (item.page === 'settings') {
+      navigate(`/settings#sec-${item.section}`);
+      return;
+    }
     if (item.edit) startEdit(item.section as EditKey, p);
     requestAnimationFrame(() => {
       const el = document.getElementById(`sec-${item.section}`);
@@ -378,9 +309,6 @@ export function Profile() {
       setSaving(false);
     }
   };
-
-  const prefLabel = (key: keyof Preferences, value: string | null) =>
-    (value ? t(`q.${key}.opt.${value}`) : null);
 
   return (
     <div className="stack stack--lg enter">
@@ -464,9 +392,18 @@ export function Profile() {
               value={draft.birthDate ?? ''}
               onChange={(e) => setDraft({ ...draft, birthDate: e.target.value || null })}
             />
-            {/* Graduation moved to its own section. It was edited here AND
-                displayed there, so the same value had two homes and only one
-                of them had a way to change it. */}
+            {/* Graduation came BACK here when Education was dissolved. It is
+                the only field that section held, and a card carrying a single
+                date between two substantial ones read as unfinished rather
+                than as a category. It is edited and shown in one place, which
+                is the rule that put it in its own section in the first
+                place — the rule was never "a section each". */}
+            <InputField
+              label={t('confirm.graduation')}
+              type="month"
+              value={draft.graduationDate ?? ''}
+              onChange={(e) => setDraft({ ...draft, graduationDate: e.target.value || null })}
+            />
           </div>
         ) : (
           <div className="stack stack--sm">
@@ -474,6 +411,7 @@ export function Profile() {
             <Row label={t('profile.email')} value={p.email ?? user?.email} />
             <Row label={t('profile.phone')} value={p.phone} />
             <Row label={t('confirm.birth')} value={p.birthDate} />
+            <Row label={t('confirm.graduation')} value={p.graduationDate} />
           </div>
         )}
       </Section>
@@ -528,193 +466,6 @@ export function Profile() {
         </div>
       </Section>
 
-      {/* Education. Graduation is the only field the pipeline reads today, so
-          the section holds exactly that rather than inventing a history — and
-          it is now editable here, where it is shown, instead of inside the
-          personal details form two sections up. */}
-      <Section
-        id="education"
-        title={t('profile.education')}
-        icon={GraduationCap}
-        editing={editing === 'education'}
-        onEdit={() => startEdit('education', p)}
-        onCancel={() => setEditing(null)}
-        onSave={() => draft && save(draft)}
-        saving={saving}
-      >
-        <div className="stack stack--sm">
-          {editing === 'education' && draft ? (
-            <InputField
-              label={t('confirm.graduation')}
-              type="month"
-              value={draft.graduationDate ?? ''}
-              onChange={(e) => setDraft({ ...draft, graduationDate: e.target.value || null })}
-            />
-          ) : (
-            <Row label={t('confirm.graduation')} value={p.graduationDate} />
-          )}
-        </div>
-      </Section>
-
-      {/* Skills, read only here on purpose: they come from the documents, and
-          the honest way to change them is to re-read the documents. */}
-      <Section id="skills" title={t('profile.skills')} icon={Sparkles} editing={false}>
-        <div className="stack stack--sm">
-          {p.skills?.length ? (
-            <div className="row" style={{ gap: 'var(--space-2)' }}>
-              {p.skills.map((skill) => <Chip key={skill}>{skillCase(skill)}</Chip>)}
-            </div>
-          ) : (
-            <p className="text-sm muted">{t('profile.noSkills')}</p>
-          )}
-          <p className="text-sm muted">{t('profile.skillsFromDocs')}</p>
-          <div className="row">
-            <Link className="btn btn--secondary" to="/documents">{t('profile.updateDocs')}</Link>
-          </div>
-        </div>
-      </Section>
-
-      {/* ---- Documents ------------------------------------------------------
-          BOTH HALVES OF THE MERGE, and the rule that was missing from each.
-
-          `main` gained a working remove control; this branch gained a row that
-          says what the document actually is — name, kind and size, not just a
-          kind label. Neither had the rule the product needs: the CV is the one
-          document the pipeline cannot run without, so the LAST one cannot be
-          removed. It is replaced instead, which is what the button below does.
-
-          The protected row shows a "Required" tag WHERE the remove control
-          would have been, rather than a disabled X. A blocked control invites a
-          click and then refuses it; a label answers "why can I not remove this"
-          before the question is asked. A second CV makes the first deletable
-          again, and both rows get their control back.
-
-          The client rule is a courtesy. The server must enforce it too — see
-          BACKEND.md §3 — because a stale build of this app is not a way in. */}
-      <Section id="documents" title={t('profile.documents')} icon={FileText} editing={false}>
-        <div className="stack stack--sm">
-          {p.documents?.length ? (
-            <ul className="doclist">
-              {p.documents.map((d) => {
-                /* Counted over the WHOLE list, not this row: what protects a CV
-                   is being the only one, and that is a fact about the set. */
-                const lastCv = d.kind === REQUIRED_KIND
-                  && p.documents.filter((o) => o.kind === REQUIRED_KIND).length === 1;
-
-                return (
-                  <li key={d.id} className="doclist__item">
-                    <FileText size={16} className="doclist__icon" aria-hidden="true" />
-                    <span className="doclist__main">
-                      <span className="doclist__name"><bdi>{d.fileName}</bdi></span>
-                      <span className="doclist__meta">
-                        {t(`doc.${d.kind}`)}
-                        {Number.isFinite(d.sizeBytes) && d.sizeBytes > 0 && (
-                          <> · <span className="num">{fileSize(d.sizeBytes, t, formatNumber)}</span></>
-                        )}
-                      </span>
-                    </span>
-
-                    {lastCv
-                      ? <span className="doclist__tag">{t('profile.docRequired')}</span>
-                      : <DeleteDocument id={d.id} onDeleted={reload} />}
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <p className="text-sm muted">{t('profile.noDocuments')}</p>
-          )}
-
-          <p className="text-sm">{t('profile.docsCvRequired')}</p>
-
-          {/* Says the consequence before the action, not after it. Replacing a
-              document re-runs the pipeline and rewrites the skills, courses and
-              matches this person may have spent time reading — that is worth
-              knowing before the click, not on the next screen. */}
-          {/* NOT `muted`. This warns that an action will rewrite results the
-              user may have spent time reading; demoting it to the same weight
-              as an empty-state placeholder was a regression from a dashboard
-              change that never looked at this screen. */}
-          <p className="text-sm">{t('profile.docsRereads')}</p>
-          <div className="row">
-            <Link className="btn btn--secondary" to="/documents">{t('profile.docsReplace')}</Link>
-          </div>
-        </div>
-      </Section>
-
-      {/* ---- AI usage --------------------------------------------------------
-          THEIR consumption, not the price list. What each tier includes is
-          general information and belongs on a page of its own; what belongs
-          here is the one thing only this screen can tell them — how much of
-          their own allowance is left, and when it comes back.
-
-          `GET /api/usage` is not built in production yet (BACKEND.md §4), so
-          the section renders nothing at all rather than zeros: a meter reading
-          "0 of 30" when the truth is unknown is a fabricated statistic, and
-          this product's rules forbid those outright. The dev stub implements
-          the documented contract and counts real sends, so the meters move when
-          you actually use Hud. */}
-      {usage && (
-        <Section id="ai" title={t('profile.aiTitle')} icon={Bot} editing={false}>
-          {usage === 'unavailable'
-            ? <p className="text-sm muted">{t('profile.aiUsageUnavailable')}</p>
-            : <UsageMeters usage={usage} />}
-
-          {/* The comparison lives on its own page. A price list beside someone's
-              own consumption turns a settings screen into a sales screen. */}
-          <div className="row">
-            <Link className="btn btn--secondary" to="/plan">{t('nav.plan')}</Link>
-          </div>
-        </Section>
-      )}
-
-      {/* Preferences: the four onboarding answers, editable because they are
-          the user's opinion rather than an extraction. */}
-      <Section
-        id="prefs"
-        title={t('profile.preferences')}
-        icon={Sparkles}
-        editing={editing === 'prefs'}
-        onEdit={() => startEdit('prefs', p)}
-        onCancel={() => setEditing(null)}
-        onSave={() => draft && save(draft)}
-        saving={saving}
-      >
-        {editing === 'prefs' && draft ? (
-          <div className="stack">
-            {/* The role is edited in the Roles section, which is also where it
-                is shown. Two editors for one string is how the two drift. */}
-            {(['coursePricing', 'workArrangement', 'openToOtherRoles'] as const).map((key) => (
-              <div className="field" key={key}>
-                <span className="field__label">{t(`q.${key}.title`)}</span>
-                <div className="row" style={{ gap: 'var(--space-2)' }}>
-                  {(key === 'coursePricing' ? ['free', 'any']
-                    : key === 'workArrangement' ? ['remote', 'hybrid', 'onsite']
-                      : ['yes', 'no']).map((opt) => (
-                        <Chip
-                          key={opt}
-                          selected={draft.preferences[key] === opt}
-                          onToggle={() => setDraft({
-                            ...draft,
-                            preferences: { ...draft.preferences, [key]: opt } as Preferences,
-                          })}
-                        >
-                          {t(`q.${key}.opt.${opt}`)}
-                        </Chip>
-                      ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="stack stack--sm">
-            <Row label={t('q.workArrangement.title')} value={prefLabel('workArrangement', prefs.workArrangement)} />
-            <Row label={t('q.coursePricing.title')} value={prefLabel('coursePricing', prefs.coursePricing)} />
-            <Row label={t('q.openToOtherRoles.title')} value={prefLabel('openToOtherRoles', prefs.openToOtherRoles)} />
-          </div>
-        )}
-      </Section>
-
       {/* CONTACT. A heading, an address and a number. It previously carried a
           sentence explaining what you might write to them about, which told a
           person who had found the contact section what contact is for. */}
@@ -739,85 +490,5 @@ export function Profile() {
         </p>
       )}
     </div>
-  );
-}
-
-
-/**
- * Remove one document, from the list and from the server's disk.
- *
- * TWO TAPS, not one, and this is a deliberate reading of "an X that deletes it".
- * The file is somebody's CV, the delete is irreversible, and the control sits in
- * a row they are otherwise only reading — so a mis-tap would destroy something
- * they cannot get back without finding the original again.
- *
- * It is still one control and no dialog: the X becomes a short confirm in place,
- * and moving the pointer away puts it back. That costs a deliberate user one
- * extra tap and saves an accidental one entirely.
- */
-function DeleteDocument({ id, onDeleted }: { id: string; onDeleted: () => void }) {
-  const { t } = useI18n();
-  const api = useApi();
-  const [confirming, setConfirming] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [refused, setRefused] = useState<string | null>(null);
-
-  if (busy) return <span className="text-sm muted">{t('profile.doc.removing')}</span>;
-
-  /* The server refused, and it said why.
-     This used to be a `try/finally` with no `catch`: the request threw, the
-     spinner stopped, the document stayed, and nothing on screen said anything.
-     Pressing a button and watching nothing happen is the worst of the available
-     outcomes — worse than an error, because there is nothing to act on. */
-  if (refused) {
-    return <span className="text-sm doc-remove__refused" role="alert">{refused}</span>;
-  }
-
-  if (confirming) {
-    return (
-      <span className="doc-remove">
-        <button
-          type="button"
-          className="doc-remove__yes"
-          onClick={async () => {
-            setBusy(true);
-            try {
-              await api.deleteDocument(id);
-              onDeleted();
-            } catch (err: unknown) {
-              /* `last_cv` is the one refusal a person can act on: it means this
-                 is the only CV and the pipeline cannot run without one, so the
-                 way out is to upload a replacement FIRST and then remove this.
-                 The interface normally hides the control on the only CV, so
-                 reaching this means a stale view — which is exactly why the
-                 server enforces it too. */
-              const code = err instanceof HttpError ? err.code : undefined;
-              setRefused(code === 'last_cv'
-                ? t('profile.doc.lastCv')
-                : t('profile.doc.removeFailed'));
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          {t('profile.doc.removeConfirm')}
-        </button>
-        <button type="button" className="doc-remove__no" onClick={() => setConfirming(false)}>
-          {t('action.cancel')}
-        </button>
-      </span>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      className="doc-remove__x"
-      aria-label={t('profile.doc.remove')}
-      title={t('profile.doc.remove')}
-      onClick={() => setConfirming(true)}
-    >
-      <X size={16} aria-hidden="true" />
-    </button>
   );
 }

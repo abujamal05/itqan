@@ -47,7 +47,8 @@ export interface Skill {
  */
 export type DocumentKind =
   | 'cv'
-  | 'transcript';
+  | 'transcript'
+  | 'certificate';
 
 /**
  * The one kind the pipeline cannot run without.
@@ -61,28 +62,36 @@ export type DocumentKind =
 export const REQUIRED_KIND: DocumentKind = 'cv';
 
 /**
- * The only two kinds offered, required first.
+ * The three kinds offered, required first.
  *
- * Narrowed from six. The extra kinds (certificate, certification,
- * recommendation, other) were choices the pipeline could not act on: Agent A
- * takes a CV and an optional transcript and nothing else, so every other option
- * was a decision asked of the user that changed no outcome — and one of them,
- * 'other', was the silent default that let a file sit in the list satisfying
- * nothing while looking accepted.
+ * NARROWED FROM SIX, THEN WIDENED BY ONE, and the history matters because the
+ * reasoning has not been thrown away. The extra kinds (certificate,
+ * certification, recommendation, other) were removed because Agent A takes a CV
+ * and an optional transcript and nothing else, so each was a decision asked of
+ * the user that changed no outcome — and 'other' was the silent default that
+ * let a file sit in the list satisfying nothing while looking accepted.
+ *
+ * `certificate` came back on 2026-08-26, the lead's call, because storing and
+ * naming a certificate is worth something to the person holding it even while
+ * the pipeline cannot read one. The other three stay retired: they were
+ * distinctions with no consequence in either direction.
+ *
+ * **The pipeline still does not extract from a certificate**, and nothing in
+ * the interface may imply it does. See BACKEND.md §3.
  */
-export const DOCUMENT_KINDS: DocumentKind[] = ['cv', 'transcript'];
+export const DOCUMENT_KINDS: DocumentKind[] = ['cv', 'transcript', 'certificate'];
 
 /**
- * Coerces any kind that is not one of the two into the SUPPORTING one.
+ * Coerces any kind that is not one of the three into a SUPPORTING one.
  *
  * Two sources can still hand us a retired value: onboarding progress saved
- * before this change, and a backend row created then. Mapping them to
- * 'transcript' rather than 'cv' is deliberate — an old 'certificate' must not
+ * before the narrowing, and a backend row created then. Mapping them to
+ * 'transcript' rather than 'cv' is deliberate — a stray value must never
  * silently satisfy the CV requirement, which is the one gate the pipeline
- * cannot run without.
+ * cannot run without, and is now also the slot there is only ever one of.
  */
 export const normaliseKind = (kind: string): DocumentKind =>
-  (kind === 'cv' ? 'cv' : 'transcript');
+  (DOCUMENT_KINDS.includes(kind as DocumentKind) ? kind as DocumentKind : 'transcript');
 
 export interface UploadedDocument {
   id: string;
@@ -352,6 +361,20 @@ export interface UsageCounter {
 export interface TokenPrices {
   message: number;
   documentReread: number;
+  /**
+   * Finding ONE replacement for a recommendation the person turned down.
+   *
+   * A published price like the other two, and for the same reason: the meter on
+   * the settings screen is only worth drawing because every spend has a number
+   * next to it. It is small — one item, not a whole path — but it is an agent
+   * call, so it is priced, stated before the tap, and refused with its numbers
+   * when the budget will not cover it.
+   *
+   * OPTIONAL ON THE WIRE, because a server that has not shipped it yet must not
+   * make the feedback panel unusable. Absent means the alternative is not
+   * offered rather than offered for free — see `FeedbackBar`.
+   */
+  alternative?: number;
 }
 
 /**
@@ -370,8 +393,37 @@ export interface TokenPrices {
  * render that as "NaN of 0". See `UsageMeters`, which falls back rather than
  * inventing a number.
  */
+/**
+ * The subscription behind a paid plan.
+ *
+ * TWO STATES, AND THE SECOND ONE IS THE WHOLE REASON THIS EXISTS. `active`
+ * means it renews. `cancelled` means it will not renew and the account is
+ * still entitled until `currentPeriodEnd` — which is a real period, sometimes
+ * most of a month, during which the person is premium and paying for nothing
+ * further.
+ *
+ * Two screens turn on that distinction. The plan screen offers to cancel only
+ * while it is active, and closing the account refuses to delete while it is
+ * active, because deleting the account does not stop the billing and a person
+ * who believed it did would keep being charged for an account that no longer
+ * exists.
+ *
+ * ABSENT MEANS "NOT KNOWN", NEVER "NONE". `GET /api/usage` is not built in
+ * production, and neither is this field, so both screens have to treat a
+ * missing subscription as an absence of information: they may not claim there
+ * is a subscription, and they may not block anybody on a guess.
+ */
+export interface Subscription {
+  status: 'active' | 'cancelled';
+  /** ISO. The last day the paid period covers. Null when the server has the
+   *  subscription but not its dates. */
+  currentPeriodEnd: string | null;
+}
+
 export interface Usage {
   plan: 'free' | 'paid';
+  /** Present on a paid plan. See `Subscription` for why absent is not "none". */
+  subscription?: Subscription | null;
   tokens?: UsageCounter;
   prices?: TokenPrices;
   /** @deprecated An alias of `tokens`. Reports the same pool; leaving the wire. */
@@ -420,6 +472,58 @@ export interface JourneyStage {
   state: 'done' | 'current' | 'upcoming';
   /** e.g. a completion date, or what happens next. Optional. */
   detail?: string;
+}
+
+/* ------------------------------------------------- UPDATING THE JOURNEY -- */
+
+/**
+ * How much of the pipeline a change actually invalidates.
+ *
+ * THE POINT IS THAT THESE ARE NOT THE SAME RUN. Replacing a document makes the
+ * extraction itself wrong, so the documents have to be read again and
+ * everything downstream rebuilt from what that finds. Editing a skill does not:
+ * the reading was fine, the person is correcting what it produced, so the work
+ * starts from the corrected skills and carries on. Treating the second as the
+ * first re-reads documents nobody changed, charges for it, and drops the person
+ * back at the confirmation screen for an extraction they never asked to redo.
+ */
+export type UpdateScope = 'documents' | 'skills';
+
+/**
+ * What is out of date, what bringing it up to date costs, and whether this
+ * account can pay for it.
+ *
+ * EVERY NUMBER HERE IS THE SERVER'S. The cost of a partial run is not something
+ * the browser can derive — there is no published price for "agent B onwards"
+ * the way there is for a message or a full re-read, and inventing one would put
+ * a fabricated figure in front of somebody about to spend their day's budget.
+ * `affordable` is the server's answer too, so the two cannot disagree about
+ * arithmetic the client should not be doing.
+ */
+export interface PendingUpdate {
+  /** Null when nothing is stale and there is nothing to offer. */
+  scope: UpdateScope | null;
+  /**
+   * Why, as ids the interface translates (`update.reason.*`) — never
+   * sentences, because this product is bilingual and prose on the wire cannot
+   * be shown to an Arabic reader.
+   */
+  reasons: string[];
+  /** Tokens this run costs. */
+  cost: number;
+  /** What is left in today's pool, so the refusal can be specific. */
+  remaining: number;
+  /** The server's own verdict on `cost <= remaining`. */
+  affordable: boolean;
+  /**
+   * True when the person chose "remind me later".
+   *
+   * It does not hide the offer forever: it hides it for THIS session, and the
+   * server brings it back on the next sign-in. A prompt that never returned
+   * would leave someone's journey quietly stale, which is the state this whole
+   * mechanism exists to prevent.
+   */
+  deferred: boolean;
 }
 
 export interface DashboardData {
@@ -655,6 +759,73 @@ export interface ItqanApi {
     signal?: AbortSignal,
   ): Promise<UploadedDocument>;
 
+  /**
+   * Swap the FILE behind a document, keeping the row.
+   *
+   * PENDING BACKEND — `PUT /api/documents/:id`, multipart, field `file`,
+   * responding with the updated `UploadedDocument`. BACKEND.md §3.
+   *
+   * THE ID SURVIVES, and that is the whole point of the route existing rather
+   * than the client deleting and re-uploading. A stored profile references
+   * `documentId`, an analysis run references the ids it read, and a delete plus
+   * an add breaks both — it also cannot be done at all for the CV, which may
+   * not be removed while it is the only one. Replacing is how a CV changes.
+   *
+   * It does NOT re-read anything. Extraction is a separate, paid, reviewed act
+   * that the person starts from the documents screen; a file swap that quietly
+   * spent 19 tokens and rewrote somebody's skills would be exactly the thing
+   * this product's confirm step exists to prevent.
+   */
+  replaceDocument(
+    input: { id: string; file: File; onProgress?: (fraction: number) => void },
+    signal?: AbortSignal,
+  ): Promise<UploadedDocument>;
+
+  /**
+   * Recategorise a document. PENDING BACKEND — `PATCH /api/documents/:id`
+   * with `{ kind }`, responding with the updated document. BACKEND.md §3.
+   *
+   * Refuses with 409 `cv_exists` when the target is `cv` and the account
+   * already has one. There is only ever one CV: it is required, so it cannot
+   * reach zero, and it is unique, so it cannot reach two.
+   */
+  updateDocumentKind(id: string, kind: DocumentKind, signal?: AbortSignal): Promise<UploadedDocument>;
+
+  /**
+   * What is out of date and what bringing it up to date would cost.
+   *
+   * PENDING BACKEND — `GET /api/update`. BACKEND.md §11. Callers must tolerate a
+   * 404 and treat it as "nothing pending": a missing route may not put an
+   * update prompt in front of anybody, and it may not block them either.
+   */
+  getPendingUpdate(signal?: AbortSignal): Promise<PendingUpdate>;
+
+  /**
+   * Run it. PENDING BACKEND — `POST /api/update` with `{ scope }`, returning a
+   * job to poll exactly like every other run. Refuses with 409 `token_limit`
+   * and the numbers, so the screen can say what it costs and what is left.
+   */
+  runUpdate(scope: UpdateScope, signal?: AbortSignal): Promise<{ jobId: string }>;
+
+  /** "Remind me later." PENDING BACKEND — `POST /api/update/defer`. */
+  deferUpdate(signal?: AbortSignal): Promise<void>;
+
+  /**
+   * What the person thinks of Itqan. PENDING BACKEND — BACKEND.md §13.
+   *
+   * `POST /api/feedback/rating` with `{ stars, comment }`. Five stars, and a
+   * comment only when they wrote one — an empty string and "they did not
+   * comment" are different facts and must not arrive as the same value.
+   *
+   * The rating is not a product signal the interface reads back: nothing in the
+   * app renders it, no average is shown to anybody, and there is no score to
+   * inflate. It goes one way.
+   */
+  submitRating(
+    input: { stars: number; comment: string | null },
+    signal?: AbortSignal,
+  ): Promise<void>;
+
   /** Starts the pipeline over the whole set. Returns the job to poll. */
   startAnalysis(documentIds: string[], signal?: AbortSignal): Promise<{ jobId: string }>;
   getAnalysis(jobId: string, signal?: AbortSignal): Promise<AnalysisJob>;
@@ -739,6 +910,45 @@ export interface ItqanApi {
   /** Removes one uploaded document, from the list AND from the server's disk. */
   deleteDocument(id: string, signal?: AbortSignal): Promise<void>;
 
+  /**
+   * Closing the account. PENDING BACKEND — see BACKEND.md §9.
+   *
+   * `POST /api/account/deactivate` pauses it: the documents, the profile and
+   * the matches are kept, and the server stops analysing and stops matching
+   * until the person logs in again. `DELETE /api/account` erases it.
+   *
+   * BOTH ARE THE SERVER'S TO DEFINE, and this client must not simulate either.
+   * There is no route in production today — LEGAL-BRIEF.md records that the
+   * only account deletion this system has ever performed was hand-written SQL —
+   * so both calls will 404 until one lands. That is why neither returns
+   * anything the UI branches on: the caller shows what happened and, on a
+   * failure, says plainly that nothing did.
+   */
+  deactivateAccount(signal?: AbortSignal): Promise<void>;
+  /**
+   * `DELETE /api/account` refuses with 409 `subscription_active` while the
+   * account still has a renewing subscription. The UI does not offer deletion
+   * in that state at all, so reaching this is a stale view — which is exactly
+   * why the server has to enforce it as well.
+   */
+  deleteAccount(signal?: AbortSignal): Promise<void>;
+
+  /**
+   * Begin cancelling the subscription. PENDING BACKEND — BACKEND.md §10.
+   *
+   * `POST /api/subscription/cancel` -> `{ url }`. The server mints a session
+   * with the payment provider and returns where to finish; the client's whole
+   * job is to go there. **The provider is never named in the interface** — a
+   * person cancelling a subscription is not helped by learning which company
+   * processes the card, and naming it would make a vendor swap a copy change
+   * across two locales.
+   *
+   * IT DOES NOT CANCEL ANYTHING. Nothing is cancelled until the provider says
+   * so and its webhook reaches the server, the same rule the upgrade already
+   * follows — so callers must re-read `GET /api/usage` rather than assuming.
+   */
+  startCancellation(signal?: AbortSignal): Promise<{ url: string }>;
+
   listThreads(signal?: AbortSignal): Promise<ChatThreadSummary[]>;
   /** A thread with no messages is a normal answer, not an error. */
   getThread(id: string, signal?: AbortSignal): Promise<ChatThread>;
@@ -778,21 +988,50 @@ export interface ItqanApi {
    */
   getFeedback(signal?: AbortSignal): Promise<FeedbackState>;
   /**
-   * A different course that closes the SAME gap, to drop into the slot the
-   * rejected one occupied.
+   * One replacement for a recommendation that does not fit, of either kind.
    *
-   * `exclude` carries every course already on screen, not just the rejected
-   * one: without it the obvious implementation hands back the card sitting
-   * directly below, and the user watches a course they can already see slide
-   * into the gap they just made.
+   * THE REASON IS THE REQUEST. The course-only route this replaces recorded why
+   * the person said no and then searched without it, so "too expensive" and
+   * "too basic" both produced the same next course and the question was
+   * decoration.
+   * The reason and the note go to the agent, which is what makes this "find me
+   * a cheaper one" rather than "shuffle".
    *
-   * Null when there is genuinely nothing else — which the UI must say, rather
-   * than leaving a hole or silently restoring the disliked course.
+   * JOBS TOO, which reverses an earlier decision here. The old note said a
+   * vacancy is a real thing at a real employer and not an interchangeable slot
+   * to be refilled — true, and it is an argument against INVENTING a posting,
+   * not against finding a different real one. What comes back carries its own
+   * `why`, its own source and its own retrieval date, exactly as the rejected
+   * one did, and `null` stays an honest answer.
+   *
+   * PENDING BACKEND — `POST /api/recommendations/alternative`. BACKEND.md §12.
+   * Refuses with 429 `token_limit` and its numbers when the pool is spent.
    */
-  findSimilarCourse(
-    input: { courseId: string; exclude: string[] },
+  findAlternative(
+    input: {
+      subject: FeedbackSubject;
+      itemId: string;
+      /** Why it was rejected, as the closed list has it. Null when skipped. */
+      reason: DislikeReason | null;
+      /** The person's own words, only ever alongside `other`. */
+      note: string | null;
+      /** Everything already on screen, so the answer is not something visible. */
+      exclude: string[];
+    },
     signal?: AbortSignal,
-  ): Promise<Course | null>;
+  ): Promise<Course | JobMatch | null>;
 }
 
 export const isStrong = (c: Confidence) => c >= TRUST_THRESHOLD;
+
+/**
+ * Which kind of recommendation came back from `findAlternative`.
+ *
+ * A REAL RUNTIME CHECK, not a cast. The route answers with whichever kind the
+ * subject asked for, and the two screens that receive it hold lists of exactly
+ * one kind — so a card handed the wrong shape would render `undefined` where an
+ * employer or a provider should be. `employer` is on every posting and on no
+ * course, which makes it the honest discriminator.
+ */
+export const isJobMatch = (x: Course | JobMatch): x is JobMatch =>
+  typeof (x as JobMatch).employer === 'string';

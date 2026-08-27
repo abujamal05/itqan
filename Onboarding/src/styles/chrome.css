@@ -214,7 +214,7 @@
 .doc__size, .doc__status { font-size: var(--text-sm); }
 .doc__progress { display: flex; flex-direction: column; gap: var(--space-1); }
 .doc__status { display: inline-flex; align-items: center; gap: var(--space-2); }
-.doc__status--bad { color: var(--color-danger); }
+.doc__status--bad { color: var(--color-danger-text); }
 /* The success half of the pair was referenced by DocumentUpload.tsx and never
    defined, so a finished upload rendered in the same neutral ink as one still
    in progress — the one state the user is waiting for looked like the one they
@@ -320,7 +320,7 @@
   transition: background var(--duration-fast) var(--ease-hover);
 }
 .menu__item:hover { background: var(--color-surface-sunken); }
-.menu__item--danger { color: var(--color-danger); }
+.menu__item--danger { color: var(--color-danger-text); }
 .menu__item--danger:hover { background: var(--color-danger-tint); }
 
 /* In the phone header the menu opens downward instead of upward. */

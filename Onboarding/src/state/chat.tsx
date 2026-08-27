@@ -15,7 +15,12 @@ import {
   createContext, useCallback, useContext, useEffect, useMemo, useRef, useState,
 } from 'react';
 import type { ReactNode } from 'react';
-import type { ChatMessage, ChatThreadSummary, ChatVerdict, ItqanApi } from '../api';
+import type {
+  ChatMessage, ChatThreadSummary, ChatVerdict, ItqanApi, UpdateScope,
+} from '../api';
+import { HttpError } from '../api/http';
+import { errorText } from '../lib/errorText';
+import { useI18n } from '../i18n';
 
 interface ChatValue {
   threadId: string | null;
@@ -27,6 +32,8 @@ interface ChatValue {
   /** A turn is in flight. */
   pending: boolean;
   failed: boolean;
+  /** The server's own reason, when it gave one. Null for a network failure. */
+  failedReason: string | null;
   /**
    * The id of the message currently being revealed, if any. The view types it
    * out; nothing here knows how that looks.
@@ -44,6 +51,16 @@ interface ChatValue {
    * deliberate confirm in the view — Hud's proposal alone never calls it.
    */
   rerun: () => Promise<void>;
+  /**
+   * Run the agents over a SCOPE, and poll it to the end.
+   *
+   * The same machinery `rerun` has always used — one job, one poll loop, one
+   * `resultsVersion` bump — generalised so the journey can be brought up to
+   * date without re-reading documents nobody changed. `rerun` is now this with
+   * scope `full`. Two poll loops racing one results counter is a bug nobody
+   * would have found until two screens disagreed.
+   */
+  runAgents: (scope: UpdateScope | 'full') => Promise<'done' | 'failed' | 'awaiting'>;
   /** Called when a full re-run reaches the confirm step, so the view can
    *  navigate. Kept as a callback rather than a router import: this module is
    *  state, and state that navigates is state that cannot be tested. */
@@ -71,7 +88,20 @@ export function ChatProvider({ api, children }: { api: ItqanApi; children: React
   const [threads, setThreads] = useState<ChatThreadSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [pending, setPending] = useState(false);
+  const { t, formatNumber } = useI18n();
+  const i18n = useMemo(() => ({ t, formatNumber }), [t, formatNumber]);
   const [failed, setFailed] = useState(false);
+  /**
+   * WHY it failed, when the server said.
+   *
+   * Every failure in this thread rendered one sentence — "that did not come
+   * back" — including the one failure a person can actually do something
+   * about: no tokens left today. That told somebody their message was lost
+   * when what had happened was that their budget was spent, and it offered a
+   * retry that could only be refused again. The server names its refusals; this
+   * is the thread carrying the name.
+   */
+  const [failedReason, setFailedReason] = useState<string | null>(null);
   const [writingId, setWritingId] = useState<string | null>(null);
   const [verdicts, setVerdicts] = useState<Record<string, ChatVerdict>>({});
 
@@ -97,6 +127,7 @@ export function ChatProvider({ api, children }: { api: ItqanApi; children: React
       last.current = { question, files };
       setPending(true);
       setFailed(false);
+      setFailedReason(null);
 
       /**
        * The user's own turn appears before the request goes out. Optimistic in
@@ -142,8 +173,14 @@ export function ChatProvider({ api, children }: { api: ItqanApi; children: React
         // The title comes from the first question, so the list is only right
         // after a turn lands.
         loadThreads();
-      } catch {
+      } catch (err: unknown) {
         setFailed(true);
+        /* Only when the SERVER answered. A dropped connection has no reason to
+           give, and inventing one would send someone to fix an account problem
+           they do not have. */
+        setFailedReason(err instanceof HttpError && err.status > 0
+          ? errorText(err, i18n)
+          : null);
         // Put the thread back exactly as it was. Leaving the question sitting
         // under a failure notice reads as "sent", and the retry would post it
         // twice.
@@ -153,7 +190,7 @@ export function ChatProvider({ api, children }: { api: ItqanApi; children: React
         setPending(false);
       }
     },
-    [api, threadId, loadThreads],
+    [api, threadId, loadThreads, i18n],
   );
 
   const ask = useCallback(
@@ -210,16 +247,22 @@ export function ChatProvider({ api, children }: { api: ItqanApi; children: React
   const [rerunProgress, setRerunProgress] = useState(0);
   const [resultsVersion, setResultsVersion] = useState(0);
 
-  const rerun = useCallback(async () => {
+  const runAgents = useCallback(async (scope: UpdateScope | 'full') => {
     setRerunStage('matching');
     setRerunProgress(0);
     let jobId: string;
     try {
-      ({ jobId } = await api.rerunMatching());
-    } catch {
+      ({ jobId } = scope === 'full'
+        ? await api.rerunMatching()
+        : await api.runUpdate(scope));
+    } catch (err) {
       setRerunStage(null);
-      setFailed(true);
-      return;
+      /* A REFUSAL IS NOT A BROKEN CHAT. `token_limit` is a fact about the
+         account that the caller shows as a sentence with numbers in it;
+         flipping the thread into its failed state as well would put an error
+         banner over a conversation that is working. */
+      setFailed(!(err instanceof HttpError && err.status > 0));
+      throw err;
     }
 
     /* Poll until it settles. The worker is a background thread on the server,
@@ -232,7 +275,7 @@ export function ChatProvider({ api, children }: { api: ItqanApi; children: React
         job = await api.getAnalysis(jobId);
       } catch {
         setRerunStage(null);
-        return;
+        return 'failed';
       }
       setRerunProgress(job.progress);
       setRerunStage(job.stage);
@@ -243,23 +286,30 @@ export function ChatProvider({ api, children }: { api: ItqanApi; children: React
            re-run ends by handing them to it rather than quietly finishing. */
         setRerunStage(null);
         onAwaitingConfirmation?.();
-        return;
+        return 'awaiting';
       }
       if (job.stage === 'done' || job.stage === 'failed') {
         /* Bumped so the results screens refetch. Their `useAsync` deps key off
            this, which is what makes the dashboard reflect the new run instead
            of showing the old one until someone reloads by hand. */
         if (job.stage === 'done') setResultsVersion((v) => v + 1);
-        return;
+        return job.stage === 'done' ? 'done' : 'failed';
       }
     }
   }, [api, onAwaitingConfirmation]);
+
+  /* The whole pipeline, which is what Hud proposes. Kept as its own name
+     because the chat surface and its copy are about exactly that. */
+  const rerun = useCallback(async () => {
+    await runAgents('full').catch(() => { /* reported by the caller */ });
+  }, [runAgents]);
 
   const open = useCallback(
     (id: string) => {
       if (id === threadId) return;
       setLoading(true);
       setFailed(false);
+      setFailedReason(null);
       setWritingId(null);
       void api
         .getThread(id)
@@ -279,6 +329,7 @@ export function ChatProvider({ api, children }: { api: ItqanApi; children: React
     setThreadId(null);
     setMessages([]);
     setFailed(false);
+    setFailedReason(null);
     setWritingId(null);
     last.current = null;
   }, []);
@@ -291,13 +342,13 @@ export function ChatProvider({ api, children }: { api: ItqanApi; children: React
     () => ({
       threadId, messages, threads, loading, pending, failed, writingId, verdicts,
       ask, retryMessage, retry, rate, rerun, open, reset, doneWriting,
-      rerunStage, rerunProgress, resultsVersion,
+      rerunStage, rerunProgress, resultsVersion, runAgents, failedReason,
       onAwaitingConfirmation, setOnAwaitingConfirmation,
     }),
     [
       threadId, messages, threads, loading, pending, failed, writingId, verdicts,
       ask, retryMessage, retry, rate, rerun, open, reset, doneWriting,
-      rerunStage, rerunProgress, resultsVersion,
+      rerunStage, rerunProgress, resultsVersion, runAgents, failedReason,
       onAwaitingConfirmation, setOnAwaitingConfirmation,
     ],
   );

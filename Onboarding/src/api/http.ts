@@ -16,6 +16,7 @@ import type {
   ConfirmedProfile, Course, DashboardData, Feedback, FeedbackState, ItqanApi,
   JobMatch, JobsResult, OnboardingProgress, Session, StoredProfile, UploadedDocument,
   Usage,
+  PendingUpdate,
 } from './types';
 import { emptyFeedback } from './types';
 import { takeHandoffToken } from '../lib/site';
@@ -163,6 +164,64 @@ export function createHttpApi(): ItqanApi {
         xhr.send(form);
       });
     },
+    /**
+     * The same XHR shape as `uploadDocument`, for the same reason: a document
+     * scan on a phone connection is not instant, and a row that says only
+     * "replacing" for twenty seconds is indistinguishable from a stalled one.
+     */
+    replaceDocument({ id, file, onProgress }, signal) {
+      return new Promise<UploadedDocument>((resolve, reject) => {
+        const form = new FormData();
+        form.append('file', file);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', `${BASE}/documents/${encodeURIComponent(id)}`);
+        xhr.withCredentials = true;
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) onProgress?.(e.loaded / e.total);
+        });
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try { resolve(JSON.parse(xhr.responseText) as UploadedDocument); }
+            catch { reject(new HttpError(xhr.status, 'bad json')); }
+          } else reject(new HttpError(xhr.status, 'replace failed', errorBodyFrom(xhr.responseText)));
+        });
+        xhr.addEventListener('error', () => reject(new HttpError(0, 'network')));
+        xhr.addEventListener('abort', () => reject(new HttpError(0, 'aborted')));
+        signal?.addEventListener('abort', () => xhr.abort());
+        xhr.send(form);
+      });
+    },
+    updateDocumentKind(id, kind, signal) {
+      return req<UploadedDocument>(`/documents/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ kind }),
+        signal,
+      });
+    },
+    /**
+     * A MISSING ROUTE MEANS "NOTHING PENDING", never a broken screen. This is
+     * not built in production, and a 404 that surfaced as an error would put a
+     * failure banner on every page in the app.
+     */
+    getPendingUpdate(signal) {
+      return req<PendingUpdate>('/update', { signal }).catch(() => ({
+        scope: null, reasons: [], cost: 0, remaining: 0, affordable: false, deferred: false,
+      }));
+    },
+    runUpdate(scope, signal) {
+      return req<{ jobId: string }>('/update', {
+        method: 'POST', body: JSON.stringify({ scope }), signal,
+      });
+    },
+    async submitRating(input, signal) {
+      await req<void>('/feedback/rating', {
+        method: 'POST', body: JSON.stringify(input), signal,
+      });
+    },
+    async deferUpdate(signal) {
+      await req<void>('/update/defer', { method: 'POST', signal }).catch(() => {});
+    },
     startAnalysis(documentIds, signal) {
       return req<{ jobId: string }>('/analysis', {
         method: 'POST', body: JSON.stringify({ documentIds }), signal,
@@ -261,6 +320,15 @@ export function createHttpApi(): ItqanApi {
     async deleteDocument(id, signal) {
       await req<void>(`/documents/${encodeURIComponent(id)}`, { method: 'DELETE', signal });
     },
+    async deactivateAccount(signal) {
+      await req<void>('/account/deactivate', { method: 'POST', signal });
+    },
+    async deleteAccount(signal) {
+      await req<void>('/account', { method: 'DELETE', signal });
+    },
+    startCancellation(signal) {
+      return req<{ url: string }>('/subscription/cancel', { method: 'POST', signal });
+    },
     listThreads(signal) {
       // No threads yet is a normal state on a new account, not a failure.
       return req<ChatThreadSummary[]>('/chat/threads', { signal }).catch(() => []);
@@ -312,13 +380,16 @@ export function createHttpApi(): ItqanApi {
       return req<FeedbackState>('/preferences/feedback', { signal })
         .catch(() => emptyFeedback());
     },
-    findSimilarCourse({ courseId, exclude }, signal) {
-      return req<Course | null>('/courses/similar', {
-        method: 'POST', body: JSON.stringify({ courseId, exclude }), signal,
-      // Null is a real answer here ("nothing else closes this gap"), and so is a
-      // failed lookup. The screen says the same thing for both, because to the
-      // user they are the same thing: no replacement arrived.
-      }).catch(() => null);
+    /**
+     * NOT `.catch(() => null)` like its predecessor. A refusal has to reach the
+     * caller: `token_limit` is the one outcome the panel can act on, and
+     * swallowing it into "nothing else fits" would tell somebody the catalogue
+     * was empty when their budget was spent.
+     */
+    findAlternative(input, signal) {
+      return req<Course | JobMatch | null>('/recommendations/alternative', {
+        method: 'POST', body: JSON.stringify(input), signal,
+      });
     },
   };
 }

@@ -307,6 +307,13 @@ and that is a 200, not a 404.
 
 ```jsonc
 // POST /api/courses/similar   -> a Course, or null
+//
+// SUPERSEDED 2026-08-26 by §12, and the front end no longer calls it. That
+// route replaces a recommendation of EITHER kind and carries the rejection
+// reason into the search, which this one could not: it took a course id and an
+// exclusion list, so "too expensive" and "too basic" returned the same course.
+// Kept documented because production may still serve it; nothing should be
+// built against it.
 { "courseId": "c1", "exclude": ["c1", "c2", "c3"] }
 ```
 
@@ -680,11 +687,68 @@ POST /api/analysis  { "documentIds": ["…"], "mode": "merge" } -> { jobId }
 That keeps the human confirmation checkpoint, which is the thing that must not be
 routed around.
 
-### 3. Deleting a document — `DELETE /api/documents/:id`
+### 3. Managing documents — `DELETE`, `PUT` and `PATCH /api/documents/:id`
 
 ```
-DELETE /api/documents/:id  -> { ok: true } | 409 { error: "last_cv" }
+DELETE /api/documents/:id  -> { ok: true }        | 409 { error: "last_cv" }
+PUT    /api/documents/:id  -> UploadedDocument    | 404 { error: "not_found" }
+PATCH  /api/documents/:id  -> UploadedDocument    | 409 { error: "cv_exists" | "last_cv" }
+POST   /api/documents      -> UploadedDocument    (a CV REPLACES the held one)
 ```
+
+**`PUT` and `PATCH` are new (2026-08-26) and NEITHER IS BUILT.** Settings gained
+document management: swap the file behind a document, or correct its category,
+without deleting anything.
+
+`PUT` is multipart with a `file` field and **keeps the id**. That is the whole
+reason it exists rather than the client deleting and re-uploading: a stored
+profile references `documentId`, every past analysis references the ids it read,
+and the CV cannot be deleted at all while it is the only one. Replacing is how a
+CV changes. It returns the updated `UploadedDocument`.
+
+**`PUT` must not start an extraction.** Reading documents again is a separate,
+paid, reviewed act the person starts from `/app/documents`, ending at the confirm
+screen. A file swap that quietly spent 19 tokens and rewrote somebody's skills is
+exactly what that confirm step exists to prevent, and the settings screen says in
+as many words that nothing has been read yet.
+
+`PATCH` takes `{ kind }` and is where **the one-CV rule** is enforced from both
+directions.
+
+**There is exactly one CV, always.** It cannot reach zero, because the pipeline
+cannot run without one; it cannot reach two, because a second makes "your CV"
+ambiguous on every screen that names it. So:
+
+- `POST /api/documents` with `kind: "cv"` when one exists **replaces it and
+  returns the existing row, id and all**. Not a refusal, and the distinction is
+  load bearing: `/app/documents` exists precisely so somebody can hand over a
+  newer CV, and answering that with "you already have one" would break the
+  screen's whole purpose in order to enforce a rule the screen was keeping.
+  The client drops any row already holding the returned id, so one document is
+  one row.
+- `PATCH` to `cv` when another document is already the CV -> `409 cv_exists`.
+  A recategorisation is not a replacement: it names a DIFFERENT file as the CV
+  and leaves the old one on the account, which is the state that must not exist.
+- `PATCH` the CV to anything else -> `409 last_cv`.
+- `DELETE` the only CV -> `409 last_cv`, as before.
+
+The app disables the taken option and renders the CV's category as a label
+rather than a select, so any of these that arrives is a stale view. **The server
+still has to refuse it**, for the reason the last-CV rule was already enforced
+there: a stale build of the app is not a way in. Machine-readable reasons, never
+messages, so the front end keeps owning the wording in both languages.
+
+### `certificate` is a third kind, and the pipeline does not read one
+
+`DocumentKind` is `cv | transcript | certificate` as of 2026-08-26 (the lead's
+call). The kinds were narrowed from six to two precisely because Agent A takes
+`--cv` and an optional `--transcript` and nothing else, so every other option was
+a decision that changed no outcome. That reasoning has not gone away.
+
+**A certificate is stored and categorised. It is not extracted from.** Nothing in
+the interface implies otherwise, and nothing should be added that does until the
+pipeline can act on one. If a certificate should contribute evidence, that is
+pipeline work with its own brief, not a front-end change.
 
 **The front end is built.** `api.deleteDocument` and the two-tap remove control
 on the profile screen came from `amin-dev`; the last-CV rule was added when that
@@ -936,3 +1000,378 @@ GET /api/handoff?intent=premium   ->  302 <app>/?intent=premium
 capture-and-clear path, so forwarding it is the only change required and nothing
 in the front end has to be touched. Pass through only the literal value
 `premium`; anything else should be dropped rather than reflected.
+
+### 9. Closing an account — `POST /api/account/deactivate` and `DELETE /api/account`  **(NEITHER IS BUILT)**
+
+```
+POST   /api/account/deactivate  -> 204, and the session cookie is cleared
+DELETE /api/account             -> 204, and the session cookie is cleared
+```
+
+Added 2026-08-26, when Settings shipped with both controls. **The front end
+calls these and simulates neither.** Until they exist both calls 404, the
+confirmation dialog says plainly that nothing happened, and the account is left
+exactly as it was — which is the correct behaviour for a missing route and the
+reason the UI could ship ahead of it.
+
+`LEGAL-BRIEF.md` is the reason this matters more than a normal pending route:
+the right to erasure is promised and **the only account deletion this system has
+ever performed was hand-written SQL on the VPS**. A user cannot exercise it.
+That brief also records the two facts any implementation has to answer to: there
+is no automatic retention limit on uploaded documents or derived profiles, and
+there is an OVH snapshot backup that a row-level delete will not reach. **A
+stated snapshot-rotation period is part of shipping this, not a follow-up.**
+
+**Deactivate — a reversible pause.**
+
+- Everything is KEPT: documents, the extracted profile, skills, the course path,
+  job matches, chat threads, the plan and its billing state.
+- The account stops being worked on. No pipeline run starts for it, no match
+  refresh runs, and it is matched to nothing while it is paused.
+- The session ends with the same response.
+- **Logging in restores it.** No separate reactivation route and no support
+  ticket: the credentials that could sign in before still can, and doing so
+  clears the flag. The settings screen promises exactly this, in both languages.
+- An account that is paused must not be billed for a period it cannot use. What
+  happens to a live Paddle subscription is **undecided** and needs the lead:
+  pausing the subscription and cancelling it are different promises.
+
+**Delete — erasure, and it must be complete.**
+
+The confirmation screen lists what goes, and the list is a contract with the
+user rather than reassuring copy. It names, in both languages:
+
+- every uploaded document, including the CV, **on disk as well as in the table** —
+  `DELETE /api/documents/:id` already unlinks the file and is the model to follow;
+- the profile and every skill derived from those documents;
+- job matches, readiness and the course path;
+- chat threads with Hud;
+- the account row and its email address.
+
+Anything derived from the documents that is not in that list is either missing
+from the list or missing from the delete, and both are defects. The two must be
+purged together: a profile that outlives its source documents is an incomplete
+deletion, not a partial one.
+
+**Delete refuses while a subscription is still renewing.**
+
+```
+DELETE /api/account  ->  409 { "error": "subscription_active" }
+```
+
+Deleting the account does not stop the billing: the subscription lives with the
+payment provider, and a row disappearing from a table is not a message to it. A
+person who believed otherwise would go on being charged for an account that no
+longer exists, and would have no account left to cancel it from.
+
+The app does not offer deletion in that state at all — the row says why and
+links to the plan screen — so a request that reaches this is a stale view. The
+server still has to refuse it, for the same reason the last-CV rule is enforced
+server side: a stale build of the app is not a way in.
+
+**Once cancelled, deletion is allowed immediately**, with paid time still on the
+clock. The confirmation states the date and the person decides; refusing to let
+someone leave until their month runs out would be holding an account hostage to
+a subscription they have already ended.
+
+**Neither route may accept the typed phrase as its authorisation.** The typed
+"Delete my account" is a UI gate against a mis-tap and nothing more; it is never
+sent, and a server that trusted it would be trusting a string the client made
+up. The session is the authorisation. If a re-authentication step is wanted
+before erasure, that is a password or an emailed code, decided server side.
+
+`dev/site-plugin.ts` stubs both so the client's write path is exercised, and it
+is **not a specification**: it clears four Maps and a cookie, and restores a
+paused account on the next login. It reaches no disk, no derived table and no
+snapshot.
+
+### 10. Cancelling a subscription — `POST /api/subscription/cancel`  **(NOT BUILT)**
+
+```
+POST /api/subscription/cancel  ->  200 { "url": "https://…" }
+                               ->  409 { "error": "no_subscription" }
+```
+
+Added 2026-08-26 with the plan screen's full-width action. **It cancels
+nothing.** The server opens a session with Paddle scoped to this subscription
+and returns where the person finishes it; the subscription changes when Paddle
+says so and its webhook reaches the server. That is the same rule the upgrade
+already follows in the other direction, and for the same reason: the browser
+never decides what somebody is paying for.
+
+**The front end never names the provider.** Not in the button, not in the
+confirmation, not in an error. A person cancelling a subscription is not helped
+by learning which company processes the card, and naming it would turn a vendor
+swap into a copy change across two locales. The client's whole job is to
+navigate to the `url` it is handed.
+
+**The client re-reads `GET /api/usage` when it comes back**, because that is the
+only thing that can say whether the cancellation landed.
+
+### `GET /api/usage` gains `subscription`
+
+```jsonc
+{
+  "plan": "paid",
+  "subscription": {
+    "status": "active",           // "active" renews · "cancelled" runs out
+    "currentPeriodEnd": "2026-09-26T00:00:00Z"   // null if the dates are unknown
+  }
+}
+```
+
+Three screens turn on this field and each reads it differently:
+
+- **The plan screen** offers "Cancel your subscription" only while `active`. An
+  already-cancelled account gets the date instead of a button, because there is
+  nothing left to cancel and a control with no act behind it is worse than none.
+- **Closing the account** refuses deletion while `active` (§9 above) and, once
+  `cancelled`, names `currentPeriodEnd` in the confirmation so the person knows
+  what they are giving up.
+- **A free account carries no subscription at all.** `null` and absent must mean
+  the same thing.
+
+**Absent is "not known", never "none".** `GET /api/usage` is itself unbuilt in
+production, so the app treats a missing subscription as an absence of
+information: it will not claim one exists, and it will not block anybody's
+deletion on a guess. The 409 above is what makes that safe.
+
+`dev/site-plugin.ts` stubs the route and marks the row cancelled immediately,
+which production **must not** do — it is there so the cancelled-but-still-running
+window can be walked locally, since that window is the only reason the delete
+guard exists. `POST /api/dev/plan` accepts `status=cancelled` to reach it
+directly. Neither is a specification.
+
+### 11. Keeping the journey in step — `GET/POST /api/update`, `POST /api/update/defer`  **(NOT BUILT)**
+
+```
+GET  /api/update         -> { scope, reasons[], cost, remaining, affordable, deferred }
+POST /api/update         -> { jobId }   | 429 { error: "token_limit", needed, remaining, resetsAt }
+                                        | 409 { error: "nothing_stale" }
+POST /api/update/defer   -> 204
+```
+
+Added 2026-08-26. Three things a person does make the answers wrong, and until
+now none of them changed the answers: replacing a document, correcting a skill,
+and finishing a course. Someone could add three skills and watch a readiness
+score, a course path and a job list go on describing the person they were last
+week, with nothing on screen admitting it.
+
+This section says **what has to happen**. How to arrange the graph, cache the
+intermediate state or name the internal steps is yours.
+
+#### The scope is the whole idea
+
+`scope` is `"documents"` or `"skills"`, and they are **not the same run**.
+
+- **`documents`** — a file changed, so the extraction itself is wrong. Read the
+  documents again, rebuild the skills from what that finds, and rebuild
+  everything downstream from those. This one **pauses at
+  `awaiting_confirmation`** exactly as onboarding does: the extraction changed
+  and the person has to check it before it is used. That pause is the product's
+  consent checkpoint and it is not optional here.
+
+- **`skills`** — the skills changed and nothing else did. The reading was fine;
+  the person is correcting or adding to what it produced.
+
+#### `skills` must not be a fresh run, and this is the part to get right
+
+**Do not re-read the documents.** Nobody changed them. Re-reading them costs the
+person a document re-read they did not ask for, takes the time it takes, and can
+produce a *different* extraction from the same files, which would silently
+overwrite the correction they just made.
+
+**Do not stop at `awaiting_confirmation`.** There is no new extraction to
+confirm. Sending someone to the confirmation screen after they edited one skill
+asks them to re-approve an extraction they never touched, and the screen has
+nothing new to show them.
+
+**Start from the state the account is already in, not from zero.** The run
+begins with the skill set as it now stands and carries forward everything
+already established about this person — the target role, the stated preferences,
+the documents on file, the courses marked done, and any feedback given on
+matches. What comes out has to be a *continuation*: a course already completed
+stays completed, a job the person dismissed does not come back, and a path they
+are three steps into does not restart at step one. A rerun that produced a fresh
+path each time would punish people for correcting their own profile.
+
+**What it produces:** readiness, the course path and the job matches, rebuilt
+from the current skills.
+
+#### Finishing a course adds what the course teaches
+
+`POST /api/courses/:id/complete` (§1) now has a second job: **add the course's
+`unlocks` to the account's skill set.** The catalogue already names those skills
+and a completion is the evidence they were earned, so the person is not made to
+type in what the course they just finished taught them.
+
+Adding them makes the matches a step behind, so completion also leaves a
+`skills` update pending. It does **not** run anything: the person is asked
+first, with the price on screen.
+
+Duplicates are the server's to avoid, case insensitively. Two chips reading
+"SQL" and "sql" is a profile that looks careless.
+
+#### Nothing runs without a price on screen and a yes
+
+Every path into this ends at a confirmation naming the token cost, so
+`GET /api/update` has to carry it.
+
+- **`cost` is the server's figure.** There is no published price for a partial
+  run the way there is for a message (1) or a document re-read (19), and the
+  browser will not invent one — a guessed number in front of somebody about to
+  spend their day's budget is exactly the fabricated statistic the trust rules
+  bar. **Publish a measured price the way the re-read's 19 was measured.** A
+  `skills` run should cost meaningfully less than a `documents` one, because it
+  does meaningfully less work; if it does not, say so and the interface will
+  stop implying otherwise.
+- **`affordable` is the server's verdict too**, not `cost <= remaining` computed
+  in the browser. One place doing the arithmetic is one place that can be wrong.
+- **`reasons` are ids, never sentences** — `document_replaced`, `skills_edited`,
+  `course_completed`. The front end owns the wording in both languages.
+- If both scopes are pending, **`documents` wins and subsumes the other**: it
+  rebuilds the skills on its way past, and charging for both would be charging
+  twice for work done once.
+
+#### Refusing for lack of tokens, everywhere
+
+`POST /api/update` refuses with **429 `token_limit` carrying `needed`,
+`remaining` and `resetsAt`**, which is what lets the screen say "that costs 19
+and you have 8 left today" instead of "that did not work".
+
+**This applies to every route that spends, including `POST /api/chat`.** Hud's
+own answer was showing "that did not come back" for a spent budget, which tells
+someone their question was lost when it was not, and offers a retry that can
+only be refused again. Same code, same fields, everywhere something is charged
+for.
+
+#### "Remind me later" is a promise about the next sign in
+
+`POST /api/update/defer` hides the offer. It must come back on the person's
+**next sign in**, not never: a prompt that disappeared for good would leave a
+journey quietly stale, which is the state this whole mechanism exists to
+prevent. Completing the run, or a new change, clears the deferral.
+
+#### The celebration, and the one thing the server could do better
+
+When a run raises readiness the dashboard congratulates the person and the score
+travels from the old value to the new one. Today the browser remembers what it
+last showed, which means a run started on a phone is not celebrated on a laptop.
+
+**If `GET /api/dashboard` reported the readiness before the last completed
+update run, and whether the person has seen it, that would be exact.** It is not
+required for the feature to work, and a missed celebration is the only failure
+mode of the current approach — never a false one.
+
+### 12. One replacement for a recommendation that does not fit — `POST /api/recommendations/alternative`  **(NOT BUILT)**
+
+```
+POST /api/recommendations/alternative
+  { subject: "job" | "course", itemId, reason, note, exclude[] }
+  -> Course | JobMatch | null
+  -> 429 { error: "token_limit", needed, remaining, resetsAt }
+```
+
+Added 2026-08-26. A person looking at a recommendation that is wrong for them
+should be able to say so, say WHY, and get one better answer in its place —
+from the card, or by telling Hud, which is the same thing because his answers
+are attached as the same cards.
+
+#### The reason is the request
+
+`reason` is one of the closed per-subject lists the app already sends with a
+dislike (`price`, `tooLong`, `tooAdvanced`, `wrongLevel`, `wrongLocation`, …),
+plus `other` carrying `note` in the person's own words.
+
+**It must change what comes back.** The previous route recorded the reason and
+then searched without it, so "too expensive" and "too basic" produced the same
+next course and the panel's own question was decoration. "Too expensive" means a
+cheaper one; "wrong level" means a different level; `other` means read the note.
+
+#### Postings can be replaced, and nothing is invented
+
+This reverses an earlier decision in the front end, whose note read: *a vacancy
+is a real thing at a real employer, not an interchangeable slot to be refilled.*
+That is an argument against **inventing** a posting, and it still holds. It was
+never an argument against finding a different **real** one.
+
+What comes back is another real match carrying its own `why`, its own source and
+its own retrieval date, exactly as the rejected one did. **`null` is an honest
+answer** and the screen has copy for it: nothing else fits better right now.
+
+Never return something the account has already turned down, and never return
+something in `exclude` — that list is what is currently on the person's screen,
+and watching a card they can already see slide into the gap they just made is
+the failure this field exists to prevent.
+
+#### It is an agent call, so it is priced
+
+`GET /api/usage` gains `prices.alternative`. Like `message` (1) and
+`documentReread` (19), **publish a measured figure** — the front end will not
+invent one, and where the price is absent the offer is not made at all rather
+than made for free.
+
+The price is on the control before it is pressed, a second tap confirms it, and
+a spent budget is refused with **429 `token_limit` and its numbers** so the card
+can say "that costs 2 and you have 0 left today" instead of "nothing else fits".
+Those two must never be confused: one is about the catalogue and the other is
+about the wallet.
+
+**Charge only for an answer.** A search that returns `null` found nothing and
+should cost nothing.
+
+#### Hud reaches the same routes
+
+Asking Hud to redo the matching, or to find something else, ends at the same
+confirmations with the same prices — he proposes, the person disposes, the
+server executes. `proposedRerun` stays a chip that OPENS a confirmation and
+never one that runs, because a persuasive sentence must not be able to spend
+somebody's budget.
+
+`chat.rerun.cost` had gone on describing the weekly re-run allowance retired on
+2026-08-25. Every quoted price in the product now comes from `prices`.
+
+### 13. What the person thinks of Itqan — `POST /api/feedback/rating`  **(NOT BUILT)**
+
+```
+POST /api/feedback/rating  { stars: 1..5, comment: string | null }  -> 204
+                                                                    -> 400 { error: "invalid_input" }
+```
+
+Added 2026-08-26. Five stars and an optional comment, asked once.
+
+- **`comment` is `null` when they did not write one.** An empty string and "they
+  chose not to comment" are different facts and must not arrive as the same
+  value; one of them is data and the other is a silence worth counting.
+- **`stars` is an integer 1 to 5.** Anything else is `invalid_input` — the UI
+  cannot produce it, so a value that arrives is a client nobody wrote.
+- **One per account.** A second submission replaces the first rather than
+  appending; nobody is being polled over time here.
+
+**Nothing reads it back.** No average is shown to anybody, no screen renders it,
+and there is no score in the product to inflate. It goes one way, which is worth
+stating because a rating that becomes a visible number is a rating people start
+gaming.
+
+#### When the app asks, and the one thing it cannot do
+
+The prompt is gated in the client and the gates are a product decision, not a
+detail: **onboarded**, **not mid-run**, and **has actually looked at a result in
+this session**. A rating from somebody halfway through onboarding, or watching
+their documents being read, is noise — and the ask itself reads as the product
+interrupting its own first impression.
+
+It fires on **logging out**, and on the pointer leaving the top of the window.
+
+**A page cannot show its own dialog when the window closes.** `beforeunload` can
+only ask the browser to show ITS generic "leave site?" box, which is not a rating
+and which browsers increasingly suppress; `pagehide` fires too late to render
+anything. The pointer heading for the tab bar is the closest honest signal, and
+it exists only on a desktop. **If the rating needs to reach people who close the
+tab on a phone, that is an email or an in-app prompt on their NEXT visit**, and
+either is a server-side decision rather than something the front end can fake.
+
+**Ask-once is remembered in the browser today.** A rating given is never asked
+for again; a rating declined is not asked again for ninety days. Moving both to
+the account would make that survive a new device, and is the natural home for it
+once this route exists.

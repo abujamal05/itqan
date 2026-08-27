@@ -103,6 +103,123 @@ export interface Submitted {
  * additive: a page adopts it one code at a time, and nothing loses the message
  * it has today.
  */
+/**
+ * What the server actually said, turned into a sentence.
+ *
+ * WHY THIS EXISTS. Every auth form here enumerated the two or three refusals it
+ * expected and sent everything else to one generic line — "we could not log you
+ * in just now, try again in a moment". So a rate limit, an expired session, a
+ * server that was down and a connection that never left the building all read
+ * identically, and three of those four told the person to do the one thing that
+ * could not help.
+ *
+ * The signed-in app has had `lib/errorText.ts` doing this properly for a while.
+ * This is the same idea on the site, sharing the same server codes, so a code
+ * the backend adds tomorrow lands as something specific rather than as
+ * "something went wrong".
+ *
+ * WHAT IT WILL NOT DO IS PRINT THE SERVER'S PROSE. The wire carries codes, not
+ * sentences, and that is deliberate: an English `message` field cannot be shown
+ * to an Arabic reader. So codes are mapped, the server's NUMBERS are used where
+ * it sends them, and unrecognised codes fall back by status — never to a
+ * message the server wrote.
+ */
+const SERVER_CODES: Record<string, string> = {
+  invalid_credentials: 'credentials',
+  email_taken: 'emailTaken',
+  no_session: 'session',
+  unauthenticated: 'session',
+  email_unverified: 'unverified',
+  consent_required: 'consentRequired',
+  invalid_code: 'invalidCode',
+  code_expired: 'codeExpired',
+  invalid_input: 'invalidInput',
+  not_found: 'notFound',
+  rate_limited: 'rateLimited',
+  too_many_requests: 'rateLimited',
+};
+
+export interface ServerErrorStrings {
+  /** Keyed by the short names in `SERVER_CODES`, plus the four below. */
+  [key: string]: string | undefined;
+}
+
+/**
+ * Resolve one failure into the best sentence available.
+ *
+ * `answered` is the distinction that matters most, and the one this file did
+ * not make: a refusal is a fact about the account and retrying will not change
+ * it; a request that never got an answer is a fact about the moment and
+ * retrying probably will. One sentence for both sends people to retry things
+ * that cannot succeed, and to check a connection that is fine.
+ */
+export function serverErrorMessage(
+  { answered, status, body, strings, overrides }: {
+    answered: boolean;
+    status: number;
+    body: unknown;
+    strings: ServerErrorStrings;
+    /** The page's own wording for a code it knows better than the shared map. */
+    overrides?: Record<string, string | undefined>;
+  },
+): string {
+  if (!answered) return strings.network ?? strings.generic ?? '';
+
+  const detail = (body ?? {}) as Record<string, unknown>;
+  const code = typeof detail.error === 'string' ? detail.error : undefined;
+
+  if (code && overrides?.[code]) return overrides[code] as string;
+
+  /* A refusal that DIAGNOSES. The server sends `retryAfter` with a rate limit
+     for exactly this sentence; a wait with a number in it is actionable and
+     "too many attempts" alone is not. */
+  if ((code === 'rate_limited' || code === 'too_many_requests' || status === 429)) {
+    const seconds = Number(detail.retryAfter);
+    if (Number.isFinite(seconds) && seconds > 0 && strings.rateLimitedIn) {
+      return strings.rateLimitedIn.replace('{n}', String(Math.ceil(seconds / 60)));
+    }
+    return strings.rateLimited ?? strings.generic ?? '';
+  }
+
+  const named = code ? SERVER_CODES[code] : undefined;
+  if (named && strings[named]) return strings[named] as string;
+
+  /* The server answered and we do not recognise what it said. Say what KIND of
+     answer it was, which is still more than "something went wrong": a 5xx is
+     ours to fix and worth waiting on, a 4xx is about this request. */
+  if (status >= 500) return strings.server ?? strings.generic ?? '';
+  return strings.generic ?? '';
+}
+
+/**
+ * The shared sentences, read off the form.
+ *
+ * Astro renders these into `data-err-*` at build time, which is what keeps them
+ * translated: this script has no access to the locale, and a string baked into
+ * the bundle would be English on an Arabic page. The page's own
+ * `data-server-error` stays the last resort, so a form that has not been given
+ * the shared set behaves exactly as it did before.
+ */
+function readErrorStrings(form: HTMLFormElement): ServerErrorStrings {
+  const d = form.dataset;
+  return {
+    generic: d.serverError,
+    network: d.errNetwork,
+    server: d.errServer,
+    session: d.errSession,
+    credentials: d.msgInvalid ?? d.errCredentials,
+    emailTaken: d.errEmailTaken,
+    unverified: d.errUnverified,
+    consentRequired: d.errConsentRequired,
+    invalidCode: d.errInvalidCode,
+    codeExpired: d.errCodeExpired,
+    invalidInput: d.errInvalidInput,
+    notFound: d.errNotFound,
+    rateLimited: d.errRateLimited,
+    rateLimitedIn: d.errRateLimitedIn,
+  };
+}
+
 export function explainServerErrors(
   form: HTMLFormElement,
   messages: Record<string, string | undefined>,
@@ -209,6 +326,20 @@ export function initForm(form: HTMLFormElement): void {
 
     summary.hidden = true;
 
+    /* One place that puts a failure on screen, so the two paths below cannot
+       drift into describing the same thing differently. */
+    const showServerError = (answered: boolean, status: number, body: unknown) => {
+      summaryHeading.textContent = serverErrorMessage({
+        answered,
+        status,
+        body,
+        strings: readErrorStrings(form),
+      });
+      summaryList.replaceChildren();
+      summary.hidden = false;
+      summary.focus();
+    };
+
     // Loading: label swaps, width stays stable, focus is kept.
     const originalLabel = submitLabel?.textContent ?? '';
     submit.style.minInlineSize = `${submit.offsetWidth}px`;
@@ -272,12 +403,16 @@ export function initForm(form: HTMLFormElement): void {
         return;
       }
       if (handled) return;
-      throw new Error(String(response.status));
+      /* THE SERVER ANSWERED AND SAID NO. Carried out of the try so the catch
+         below keeps its one job — "nothing answered" — rather than covering
+         both and describing them the same way. */
+      showServerError(true, response.status, body);
+      return;
     } catch {
-      summaryHeading.textContent = form.dataset.serverError ?? '';
-      summaryList.replaceChildren();
-      summary.hidden = false;
-      summary.focus();
+      /* Nothing came back at all: offline, DNS, a dropped connection. This is
+         the one case where "check your connection and try again" is the right
+         advice, and until now it was also what a 500 and a rate limit said. */
+      showServerError(false, 0, undefined);
     } finally {
       delete submit.dataset.loading;
       submit.removeAttribute('aria-busy');

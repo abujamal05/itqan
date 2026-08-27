@@ -28,7 +28,6 @@
  * route through the free courses only is still a coherent route.
  */
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { errorText } from '../lib/errorText';
 import { useChat } from '../state/chat';
@@ -40,6 +39,8 @@ import { Card, EmptyState, ErrorState, LoadingBlock } from '../components/ui';
 import { CoursesMap } from '../components/map/CoursesMap';
 import { CourseSheet } from '../components/map/CourseSheet';
 import { useCompletedCourses } from '../state/completed';
+import { useUpdate } from '../state/update';
+import { UpdateDialog } from '../components/UpdateJourney';
 import { useAuth } from '../state/auth';
 import type { Course } from '../api';
 import { BrowseBar } from '../components/BrowseBar';
@@ -58,6 +59,13 @@ export function Courses() {
      exist yet. See `state/completed.ts` and BACKEND.md §1. */
   const { completed, toggle } = useCompletedCourses(user?.id);
   const [open, setOpen] = useState<Course | null>(null);
+  /* Asked straight after a course is marked done, because that is the moment
+     the person has just earned something and the matches are one run behind
+     it. `refresh` re-asks the server what is stale; the dialog prices it. */
+  const { refresh: refreshUpdate } = useUpdate();
+  const [offerUpdate, setOfferUpdate] = useState<string | null>(null);
+  /** The token pool, so the sheet's feedback panel can price a replacement. */
+  const { data: usage } = useAsync((s) => api.getUsage(s), [api, locale, resultsVersion]);
   const inFlight = useRunInFlight();
   // Re-fetch when the run lands; see the same note in Dashboard.tsx.
   const { data, loading, error, reload } = useAsync((s) => api.getCourses(s),
@@ -103,19 +111,32 @@ export function Courses() {
        next step — the map said done, the dashboard said do this next, and both
        were reading their own truth. */
     toggle(course.id, true);
-    setStatus(
-      <>
-        {t('courses.doneNoted')}{' '}
-        <Link to="/documents">{t('courses.updateCv')}</Link>
-      </>,
-    );
-    void api.completeCourse(course.id).catch((err: unknown) => {
-      /* PUT IT BACK. A failed write that leaves the tick on screen is worse
-         than no tick: the person believes the server knows, and it does not. */
-      toggle(course.id, false);
-      setStatus(errorText(err, { t, formatNumber }, { fallback: t('courses.saveFailed') }));
-    });
-  }, [toggle, t, api]);
+    /* THE SKILLS ARE THE POINT OF FINISHING, so the server adds them to the
+       skill set on completion rather than asking the person to type in what
+       the course they just finished taught them. See BACKEND.md §11: the course
+       already carries `unlocks`, and a completion is the only evidence anyone
+       could want that those skills were earned.
+
+       `doneNoted` no longer sends them to re-upload a CV. That was the old
+       answer to "how does this count", and it is the expensive one: it asked
+       for a document re-read to record something the catalogue already knew. */
+    setStatus(t('courses.doneNoted'));
+    void api.completeCourse(course.id)
+      .then(() => {
+        refreshUpdate();
+        /* Named, so the prompt says what was just added rather than opening
+           with an abstract offer to update something. */
+        setOfferUpdate(course.unlocks.length
+          ? t('courses.doneSkills', { skills: course.unlocks.join(', '), title: course.title })
+          : t('courses.doneNoSkills', { title: course.title }));
+      })
+      .catch((err: unknown) => {
+        /* PUT IT BACK. A failed write that leaves the tick on screen is worse
+           than no tick: the person believes the server knows, and it does not. */
+        toggle(course.id, false);
+        setStatus(errorText(err, { t, formatNumber }, { fallback: t('courses.saveFailed') }));
+      });
+  }, [toggle, t, api, formatNumber, refreshUpdate]);
 
   /**
    * Take it back out of completed.
@@ -226,8 +247,18 @@ export function Courses() {
           )
       )}
 
+      {/* The offer, straight after the act that made it worth making. "Remind
+          me later" here is a promise about the next sign in, kept by the
+          server; see `UpdateDialog`. */}
+      <UpdateDialog
+        open={offerUpdate !== null}
+        onClose={() => setOfferUpdate(null)}
+        lead={offerUpdate ?? undefined}
+      />
+
       <CourseSheet
         course={open}
+        usage={usage}
         done={open ? completed.has(open.id) : false}
         onClose={() => setOpen(null)}
         onReplace={replaceCourse}

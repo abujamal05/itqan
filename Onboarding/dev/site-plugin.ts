@@ -156,7 +156,11 @@ let rerunCredits = 1;
  * a re-read would hide the only interesting behaviour the budget has.
  */
 const PLAN_TOKENS = { free: 30, paid: 90 } as const;
-const TOKEN_PRICES = { message: 1, documentReread: 19 } as const;
+/* `alternative` is one agent call over one item, so it sits between a message
+   and a full re-read. A STUB'S FIGURE, like the update costs: BACKEND.md §12
+   says production must publish a measured one the way the re-read's 19 was
+   measured. */
+const TOKEN_PRICES = { message: 1, documentReread: 19, alternative: 2 } as const;
 
 /**
  * How many job matches a free account sees. The rest are paid.
@@ -185,6 +189,81 @@ let jobGate = false;
  * no Paddle webhook locally. Production reads this from the account.
  */
 const plans = new Map<string, 'free' | 'paid'>();
+
+/**
+ * Accounts this dev server has been told to pause.
+ *
+ * Deactivation's MEANING is the server's, not this file's — BACKEND.md §9 says
+ * what production has to do, and a stub cannot stand in for stopping a
+ * pipeline. What this proves is the contract: the route exists, it answers, and
+ * the account it names cannot log back in without being restored. That last
+ * part is the half a stub CAN test, and it is the half the UI promises.
+ */
+const deactivated = new Set<string>();
+
+/**
+ * What is out of date per account, and whether the offer has been deferred.
+ *
+ * THE PRICE IS THE SERVER'S TO STATE, which is the half of this a stub can
+ * genuinely stand in for: the client asks what a run costs and shows that
+ * figure, so a browser is never doing arithmetic about somebody's budget. The
+ * numbers here are the documented token prices; production measures its own.
+ */
+interface StaleRow { scope: 'documents' | 'skills'; reasons: string[]; deferred: boolean }
+const stale = new Map<string, StaleRow>();
+
+/**
+ * A skills-only run costs less than a document re-read because it does less
+ * work: the documents are not read again. Priced at the message rate times the
+ * agents it still has to run, which is a STUB'S GUESS and labelled as one —
+ * BACKEND.md §11 says production must publish a measured figure the same way the
+ * re-read's 19 was measured.
+ */
+const UPDATE_COST = { documents: 19, skills: 5 } as const;
+
+/**
+ * How far readiness has moved for this account since the seed.
+ *
+ * DEV ONLY, AND CRUDE ON PURPOSE. Production computes readiness from evidence;
+ * nothing here can. What the stub has to reproduce is the SHAPE of the thing —
+ * a run finishes, the score is higher than it was, and the dashboard has
+ * something real to congratulate. Without it the celebration path could not be
+ * walked locally at all, because the seeded score is a constant.
+ */
+const readinessGain = new Map<string, number>();
+
+/** One rating per account, which is all the product ever asks for. */
+const ratings = new Map<string, { stars: number; comment: string | null; at: number }>();
+
+const markStale = (userId: string, scope: 'documents' | 'skills', reason: string) => {
+  const row = stale.get(userId);
+  /* DOCUMENTS WINS. If both are pending, the documents run subsumes the skills
+     one — it rebuilds the skills on its way past — and charging for both would
+     be charging twice for work done once. */
+  const next: StaleRow = row?.scope === 'documents' || scope === 'documents'
+    ? { scope: 'documents', reasons: [...new Set([...(row?.reasons ?? []), reason])], deferred: false }
+    : { scope, reasons: [...new Set([...(row?.reasons ?? []), reason])], deferred: false };
+  stale.set(userId, next);
+};
+
+/**
+ * The subscription behind a paid plan.
+ *
+ * TWO STATES, and the second is the one worth having a stub for: `cancelled`
+ * means it will not renew and the account is still entitled until
+ * `currentPeriodEnd`. That window is exactly when the settings screen allows
+ * deletion and warns about the paid time being given up, and it is unreachable
+ * locally without somewhere to hold the flag.
+ */
+interface SubscriptionRow { status: 'active' | 'cancelled'; currentPeriodEnd: string }
+const subscriptions = new Map<string, SubscriptionRow>();
+
+/** A month out, which is what a monthly subscription renews on. */
+const monthFromNow = () => {
+  const d = new Date();
+  d.setMonth(d.getMonth() + 1);
+  return d.toISOString();
+};
 const planFor = (id: string) => plans.get(id) ?? 'free';
 
 /** One counter, because there is one pool. */
@@ -540,6 +619,19 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           // The site shows its own "could not log you in" message on any
           // non-ok response, so 401 needs no body it would have to understand.
           if (!hit) return json(res, 401, { error: 'invalid_credentials' });
+          /* LOGGING BACK IN IS WHAT RESTORES A PAUSED ACCOUNT, and the settings
+             screen says so in as many words. Restoring it here is the one half
+             of deactivation a stub can actually prove; without it the promise
+             on that screen would be untested in the only place it can be
+             walked before production has the route at all. */
+          deactivated.delete(hit.id);
+
+          /* AND "REMIND ME LATER" MEANS THE NEXT SIGN IN, not never. Without
+             this the deferral was permanent and the offer never came back,
+             which is precisely the quietly stale journey the whole mechanism
+             exists to prevent. BACKEND.md §11 states it as a requirement. */
+          const pendingRow = stale.get(hit.id);
+          if (pendingRow?.deferred) stale.set(hit.id, { ...pendingRow, deferred: false });
           return json(res, 200, { ok: true }, [
             `${COOKIE}=${tokenFor(hit.id)}; Path=/; SameSite=Lax`,
             setLocale,
@@ -632,6 +724,15 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
         /* ---- the agent services ---- */
         const locale = (cookies[LOCALE_COOKIE] === 'en' ? 'en' : 'ar') as Locale;
 
+        /* Every document on the account, from BOTH stores. `uploads` is this
+           session's and `profiles` is what a confirmed profile carries; a rule
+           that read only one of them would be enforced against half the truth,
+           which is how the last-CV check nearly shipped broken. */
+        const allDocuments = () => {
+          const prof = profiles.get(me.id) as { documents?: Record<string, unknown>[] } | undefined;
+          return [...(uploads.get(me.id) ?? []), ...(prof?.documents ?? [])];
+        };
+
         if (url === '/api/documents' && req.method === 'POST') {
           const f = parseBody(await body(req), req.headers['content-type'] ?? '');
           const id = `doc_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
@@ -639,9 +740,27 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           // Any file named "unreadable" fails the pipeline, so the recovery
           // path is reachable without breaking a real file.
           if (/unreadable/i.test(fileName)) unreadable.add(id);
+          const kind = f.kind ?? 'transcript';
+          /* THERE IS ONLY EVER ONE CV, AND UPLOADING ONE REPLACES IT.
+             Not a refusal: `/app/documents` exists precisely so somebody can
+             hand over a newer CV, and answering that with "you already have
+             one" would break the screen's whole purpose to enforce a rule the
+             screen was trying to keep. The row and its id survive, which is
+             what a stored profile's `documentId` and every past analysis point
+             at. Mirrors BACKEND.md §3; production needs it too. */
+          const heldCv = kind === 'cv' && allDocuments().find((d) => d.kind === 'cv');
+          if (heldCv) {
+            markStale(me.id, 'documents', 'document_replaced');
+            heldCv.fileName = fileName;
+            heldCv.mimeType = f.__mimetype ?? heldCv.mimeType;
+            heldCv.sizeBytes = Number(f.__size ?? 0);
+            if (/unreadable/i.test(fileName)) unreadable.add(String(heldCv.id));
+            else unreadable.delete(String(heldCv.id));
+            return json(res, 200, heldCv);
+          }
           const doc = {
             id, fileName, mimeType: f.__mimetype ?? 'application/pdf',
-            sizeBytes: Number(f.__size ?? 0), kind: f.kind ?? 'other',
+            sizeBytes: Number(f.__size ?? 0), kind,
           };
           uploads.set(me.id, [doc, ...(uploads.get(me.id) ?? [])]);
           return json(res, 200, doc);
@@ -658,11 +777,61 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
            Removed from BOTH stores: `uploads` is this session's, `profiles` is
            what a confirmed profile carries, and a document left in the second
            would come straight back on the next fetch. */
+        /* Replacing the FILE, keeping the row. The id survives, which is the
+           whole reason this route exists rather than a delete plus an upload: a
+           stored profile references `documentId`, past analyses reference the
+           ids they read, and the CV cannot be deleted at all. It does not read
+           anything — extraction stays a separate, reviewed, paid act. */
+        if (url.startsWith('/api/documents/') && req.method === 'PUT') {
+          const id = decodeURIComponent(url.slice('/api/documents/'.length));
+          const f = parseBody(await body(req), req.headers['content-type'] ?? '');
+          const doc = allDocuments().find((d) => d.id === id);
+          if (!doc) return json(res, 404, { error: 'not_found' });
+
+          doc.fileName = f.__filename ?? doc.fileName;
+          doc.mimeType = f.__mimetype ?? doc.mimeType;
+          doc.sizeBytes = Number(f.__size ?? doc.sizeBytes);
+          /* The same escape hatch the upload has: a file named "unreadable"
+             fails the pipeline, so the recovery path stays reachable. */
+          if (/unreadable/i.test(String(doc.fileName))) unreadable.add(id);
+          else unreadable.delete(id);
+          markStale(me.id, 'documents', 'document_replaced');
+          return json(res, 200, doc);
+        }
+
+        /* Recategorising. The CV slot has a floor and a ceiling: it cannot
+           reach zero, because the pipeline cannot run without one, and it
+           cannot reach two, because a second makes "your CV" ambiguous on every
+           screen that names it. Both refusals are machine readable, so the
+           front end keeps owning the wording in its two languages. */
+        if (url.startsWith('/api/documents/') && req.method === 'PATCH') {
+          const id = decodeURIComponent(url.slice('/api/documents/'.length));
+          const f = parseBody(await body(req), req.headers['content-type'] ?? '');
+          const kind = String((f as unknown as { kind?: string }).kind ?? '');
+          if (!['cv', 'transcript', 'certificate'].includes(kind)) {
+            return json(res, 400, { error: 'bad_kind' });
+          }
+
+          const onFile = allDocuments();
+          const doc = onFile.find((d) => d.id === id);
+          if (!doc) return json(res, 404, { error: 'not_found' });
+
+          if (kind === 'cv' && onFile.some((d) => d.id !== id && d.kind === 'cv')) {
+            return json(res, 409, { error: 'cv_exists' });
+          }
+          if (doc.kind === 'cv' && kind !== 'cv') {
+            return json(res, 409, { error: 'last_cv' });
+          }
+
+          doc.kind = kind;
+          return json(res, 200, doc);
+        }
+
         if (url.startsWith('/api/documents/') && req.method === 'DELETE') {
           const id = decodeURIComponent(url.slice('/api/documents/'.length));
           const mine = uploads.get(me.id) ?? [];
           const prof = profiles.get(me.id) as { documents?: Record<string, unknown>[] } | undefined;
-          const onFile = [...mine, ...(prof?.documents ?? [])];
+          const onFile = allDocuments();
 
           const doomed = onFile.find((d) => d.id === id);
           if (!doomed) return json(res, 404, { error: 'not_found' });
@@ -674,6 +843,9 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
 
           uploads.set(me.id, mine.filter((d) => d.id !== id));
           if (prof?.documents) prof.documents = prof.documents.filter((d) => d.id !== id);
+          /* A document leaving the corpus changes what the reading was built
+             from, exactly as replacing one does. */
+          markStale(me.id, 'documents', 'document_removed');
           return json(res, 200, { ok: true });
         }
 
@@ -749,7 +921,14 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           });
         }
 
-        if (url === '/api/dashboard') return json(res, 200, dashboard(locale));
+        if (url === '/api/dashboard') {
+          const base = dashboard(locale);
+          /* Capped at 100, because a readiness of 104 is not a number this
+             product would ever show and a stub that produced one would send
+             somebody hunting for a bug in the ring. */
+          const readiness = Math.min(100, base.readiness + (readinessGain.get(me.id) ?? 0));
+          return json(res, 200, { ...base, readiness });
+        }
         /* THE JOB CUT, MADE SERVER SIDE. A free account gets its three
            strongest matches and a COUNT of the rest; the locked ones are never
            serialised, so there is nothing in the response for an extension or
@@ -784,7 +963,102 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           if (req.method === 'POST') set.add(courseId);
           else set.delete(courseId);
           completedByUser.set(me.id, set);
+
+          /* FINISHING A COURSE ADDS WHAT IT TEACHES. The catalogue already
+             says which skills the course unlocks, and completing it is the
+             only evidence anyone could ask for that they were earned — so the
+             person is not made to type them in, and the matches that depend on
+             them are marked as a step behind. */
+          if (req.method === 'POST') {
+            const course = [...courses(locale), ...alternateCourses(locale)]
+              .find((c) => c.id === courseId);
+            const prof = profiles.get(me.id) as { skills?: string[] } | undefined;
+            if (course && prof) {
+              const held = new Set((prof.skills ?? []).map((x) => x.toLowerCase()));
+              const added = course.unlocks.filter((x) => !held.has(x.toLowerCase()));
+              if (added.length) prof.skills = [...(prof.skills ?? []), ...added];
+            }
+            markStale(me.id, 'skills', 'course_completed');
+          }
           return json(res, 204, undefined);
+        }
+
+        /* ---- Closing the account (BACKEND.md §9) ----
+           NEITHER ROUTE EXISTS IN PRODUCTION. They are specified there and
+           built nowhere, which is precisely why they are stubbed here: without
+           them the client's write path could not be exercised at all, and the
+           screen that calls them would only ever be seen in its failure state.
+
+           A stub is not a specification. Production has to reach the documents
+           on disk, every derived row, and the snapshot rotation LEGAL-BRIEF.md
+           records; this reaches four Maps and a cookie. */
+        if (url === '/api/account/deactivate' && req.method === 'POST') {
+          deactivated.add(me.id);
+          /* Signed out with it. The account is paused, so the session that was
+             using it has to end in the same response rather than lingering
+             until the browser is closed. */
+          return json(res, 204, undefined, [`${COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`]);
+        }
+
+        /* ---- Cancelling (BACKEND.md §10) ----
+           NOT BUILT IN PRODUCTION. The real route opens a session with the
+           payment provider and hands back its URL; nothing is cancelled until
+           that provider's webhook lands, exactly as the upgrade already works.
+
+           This stub flips the row IMMEDIATELY, which production must not do,
+           and it is the deliberate simplification: without it the
+           cancelled-but-still-running state cannot be reached locally, and that
+           state is the whole reason the delete guard below exists. The URL it
+           returns is a dev-only page standing in for the provider's, so the
+           client's "navigate to where the server sent you" path is exercised. */
+        if (url === '/api/subscription/cancel' && req.method === 'POST') {
+          const row = subscriptions.get(me.id);
+          if (planFor(me.id) !== 'paid' || !row) {
+            return json(res, 409, { error: 'no_subscription' });
+          }
+          subscriptions.set(me.id, { ...row, status: 'cancelled' });
+          return json(res, 200, { url: '/api/dev/provider' });
+        }
+
+        if (url === '/api/dev/provider') {
+          /* DEV ONLY, and it exists so the navigation lands somewhere that says
+             what it is instead of a 404 that looks like a broken cancel. */
+          res.statusCode = 200;
+          res.setHeader('content-type', 'text/html; charset=utf-8');
+          return res.end('<!doctype html><meta charset="utf-8">'
+            + '<title>Payment provider (dev)</title>'
+            + '<body style="font:16px/1.6 system-ui;margin:4rem auto;max-width:34rem">'
+            + '<h1>This stands in for the payment provider</h1>'
+            + '<p>In production the server sends you to the provider to finish '
+            + 'cancelling, and the subscription changes when its webhook lands. '
+            + 'This dev server has already marked it cancelled.</p>'
+            + '<p><a href="/app/plan">Back to your plan</a></p>');
+        }
+
+        if (url === '/api/account' && req.method === 'DELETE') {
+          /* THE SERVER ENFORCES IT TOO. The settings screen does not offer
+             deletion while a subscription still renews, so reaching this is a
+             stale view — and a stale build of the app is not a way to leave
+             somebody paying for an account that no longer exists. */
+          if (subscriptions.get(me.id)?.status === 'active') {
+            return json(res, 409, { error: 'subscription_active' });
+          }
+          /* Everything this stub holds about the person, named one at a time.
+             A loop over "all the maps" would silently stop covering a store
+             added later, and a deletion that misses a store is the failure mode
+             the legal brief is actually about. */
+          profiles.delete(me.id);
+          uploads.delete(me.id);
+          completedByUser.delete(me.id);
+          chatThreads.delete(me.id);
+          feedback.delete(me.id);
+          plans.delete(me.id);
+          tokensUsed.delete(me.id);
+          deactivated.delete(me.id);
+          subscriptions.delete(me.id);
+          const at = accounts.findIndex((a) => a.id === me.id);
+          if (at >= 0) accounts.splice(at, 1);
+          return json(res, 204, undefined, [`${COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`]);
         }
 
         /* DEV ONLY. Turns the job cut on so the locked cards can be seen; it
@@ -804,6 +1078,16 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           const f = parseBody(await body(req), req.headers['content-type'] ?? '');
           const next = f.plan === 'paid' ? 'paid' : 'free';
           plans.set(me.id, next);
+          /* `status=cancelled` puts the account in the window that matters:
+             paid, not renewing, and still entitled until the period ends. */
+          if (next === 'paid') {
+            subscriptions.set(me.id, {
+              status: f.status === 'cancelled' ? 'cancelled' : 'active',
+              currentPeriodEnd: monthFromNow(),
+            });
+          } else {
+            subscriptions.delete(me.id);
+          }
           return json(res, 200, { ok: true, plan: next });
         }
 
@@ -833,8 +1117,18 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
             period: 'day' as const,
             resetsAt: resetsAt('day'),
           };
+          /* A paid account has a subscription; the stub mints one on the way
+             past if `/api/dev/plan` did not. Production reads it from the
+             payment provider, and a FREE account carries none at all — which is
+             what the client reads as "nothing to cancel". */
+          if (plan === 'paid' && !subscriptions.has(me.id)) {
+            subscriptions.set(me.id, { status: 'active', currentPeriodEnd: monthFromNow() });
+          }
+          if (plan === 'free') subscriptions.delete(me.id);
+
           return json(res, 200, {
             plan,
+            subscription: subscriptions.get(me.id) ?? null,
             tokens,
             prices: TOKEN_PRICES,
             /* The aliases production still sends: the same pool under the two
@@ -867,6 +1161,57 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
            Ranked rather than picked at random: something sharing an `unlocks`
            entry with the rejected course comes first, because "similar" has to
            mean "same gap" or the replacement is just the next row down. */
+        /* ---- One replacement, of either kind (BACKEND.md §12) ----
+           NOT BUILT IN PRODUCTION. What the stub reproduces is the shape the
+           screens depend on: the REASON reaches the search and changes what
+           comes back, a posting can be replaced as well as a course, the spend
+           is refused with its numbers, and `null` is an honest answer. */
+        if (url === '/api/recommendations/alternative' && req.method === 'POST') {
+          const f = parseBody(await body(req), req.headers['content-type'] ?? '') as unknown as
+            { subject?: string; itemId?: string; reason?: string | null; exclude?: string[] };
+
+          const refusedAlt = tokenRefusal(me.id, TOKEN_PRICES.alternative);
+          if (refusedAlt) return json(res, 429, refusedAlt);
+
+          const excluded = new Set([...(f.exclude ?? []), f.itemId ?? '']);
+          const rows = feedback.get(me.id) ?? [];
+
+          if (f.subject === 'job') {
+            const disliked = new Set(rows
+              .filter((r) => r.subject === 'job' && r.verdict === 'dislike')
+              .map((r) => r.itemId));
+            const pool = jobs(locale)
+              .filter((j) => !excluded.has(j.id) && !disliked.has(j.id));
+            /* Nothing is invented: this is another REAL posting off the same
+               list, or nothing at all. */
+            if (!pool.length) return json(res, 200, null);
+            spend(me.id, TOKEN_PRICES.alternative);
+            return json(res, 200, pool[0]);
+          }
+
+          const all = [...courses(locale), ...alternateCourses(locale)];
+          const rejected = all.find((c) => c.id === f.itemId);
+          const wanted = new Set(rejected?.unlocks ?? []);
+          const disliked = new Set(rows
+            .filter((r) => r.subject === 'course' && r.verdict === 'dislike')
+            .map((r) => r.itemId));
+          let pool = all.filter((c) => !excluded.has(c.id) && !disliked.has(c.id));
+
+          /* THE REASON CHANGES THE ANSWER, which is the whole point of asking
+             it. Production's ranker will do something far better than this;
+             what matters is that the field is USED, because a search that
+             ignores it makes the panel's question decoration. */
+          if (f.reason === 'price') pool = [...pool].sort((a, b) => (a.price ?? 1e9) - (b.price ?? 1e9));
+          if (f.reason === 'tooLong') {
+            pool = [...pool].sort((a, b) => (a.hoursMin ?? 1e9) - (b.hoursMin ?? 1e9));
+          }
+
+          const sameGap = pool.find((c) => c.unlocks.some((u) => wanted.has(u)));
+          const answer = sameGap ?? pool[0] ?? null;
+          if (answer) spend(me.id, TOKEN_PRICES.alternative);
+          return json(res, 200, answer);
+        }
+
         if (url === '/api/courses/similar' && req.method === 'POST') {
           const f = parseBody(await body(req), req.headers['content-type'] ?? '') as unknown as
             { courseId?: string; exclude?: string[] };
@@ -914,6 +1259,18 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           /* A question OR a file is enough. Requiring text alongside an
              attachment would make "here, read this" impossible to express. */
           if (!question && !attachments.length) return json(res, 400, { error: 'empty_question' });
+
+          /* REFUSED BEFORE IT IS SPENT, and this was missing: the stub charged
+             for every question and never once said no, so an account could run
+             to 31 of a 30 token budget and the "you have none left" path could
+             not be reached locally at all. That is why the chat screen had no
+             message for it — the case was unreachable in development.
+
+             Same code and same fields as every other door that spends, per
+             BACKEND.md §11, so the front end has one sentence for one refusal
+             wherever it happens. */
+          const noTokens = tokenRefusal(me.id, TOKEN_PRICES.message);
+          if (noTokens) return json(res, 429, noTokens);
 
           /* Counted after the validity check, before the answer: a rejected
              empty question costs nothing, and a question that was asked costs
@@ -1040,12 +1397,91 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
         if (url === '/api/profile' && req.method === 'PUT') {
           const edited = parseBody(await body(req), req.headers['content-type'] ?? '');
           const prev = profiles.get(me.id) ?? {};
+          /* ONLY A CHANGED SKILL SET MAKES ANYTHING STALE. Saving a preference
+             or a phone number changes nothing downstream, and offering to spend
+             tokens after either would train people to dismiss the offer. */
+          const before = JSON.stringify((prev as { skills?: string[] }).skills ?? []);
+          const after = JSON.stringify(
+            (edited as unknown as { skills?: string[] }).skills ?? [],
+          );
           profiles.set(me.id, {
             ...prev,
             ...(edited as unknown as Record<string, unknown>),
             updatedAt: Date.now(),
           });
+          if (before !== after) markStale(me.id, 'skills', 'skills_edited');
           return json(res, 200, { ok: true });
+        }
+
+        /* ---- Bringing the journey up to date (BACKEND.md §11) ----
+           NOT BUILT IN PRODUCTION. The route exists here so the client's whole
+           path is exercised: ask what is stale, show the price, get a yes, run
+           the scope, poll it like any other run. */
+        if (url === '/api/update' && req.method === 'GET') {
+          const row = stale.get(me.id);
+          const cost = row ? UPDATE_COST[row.scope] : 0;
+          const remaining = Math.max(0, PLAN_TOKENS[planFor(me.id)] - (tokensUsed.get(me.id) ?? 0));
+          return json(res, 200, {
+            scope: row?.scope ?? null,
+            reasons: row?.reasons ?? [],
+            cost,
+            remaining,
+            /* THE SERVER ANSWERS THIS, not the browser. One place doing the
+               arithmetic is one place that can be wrong about it. */
+            affordable: cost > 0 && cost <= remaining,
+            deferred: row?.deferred ?? false,
+          });
+        }
+
+        if (url === '/api/update' && req.method === 'POST') {
+          const row = stale.get(me.id);
+          if (!row) return json(res, 409, { error: 'nothing_stale' });
+          const cost = UPDATE_COST[row.scope];
+          /* The refusal carries its numbers, so the screen can say "that costs
+             19 and you have 8 left" rather than "that did not work". */
+          const refused = tokenRefusal(me.id, cost);
+          if (refused) return json(res, 429, refused);
+          spend(me.id, cost);
+          stale.delete(me.id);
+
+          const jobId = `job_update_${Date.now().toString(36)}`;
+          /* THE SCOPES ARE DIFFERENT JOBS, and this is where that is real.
+             A `documents` run starts at the beginning and PAUSES at
+             `awaiting_confirmation`, because the extraction changed and the
+             person has to check it. A `skills` run is created already past that
+             pause — `confirmedAt` set — so it goes straight to matching. It is
+             not a fresh run: nobody changed an extraction, so there is nothing
+             to re-read and nothing to confirm. Production has to preserve that
+             distinction; BACKEND.md §11 says so in the contract's own words. */
+          jobs_.set(jobId, {
+            started: row.scope === 'documents' ? Date.now() : Date.now() - PHASE_ONE_MS,
+            bad: false,
+            confirmedAt: row.scope === 'documents' ? undefined : Date.now(),
+          });
+          /* The score moves, which is the point of having run it. */
+          readinessGain.set(me.id, (readinessGain.get(me.id) ?? 0) + 6);
+          return json(res, 200, { jobId });
+        }
+
+        /* ---- What they think of Itqan (BACKEND.md §13) ----
+           NOT BUILT IN PRODUCTION. Stored per account so the stub can prove the
+           one rule that matters to the client: a rating given is a rating that
+           does not get asked for again. */
+        if (url === '/api/feedback/rating' && req.method === 'POST') {
+          const f = parseBody(await body(req), req.headers['content-type'] ?? '') as unknown as
+            { stars?: number; comment?: string | null };
+          const stars = Number(f.stars);
+          if (!Number.isInteger(stars) || stars < 1 || stars > 5) {
+            return json(res, 400, { error: 'invalid_input' });
+          }
+          ratings.set(me.id, { stars, comment: f.comment ?? null, at: Date.now() });
+          return json(res, 204, undefined);
+        }
+
+        if (url === '/api/update/defer' && req.method === 'POST') {
+          const row = stale.get(me.id);
+          if (row) stale.set(me.id, { ...row, deferred: true });
+          return json(res, 204, undefined);
         }
 
         return next();

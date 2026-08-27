@@ -151,6 +151,30 @@
 .btn--ghost { background: transparent; color: var(--color-text); border-color: transparent; }
 .btn--ghost:hover:not(:disabled) { background: var(--color-accent-tint); }
 
+/* The one filled danger button in the app. It is a VARIANT rather than a class
+   layered over primary, because it has to replace the gold fill rather than sit
+   over it and win on stylesheet order.
+
+   Text is `--color-text-on-navy`, which resolves to paper in both themes — the
+   value a maroon fill and a red-400 fill both need. The system has no
+   `--color-text-on-danger`, and inventing one locally would break the
+   three-copy lockstep the tokens are held to; it belongs upstream.
+
+   Hover mixes the fill TOWARD `--color-text`, so it darkens on light and
+   lightens on dark, which is how the gold ramp already behaves. Two semantic
+   tokens, no invented value. */
+.btn--danger {
+  background: var(--color-danger);
+  color: var(--color-text-on-navy);
+  border-color: transparent;
+}
+.btn--danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-danger) 86%, var(--color-text));
+  transform: translateY(calc(-1px * var(--motion-scale)));
+  box-shadow: var(--shadow-sm);
+}
+.btn--danger:active:not(:disabled) { transform: translateY(0); transition-duration: var(--duration-instant); }
+
 .btn--icon { padding: var(--space-2); min-width: 44px; }
 .btn--block { width: 100%; }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
@@ -325,9 +349,11 @@
 
 .fb__btn {
   display: inline-grid; place-items: center;
-  /* 40px, which clears the 24px WCAG 2.5.8 floor with room, and stays a
-     comfortable thumb target next to its twin on a phone. */
-  inline-size: 40px; block-size: 40px;
+  /* 44px. It sat at 40 on the argument that it cleared the 24px WCAG 2.5.8
+     floor, which it did — but this product floors touch targets at 44 and there
+     are eight of these on a jobs page, in pairs, which is exactly the
+     arrangement where a near-miss lands on the wrong thumb button. */
+  inline-size: 44px; block-size: 44px;
   border-radius: var(--radius-full);
   background: transparent;
   border: 1px solid var(--color-border);
@@ -367,45 +393,49 @@
 }
 .fb__state { font-size: var(--text-sm); color: var(--color-text-muted); }
 
-/* The reason panel. A sunken well INSIDE the card, so it reads as part of the
-   card rather than as a popover that happens to overlap one. */
-.fb__panel {
-  display: flex; flex-direction: column; gap: var(--space-3);
-  padding: var(--space-4);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-sunken);
-  border: 1px solid var(--color-border);
-  animation: fb-open var(--duration-base) var(--ease-out) both;
-}
-@keyframes fb-open {
+/* The reason panel is a DIALOG now, so `.fb__panel`, `.fb__q` and `.fb__help`
+   went with it — the dialog brings its own surface, its own entrance and its
+   own heading styles from `.confirm`.
+
+   The KEYFRAME did not go with them, and nearly did: the dashboard's skills
+   disclosure animates with it too, under the name it was given when this panel
+   was its only user. It is `panel-open` now, which is what it always was. */
+@keyframes panel-open {
   from { opacity: 0; transform: translateY(calc(-4px * var(--motion-scale))); }
   to   { opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  /* Duration stays, distance goes: --motion-scale is 0 here, so the transform
-     is already the identity. The keyframe is kept rather than killed so the
+  /* Duration stays, distance goes: `--motion-scale` is 0 here, so the transform
+     is already the identity. The keyframe is swapped rather than killed so the
      fade still marks the panel arriving. */
-  .fb__panel { animation-name: fb-open-reduced; }
-  @keyframes fb-open-reduced { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes panel-open-reduced { from { opacity: 0; } to { opacity: 1; } }
 }
-/* The reasons wrap inside a card column, so they are sized for THAT, not for a
-   full width row. Measured at 1280 on the courses grid: the column's content
-   box is ~224px, full size chips are 94-160px wide, so exactly one fitted per
-   line and seven of them made the panel 822px tall inside a 257px card.
-   Compact chips plus shorter labels put most pairs on one line. */
+
+/* THE CHIPS GET THEIR REAL SIZE BACK. They were shrunk to `--text-xs` with
+   tightened padding because the panel lived in a ~224px grid column, where full
+   size chips fit exactly one per line and built an 822px tower inside a 257px
+   card. In a dialog there is room, so they are ordinary chips again — and
+   ordinary chips clear the 44px touch floor, which the shrunken ones did not. */
 .fb__reasons {
   display: flex; flex-wrap: wrap; gap: var(--space-2);
 }
-.fb__reasons .chip {
-  font-size: var(--text-xs);
-  padding-block: var(--space-1);
-  padding-inline: var(--space-3);
-}
 
-.fb__q { font-weight: var(--weight-medium); }
-.fb__help { font-size: var(--text-sm); color: var(--color-text-muted); }
 /* NOT muted. This confirms an action the user took and, on a replacement, is
    the only thing explaining why the card under their cursor just changed. */
+/* The price, in a well of its own inside the dialog, so the number the person
+   is about to spend is not just another line of prose. */
+.fb__confirm {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+}
+.fb__cost { font-size: var(--text-sm); font-weight: var(--weight-medium); }
+
+/* A refusal, in words with its numbers. Never a coloured sentence: danger text
+   on the dark theme's surface fails AA, so the weight comes from position and
+   an icon rather than from the hue. */
+.fb__refused { font-size: var(--text-sm); color: var(--color-text); }
+
 .fb__done { font-size: var(--text-sm); }
 
 /* ---- SKILLS ITQAN IS NOT SURE ABOUT --------------------------------------
@@ -480,9 +510,11 @@
 .unsure__x {
   grid-column: 2; grid-row: 1 / span 2;
   display: inline-grid; place-items: center;
-  /* 40px: comfortably over the 24px WCAG 2.5.8 floor, and a real thumb target
-     on the screen where people are removing things they did not put there. */
-  inline-size: 40px; block-size: 40px;
+  /* 44px, the product's own floor. It sat at 40 on the WCAG 2.5.8 argument,
+     which is a lower bar than this product holds itself to — and this is the
+     control that removes a skill somebody's document evidenced, on the screen
+     where a mis-tap costs them the thing they came to check. */
+  inline-size: 44px; block-size: 44px;
   border-radius: var(--radius-full);
   background: transparent; border: 1px solid transparent;
   color: var(--color-text-muted); cursor: pointer;
@@ -539,10 +571,23 @@
 }
 .input:disabled, .textarea:disabled { background: var(--color-surface-sunken); color: var(--color-text-muted); cursor: not-allowed; }
 /* Error: border + icon + message. Never a red border alone. */
+/* ---- DANGER AS TEXT, AND WHY IT IS NOT `--color-danger` -------------------
+   Measured: `--color-danger` on `--color-surface` is 10.77:1 in light and
+   **3.16:1 in dark**, against a 4.5:1 floor. The token is a FILL colour — it is
+   correct behind navy text on a button, and it fails as text on the dark
+   theme's own card, which is where every form error in the app sits.
+
+   Mixed toward `--color-text` it resolves per theme: 5.40:1 on dark surface and
+   4.97:1 on the sunken well, 13.98:1 and 11.28:1 in light. Two semantic tokens,
+   no invented value, and it still reads unmistakably red in both. The border,
+   the alert icon and the wording carry the state as well, so nothing here
+   depends on the hue being perceived. */
+:root { --color-danger-text: color-mix(in srgb, var(--color-danger) 70%, var(--color-text)); }
+
 .input[aria-invalid="true"], .textarea[aria-invalid="true"] { border-color: var(--color-danger); }
 .field__error {
   display: flex; align-items: center; gap: var(--space-2);
-  font-size: var(--text-sm); color: var(--color-danger);
+  font-size: var(--text-sm); color: var(--color-danger-text);
 }
 
 /* --------------------------------------------------------------- DROPZONE -- */
@@ -563,7 +608,6 @@
   border-radius: var(--radius-full); background: var(--color-surface); color: var(--color-accent);
   box-shadow: var(--shadow-sm);
 }
-.drop__title { font-size: var(--text-lg); font-weight: var(--weight-medium); }
 .drop__hint { font-size: var(--text-sm); color: var(--color-text); }
 .formats { display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: center; }
 .format {
@@ -852,12 +896,30 @@
 }
 
 .section__head { display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; }
-.section__title { font-size: var(--text-xl); font-weight: var(--weight-semibold); }
-/* A second heading tier. `.section__title` was rendering the section h2s, the
-   next-step h3 and EmptyState's h3 at one identical size and weight, so the DOM
-   had a hierarchy the eye could not see and a card's title impersonated a
-   section. */
-.card__title { font-size: var(--text-lg); font-weight: var(--weight-medium); }
+/* ---- THE TWO HEADING TIERS BELOW `.headline`, and there are only two ------
+   Eight classes used to set a heading size here, and they collapsed to four
+   rendered styles with three EXACT duplicate pairs: section/confirm both 20/600,
+   match/locked both 18/600, card/drop both 18/500. A reader was being asked to
+   tell 20/600 from 18/600 — a 1.11:1 step at identical weight — and the DOM's
+   hierarchy was one the eye could not see.
+
+   Now: `.headline` 30 → `.section__title` 24 → `.card__title` 18, all at 600.
+   Steps of 1.25 and 1.33, one weight, so SIZE alone carries the level. The four
+   duplicate classes are aliases of the tier they always were.
+
+   `.card__title` also moves 500 → 600, which fixes an inversion rather than a
+   near-miss: the dashboard's "Your next step" — its own comment calls it "the
+   single most important thing on the page" — was the LIGHTEST heading on that
+   page, sitting under course titles set in the heavier `.match__title`. */
+.section__title { font-size: var(--text-2xl); font-weight: var(--weight-semibold); }
+
+.card__title,
+.match__title,
+.locked__title,
+.drop__title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
 /* Muted, now that --color-text-muted clears AA on every light surface. At full
    --color-text a sub-note carried the same weight as body copy and the head
    read as two competing lines. */
@@ -868,7 +930,6 @@
    and the badge drops to its own line when they do not, rather than one of them
    winning the row outright. */
 .match__top { display: flex; align-items: flex-start; gap: var(--space-3); flex-wrap: wrap; }
-.match__title { font-size: var(--text-lg); font-weight: var(--weight-semibold); }
 .match__org { font-size: var(--text-sm); color: var(--color-text-muted); }
 /* "Why this match" — the standing name for the evidence chain.
    The sunken fill and the radius already separate this from the card around it.
@@ -948,9 +1009,9 @@
 .skills__count { margin-inline-start: auto; font-size: var(--text-sm); color: var(--color-text-muted); }
 .skills__panel {
   display: flex; flex-direction: column; gap: var(--space-4);
-  animation: fb-open var(--duration-base) var(--ease-out) both;
+  animation: panel-open var(--duration-base) var(--ease-out) both;
 }
-@media (prefers-reduced-motion: reduce) { .skills__panel { animation-name: fb-open-reduced; } }
+@media (prefers-reduced-motion: reduce) { .skills__panel { animation-name: panel-open-reduced; } }
 
 /* ---- The career goal -----------------------------------------------------
    Deliberately NOT a card. It is the second half of the readiness statement,
@@ -1365,6 +1426,218 @@
 }
 .profile__icon { flex: 0 0 auto; color: var(--color-accent-ink); }
 
+/* --------------------------------------------------------------- RATING -- */
+/* Five stars, and they are the only control on the screen that is allowed a
+   character moment: this is the motion skill's "rare / first-time" row, and
+   nothing here is a verdict, a score or a match, so the evidence fence is not
+   in play. Feedback is the job — a star that does not answer the pointer is a
+   control nobody trusts they have pressed. */
+.rate {
+  display: flex;
+  gap: var(--space-2);
+  align-self: center;
+  padding-block: var(--space-2);
+}
+
+.rate__star {
+  display: grid;
+  place-items: center;
+  /* The 44px floor, on a control whose glyph is 30px. */
+  inline-size: 44px;
+  block-size: 44px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-border-strong);
+  cursor: pointer;
+  transition:
+    color var(--duration-fast) var(--ease-hover),
+    transform var(--duration-base) var(--ease-overshoot);
+}
+
+/* Filled up to the star under the pointer, so the row previews the value
+   before it is committed. Gold FILL on a glyph, which is what gold is for —
+   this is not text and not a border. */
+.rate__star[data-on] {
+  color: var(--color-accent);
+  /* The settle. Travel multiplies by the scalar, so reduced motion keeps the
+     colour change and loses the movement. */
+  transform: scale(calc(1 + 0.12 * var(--motion-scale)));
+}
+
+.rate__star:active:not(:disabled) {
+  transform: scale(calc(1 - 0.08 * var(--motion-scale)));
+  transition-duration: var(--duration-quick);
+}
+
+.rate__star:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.rate__star:disabled { cursor: default; }
+
+/* The value in words. The row above is fill and shape only, so this is the
+   whole of it for anyone not looking at the colour. */
+.rate__value {
+  align-self: center;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* ------------------------------------------------------- UPDATE / CELEBRATE -- */
+/* The banner that says the journey is a step behind. It rides in the app shell
+   beside the pipeline's own bar, so it follows the person rather than waiting
+   on a screen they might not open. Sunken with a gold hairline — the same
+   quiet-but-findable recipe the dashboard's next step uses, because this is the
+   same kind of object: one offer, not an alarm. */
+.update__body {
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: var(--space-3) var(--space-5);
+}
+.update__what { flex: 1 1 20rem; min-inline-size: 0; }
+.update__body > .btn { flex: 0 0 auto; margin-inline-start: auto; }
+
+/* ---- The one moment this product cheers -----------------------------------
+   The canvas is behind everything and cannot be touched, so it never
+   intercepts a tap on the page it is celebrating. It is created and destroyed
+   with the component; under reduced motion it is never created at all. */
+.celebrate { position: relative; }
+
+/* THE WHOLE VIEWPORT, and it lives on the BODY rather than inside the banner:
+   a fixed element is positioned against the nearest transformed ancestor, and
+   the dashboard staggers its children in with `transform` — which was sizing
+   this to one card for the length of that entrance.
+
+   THE EXPLICIT 100% IS LOAD BEARING. `inset: 0` stretches a normal block, but
+   a <canvas> is a REPLACED element: its auto width resolves to the intrinsic
+   300x150 and the insets are then over-constrained and ignored. Dropping these
+   two lines as a tidy-up put a 300px canvas in the corner of a 1280px screen,
+   which is a confetti burst nobody can see. */
+.celebrate__canvas {
+  position: fixed;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  pointer-events: none;
+  z-index: var(--z-toast);
+}
+
+/* The news, in words, for anyone the confetti never reaches: reduced motion, a
+   blocked canvas, a screen reader. It carries the whole message on its own. */
+.celebrate__line {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-warm);
+  border: 1px solid var(--color-border-accent);
+  color: var(--color-text);
+  font-weight: var(--weight-medium);
+}
+.celebrate__line svg { color: var(--color-accent-ink); flex: 0 0 auto; }
+
+/* --------------------------------------------------------------- SETTINGS -- */
+/* CLOSING THE ACCOUNT — one card, one danger edge.
+   Two danger-edged panels stacked at the end of the page would end Settings in
+   a wall of alarm and make neither of them the emphasis, which is the same
+   argument the design system makes about accent edges being scarce. The card
+   keeps the ordinary surface: it is a boundary, not an alarm, and the alarm
+   belongs to the confirmation the buttons open. */
+.card--danger { border-color: var(--color-danger); }
+.profile__icon--danger { color: var(--color-danger); }
+
+/* Description and its control on one line while there is room; the control
+   drops to its own line rather than squeezing a two word button to one word. */
+.close__act {
+  display: flex; align-items: flex-start; flex-wrap: wrap;
+  gap: var(--space-3) var(--space-6);
+}
+.close__what {
+  flex: 1 1 20rem; min-inline-size: 0;
+  display: flex; flex-direction: column; gap: var(--space-1);
+}
+/* `--text-base`, not the section size. An h3 nested inside a section must not
+   render at the weight of the h2 above it, or the DOM has a hierarchy the eye
+   cannot see. */
+/* WAS 16/500 — the size and weight of the sentence underneath it. "Delete your
+   account" is the most consequential control in the product and it had zero
+   typographic contrast against its own description. It is a card-level heading
+   and now renders as one. */
+.close__name { font-size: var(--text-lg); font-weight: var(--weight-semibold); }
+.close__act > .btn { flex: 0 0 auto; margin-inline-start: auto; }
+
+/* ---- The confirmation dialog ----------------------------------------------
+   Built on `.sheet`, which already solves the trap: the UA stylesheet gives
+   `dialog` its own `color: CanvasText`, so a panel that inherits nothing renders
+   black text in dark mode. `.sheet` sets `color` explicitly; this only widens
+   it and gives the panel inside a real surface. */
+.sheet--confirm { inline-size: min(34rem, calc(100vw - var(--space-6))); }
+
+.confirm {
+  display: flex; flex-direction: column; gap: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl), var(--rim-light);
+  padding: var(--space-6);
+  max-block-size: min(85svh, 44rem);
+  overflow-y: auto;
+}
+
+.confirm__head { display: flex; align-items: center; gap: var(--space-3); }
+/* A dialog owns its whole viewport, so its title is the h1 of that moment —
+   `--text-xl`, one step under a page section rather than equal to it, which is
+   what it used to be. */
+.confirm__title { font-size: var(--text-xl); font-weight: var(--weight-semibold); }
+
+/* The mark states the tone before a word is read, and it is the only place the
+   danger hue is allowed to be the loud thing — it carries an icon, so nothing
+   here depends on the colour being perceived. */
+.confirm__mark {
+  flex: 0 0 auto; display: grid; place-items: center;
+  inline-size: 40px; block-size: 40px;
+  border-radius: var(--radius-full);
+  background: var(--color-accent-tint); color: var(--color-accent-ink);
+}
+.confirm__mark[data-danger] { background: var(--color-danger-tint); color: var(--color-danger); }
+
+/* WHAT ACTUALLY HAPPENS, in a well of its own. A second ground inside the panel
+   separates the consequences from the sentence introducing them, so the list
+   reads as the thing being agreed to rather than as more prose. */
+.confirm__list {
+  display: flex; flex-direction: column; gap: var(--space-2);
+  margin: 0; padding: var(--space-4); list-style: none;
+  background: var(--color-surface-sunken);
+  background-image: var(--texture-hairline);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+}
+.confirm__list li { position: relative; padding-inline-start: var(--space-5); }
+.confirm__list li::before {
+  content: ''; position: absolute; inset-inline-start: 0; inset-block-start: 0.55em;
+  inline-size: 6px; block-size: 6px; border-radius: var(--radius-full);
+  background: var(--color-border-strong);
+}
+
+/* The way out on the reading-start side, the act on the reading-end side, and
+   `.spacer` between them — so the destructive control is never the thing under
+   a thumb reaching for the corner it just came from. */
+.confirm__actions { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+
+/* The panel arrives; the backdrop is already there. Scale starts at
+   `--reveal-scale-from`, never at 0, and both scalars collapse under reduced
+   motion — `--reveal-scale-from` to 1 and `--motion-scale` to 0 — so the
+   movement disappears while the fade keeps its full duration. That is the
+   mechanism, and it is why this keyframe needs no separate override. */
+@keyframes confirm-in {
+  from {
+    opacity: 0;
+    transform: scale(var(--reveal-scale-from)) translateY(calc(8px * var(--motion-scale)));
+  }
+  to { opacity: 1; transform: none; }
+}
+.sheet--confirm[open] .confirm { animation: confirm-in var(--duration-base) var(--ease-out) both; }
+
 /* ------------------------------------------------------------ CHAT / HUD -- */
 /* A conversation, kept deliberately bare. The only weight on this screen belongs
    to the cards, because those are the part carrying claims; everything else —
@@ -1651,7 +1924,7 @@
   pointer-events: none;
 }
 
-.composer__note { font-size: var(--text-sm); color: var(--color-danger); margin-block-end: var(--space-2); }
+.composer__note { font-size: var(--text-sm); color: var(--color-danger-text); margin-block-end: var(--space-2); }
 
 .ask {
   border: 1px solid var(--color-border); border-radius: var(--radius-lg);
@@ -1774,25 +2047,50 @@
    tag answers "why can I not delete this" better than a disabled button would. */
 .doclist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
 
+/* A MANAGED ROW, NOT A LINE OF TEXT. Identity on top, controls beneath, one
+   layout at every width — the arrangement the upload screen arrived at by
+   measurement: the category select needs about 12rem to show its longest
+   option, which does not fit beside a filename and two buttons on a phone. */
 .doclist__item {
   display: flex;
-  align-items: center;
-  /* WRAPS, because the remove control changes width. The quiet state is a 32px
-     X; the confirm state is two buttons, and on a narrow row that stole the
-     space from the filename and broke "transcript.pdf" across three lines. The
-     confirm drops to its own line instead of crushing the thing it is about. */
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: var(--space-3);
-  row-gap: var(--space-2);
   padding: var(--space-3);
-  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
+  /* A WELL, NOT A NESTED CARD. The design system's own recipe: sunken fill, no
+     shadow, transparent border. It sat inside a card with a hairline of its
+     own for a moment, which is the card-inside-a-card read the craft floor
+     rules out — and the fill was already doing the separating. */
+  border: 1px solid transparent;
   background-color: var(--color-surface-sunken);
 }
 
+/* Busy is stated by the progress line below, not by fading the row out: a
+   dimmed row with a moving bar in it reads as two contradictory signals. */
+.doclist__item[data-busy] .select,
+.doclist__item[data-busy] .btn { pointer-events: none; }
+
+.doclist__head { display: flex; align-items: flex-start; gap: var(--space-3); }
+
+/* Wraps, because the remove control changes width. The quiet state is a 32px
+   X; the confirm state is two buttons, and on a narrow row that stole the
+   space from the category select. The confirm drops to its own line instead
+   of crushing the thing it is about. */
+.doclist__controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.doclist__controls .select { flex: 0 1 12rem; min-inline-size: 0; }
+
+.doclist__progress { display: flex; align-items: center; gap: var(--space-3); }
+.doclist__progress .meter { flex: 1 1 auto; }
+.doclist__status { font-size: var(--text-xs); color: var(--color-text-muted); white-space: nowrap; }
+
 .doclist__icon { color: var(--color-text-muted); flex: 0 0 auto; }
 
-.doclist__main { display: flex; flex-direction: column; gap: 2px; min-inline-size: 0; flex: 1 1 11rem; }
+.doclist__main { display: flex; flex-direction: column; gap: 2px; min-inline-size: 0; flex: 1 1 auto; }
 
 /* A filename is one long unbroken token more often than not, and left to
    itself it pushes the required tag off the row on a phone. */
@@ -1884,6 +2182,17 @@
               color var(--duration-fast) var(--ease-hover);
 }
 .doc-remove__x:hover { background: var(--color-surface-sunken, transparent); color: var(--color-text); }
+/* LOOKS 32px, IS TOUCHED AT 44 — the same trick `.act` uses under the chat
+   answers, and for the same reason: a remove control drawn any larger would
+   out-weigh the row it sits in, and the product floors touch targets at 44. */
+.doc-remove__x {
+  position: relative;
+}
+.doc-remove__x::before {
+  content: ''; position: absolute; inset: 50% auto auto 50%;
+  inline-size: 44px; block-size: 44px; transform: translate(-50%, -50%);
+}
+
 
 .doc-remove { margin-inline-start: auto; display: inline-flex; gap: var(--space-2); }
 
@@ -1990,7 +2299,6 @@
   margin-block-start: 2px;
 }
 .locked__ask .stack { flex: 1 1 16rem; min-inline-size: 0; }
-.locked__title { font-size: var(--text-lg); font-weight: var(--weight-semibold); }
 .locked__cta { flex: 0 0 auto; }
 
 @media (max-width: 40rem) {
@@ -2076,7 +2384,9 @@
    quiet: not what anyone is quoted, but what reaches the statement. */
 .tiers__usd { font-size: var(--text-sm); color: var(--color-text-muted); }
 
-.tiers__buy { margin-block-start: var(--space-3); }
+/* `.tiers__buy` is gone with the footer button. The one action now sits UNDER
+   the table at its full width, as `.btn--block`, so it is the width of the
+   thing it acts on rather than a third of it. */
 
 /* Only where the column headers are gone. Above 40rem the table's own
    "Current" marker says this, and two of them would be one too many. */
@@ -2153,7 +2463,6 @@
 
   .tiers tfoot td { padding: var(--space-4) 0 0; }
   .tiers tfoot td:empty { display: none; }
-  .tiers__buy { inline-size: 100%; justify-content: center; }
 }
 
 /* The card's own action row. "Open the course" is the course's link; whatever

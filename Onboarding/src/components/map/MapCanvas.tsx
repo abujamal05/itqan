@@ -80,7 +80,15 @@ interface MapCanvasProps {
    * getting lost is not possible.
    */
   tools?: {
-    zoomIn: string; zoomOut: string; recentre: string;
+    /**
+     * Omit BOTH and the zoom buttons are not rendered.
+     *
+     * The journey uses that. It is walked one milestone at a time and framed
+     * for you at each stop, so a zoom control there is only a way to arrive at
+     * a view nobody asked for and then need the recentre to get out of.
+     */
+    zoomIn?: string; zoomOut?: string;
+    recentre: string;
     next: string; prev: string;
   };
   /**
@@ -92,6 +100,19 @@ interface MapCanvasProps {
    * that has no payoff. Static maps do not pan, do not zoom, and show no tools.
    */
   isStatic?: boolean;
+  /**
+   * A map you are WALKED through rather than one you handle.
+   *
+   * Between `isStatic` (a picture) and the default (a canvas you drag). The
+   * viewport moves, but only through the tools: drag and pinch are off and the
+   * arrows and the overview button are the whole vocabulary. That is the phone
+   * journey. Four milestones do not fit a 375px screen at a legible size, and
+   * the two answers that do not work are shrinking them to 8pt type and handing
+   * someone a draggable canvas inside a scrolling page, where every vertical
+   * swipe is a coin toss between panning the map and scrolling the article.
+   * A button cannot be ambiguous about which one it meant.
+   */
+  guided?: boolean;
   /**
    * Ordered node ids the prev/next arrows step through.
    *
@@ -242,14 +263,18 @@ function Tools({
         <span className="sr-only">{labels.recentre}</span>
       </button>
 
-      <button className="map__tool" type="button" onClick={() => flow.zoomOut({ duration: 200 })}>
-        <Minus size={16} aria-hidden="true" />
-        <span className="sr-only">{labels.zoomOut}</span>
-      </button>
-      <button className="map__tool" type="button" onClick={() => flow.zoomIn({ duration: 200 })}>
-        <Plus size={16} aria-hidden="true" />
-        <span className="sr-only">{labels.zoomIn}</span>
-      </button>
+      {labels.zoomOut && labels.zoomIn && (
+        <>
+          <button className="map__tool" type="button" onClick={() => flow.zoomOut({ duration: 200 })}>
+            <Minus size={16} aria-hidden="true" />
+            <span className="sr-only">{labels.zoomOut}</span>
+          </button>
+          <button className="map__tool" type="button" onClick={() => flow.zoomIn({ duration: 200 })}>
+            <Plus size={16} aria-hidden="true" />
+            <span className="sr-only">{labels.zoomIn}</span>
+          </button>
+        </>
+      )}
     </div>
   );
 }
@@ -267,6 +292,7 @@ export function MapCanvas({
   fitKey,
   tools,
   isStatic = false,
+  guided = false,
   stops,
   onNodeOpen,
 }: MapCanvasProps) {
@@ -302,7 +328,12 @@ export function MapCanvas({
        assistive tech, which is the worst of both. */
     <ReactFlowProvider>
       <div className={className}>
-        <div className="map__canvas" data-static={isStatic || undefined} aria-hidden="true">
+        <div
+          className="map__canvas"
+          data-static={isStatic || undefined}
+          data-guided={guided || undefined}
+          aria-hidden="true"
+        >
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -319,9 +350,13 @@ export function MapCanvas({
                on screen, so there is nothing to pan to and dragging could only
                move it somewhere worse — and a grab cursor over it promises an
                interaction with no payoff. */
-            panOnDrag={!isStatic}
+            /* A GUIDED MAP MOVES, BUT NOT UNDER THE FINGER. It is embedded in
+               a scrolling page on the one viewport where a vertical drag is
+               already spoken for, so the gestures stay off and the arrows carry
+               the whole interaction. */
+            panOnDrag={!isStatic && !guided}
             zoomOnScroll={false}
-            zoomOnPinch={!isStatic}
+            zoomOnPinch={!isStatic && !guided}
             zoomOnDoubleClick={false}
             panOnScroll={false}
             preventScrolling={false}

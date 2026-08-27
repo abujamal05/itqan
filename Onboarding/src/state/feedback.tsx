@@ -25,6 +25,7 @@ import type { ReactNode } from 'react';
 import { emptyFeedback } from '../api';
 import type {
   Course, Feedback, FeedbackState, FeedbackSubject, FeedbackVerdict, ItqanApi,
+  DislikeReason, JobMatch,
 } from '../api';
 
 interface FeedbackValue {
@@ -35,7 +36,18 @@ interface FeedbackValue {
   /** Drop a verdict locally. Used by undo, which also re-sends the opposite. */
   clear: (subject: FeedbackSubject, itemId: string) => void;
   /** A replacement course for one the user rejected, or null if none exists. */
-  findSimilar: (input: { courseId: string; exclude: string[] }) => Promise<Course | null>;
+  /**
+   * One replacement for a rejected recommendation of either kind, carrying the
+   * reason it was rejected. Throws the server's refusal rather than swallowing
+   * it — a spent budget is not "nothing else fits".
+   */
+  findAlternative: (input: {
+    subject: FeedbackSubject;
+    itemId: string;
+    reason: DislikeReason | null;
+    note: string | null;
+    exclude: string[];
+  }) => Promise<Course | JobMatch | null>;
 }
 
 const Ctx = createContext<FeedbackValue | null>(null);
@@ -81,14 +93,14 @@ export function FeedbackProvider({
     });
   }, []);
 
-  const findSimilar = useCallback(
-    (input: { courseId: string; exclude: string[] }) => api.findSimilarCourse(input),
+  const findAlternative = useCallback(
+    (input: Parameters<FeedbackValue['findAlternative']>[0]) => api.findAlternative(input),
     [api],
   );
 
   const value = useMemo<FeedbackValue>(
-    () => ({ verdictFor, send, clear, findSimilar }),
-    [verdictFor, send, clear, findSimilar],
+    () => ({ verdictFor, send, clear, findAlternative }),
+    [verdictFor, send, clear, findAlternative],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

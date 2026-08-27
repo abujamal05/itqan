@@ -198,6 +198,31 @@ export const alternateCourses = (l: Locale) => [
     recommended: false,
     source: { name: 'freeCodeCamp', url: 'https://example.com/courses/c5', retrievedAt: '2026-08-05' },
   },
+  /* TWO MORE THAT CLOSE THE SAME GAP, at different prices and lengths.
+     Without them the catalogue held exactly one alternative per gap, so
+     "too expensive" and "too long" could only ever return the same course and
+     the reason-aware search was unobservable locally — the behaviour was
+     implemented and untestable, which is the same as unverified. */
+  {
+    id: 'c7',
+    title: pick({ ar: 'Power BI للمحترفين', en: 'Power BI for professionals' }, l),
+    provider: 'Coursera / Microsoft',
+    hoursMin: 24, hoursMax: 30, durationText: '24 to 30 hours',
+    price: 32, currency: 'OMR', priceLabel: 'paid' as const,
+    unlocks: ['Power BI', pick({ ar: 'لوحات المعلومات', en: 'Dashboards' }, l)],
+    recommended: false,
+    source: { name: 'Coursera', url: 'https://example.com/courses/c7', retrievedAt: '2026-08-06' },
+  },
+  {
+    id: 'c8',
+    title: pick({ ar: 'Power BI في ساعتين', en: 'Power BI in two hours' }, l),
+    provider: pick({ ar: 'تعلم مايكروسوفت', en: 'Microsoft Learn' }, l),
+    hoursMin: 2, hoursMax: 2, durationText: '2 hours',
+    price: 12, currency: 'OMR', priceLabel: 'paid' as const,
+    unlocks: ['Power BI', pick({ ar: 'لوحات المعلومات', en: 'Dashboards' }, l)],
+    recommended: false,
+    source: { name: 'Microsoft Learn', url: 'https://example.com/courses/c8', retrievedAt: '2026-08-06' },
+  },
   {
     id: 'c6',
     title: pick({ ar: 'مهارات العرض والتواصل', en: 'Presenting and communicating at work' }, l),

@@ -61,6 +61,23 @@ const base = `/${locale}`;
         action="/api/auth/verify-email"
         novalidate
         data-server-error={s.verify.serverError}
+        {/* The shared refusals, rendered here because this script cannot read the
+        locale: a string baked into the bundle would be English on an Arabic
+        page. See `serverErrorMessage` — the page's own `data-server-error`
+        stays the last resort. */}
+        data-err-network={s.err.network}
+        data-err-server={s.err.server}
+        data-err-session={s.err.session}
+        data-err-credentials={s.err.credentials}
+        data-err-email-taken={s.err.emailTaken}
+        data-err-unverified={s.err.unverified}
+        data-err-consent-required={s.err.consentRequired}
+        data-err-invalid-code={s.err.invalidCode}
+        data-err-code-expired={s.err.codeExpired}
+        data-err-invalid-input={s.err.invalidInput}
+        data-err-not-found={s.err.notFound}
+        data-err-rate-limited={s.err.rateLimited}
+        data-err-rate-limited-in={s.err.rateLimitedIn}
         data-msg-wrong={s.verify.code.errorWrong}
         data-msg-wrong-one={s.verify.code.errorWrongOne}
       >

@@ -14,6 +14,19 @@
  * LOW READINESS changes the destination. Under `LOW_READINESS` the last
  * milestone stops being "applying for jobs" and stops linking there, because
  * sending someone to a page of roles they cannot get is not kindness.
+ *
+ * ONE SHAPE, TWO WAYS OF READING IT. The arc is the journey at every width; the
+ * phone no longer folds it into two rows of two. A different arrangement per
+ * viewport meant the map a person learnt on their laptop was not the map they
+ * met on their phone, and the fold introduced a turn that exists for no reason
+ * in the thing being described: a career does not double back at milestone two.
+ *
+ * What changes on a phone is the FRAMING, not the shape. Four milestones need
+ * about 700px and a phone has half that, so the map opens at full size on the
+ * milestone the user is standing on and is walked with the arrows: previous,
+ * next, and an overview that pulls back to the whole route. Dragging is off
+ * there — see `guided` in MapCanvas for why a swipe cannot be trusted inside a
+ * scrolling page. The laptop still shows everything at once and stays static.
  */
 import { useMemo } from 'react';
 import { Position, type Edge, type Node } from '@xyflow/react';
@@ -23,7 +36,7 @@ import { useMediaQuery } from '../../lib/useMediaQuery';
 import type { JourneyStage } from '../../api';
 import { MapCanvas } from './MapCanvas';
 import { MilestoneNode, type MilestoneData } from './MilestoneNode';
-import { arc, serpentine, sides, NODE } from './layout';
+import { arc, NODE } from './layout';
 
 /**
  * At or below this, the journey ends at building rather than at applying.
@@ -37,16 +50,6 @@ const STAGE_LINKS: Record<string, string> = { jobs: '/jobs' };
 
 const nodeTypes = { milestone: MilestoneNode };
 
-/**
- * Milestones per row once the map wraps, which is phones only.
- *
- * One row is all-horizontal, so its edges attach left and right and only flip
- * with direction. Two rows have a TURN in them, and that edge has to leave the
- * bottom and arrive at the top — attaching it to the side sent it out sideways
- * and straight back across the caption under the marker it just left.
- */
-const PER_ROW = 2;
-
 export function JourneyMap({
   stages,
   target,
@@ -59,11 +62,15 @@ export function JourneyMap({
   const { t, formatNumber, locale } = useI18n();
   const rtl = locale === 'ar';
   /**
-   * Four pins in a row need about 700px to stay legible, and a phone has half
-   * that. Because the map is STATIC there is no panning to fall back on, so the
-   * arrangement itself has to change: one row on a laptop, two rows of two on a
-   * phone, which fits a 375px screen at nearly full size. A media query in CSS
-   * could not do this — these are coordinates, not styles.
+   * Which INTERACTION the map gets, not which layout.
+   *
+   * Both widths lay the same arc out at the same coordinates. A laptop fits all
+   * four milestones at a legible size, so the map is a picture and nothing about
+   * it offers to move. A phone cannot, so it becomes `guided`: opened on the
+   * current milestone at full size and stepped through with the arrows.
+   * `MapCanvas` decides the opening frame by MEASURING — below `fitFloor` it
+   * centres on `focusNodeId` instead of fitting — so this flag only has to say
+   * which controls exist.
    */
   const narrow = useMediaQuery('(max-width: 40rem)');
 
@@ -73,24 +80,19 @@ export function JourneyMap({
   const low = typeof readiness === 'number' && readiness <= LOW_READINESS;
 
   const { nodes, edges } = useMemo(() => {
-    const pts = narrow
-      ? serpentine(stages.length, {
-        perRow: PER_ROW,
-        stepX: NODE.milestone.w + 54,
-        stepY: NODE.milestone.h + 48,
-        amplitude: 0,
-        rtl,
-      })
-      : arc(stages.length, NODE.milestone.w + 54, 56, rtl);
+    const pts = arc(stages.length, NODE.milestone.w + 54, 56, rtl);
+
+    /* One unbroken row, so every edge leaves one side and arrives at the other,
+       and the only thing direction changes is WHICH side is which. The
+       bottom-to-top case that `sides()` exists for belonged to the wrapped
+       phone layout and went with it. */
+    const turn = {
+      incoming: rtl ? Position.Right : Position.Left,
+      outgoing: rtl ? Position.Left : Position.Right,
+    };
 
     const ns: Node[] = stages.map((s, i) => {
       const isLast = i === stages.length - 1;
-      const turn = narrow
-        ? sides(i, stages.length, PER_ROW, rtl)
-        : {
-          incoming: rtl ? Position.Right : Position.Left,
-          outgoing: rtl ? Position.Left : Position.Right,
-        };
 
       const data: MilestoneData = {
         label: isLast && low ? t('journey.building') : s.label,
@@ -133,7 +135,18 @@ export function JourneyMap({
     });
 
     return { nodes: ns, edges: es };
-  }, [stages, rtl, low, t, narrow]);
+  }, [stages, rtl, low, t]);
+
+  /**
+   * The order the arrows walk, memoised.
+   *
+   * `Tools` resets which stop it is standing on whenever this array's IDENTITY
+   * changes, not its contents. Built inline it would be a new array on every
+   * render, so the next time anything above re-rendered the dashboard — a
+   * refetch flipping `aria-busy` is enough — the arrows would snap back to the
+   * current milestone under someone who had walked ahead of it.
+   */
+  const stops = useMemo(() => stages.map((s) => s.id), [stages]);
 
   if (stages.length === 0) return null;
 
@@ -156,12 +169,22 @@ export function JourneyMap({
         edges={edges}
         nodeTypes={nodeTypes}
         fitKey={`${locale}:${stages.length}:${low}:${narrow}`}
-        /* STATIC. Four milestones are the whole story and they all fit, so
-           there is nothing off-frame to pan to — dragging could only move the
-           picture somewhere worse, and the grab cursor was promising an
-           interaction with no payoff. The courses map is the one you travel;
-           this one you just read. */
-        isStatic
+        /* STATIC ON A LAPTOP. Four milestones are the whole story and they all
+           fit, so there is nothing off-frame to pan to — dragging could only
+           move the picture somewhere worse, and the grab cursor was promising
+           an interaction with no payoff. */
+        isStatic={!narrow}
+        /* GUIDED ON A PHONE, where they do not all fit. The viewport moves, but
+           only when a button is pressed. */
+        guided={narrow}
+        stops={narrow ? stops : undefined}
+        tools={narrow ? {
+          /* No zoom pair. The two frames worth having here are "this milestone"
+             and "the whole route", and both are already a button. */
+          recentre: t('a11y.journeyOverview'),
+          next: t('a11y.journeyNext'),
+          prev: t('a11y.journeyPrev'),
+        } : undefined}
         focusNodeId={(stages.find((s) => s.state === 'current') ?? stages[stages.length - 1])?.id}
         srList={stages.map((s, i) => {
           const isLast = i === stages.length - 1;

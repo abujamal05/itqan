@@ -26,6 +26,8 @@ import {
 import { useI18n } from '../i18n';
 import { fileSize } from '../lib/fileSize';
 import { DOCUMENT_KINDS, REQUIRED_KIND, normaliseKind } from '../api';
+import { HttpError } from '../api/http';
+import { errorText } from '../lib/errorText';
 import type { DocumentKind, UploadedDocument } from '../api';
 import { useApi } from '../state/api';
 
@@ -113,13 +115,34 @@ export function DocumentUpload({
         onProgress: (p) => setItems((cur) =>
           cur.map((i) => (i.localId === item.localId ? { ...i, progress: p } : i))),
       });
-      setItems((cur) => cur.map((i) =>
-        i.localId === item.localId ? { ...i, status: 'done', progress: 1, uploaded } : i));
-    } catch {
-      setItems((cur) => cur.map((i) =>
-        i.localId === item.localId ? { ...i, status: 'error' } : i));
+      /* ONE ROW PER DOCUMENT, and the server decides which document this is.
+         Uploading a CV when the account already has one REPLACES it and comes
+         back carrying the existing id, so without this the screen showed the
+         old filename and the new one as two rows of a single document. */
+      setItems((cur) => cur
+        .filter((i) => i.localId === item.localId || i.uploaded?.id !== uploaded.id)
+        .map((i) => (i.localId === item.localId
+          ? { ...i, status: 'done', progress: 1, uploaded }
+          : i)));
+    } catch (err: unknown) {
+      /* A REFUSAL IS NOT A FAILURE TO RETRY, and this row could not tell the
+         two apart: every outcome rendered as "Something went wrong" beside a
+         retry button, including the ones retrying could only meet again. If the
+         SERVER answered, its reason is shown and the retry is withheld; if
+         nothing answered, the generic line and the retry are still right.
+         `error` was on `Item` from the start and had never once been set. */
+      const answered = err instanceof HttpError && err.status > 0;
+      setItems((cur) => cur.map((i) => (i.localId === item.localId
+        ? {
+          ...i,
+          status: 'error',
+          error: answered
+            ? errorText(err, { t, formatNumber }, { fallback: t('state.errorTitle') })
+            : undefined,
+        }
+        : i)));
     }
-  }, [api, setItems]);
+  }, [api, setItems, t, formatNumber]);
 
   const accept = useCallback((files: FileList | null) => {
     if (!files?.length) return;
@@ -228,7 +251,9 @@ export function DocumentUpload({
                 <p className="doc__name"><bdi>{i.name}</bdi></p>
 
                 <div className="doc__actions">
-                  {i.status === 'error' && i.file && (
+                  {/* Retry only where retrying could work. A refusal the
+                      server explained will be refused identically. */}
+                  {i.status === 'error' && i.file && !i.error && (
                     <button
                       type="button" className="btn btn--secondary btn--icon"
                       onClick={() => retry(i.localId)} aria-label={t('upload.retry')}
@@ -280,7 +305,7 @@ export function DocumentUpload({
               )}
               {i.status === 'error' && (
                 <span className="doc__status doc__status--bad">
-                  <AlertCircle size={14} aria-hidden="true" /> {t('state.errorTitle')}
+                  <AlertCircle size={14} aria-hidden="true" /> {i.error ?? t('state.errorTitle')}
                 </span>
               )}
             </li>
