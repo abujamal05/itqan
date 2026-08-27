@@ -38,7 +38,7 @@ import { useRunInFlight } from '../components/PipelineProgress';
 import { Card, EmptyState, ErrorState, LoadingBlock } from '../components/ui';
 import { CoursesMap } from '../components/map/CoursesMap';
 import { CourseSheet } from '../components/map/CourseSheet';
-import { useCompletedCourses } from '../state/completed';
+import { completedIdsFrom, useCompletedCourses } from '../state/completed';
 import { useUpdate } from '../state/update';
 import { UpdateDialog } from '../components/UpdateJourney';
 import { useAuth } from '../state/auth';
@@ -75,9 +75,7 @@ export function Courses() {
      Declared AFTER `data`, not beside the other hooks: `const` is in its
      temporal dead zone until initialised, so reading `data` above its own
      declaration is a ReferenceError on first render rather than an undefined. */
-  const serverCompleted = useMemo(
-    () => (data ?? []).filter((c) => c.completedAt).map((c) => c.id),
-    [data]);
+  const serverCompleted = useMemo(() => completedIdsFrom(data), [data]);
   const { completed, toggle } = useCompletedCourses(user?.id, serverCompleted);
   const [filter, setFilter] = useState<Filter>('all');
   const [refreshing, setRefreshing] = useState(false);

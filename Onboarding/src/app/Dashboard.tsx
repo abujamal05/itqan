@@ -49,7 +49,7 @@ import { useChat } from '../state/chat';
 import { useApi } from '../state/api';
 import { useAsync } from '../lib/useAsync';
 import { useOnboarding } from '../state/onboarding';
-import { useCompletedCourses } from '../state/completed';
+import { completedIdsFrom, useCompletedCourses } from '../state/completed';
 import { useAuth } from '../state/auth';
 import { Card, EmptyState, ErrorState, GapChip, LoadingBlock } from '../components/ui';
 import { CareerGoal } from '../components/CareerGoal';
@@ -152,14 +152,17 @@ export function Dashboard() {
   /**
    * Which courses the user has told us they finished.
    *
-   * The same local store the courses map reads. `POST /api/courses/:id/complete`
-   * is called now, but nothing comes BACK to say a course is done — BACKEND.md
-   * §1 specifies `completedAt` on `GET /api/courses` and it is not built — so
-   * this is the only place the dashboard can learn it. Not learning it was the
-   * bug: the shelf went on offering a finished course, and the next step, which
-   * the service authors around a specific course, went on naming it.
+   * FROM THE SERVER. `completedAt` on `GET /api/courses` is built and published
+   * now, so this reads the same record every device sees rather than one
+   * browser's localStorage — which is what made progress vanish on a new phone
+   * or after clearing site data. The list is already fetched above for the
+   * shelf, so this costs no extra request.
+   *
+   * The server also stops naming a finished course as the next step, so this is
+   * belt and braces on a decision made there rather than the only thing
+   * preventing it.
    */
-  const { completed } = useCompletedCourses(user?.id);
+  const { completed } = useCompletedCourses(user?.id, completedIdsFrom(courses));
 
   /**
    * Did the score move because of something this person did?
