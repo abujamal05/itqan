@@ -15,7 +15,7 @@
  * real endpoint on the user's account, and faking it here would hide that work
  * rather than do it.
  */
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { errorText } from '../lib/errorText';
@@ -25,6 +25,7 @@ import { useAsync } from '../lib/useAsync';
 import { useOnboarding } from '../state/onboarding';
 import { useRunInFlight } from '../components/PipelineProgress';
 import { isStrong } from '../api';
+import type { JobMatch } from '../api';
 import { Callout, Card, EmptyState, ErrorState, LoadingBlock } from '../components/ui';
 import { LOW_READINESS } from '../components/map/JourneyMap';
 import { MatchCard } from '../components/MatchCard';
@@ -66,6 +67,29 @@ export function Jobs() {
   const [refreshing, setRefreshing] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
 
+  /**
+   * The list as the USER has it, once they start replacing entries.
+   *
+   * Null means "no local edits, use the server's list" — the same shape the
+   * courses page already uses, and for the same reason: replacements chain, so
+   * an override map keyed on the original id would lose the second one. Reset
+   * whenever a fetch lands, so a real refresh is authoritative and cannot
+   * resurrect a posting the person turned down.
+   */
+  const [edited, setEdited] = useState<JobMatch[] | null>(null);
+  useEffect(() => { setEdited(null); }, [data]);
+
+  /** The token pool, so a card can price a replacement before spending one. */
+  const { data: usage } = useAsync((s) => api.getUsage(s), [api, locale, resultsVersion]);
+
+  const replaceJob = useCallback((id: string, next: JobMatch) => {
+    setEdited((cur) => (cur ?? data?.matches ?? []).map((j) => (j.id === id ? next : j)));
+    /* Said HERE because the card that asked has already been unmounted by the
+       swap. `BrowseBar`'s status line is a live region, so it reaches a screen
+       reader without moving focus away from the grid. */
+    setStatus(t('fb.replacedJob'));
+  }, [data, t]);
+
   const filters: FilterDef<Filter>[] = [
     { id: 'all', label: t('jobs.filterAll') },
     { id: 'strong', label: t('jobs.filterStrong') },
@@ -96,11 +120,11 @@ export function Jobs() {
   }, [api, data, reload, t, formatNumber]);
 
   const shown = useMemo(() => {
-    const list = data?.matches ?? [];
+    const list = edited ?? data?.matches ?? [];
     if (filter === 'strong') return list.filter((j) => isStrong(j.score));
     if (filter === 'saved') return list.filter((j) => saved.includes(j.id));
     return list;
-  }, [data, filter, saved]);
+  }, [edited, data, filter, saved]);
 
   /**
    * How many matches this account is not allowed to see.
@@ -166,7 +190,14 @@ export function Jobs() {
                 {low && revealed && <Callout>{t('jobs.lowShown')}</Callout>}
                 <div className="grid grid--2">
                   {shown.map((j) => (
-                    <MatchCard key={j.id} job={j} saved={saved.includes(j.id)} onToggleSave={toggleSave} />
+                    <MatchCard
+                      key={j.id}
+                      job={j}
+                      saved={saved.includes(j.id)}
+                      onToggleSave={toggleSave}
+                      usage={usage}
+                      onReplace={(next) => replaceJob(j.id, next)}
+                    />
                   ))}
                 </div>
                 <LockedMatches count={locked} />

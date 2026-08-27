@@ -769,5 +769,20 @@
         "a": "Your account goes back to free. Nothing you have done is deleted, and your three strongest matches keep updating."
       }
     ]
+  },
+  "err": {
+    "network": "We could not reach Itqan. Check your connection and try again.",
+    "server": "Itqan is having trouble right now, and it is not something you did. Try again in a few minutes.",
+    "session": "You have been signed out. Sign in again to carry on.",
+    "credentials": "That email and password do not match.",
+    "emailTaken": "There is already an account with that email.",
+    "unverified": "This account still needs its email confirmed. Check your inbox for the code.",
+    "consentRequired": "Consent is required before the account can be created.",
+    "invalidCode": "That code is not right. Check it and enter it again.",
+    "codeExpired": "That code has expired. Ask for a new one.",
+    "invalidInput": "Something in that is not valid. Check the fields and try again.",
+    "notFound": "That is no longer there.",
+    "rateLimited": "Too many attempts. Wait a moment and try again.",
+    "rateLimitedIn": "Too many attempts. Try again in about {n} minutes."
   }
 }

@@ -10,6 +10,11 @@
  * what is at the end of the road.
  *
  * VOLUME — courses and jobs show two each with a way through to the full page.
+ * The two courses are the two still OPEN: a course the user has marked done
+ * leaves this shelf, and the next step names the one after it. It keeps its
+ * place on the courses map, struck through, because seeing what you finished is
+ * the progress signal there — but here there is room for two cards and their
+ * only job is "what to do next".
  * Skills sit behind ONE closed disclosure carrying all of them, rather than the
  * first four with a "show more" underneath: a partial list cut at an arbitrary
  * number is the worst of both, and the skills are this card's detail, not its
@@ -35,7 +40,7 @@
  * Hud is deliberately absent from this whole page: the brand locks the mascot out
  * of verdicts, scores, real matches and data tables, all of which are here.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check, ChevronDown, Plus, Target } from 'lucide-react';
 import { useI18n } from '../i18n';
@@ -44,14 +49,17 @@ import { useChat } from '../state/chat';
 import { useApi } from '../state/api';
 import { useAsync } from '../lib/useAsync';
 import { useOnboarding } from '../state/onboarding';
+import { useCompletedCourses } from '../state/completed';
 import { useAuth } from '../state/auth';
 import { Card, EmptyState, ErrorState, GapChip, LoadingBlock } from '../components/ui';
 import { CareerGoal } from '../components/CareerGoal';
-import type { Course } from '../api';
+import type { Course, JobMatch } from '../api';
 import { MatchCard } from '../components/MatchCard';
 import { CourseCard } from '../components/CourseCard';
 import { JourneyMap, LOW_READINESS } from '../components/map/JourneyMap';
 import { useRunInFlight } from '../components/PipelineProgress';
+import { Celebrate, CountUp } from '../components/Celebrate';
+import { takeCelebration, type Celebration } from '../lib/celebrate';
 
 /** How much of each list the dashboard shows before handing off to its page.
  *  Skills are no longer truncated — they live behind one disclosure instead. */
@@ -80,6 +88,21 @@ function standingOf(
   // for up to 30 days after their own certificate says otherwise.
   const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   return grad > thisMonth ? t('dash.standingStudent') : t('dash.standingGraduate');
+}
+
+/**
+ * "SQL, data modelling and Power BI", in the reader's own language.
+ *
+ * `Intl.ListFormat` rather than a join on ", ": Arabic separates a list with
+ * the Arabic comma and joins the last pair with a word, and hard-coding either
+ * writes English punctuation into an Arabic sentence.
+ */
+function listOf(items: string[], locale: string): string {
+  try {
+    return new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' }).format(items);
+  } catch {
+    return items.join(', ');
+  }
 }
 
 export function Dashboard() {
@@ -114,6 +137,58 @@ export function Dashboard() {
    */
   const { data: stored, reload: reloadProfile } = useAsync((s) => api.getProfile(s),
                                                           [api, locale, settled, resultsVersion]);
+  /** The token pool, so a card can price a replacement before spending one. */
+  const { data: usage } = useAsync((s) => api.getUsage(s), [api, locale, resultsVersion]);
+
+  /* The same in-place replacement the jobs page has, for the two cards shown
+     here. Rejecting a posting must not throw the reader off the dashboard. */
+  const [editedMatches, setEditedMatches] = useState<JobMatch[] | null>(null);
+  const [matchNotice, setMatchNotice] = useState<string | null>(null);
+  const replaceMatch = useCallback((id: string, next: JobMatch) => {
+    setEditedMatches((cur) => (cur ?? data?.topMatches ?? []).map((j) => (j.id === id ? next : j)));
+    setMatchNotice(t('fb.replacedJob'));
+  }, [data, t]);
+
+  /**
+   * Which courses the user has told us they finished.
+   *
+   * The same local store the courses map reads. `POST /api/courses/:id/complete`
+   * is called now, but nothing comes BACK to say a course is done — BACKEND.md
+   * §1 specifies `completedAt` on `GET /api/courses` and it is not built — so
+   * this is the only place the dashboard can learn it. Not learning it was the
+   * bug: the shelf went on offering a finished course, and the next step, which
+   * the service authors around a specific course, went on naming it.
+   */
+  const { completed } = useCompletedCourses(user?.id);
+
+  /**
+   * Did the score move because of something this person did?
+   *
+   * Taken ONCE per arrival, and taking it is what records the new value as
+   * seen — so a second visit has nothing to celebrate and the number is simply
+   * the number. `data.readiness` is in the deps rather than the whole payload
+   * because a refetch that returns the same score is not a new event.
+   */
+  const [celebration, setCelebration] = useState<Celebration | null>(null);
+  const readiness = data?.readiness;
+  /**
+   * TAKEN ONCE PER SCORE, and the ref is what makes that true rather than
+   * hoped for. `takeCelebration` both reads and CONSUMES — it clears the mark
+   * and records the new value as seen — so calling it twice returns null the
+   * second time and wipes the celebration that the first call earned.
+   *
+   * StrictMode invokes every effect twice on mount, so this was one render
+   * away from never celebrating at all: it survived only because the dashboard
+   * happens to mount with no data, which makes both invocations return early
+   * before the score exists. A cached first paint would have eaten it.
+   */
+  const taken = useRef<number | null>(null);
+  useEffect(() => {
+    if (!user || typeof readiness !== 'number') return;
+    if (taken.current === readiness) return;
+    taken.current = readiness;
+    setCelebration(takeCelebration(user.id, readiness));
+  }, [user, readiness]);
 
   // Closed by default: the skills are the card's DETAIL, not its point.
   const [showAllSkills, setShowAllSkills] = useState(false);
@@ -131,6 +206,7 @@ export function Dashboard() {
    */
   const [editedCourses, setEditedCourses] = useState<Course[] | null>(null);
   useEffect(() => { setEditedCourses(null); }, [courses]);
+  useEffect(() => { setEditedMatches(null); }, [data]);
   const [courseNotice, setCourseNotice] = useState<string | null>(null);
   const replaceCourse = useCallback((id: string, next: Course) => {
     setEditedCourses((cur) => (cur ?? courses ?? []).map((c) => (c.id === id ? next : c)));
@@ -195,8 +271,56 @@ export function Dashboard() {
     );
   }
 
-  const topCourses = (editedCourses ?? courses ?? []).slice(0, CARDS_SHOWN);
-  const topMatches = data.topMatches.slice(0, CARDS_SHOWN);
+  const allCourses = editedCourses ?? courses ?? [];
+  const remaining = allCourses.filter((c) => !completed.has(c.id));
+  const topCourses = remaining.slice(0, CARDS_SHOWN);
+  const topMatches = (editedMatches ?? data.topMatches).slice(0, CARDS_SHOWN);
+
+  /**
+   * The one named action on the page, and it has to survive being acted on.
+   *
+   * The service authors this card and its copy names a specific course, so the
+   * moment that course is marked done the dashboard is telling someone to do a
+   * thing they have just told it they did. The service cannot know: completion
+   * is a write it accepts and does not feed back.
+   *
+   * So the server's step stands until the user finishes ANY course, and from
+   * then on the card names the next one still open. Its copy states only what
+   * the card beside it already states — the title, the provider, the skills it
+   * opens. Nothing here invents a reason ("three roles ask for this"): that
+   * figure is the service's to make, and making one up is the fabricated
+   * statistic the trust rules bar outright.
+   */
+  const nextCourse = remaining[0];
+  const nextStep: { title: React.ReactNode; body: string; action: string; cta: string } =
+    !allCourses.some((c) => completed.has(c.id))
+      ? {
+        title: data.nextStep.title,
+        body: data.nextStep.body,
+        action: data.nextStep.action,
+        cta: t('dash.startNextStep'),
+      }
+      : nextCourse
+        ? {
+          title: <bdi>{nextCourse.title}</bdi>,
+          body: nextCourse.unlocks.length > 0
+            ? t('dash.nextCourse', {
+              provider: nextCourse.provider,
+              skills: listOf(nextCourse.unlocks.map(skillCase), locale),
+            })
+            : t('dash.nextCoursePlain', { provider: nextCourse.provider }),
+          action: 'courses',
+          cta: t('dash.startNextStep'),
+        }
+        : {
+          /* Nothing left on the path. The honest next move is not another
+             course — it is the CV re-upload, which is the only thing that turns
+             what they have finished into evidence readiness can read. */
+          title: t('dash.pathClear'),
+          body: t('dash.pathClearBody'),
+          action: 'documents',
+          cta: t('courses.updateCv'),
+        };
 
   /**
    * Below this the matches are withheld deliberately.
@@ -224,13 +348,18 @@ export function Dashboard() {
     <div className="stack stack--page seq" aria-busy={loading || undefined}>
       {header}
 
+      {/* The one moment this page cheers, and only after a run that moved the
+          number. See `Celebrate` for why the score is allowed to travel here
+          and nowhere else. */}
+      {celebration && <Celebrate celebration={celebration} />}
+
       {/* 1. Where you stand. */}
       <section aria-labelledby="dash-readiness">
         {/* The page's one expressive surface — see the depth block in app.css.
             Everything below this stays product register. */}
         <Card className="card--anchor">
           <div className="readiness">
-            <Ring value={data.readiness} />
+            <Ring value={data.readiness} from={celebration?.from} />
             {/* `min(16rem, 100%)`, not a bare 16rem. The bare value is a hard
                 floor: on a 320px phone the card's content box is 215px, the
                 block refused to go under 256, and the readiness sentence — the
@@ -378,6 +507,7 @@ export function Dashboard() {
               <CourseCard
                 key={c.id}
                 course={c}
+                usage={usage}
                 onReplace={(next) => replaceCourse(c.id, next)}
               />
             ))}
@@ -401,13 +531,13 @@ export function Dashboard() {
             {/* `card__title`, not `section__title`: an h3 nested inside a
                 section must not render at the same size and weight as the five
                 h2s around it, or the DOM has a hierarchy the eye cannot see. */}
-            <h3 className="card__title">{data.nextStep.title}</h3>
-            <p>{data.nextStep.body}</p>
+            <h3 className="card__title">{nextStep.title}</h3>
+            <p>{nextStep.body}</p>
             <div className="row" style={{ marginBlockStart: 'var(--space-2)' }}>
               {/* Was labelled "See all courses", the same string as the section
                   link above it — two different destinations wearing one name. */}
-              <Link className="btn btn--primary" to={`/${data.nextStep.action}`}>
-                {t('dash.startNextStep')}
+              <Link className="btn btn--primary" to={`/${nextStep.action}`}>
+                {nextStep.cta}
                 <ArrowRight size={16} aria-hidden="true" className="go" />
               </Link>
             </div>
@@ -445,9 +575,22 @@ export function Dashboard() {
             />
           </Card>
         ) : (
-          <div className="grid grid--2">
-            {topMatches.map((j) => <MatchCard key={j.id} job={j} />)}
-          </div>
+          <>
+            <div className="grid grid--2">
+              {topMatches.map((j) => (
+                <MatchCard
+                  key={j.id}
+                  job={j}
+                  usage={usage}
+                  onReplace={(next) => replaceMatch(j.id, next)}
+                />
+              ))}
+            </div>
+            {/* Outlives the card it describes, like the course notice above. */}
+            {matchNotice && (
+              <p className="text-sm" role="status" aria-live="polite">{matchNotice}</p>
+            )}
+          </>
         )}
       </section>
     </div>
@@ -513,11 +656,16 @@ function Meter({ value }: { value: number }) {
  * and it is the right one: drawing the arc is choreography, animating the figure
  * would be dressing up a score so it looks more impressive than it is.
  */
-function Ring({ value }: { value: number }) {
+function Ring({ value, from }: { value: number; from?: number }) {
   const { t, formatNumber } = useI18n();
   const r = 48;
   const c = 2 * Math.PI * r;
-  const target = (Math.min(100, Math.max(0, value)) / 100) * c;
+  const clamp = (n: number) => Math.min(100, Math.max(0, n));
+  const target = (clamp(value) / 100) * c;
+  /* THE ARC STARTS WHERE THE NUMBER DOES. Given a `from`, both travel the same
+     distance over the same beat, so the ring and the figure read as one
+     movement rather than two things that happen to change at once. */
+  const start = typeof from === 'number' ? (clamp(from) / 100) * c : 0;
 
   // Starts empty, fills on the frame after mount so the transition has two
   // values to move between. Under reduced motion the CSS drops the transition
@@ -543,10 +691,14 @@ function Ring({ value }: { value: number }) {
           cx="54" cy="54" r={r} fill="none"
           stroke="var(--color-accent)" strokeWidth="8" strokeLinecap="round"
           strokeDasharray={c}
-          strokeDashoffset={drawn ? c - target : c}
+          strokeDashoffset={drawn ? c - target : c - start}
         />
         </svg>
-        <span className="ring__val num">{formatNumber(value)}</span>
+        <span className="ring__val num">
+          {typeof from === 'number'
+            ? <CountUp from={from} to={value} format={formatNumber} />
+            : formatNumber(value)}
+        </span>
       </div>
       <span className="ring__of">{t('dash.outOf100')}</span>
     </div>

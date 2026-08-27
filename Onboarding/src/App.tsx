@@ -23,6 +23,8 @@ import { ApiProvider, useApi } from './state/api';
 import { AuthProvider, useAuth } from './state/auth';
 import { OnboardingProvider, useOnboarding } from './state/onboarding';
 import { ChatProvider } from './state/chat';
+import { UpdateProvider } from './state/update';
+import { RateProvider } from './state/rate';
 import { FeedbackProvider } from './state/feedback';
 import { siteLogin, siteVerify } from './lib/site';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -38,6 +40,7 @@ import { Jobs } from './app/Jobs';
 import { Courses } from './app/Courses';
 import { Documents } from './app/Documents';
 import { Profile } from './app/Profile';
+import { Settings } from './app/Settings';
 import { Plan } from './app/Plan';
 import { captureUpgradeIntent, clearUpgradeIntent, hasUpgradeIntent } from './state/upgradeIntent';
 
@@ -210,7 +213,19 @@ function WithOnboarding({ children }: { children: ReactNode }) {
  */
 function WithChat({ children }: { children: ReactNode }) {
   const api = useApi();
-  return <ChatProvider api={api}>{children}</ChatProvider>;
+  /* INSIDE the chat provider, because the update run reuses its poll loop and
+     its results counter. Two poll loops racing one counter is a bug nobody
+     would find until two screens disagreed about the same run. */
+  /* `RateProvider` reads the route and the pipeline, so it sits inside both the
+     router and the onboarding state. It renders nothing on its own — the prompt
+     is mounted by the app shell. */
+  return (
+    <ChatProvider api={api}>
+      <UpdateProvider>
+        <RateProvider>{children}</RateProvider>
+      </UpdateProvider>
+    </ChatProvider>
+  );
 }
 
 /**
@@ -386,6 +401,7 @@ export default function App() {
                         <Route path="/courses" element={<Courses />} />
                         <Route path="/documents" element={<Documents />} />
                         <Route path="/profile" element={<Profile />} />
+                        <Route path="/settings" element={<Settings />} />
                         <Route path="/plan" element={<Plan />} />
                       </Route>
 

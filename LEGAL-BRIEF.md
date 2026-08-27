@@ -253,6 +253,28 @@ call. **What must not happen in the meantime is a privacy notice that describes 
 users do not have** — that converts a missing feature into a false statement in a legal document.
 Until the route exists, the notice says how to ask a human, or it says nothing.
 
+### Update 2026-08-26 — the FRONT END now asks for it, and the server still cannot answer
+
+Settings shipped with "Delete your account" and "Deactivate your account", behind a confirmation
+that lists what goes and a phrase the person has to type. `BACKEND.md` §7 specifies both routes.
+**Neither is built.** Pressing Delete today reaches a 404, and the dialog says plainly that nothing
+happened and the account is unchanged — which is the correct behaviour for a missing route, and is
+why the screen could ship ahead of it.
+
+**Two things a person has to decide, and neither is a UI question.**
+
+1. **Is a control that always fails better or worse than no control?** It is honest, it is
+   discoverable, and it tells a user the right exists. It is also a promise the system cannot keep
+   yet, and the gap between the two is exactly the kind of thing a regulator reads as a dark
+   pattern. Hiding the buttons behind a flag until the routes land is one line of code.
+2. **What happens to a live Paddle subscription when an account is paused or deleted.** Undecided.
+   Pausing a subscription and cancelling it are different promises, and an account that cannot be
+   used must not be billed for the period it cannot use.
+
+The rest of this section stands unchanged: there is still no automatic retention limit, the OVH
+snapshot still needs a stated rotation period, and `DELETE /api/documents/:id` is still the model
+the erasure route should follow.
+
 ## Naming sub-processors, and whether they train on the data
 **Medium risk.**
 **Obligation:** Regulators expect sub-processors to be named, and expect the policy to state whether

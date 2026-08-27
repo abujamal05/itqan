@@ -27,6 +27,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { useChat } from '../state/chat';
+import { useApi } from '../state/api';
+import { useAsync } from '../lib/useAsync';
 import { Message } from '../components/Message';
 import { Composer } from '../components/Composer';
 import { Hud } from '../components/Hud';
@@ -37,9 +39,20 @@ export function Chat() {
   const { t } = useI18n();
   const { threadId: param } = useParams();
   const navigate = useNavigate();
+  const api = useApi();
+
+  /**
+   * ONE FETCH FOR THE WHOLE THREAD, handed down to every turn.
+   *
+   * It lived inside `Message` for a moment, which renders once per turn — so a
+   * twenty message conversation asked the server for the same token pool twenty
+   * times on open. The thread is the thing that has one budget, so the thread is
+   * what asks.
+   */
+  const { data: usage } = useAsync((s) => api.getUsage(s), [api]);
 
   const {
-    threadId, messages, loading, pending, failed, writingId, verdicts,
+    threadId, messages, loading, pending, failed, failedReason, writingId, verdicts,
     ask, retryMessage, retry, rate, rerun, open, reset, doneWriting,
     setOnAwaitingConfirmation,
   } = useChat();
@@ -176,6 +189,7 @@ export function Chat() {
               isLast={i === count - 1}
               writing={writingId === m.id}
               onWritten={doneWriting}
+              usage={usage}
             />
             ))}
           </ol>
@@ -196,8 +210,15 @@ export function Chat() {
       {failed && (
         <Callout tone="danger">
           <div className="stack stack--sm">
-            <p>{t('chat.failed')}</p>
-            <div><Button variant="secondary" onClick={retry}>{t('action.retry')}</Button></div>
+            {/* THE SERVER'S REASON WHERE THERE IS ONE. Every failure used to
+                read "that did not come back", including the one a person can
+                act on: no tokens left today. That told somebody their question
+                was lost when their budget was spent, and offered a retry that
+                could only be refused again. */}
+            <p>{failedReason ?? t('chat.failed')}</p>
+            {!failedReason && (
+              <div><Button variant="secondary" onClick={retry}>{t('action.retry')}</Button></div>
+            )}
           </div>
         </Callout>
       )}
