@@ -349,9 +349,11 @@
 
 .fb__btn {
   display: inline-grid; place-items: center;
-  /* 40px, which clears the 24px WCAG 2.5.8 floor with room, and stays a
-     comfortable thumb target next to its twin on a phone. */
-  inline-size: 40px; block-size: 40px;
+  /* 44px. It sat at 40 on the argument that it cleared the 24px WCAG 2.5.8
+     floor, which it did — but this product floors touch targets at 44 and there
+     are eight of these on a jobs page, in pairs, which is exactly the
+     arrangement where a near-miss lands on the wrong thumb button. */
+  inline-size: 44px; block-size: 44px;
   border-radius: var(--radius-full);
   background: transparent;
   border: 1px solid var(--color-border);
@@ -508,9 +510,11 @@
 .unsure__x {
   grid-column: 2; grid-row: 1 / span 2;
   display: inline-grid; place-items: center;
-  /* 40px: comfortably over the 24px WCAG 2.5.8 floor, and a real thumb target
-     on the screen where people are removing things they did not put there. */
-  inline-size: 40px; block-size: 40px;
+  /* 44px, the product's own floor. It sat at 40 on the WCAG 2.5.8 argument,
+     which is a lower bar than this product holds itself to — and this is the
+     control that removes a skill somebody's document evidenced, on the screen
+     where a mis-tap costs them the thing they came to check. */
+  inline-size: 44px; block-size: 44px;
   border-radius: var(--radius-full);
   background: transparent; border: 1px solid transparent;
   color: var(--color-text-muted); cursor: pointer;
@@ -567,10 +571,23 @@
 }
 .input:disabled, .textarea:disabled { background: var(--color-surface-sunken); color: var(--color-text-muted); cursor: not-allowed; }
 /* Error: border + icon + message. Never a red border alone. */
+/* ---- DANGER AS TEXT, AND WHY IT IS NOT `--color-danger` -------------------
+   Measured: `--color-danger` on `--color-surface` is 10.77:1 in light and
+   **3.16:1 in dark**, against a 4.5:1 floor. The token is a FILL colour — it is
+   correct behind navy text on a button, and it fails as text on the dark
+   theme's own card, which is where every form error in the app sits.
+
+   Mixed toward `--color-text` it resolves per theme: 5.40:1 on dark surface and
+   4.97:1 on the sunken well, 13.98:1 and 11.28:1 in light. Two semantic tokens,
+   no invented value, and it still reads unmistakably red in both. The border,
+   the alert icon and the wording carry the state as well, so nothing here
+   depends on the hue being perceived. */
+:root { --color-danger-text: color-mix(in srgb, var(--color-danger) 70%, var(--color-text)); }
+
 .input[aria-invalid="true"], .textarea[aria-invalid="true"] { border-color: var(--color-danger); }
 .field__error {
   display: flex; align-items: center; gap: var(--space-2);
-  font-size: var(--text-sm); color: var(--color-danger);
+  font-size: var(--text-sm); color: var(--color-danger-text);
 }
 
 /* --------------------------------------------------------------- DROPZONE -- */
@@ -591,7 +608,6 @@
   border-radius: var(--radius-full); background: var(--color-surface); color: var(--color-accent);
   box-shadow: var(--shadow-sm);
 }
-.drop__title { font-size: var(--text-lg); font-weight: var(--weight-medium); }
 .drop__hint { font-size: var(--text-sm); color: var(--color-text); }
 .formats { display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: center; }
 .format {
@@ -880,12 +896,30 @@
 }
 
 .section__head { display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; }
-.section__title { font-size: var(--text-xl); font-weight: var(--weight-semibold); }
-/* A second heading tier. `.section__title` was rendering the section h2s, the
-   next-step h3 and EmptyState's h3 at one identical size and weight, so the DOM
-   had a hierarchy the eye could not see and a card's title impersonated a
-   section. */
-.card__title { font-size: var(--text-lg); font-weight: var(--weight-medium); }
+/* ---- THE TWO HEADING TIERS BELOW `.headline`, and there are only two ------
+   Eight classes used to set a heading size here, and they collapsed to four
+   rendered styles with three EXACT duplicate pairs: section/confirm both 20/600,
+   match/locked both 18/600, card/drop both 18/500. A reader was being asked to
+   tell 20/600 from 18/600 — a 1.11:1 step at identical weight — and the DOM's
+   hierarchy was one the eye could not see.
+
+   Now: `.headline` 30 → `.section__title` 24 → `.card__title` 18, all at 600.
+   Steps of 1.25 and 1.33, one weight, so SIZE alone carries the level. The four
+   duplicate classes are aliases of the tier they always were.
+
+   `.card__title` also moves 500 → 600, which fixes an inversion rather than a
+   near-miss: the dashboard's "Your next step" — its own comment calls it "the
+   single most important thing on the page" — was the LIGHTEST heading on that
+   page, sitting under course titles set in the heavier `.match__title`. */
+.section__title { font-size: var(--text-2xl); font-weight: var(--weight-semibold); }
+
+.card__title,
+.match__title,
+.locked__title,
+.drop__title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
 /* Muted, now that --color-text-muted clears AA on every light surface. At full
    --color-text a sub-note carried the same weight as body copy and the head
    read as two competing lines. */
@@ -896,7 +930,6 @@
    and the badge drops to its own line when they do not, rather than one of them
    winning the row outright. */
 .match__top { display: flex; align-items: flex-start; gap: var(--space-3); flex-wrap: wrap; }
-.match__title { font-size: var(--text-lg); font-weight: var(--weight-semibold); }
 .match__org { font-size: var(--text-sm); color: var(--color-text-muted); }
 /* "Why this match" — the standing name for the evidence chain.
    The sunken fill and the radius already separate this from the card around it.
@@ -1526,7 +1559,11 @@
 /* `--text-base`, not the section size. An h3 nested inside a section must not
    render at the weight of the h2 above it, or the DOM has a hierarchy the eye
    cannot see. */
-.close__name { font-size: var(--text-base); font-weight: var(--weight-medium); }
+/* WAS 16/500 — the size and weight of the sentence underneath it. "Delete your
+   account" is the most consequential control in the product and it had zero
+   typographic contrast against its own description. It is a card-level heading
+   and now renders as one. */
+.close__name { font-size: var(--text-lg); font-weight: var(--weight-semibold); }
 .close__act > .btn { flex: 0 0 auto; margin-inline-start: auto; }
 
 /* ---- The confirmation dialog ----------------------------------------------
@@ -1548,6 +1585,9 @@
 }
 
 .confirm__head { display: flex; align-items: center; gap: var(--space-3); }
+/* A dialog owns its whole viewport, so its title is the h1 of that moment —
+   `--text-xl`, one step under a page section rather than equal to it, which is
+   what it used to be. */
 .confirm__title { font-size: var(--text-xl); font-weight: var(--weight-semibold); }
 
 /* The mark states the tone before a word is read, and it is the only place the
@@ -1884,7 +1924,7 @@
   pointer-events: none;
 }
 
-.composer__note { font-size: var(--text-sm); color: var(--color-danger); margin-block-end: var(--space-2); }
+.composer__note { font-size: var(--text-sm); color: var(--color-danger-text); margin-block-end: var(--space-2); }
 
 .ask {
   border: 1px solid var(--color-border); border-radius: var(--radius-lg);
@@ -2142,6 +2182,17 @@
               color var(--duration-fast) var(--ease-hover);
 }
 .doc-remove__x:hover { background: var(--color-surface-sunken, transparent); color: var(--color-text); }
+/* LOOKS 32px, IS TOUCHED AT 44 — the same trick `.act` uses under the chat
+   answers, and for the same reason: a remove control drawn any larger would
+   out-weigh the row it sits in, and the product floors touch targets at 44. */
+.doc-remove__x {
+  position: relative;
+}
+.doc-remove__x::before {
+  content: ''; position: absolute; inset: 50% auto auto 50%;
+  inline-size: 44px; block-size: 44px; transform: translate(-50%, -50%);
+}
+
 
 .doc-remove { margin-inline-start: auto; display: inline-flex; gap: var(--space-2); }
 
@@ -2248,7 +2299,6 @@
   margin-block-start: 2px;
 }
 .locked__ask .stack { flex: 1 1 16rem; min-inline-size: 0; }
-.locked__title { font-size: var(--text-lg); font-weight: var(--weight-semibold); }
 .locked__cta { flex: 0 0 auto; }
 
 @media (max-width: 40rem) {

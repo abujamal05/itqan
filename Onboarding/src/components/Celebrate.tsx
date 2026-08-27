@@ -34,8 +34,29 @@ const COUNT_MS = 900;
  *  burst and starts reading as weather. */
 const RAIN_MS = 1600;
 
-/** Navy, gold and paper. Even the confetti is recognisably this product. */
-const COLORS = ['#F39F1C', '#FFB443', '#071055', '#FAF8F3'];
+/**
+ * Navy, gold and paper — read from the live tokens, not typed in here.
+ *
+ * `canvas-confetti` needs concrete colour strings and cannot resolve a CSS
+ * variable, which is how four brand hexes ended up hard-coded in a component
+ * that the design system forbids raw hex in. Reading them at fire time fixes
+ * two things at once: a palette change reaches the confetti like it reaches
+ * everything else, and the DARK theme's lifted gold is what falls on a dark
+ * page rather than the light theme's.
+ *
+ * The fallbacks are the brand five, for the one case where a token resolves to
+ * nothing — a burst in the wrong colours beats no burst at all.
+ */
+function brandColors(): string[] {
+  const cs = getComputedStyle(document.documentElement);
+  const pick = (name: string, fallback: string) => cs.getPropertyValue(name).trim() || fallback;
+  return [
+    pick('--color-accent', '#F39F1C'),
+    pick('--gold-400', '#FFB443'),
+    pick('--navy', '#071055'),
+    pick('--paper', '#FAF8F3'),
+  ];
+}
 
 /** True when the person has asked the system for less movement. */
 const reduced = () =>
@@ -114,7 +135,7 @@ export function Celebrate({ celebration }: { celebration: Celebration }) {
     document.body.appendChild(canvas);
 
     const fire = confetti.create(canvas, { resize: true, useWorker: true });
-    const base = { ticks: 260, disableForReducedMotion: true, colors: COLORS };
+    const base = { ticks: 260, disableForReducedMotion: true, colors: brandColors() };
 
     /* TWO CANNONS FROM THE EDGES for the opening pop. Not one from the middle:
        a centred burst over a centred glow is the stock-template move the design

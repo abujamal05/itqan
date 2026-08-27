@@ -515,11 +515,15 @@
   z-index: 4;
 }
 
+/* 44px, not 34. These were the smallest interactive controls in the product
+   and, on the phone journey, they are the ONLY way to reach a milestone that is
+   off-canvas — the one place where missing the target means the content is
+   unreachable rather than merely fiddly. The glyph stays 16px; the box grew. */
 .map__tool {
   display: grid;
   place-items: center;
-  inline-size: 34px;
-  block-size: 34px;
+  inline-size: 44px;
+  block-size: 44px;
   border-radius: var(--radius-full);
   border: 1px solid var(--color-border);
   background-color: var(--color-surface);
@@ -602,6 +606,18 @@
 }
 
 .sheet__close:hover { background-color: var(--color-surface-sunken); }
+
+/* LOOKS 32px, IS TOUCHED AT 44 — the same trick `.act` uses under the chat
+   answers, and for the same reason: a remove control drawn any larger would
+   out-weigh the row it sits in, and the product floors touch targets at 44. */
+.sheet__close {
+  position: relative;
+}
+.sheet__close::before {
+  content: ''; position: absolute; inset: 50% auto auto 50%;
+  inline-size: 44px; block-size: 44px; transform: translate(-50%, -50%);
+}
+
 
 /* `.sheet__foot` is gone. The Done and Undo controls moved INSIDE the card,
    beside "Open the course", so there is no separate surface under it any more. */

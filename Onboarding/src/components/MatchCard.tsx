@@ -82,8 +82,23 @@ export function MatchCard({
         </div>
 
         <div className="row">
+          {/* SECONDARY, matching `CourseCard`'s identical action.
+              It was `btn--primary`, which put one gold button on every card: four
+              on the jobs page, all reading "View the posting", with no other
+              primary anywhere — so the page had no anchor, only a wall. The same
+              act on a course card two centimetres away on the dashboard was
+              already secondary, so one action was styled at opposite emphasis in
+              two components a person sees side by side.
+
+              DESIGN.md §4 is "one primary per view", and the codebase already
+              worked around this rather than fixing it: `LockedMatches` demotes
+              its upgrade CTA and says why — "gold on this screen already means
+              'apply to this job'". With this secondary, the upgrade is the jobs
+              page's one gold anchor, which is the one real decision on it, and
+              on the dashboard "Start next step" stops competing with two job
+              links. The external-link icon and the card carry the affordance. */}
           <a
-            className="btn btn--primary"
+            className="btn btn--secondary"
             href={job.source.url}
             target="_blank"
             rel="noopener noreferrer"
