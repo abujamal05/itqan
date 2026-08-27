@@ -1,89 +1,112 @@
 /**
  * Which courses the user has told us they finished.
  *
- * THIS IS LOCAL AND IT IS NOT THE TRUTH. `POST /api/courses/:id/complete` does
- * not exist yet — it is specified in BACKEND.md — so "Done" cannot be recorded
- * anywhere authoritative. It is kept in localStorage so the path does not
- * forget on reload, which is the difference between a progression map and a
- * toy, and it is keyed by user so a shared machine does not leak one person's
- * progress into another's.
+ * THE SERVER IS THE TRUTH, and this is the overlay on top of it.
  *
- * Three properties this deliberately has:
+ * It used to be the other way round: completion lived in localStorage and
+ * nowhere else, which this file's own docstring called out as temporary until
+ * `POST /api/courses/:id/complete` landed. That route landed on 2026-08-24 and
+ * the WRITE was wired soon after — but the read never moved, so ticks stayed
+ * per-browser. Another device, or cleared site data, and a person's progress
+ * was gone. `Course.completedAt` is now published on `GET /api/courses` and is
+ * authoritative.
  *
- *   It never touches readiness. Marking a course done is a CLAIM, not
- *   evidence, and readiness is evidence-derived. The UI says so and offers the
- *   CV re-upload as the way to make it count. See BACKEND.md §1.
+ * It also fixes the case a read alone cannot: Agent E recommends one course per
+ * MISSING skill, so closing a gap is exactly what drops its course from the
+ * next set. The server keeps returning a finished course with
+ * `recommended: false`, which is what makes progress survive a rescan.
  *
- *   It never removes a course FROM THE MAP. Completed nodes stay there, greyed
- *   and struck through, because seeing what you finished is the progress signal
- *   on the page that is the path. The dashboard's two-card shelf is the one
- *   place that filters them out: it holds two cards, its whole job is "what to
- *   do next", and a finished course spends half that answer on the past.
+ * What remains here is a PENDING-WRITES overlay: the tick has to appear the
+ * instant somebody taps, and the list is not re-fetched on every toggle.
  *
- *   It is forward-compatible. When the route lands, `Course.completedAt` from
- *   the API becomes authoritative and this becomes a pending-writes cache; the
- *   only thing that changes is where `isComplete` reads from.
+ * It is deliberately IN MEMORY rather than in localStorage. A pending write
+ * that outlives the page is not pending — it is a second source of truth, which
+ * is what went wrong the first time. `markDone` writes to the server
+ * immediately and reverts on failure, so nothing needs to survive a reload:
+ * after one, the server's own answer is what renders.
+ *
+ * Three properties this keeps from before, all still true:
+ *
+ *   It never touches readiness. Marking a course done is a CLAIM, not evidence,
+ *   and readiness is evidence-derived. The UI says so and offers the CV
+ *   re-upload as the way to make it count.
+ *
+ *   It never removes a course. Completed courses stay visible, greyed — seeing
+ *   what you finished is the progress signal.
+ *
+ *   It is keyed by user, so a shared machine cannot leak one person's progress
+ *   into another's.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-const KEY = 'itqan.courses.completed';
+/**
+ * Ids whose write is still in flight, and which way it went.
+ *
+ * `true` = being added, `false` = being removed. A plain set could not express
+ * the second, and removal is exactly the case where the server's answer and the
+ * user's intent disagree for a moment.
+ */
+type Pending = Record<string, boolean>;
 
-type Store = Record<string, string[]>;
+export function useCompletedCourses(
+  userId: string | undefined,
+  /**
+   * Ids the SERVER says are finished — from `Course.completedAt`.
+   *
+   * Defaulted so a caller that has not fetched the course list yet still works;
+   * it simply has nothing to show as done until it has.
+   */
+  serverIds: readonly string[] = [],
+) {
+  const [pending, setPending] = useState<Pending>({});
 
-function read(): Store {
-  try {
-    const raw = localStorage.getItem(KEY);
-    const parsed: unknown = raw ? JSON.parse(raw) : {};
-    /* Anything could be under this key — another tab, an older build, a user
-       with devtools. A malformed store must degrade to "nothing completed"
-       rather than throwing on every render of the courses page. */
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-      ? (parsed as Store)
-      : {};
-  } catch {
-    return {};
-  }
-}
+  // A new user is a new record. Without this, switching accounts on one machine
+  // would carry the previous person's in-flight ticks across.
+  useEffect(() => { setPending({}); }, [userId]);
 
-function write(store: Store) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(store));
-  } catch {
-    /* Private mode, or a full quota. Losing the record is survivable; taking
-       the page down with it is not. */
-  }
-}
+  /** Stable across renders, so the effect below does not fire on every fetch. */
+  const serverKey = serverIds.join(' ');
 
-/** Fires on every change so two mounted views cannot disagree. */
-const listeners = new Set<() => void>();
-const announce = () => listeners.forEach((fn) => fn());
-
-export function useCompletedCourses(userId: string | undefined) {
-  const [ids, setIds] = useState<string[]>(() => (userId ? read()[userId] ?? [] : []));
-
+  /**
+   * Drop pending entries the server has caught up with.
+   *
+   * Keyed on agreement rather than on a timer: once the server says what the
+   * overlay said, the overlay has no work left. Leaving it would mean an
+   * un-complete performed elsewhere could never win, because a stale `true`
+   * would keep overriding the server for the life of the page.
+   */
   useEffect(() => {
-    const sync = () => setIds(userId ? read()[userId] ?? [] : []);
-    sync();
-    listeners.add(sync);
-    /* `storage` only fires in OTHER tabs, which is exactly the case the local
-       listener set cannot cover. */
-    window.addEventListener('storage', sync);
-    return () => {
-      listeners.delete(sync);
-      window.removeEventListener('storage', sync);
-    };
-  }, [userId]);
+    setPending((cur) => {
+      if (Object.keys(cur).length === 0) return cur;
+      const server = new Set(serverKey ? serverKey.split(' ') : []);
+      const next: Pending = {};
+      for (const [id, want] of Object.entries(cur)) {
+        if (server.has(id) !== want) next[id] = want;
+      }
+      return Object.keys(next).length === Object.keys(cur).length ? cur : next;
+    });
+  }, [serverKey]);
+
+  const completed = useMemo(() => {
+    const out = new Set(serverKey ? serverKey.split(' ') : []);
+    for (const [id, want] of Object.entries(pending)) {
+      if (want) out.add(id);
+      else out.delete(id);
+    }
+    return out;
+  }, [serverKey, pending]);
 
   const toggle = useCallback((courseId: string, done: boolean) => {
     if (!userId) return;
-    const store = read();
-    const cur = new Set(store[userId] ?? []);
-    if (done) cur.add(courseId);
-    else cur.delete(courseId);
-    store[userId] = [...cur];
-    write(store);
-    announce();
+    setPending((cur) => ({ ...cur, [courseId]: done }));
   }, [userId]);
 
-  return { completed: new Set(ids), toggle };
+  return { completed, toggle };
 }
+
+/** The ids a course list says are finished — the argument above. */
+export const completedIdsFrom = (
+  // `useAsync` yields `null` before its first answer, so null is a real input
+  // here rather than a defensive flourish.
+  courses: readonly { id: string; completedAt: string | null }[] | null | undefined,
+): string[] => (courses ?? []).filter((c) => c.completedAt).map((c) => c.id);
