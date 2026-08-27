@@ -54,14 +54,23 @@ export function Courses() {
   const api = useApi();
   const { user } = useAuth();
   const { settled } = useOnboarding();
-  /* Local, and honest about it: `POST /api/courses/:id/complete` does not
-     exist yet. See `state/completed.ts` and BACKEND.md §1. */
-  const { completed, toggle } = useCompletedCourses(user?.id);
   const [open, setOpen] = useState<Course | null>(null);
   const inFlight = useRunInFlight();
   // Re-fetch when the run lands; see the same note in Dashboard.tsx.
   const { data, loading, error, reload } = useAsync((s) => api.getCourses(s),
                                                    [api, locale, settled, resultsVersion]);
+  /* THE SERVER OWNS THIS. `completedAt` comes back on every course, including
+     ones nothing recommends any more, so progress survives a rescan and a
+     change of device. The hook is now only an overlay for a write still in
+     flight — see `state/completed.ts`.
+
+     Declared AFTER `data`, not beside the other hooks: `const` is in its
+     temporal dead zone until initialised, so reading `data` above its own
+     declaration is a ReferenceError on first render rather than an undefined. */
+  const serverCompleted = useMemo(
+    () => (data ?? []).filter((c) => c.completedAt).map((c) => c.id),
+    [data]);
+  const { completed, toggle } = useCompletedCourses(user?.id, serverCompleted);
   const [filter, setFilter] = useState<Filter>('all');
   const [refreshing, setRefreshing] = useState(false);
   const [status, setStatus] = useState<ReactNode>(null);

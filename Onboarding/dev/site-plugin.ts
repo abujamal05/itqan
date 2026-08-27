@@ -817,7 +817,37 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
             plan,
           });
         }
-        if (url === '/api/courses') return json(res, 200, courses(locale));
+        /* THE COMPLETION JOIN, mirrored. Production returns `completedAt` on
+           every course AND keeps returning a finished one after a rescan stops
+           recommending it -- Agent E suggests one course per MISSING skill, so
+           closing a gap is exactly what drops its course from the next set.
+           Without both here, the finished group could not be developed at all
+           and the screen would be built against a fiction. */
+        if (url === '/api/courses') {
+          const done = completedByUser.get(me.id) ?? new Set<string>();
+          const listed = courses(locale).map((c) => ({
+            ...c,
+            completedAt: done.has(c.id) ? new Date().toISOString() : null,
+          }));
+          const shown = new Set(listed.map((c) => c.id));
+          const orphaned = [...done].filter((id) => !shown.has(id));
+          // A finished course nothing recommends any more: `recommended: false`,
+          // and NO `closesGap`/`priority` -- those came from a recommendation
+          // that no longer exists, and inventing them would state a reason
+          // Agent E did not give.
+          const finished = orphaned.map((id) => ({
+            id,
+            title: `Finished course ${id}`,
+            provider: 'Coursera',
+            unlocks: [],
+            hoursMin: null, hoursMax: null, durationText: null,
+            price: null, currency: null, priceLabel: 'paid',
+            recommended: false,
+            completedAt: new Date().toISOString(),
+            source: { name: 'Coursera', url: 'https://example.test', retrievedAt: '' },
+          }));
+          return json(res, 200, [...listed, ...finished]);
+        }
 
         /* Completion, POST to set and DELETE to undo.
            Production has had these since before this stub did, and the client
