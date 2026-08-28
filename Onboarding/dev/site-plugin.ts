@@ -275,6 +275,15 @@ const planFor = (id: string) => plans.get(id) ?? 'free';
 
 /** One counter, because there is one pool. */
 const tokensUsed = new Map<string, number>();
+
+/* The PUBLIC assistant's per-visitor budget, mirroring `public_ask_per_visitor`
+   on the server. Counted in a COOKIE rather than a module variable, and that is
+   deliberate: the E2E suite runs this spec once per browser project, and a
+   process-wide counter would let two projects spend each other's questions.
+   Production signs the same cookie; a stub cannot, and does not need to — what
+   it has to model is the shape and the refusal, not the tamper-proofing. */
+const PUBLIC_ASK_LIMIT = 3;
+const ASK_COOKIE = 'itqan_asked';
 const spend = (id: string, amount: number) =>
   tokensUsed.set(id, (tokensUsed.get(id) ?? 0) + amount);
 
@@ -659,6 +668,35 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
          * and the whole flow could not be walked before deploying, which is the
          * one thing this plugin is for.
          */
+        /* ---- the public assistant ----
+         *
+         * `POST /api/ask` answers a SIGNED-OUT visitor from Itqan's own
+         * documentation, and it is the only endpoint here that takes no
+         * session — which is why it sits above the token lookup below.
+         *
+         * The site's Hud panel falls through to it whenever its authored
+         * answers do not match. Without it that request 404s locally and the
+         * panel quietly shows the authored refusal instead, so the thinking
+         * state, a real answer and the limit could not be seen on this machine
+         * at all. Shape copied from `api/main.py`: `{answer, remaining}` on the
+         * way through, `ask_limit` with a 429 once the three are gone.
+         */
+        if (url === '/api/ask' && req.method === 'POST') {
+          const sent = parseBody(await body(req), req.headers['content-type'] ?? '');
+          const question = String(sent.question ?? '').trim();
+          if (!question) return json(res, 400, { error: 'empty_question' });
+          if (question.length > 500) return json(res, 400, { error: 'message_too_long' });
+
+          const asked = Number(cookies[ASK_COOKIE] ?? '0') || 0;
+          if (asked >= PUBLIC_ASK_LIMIT) {
+            return json(res, 429, { error: 'ask_limit', asked, limit: PUBLIC_ASK_LIMIT });
+          }
+          return json(res, 200, {
+            answer: `Itqan reads what you already have and tells you where you stand. You asked: ${question}`,
+            remaining: Math.max(0, PUBLIC_ASK_LIMIT - (asked + 1)),
+          }, [`${ASK_COOKIE}=${asked + 1}; Path=/; SameSite=Lax`]);
+        }
+
         if (url === '/api/handoff') {
           res.statusCode = 302;
           res.setHeader('Location', cookies[COOKIE] ? '/app/' : '/');
