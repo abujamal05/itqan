@@ -4,9 +4,11 @@ import { Icon } from 'astro-icon/components';
  * Hud, the assistant, in miniature.
  *
  * The junction spine as a corner panel: Hud greets, offers the questions a
- * stranger actually asks, and every question taken MOVES into a spine above the
+ * stranger actually asks, and every question taken lands in a spine BELOW the
  * remaining ones instead of replacing them. Nothing a visitor read scrolls away
  * or disappears, which is the same argument the full surface in the app makes.
+ * The conversation ends the panel, so the newest answer is always the thing
+ * directly above the box you type into.
  *
  * WHAT THIS IS NOT: it is not a model, and it never pretends to be. Every answer
  * below is authored, server rendered, and about Itqan itself — what it does,
@@ -20,9 +22,12 @@ import { Icon } from 'astro-icon/components';
  * to fit that scale rather than ignore it:
  *   1. Every string is rendered into the markup here. The script never imports
  *      the dictionary, exactly like ThemeToggle and form.ts.
- *   2. Nothing is created in JS. Answers are pre-rendered hidden and MOVED into
- *      the spine, so no element ever misses Astro's scoped-style hash and no
- *      rule has to be written :global to reach it.
+ *   2. Nothing is BUILT in JS. Answers are pre-rendered hidden, then moved into
+ *      the spine (a question picked from the list, which retires its button so
+ *      it cannot repeat) or CLONED into it (a question typed into the box,
+ *      which gets a turn of its own every time it is asked). A clone carries
+ *      the scoped-style hash because the hash is a class on the element; a
+ *      built element would not, and would need a :global rule to reach it.
  *   3. Matching is a token overlap against data-keywords already in the DOM.
  *
  * The launcher is Hud standing, not a speech bubble, and it is the one place a
@@ -66,9 +71,6 @@ const base = `/${locale}`;
         <p class="hudchat__read">{s.greeting}</p>
       </div>
 
-      <!-- The spine. Taken questions land here, in order, and stay. -->
-      <ol class="hudchat__spine" aria-live="polite"></ol>
-
       <div class="hudchat__forksWrap">
         <p class="hudchat__forksLabel" data-label-more={s.forksMoreLabel}>{s.forksLabel}</p>
         <ul class="hudchat__forks">
@@ -84,6 +86,18 @@ const base = `/${locale}`;
           }
         </ul>
       </div>
+
+      <!-- The spine, LAST. Taken questions land here, in order, and stay — and
+           because it ends the body, the newest answer ends the panel with the
+           input directly beneath it, which is where a reply belongs. It used to
+           sit above the question list, so a reply appeared mid-panel with a menu
+           underneath it and the eye had to travel back up from the input to
+           find what Hud had said.
+
+           The list scrolling up out of the way is the cost of that, and it is
+           the acceptable one: it deletes each button as its question is taken
+           and hides itself when empty, so it shrinks rather than accumulating. -->
+      <ol class="hudchat__spine" aria-live="polite"></ol>
     </div>
 
     <form class="hudchat__composer">
@@ -139,10 +153,11 @@ const base = `/${locale}`;
     data-outofasks={s.outOfAsks}
   ></span>
 
-  <!-- Pre-rendered answers. Hidden as a group; each one is MOVED into the spine
-       when it is taken, which is why nothing here is cloned or rebuilt. An <ol>
-       rather than a <div> so the list items are valid where they start as well
-       as where they end up. -->
+  <!-- Pre-rendered answers. Hidden as a group; each is either MOVED into the
+       spine when its button is taken, or copied there when a typed question
+       reaches it — never built from scratch, which is what keeps the scoped
+       styles attached. An <ol> rather than a <div> so the list items are valid
+       where they start as well as where they end up. -->
   <ol class="hudchat__store" hidden>
     {
       s.forks.map((fork) => (
@@ -240,48 +255,89 @@ const base = `/${locale}`;
       if (!root.contains(e.target as Node)) setOpen(false);
     });
 
-    /* ------------------------------------------------------------ take -- */
+    /* ----------------------------------------------------------- turns -- */
 
     /**
-     * Move an answer into the spine. Moving, not copying: the node keeps its
-     * scoped-style hash and its identity, so asking the same thing twice
-     * returns to the answer already on the spine rather than stacking a
-     * duplicate under it.
+     * Put a turn at the end of the conversation and take the reader to it.
+     *
+     * `block: 'start'` rather than the nearest edge: an answer is read from its
+     * first line, and a short turn at the end of the list clamps to the bottom
+     * of the scroller anyway — which is where a reply belongs. The app's own
+     * chat screen settled on the same rule for the same reason.
+     *
+     * FOCUS ONLY MOVES WHEN THERE IS NOWHERE ELSE FOR IT TO BE. Taking a
+     * question from the list destroys the button that was pressed, so focus
+     * would otherwise fall to the body; the answer catches it. A question TYPED
+     * into the box is the opposite case — the person is mid-conversation and
+     * will very likely type again, so dragging focus out of the composer would
+     * make them click back into it every single time. The spine is an
+     * `aria-live` region either way, so the new turn is still announced.
      */
-    const take = (node: HTMLElement, typed?: string) => {
-      const already = node.parentElement === spine;
-
-      if (typed) {
-        const line = node.querySelector<HTMLElement>('.hudchat__typed');
-        const text = node.querySelector<HTMLElement>('.hudchat__typedText');
-        if (line && text) {
-          text.textContent = typed;
-          line.hidden = false;
-        }
-      }
-
-      if (!already) {
-        spine.appendChild(node);
-        // Retire the fork that led here; the ones not taken stay listed.
-        const fork = forkList.querySelector(`[data-answer="${node.id}"]`);
-        fork?.closest('.hudchat__forkItem')?.remove();
-        if (!forkList.children.length) {
-          forksWrap.hidden = true;
-        } else {
-          const more = forksLabel.dataset.labelMore;
-          if (more) forksLabel.textContent = more;
-        }
-      }
-
-      node.scrollIntoView({ block: 'nearest', behavior: reduced.matches ? 'auto' : 'smooth' });
-      node.focus();
+    const land = (node: HTMLElement, keepFocus = false) => {
+      spine.appendChild(node);
+      node.scrollIntoView({ block: 'start', behavior: reduced.matches ? 'auto' : 'smooth' });
+      if (!keepFocus) node.focus();
     };
 
+    /** Retire the button that led to an answer; the ones not taken stay listed. */
+    const retire = (answerId: string) => {
+      const fork = forkList.querySelector(`[data-answer="${answerId}"]`);
+      if (!fork) return;
+      fork.closest('.hudchat__forkItem')?.remove();
+      if (!forkList.children.length) {
+        forksWrap.hidden = true;
+      } else {
+        const more = forksLabel.dataset.labelMore;
+        if (more) forksLabel.textContent = more;
+      }
+    };
+
+    /**
+     * A copy of a pre-rendered answer, ready to be a turn of its own.
+     *
+     * `cloneNode` and NOT `createElement`: rule 2 at the top of this file bans
+     * building elements in JS because a built element misses Astro's scoped
+     * style hash. A clone carries it — the hash is a class on the element — so
+     * every rule that styled the original still reaches the copy. The id goes,
+     * because ids have to stay unique and nothing looks a turn up by one.
+     */
+    const copy = (source: HTMLElement, typed: string) => {
+      const turn = source.cloneNode(true) as HTMLElement;
+      turn.removeAttribute('id');
+      const line = turn.querySelector<HTMLElement>('.hudchat__typed');
+      const text = turn.querySelector<HTMLElement>('.hudchat__typedText');
+      if (line && text) {
+        text.textContent = typed;
+        line.hidden = false;
+      }
+      return turn;
+    };
+
+    /**
+     * At most ONE account offer in the panel. It is an offer, not a banner, and
+     * with a turn per question three answers otherwise meant three identical
+     * gold buttons stacked down the conversation.
+     */
+    const showOffer = (turn: HTMLElement) => {
+      spine.querySelectorAll<HTMLElement>('.hudchat__signup').forEach((el) => {
+        el.hidden = true;
+      });
+      const own = turn.querySelector<HTMLElement>('.hudchat__signup');
+      if (own) own.hidden = false;
+    };
+
+    /* A fork's answer is MOVED, not copied, and its button is retired in the
+       same breath — so that answer can never be asked for twice and nothing is
+       ever duplicated. A question TYPED into the composer is a different case
+       and takes the other path, below. */
     forkList.addEventListener('click', (e) => {
       const fork = (e.target as HTMLElement).closest<HTMLElement>('.hudchat__fork');
       if (!fork) return;
-      const node = document.getElementById(fork.dataset.answer ?? '');
-      if (node) take(node);
+      const id = fork.dataset.answer ?? '';
+      const node = document.getElementById(id);
+      if (!node) return;
+      retire(id);
+      land(node);
     });
 
     /* ----------------------------------------------------------- match -- */
@@ -332,10 +388,26 @@ const base = `/${locale}`;
      * documentation and NOTHING about any person, so it cannot overreach in the
      * way this panel's header promises it will not.
      */
-    const askServer = async (question: string) => {
-      const node = noMatch;
-      const body = node.querySelector<HTMLElement>('.hudchat__read')!;
-      const original = body.textContent ?? '';
+    /* The turn that carries the "you have used your questions" refusal, once one
+       exists. A further question that needs the model updates it instead of
+       stacking a second copy of the same sentence, so the panel can say the
+       limit was reached exactly once however many times it is tested. */
+    let spentTurn: HTMLElement | null = null;
+
+    /**
+     * Fill ONE turn from the model. The turn is passed in rather than looked up,
+     * so a slow first answer can no longer land in a second question's block.
+     *
+     * A turn arrives here with its typed line showing, the authored refusal
+     * heading HIDDEN and its body on "let me look that up". It resolves into one
+     * of three honest states, and the heading comes back only in the last of
+     * them — the one case where "that needs your record" is what is being said.
+     */
+    const askServer = async (turn: HTMLElement, question: string) => {
+      const heading = turn.querySelector<HTMLElement>('.hudchat__question')!;
+      const body = turn.querySelector<HTMLElement>('.hudchat__read')!;
+      const refusal = body.textContent ?? '';
+
       body.textContent = thinking;
       try {
         const res = await fetch('/api/ask', {
@@ -343,20 +415,34 @@ const base = `/${locale}`;
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ question, locale }),
         });
+
+        // 429 is not a failure, it is the limit doing its job, and the honest
+        // thing to show is the offer that was always the way past it. Checked
+        // before the body is read, so a refusal that is not JSON still lands
+        // here rather than in the catch.
+        if (res.status === 429) {
+          body.textContent = outOfAsks;
+          showOffer(turn);
+          spentTurn = turn;
+          return;
+        }
+
         const data = await res.json();
         if (res.ok && data.answer) {
           body.textContent = data.answer;
-          // Out of questions AFTER this one: the sign-up link is already in this
-          // node, so there is nothing to build — only something to say.
-          node.classList.toggle('is-last', data.remaining === 0);
+          // Out of questions AFTER this one: the sign-up link is already in
+          // this turn, so there is nothing to build — only something to show.
+          if (data.remaining === 0) showOffer(turn);
           return;
         }
-        // 429 is not a failure, it is the limit doing its job, and the honest
-        // thing to show is the offer that was always the way past it.
-        body.textContent = res.status === 429 ? outOfAsks : original;
+        throw new Error(String(res.status));
       } catch {
-        // Offline, or the API is down. The authored fallback is still true.
-        body.textContent = original;
+        // Offline, or the API is down, or it refused for a reason that is not
+        // the limit. The authored refusal is still true, and this is where its
+        // heading belongs.
+        heading.hidden = false;
+        body.textContent = refusal;
+        showOffer(turn);
       }
     };
 
@@ -364,10 +450,35 @@ const base = `/${locale}`;
       e.preventDefault();
       const question = input.value.trim();
       if (!question) return;
-      const matched = best(question);
-      take(matched ?? noMatch, question);
       input.value = '';
-      if (!matched) void askServer(question);
+
+      const matched = best(question);
+      if (matched) {
+        // A typed question gets its OWN turn even where an authored answer
+        // covers it, so asking twice reads like asking twice. The button is
+        // retired anyway: the list should stop offering what was just asked.
+        retire(matched.id);
+        land(copy(matched, question), true);
+        return;
+      }
+
+      if (spentTurn) {
+        const text = spentTurn.querySelector<HTMLElement>('.hudchat__typedText');
+        if (text) text.textContent = question;
+        land(spentTurn, true);
+        return;
+      }
+
+      /* A copy of the refusal block, born saying nothing it cannot yet support:
+         no heading (it may turn out not to need a record at all) and no account
+         offer (that belongs on the turn that runs out, not on every answer). */
+      const turn = copy(noMatch, question);
+      const heading = turn.querySelector<HTMLElement>('.hudchat__question');
+      const offer = turn.querySelector<HTMLElement>('.hudchat__signup');
+      if (heading) heading.hidden = true;
+      if (offer) offer.hidden = true;
+      land(turn, true);
+      void askServer(turn, question);
     });
 
     /* ----------------------------------------------------------- nudge -- */
@@ -655,6 +766,15 @@ const base = `/${locale}`;
 
   .hudchat__signup {
     align-self: flex-start;
+  }
+
+  /* `hidden` has to be spelled out here, and this is not belt-and-braces: the
+     offer is a `.button`, `.button` sets `display: inline-flex`, and an author
+     display beats the user-agent's `[hidden] { display: none }`. Without this
+     rule the attribute is set, `hidden` reports true, and three identical gold
+     buttons render down the conversation anyway. */
+  .hudchat__signup[hidden] {
+    display: none;
   }
 
   /* -------------------------------------------------------------- forks -- */
