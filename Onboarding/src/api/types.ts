@@ -387,7 +387,25 @@ export interface Course {
   priceLabel: 'free' | 'paid' | null;
   /** Skills this course unlocks — ties every course to a real gap. */
   unlocks: string[];
+  /**
+   * FALSE for a course kept on screen only because it was finished.
+   *
+   * Agent E recommends one course per MISSING skill, so closing a gap is
+   * exactly what drops its course from the next set. Without this the thing you
+   * just finished would disappear on the next rescan.
+   */
   recommended: boolean;
+  /**
+   * When the user said they finished it, ISO, or null.
+   *
+   * SERVER-OWNED and authoritative. Published since 2026-08-24 and read by
+   * nothing until now, which is why ticks were per-browser: the record was in
+   * the database the whole time and the screen was reading localStorage.
+   *
+   * A claim, never evidence — it does not move readiness, and the interface
+   * says so.
+   */
+  completedAt: string | null;
   source: Source;
 }
 

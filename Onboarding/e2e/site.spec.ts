@@ -105,3 +105,129 @@ test('a fresh link replaces the one already stashed', async ({ page }) => {
 
   await expect(page.locator('#rp-token')).toHaveValue('second-token');
 });
+
+/**
+ * Hud's corner panel: where an answer lands, and what a turn is allowed to say.
+ *
+ * The reported bug was placement. Answers used to land in a spine ABOVE the
+ * question list, so a reply appeared mid-panel with a menu underneath it and the
+ * eye had to travel back up from the input to find it. The conversation now ends
+ * the body, which is why the first assertion here is geometry and not DOM order:
+ * the complaint was about where the answer appears on screen.
+ *
+ * The rest are the two things that came out of the same screenshot. A visitor
+ * gets three questions and could only ever see the third, because one
+ * pre-rendered block was moved back and forth. And that block is the "I need
+ * your record" refusal, so its heading sat over answers that needed no record at
+ * all.
+ *
+ * The model path is exercised for real against the dev stub's `/api/ask`. Two
+ * nonsense words score nothing against any authored answer's keywords, which is
+ * what sends a question to the server; the authored refusal's own wording is
+ * then the thing to assert did NOT appear.
+ */
+const REFUSAL = 'I can answer questions about Itqan itself';
+
+const openPanel = async (page: import('@playwright/test').Page, lang: 'en' | 'ar' = 'en') => {
+  await page.goto(`/${lang}/`);
+  await page.locator('.hudchat__launcher').click();
+  await expect(page.locator('.hudchat__panel')).toBeVisible();
+};
+
+for (const lang of ['en', 'ar'] as const) {
+  test(`Hud's answer lands below the question list (${lang})`, async ({ page }) => {
+    await openPanel(page, lang);
+
+    await page.locator('.hudchat__fork').first().click();
+
+    const turn = page.locator('.hudchat__spine > li');
+    await expect(turn).toHaveCount(1);
+
+    const list = (await page.locator('.hudchat__forksWrap').boundingBox())!;
+    const answer = (await turn.boundingBox())!;
+    /* THE reported bug. RTL is included because this is a reordered flex column
+       and a mistake in one would show in the other first. */
+    expect(answer.y, 'the answer must sit beneath the whole question list')
+      .toBeGreaterThanOrEqual(list.y + list.height - 1);
+  });
+}
+
+test('a second typed question does not erase the first', async ({ page }) => {
+  await openPanel(page);
+
+  const turns = page.locator('.hudchat__spine > li');
+  const input = page.locator('#hudchat-input');
+
+  await input.fill('zzzz qqqq');
+  await input.press('Enter');
+  await expect(turns.first()).toContainText('You asked: zzzz qqqq');
+  // It really reached the model rather than falling back to the authored text.
+  await expect(turns.first()).not.toContainText(REFUSAL);
+
+  await input.fill('wwww vvvv');
+  await input.press('Enter');
+  await expect(turns).toHaveCount(2);
+
+  // THE assertion: the first question and its answer are still on the panel.
+  await expect(turns.first()).toContainText('zzzz qqqq');
+  await expect(turns.nth(1)).toContainText('wwww vvvv');
+
+  /* And the person can just keep typing. An answer that steals focus makes
+     someone click back into the box before every question, which is the one
+     thing a conversation must not ask of them. */
+  await expect(input).toBeFocused();
+});
+
+test('the refusal heading goes when Hud actually answers', async ({ page }) => {
+  await openPanel(page);
+
+  const input = page.locator('#hudchat-input');
+  await input.fill('zzzz qqqq');
+  await input.press('Enter');
+
+  const turn = page.locator('.hudchat__spine > li').first();
+  await expect(turn).toContainText('You asked: zzzz qqqq');
+
+  /* The block is the pre-written refusal, reused to carry a real reply. Its
+     heading said "that one needs your record" over an answer that plainly did
+     not need one. */
+  await expect(turn.locator('.hudchat__question')).toBeHidden();
+  /* `useInnerText`, deliberately: the default reads `textContent`, which
+     includes the text of a display:none element, so the naive version of this
+     assertion passes and fails for the wrong reasons. What is being claimed is
+     that nobody SEES the sentence. */
+  await expect(page.locator('.hudchat__spine'))
+    .not.toContainText('needs your record', { useInnerText: true });
+});
+
+test('a whole conversation carries at most one account offer', async ({ page }) => {
+  await openPanel(page);
+
+  const input = page.locator('#hudchat-input');
+  const turns = page.locator('.hudchat__spine > li');
+
+  for (const q of ['zzzz qqqq', 'wwww vvvv', 'xxxx yyyy']) {
+    await input.fill(q);
+    await input.press('Enter');
+    await expect(turns.last()).toContainText(`You asked: ${q}`);
+  }
+  await expect(turns).toHaveCount(3);
+
+  /* Three answers used to mean three identical gold buttons stacked down the
+     panel. It is an offer, and it belongs on the turn that runs out. */
+  await expect(page.locator('.hudchat__spine .hudchat__signup:visible')).toHaveCount(1);
+});
+
+test('the panel still opens on the greeting and something to pick from', async ({ page }) => {
+  await openPanel(page);
+
+  await expect(page.locator('.hudchat__greeting')).toBeVisible();
+  await expect(page.locator('.hudchat__fork')).toHaveCount(4);
+
+  /* The panel's height was measured so the questions are visible on opening —
+     that is the whole affordance, and moving the conversation below them is
+     exactly the change that could have cost it. */
+  const first = (await page.locator('.hudchat__fork').first().boundingBox())!;
+  const composer = (await page.locator('.hudchat__composer').boundingBox())!;
+  expect(first.y + first.height).toBeLessThanOrEqual(composer.y + 1);
+});
