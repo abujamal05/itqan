@@ -34,7 +34,7 @@ export default defineConfig({
         */
         ph: [
           'arrow-right', 'briefcase-duotone', 'caret-down', 'chart-bar-duotone', 'chat-circle-dots',
-          'check', 'eye', 'eye-slash', 'file-text-duotone', 'info',
+          'check', 'clipboard', 'eye', 'eye-slash', 'file-text-duotone', 'info',
           'linkedin-logo', 'list', 'map-pin', 'minus', 'moon', 'mouse-scroll',
           'path-duotone', 'plus',
           'question', 'seal-check-duotone', 'shield-check-duotone', 'sun',

@@ -58,7 +58,7 @@
       {
         "id": "what",
         "q": "What does Itqan actually do?",
-        "keywords": "what does do how work works working product itqan",
+        "keywords": "work works working product itqan service steps step next",
         "a": "It reads whatever you already have, tells you where you stand, and helps you settle on a role to aim for. Then the shortest path there in real courses, and the openings you can apply to now, each with the reason it fits.",
         "slug": "how-it-works",
         "linkLabel": "The four steps"
@@ -66,7 +66,7 @@
       {
         "id": "free",
         "q": "Is it really free?",
-        "keywords": "free cost costs price pay paid payment money subscription plan card charge trial",
+        "keywords": "free cost costs price pricing pay paid payment money much premium month monthly subscription plan card charge trial omr token tokens",
         "a": "Where you stand, your full path, your three strongest job matches and the advisor are free and stay free. Premium opens every other match you fit, and raises how much of the AI you can use.",
         "slug": "about",
         "linkLabel": "What we refuse"
@@ -87,7 +87,9 @@
         "slug": "proof",
         "linkLabel": "A worked example"
       }
-    ]
+    ],
+    "copy": "Copy answer",
+    "copied": "Copied"
   },
   "footer": {
     "tagline": "Stop guessing your next step.",

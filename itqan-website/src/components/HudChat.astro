@@ -138,23 +138,52 @@ const base = `/${locale}`;
       s.forks.map((fork) => (
         <li class="hudchat__node" id={`hudchat-a-${fork.id}`} tabindex="-1" data-keywords={fork.keywords} data-q={fork.q}>
           <p class="hudchat__typed" hidden><span class="hudchat__typedLabel">{s.youAsked}</span> <bdi class="hudchat__typedText"></bdi></p>
-          <p class="hudchat__question">{fork.q}</p>
-          <p class="hudchat__read">{fork.a}</p>
-          <a class="hudchat__source" href={`${base}/${fork.slug}/`}>
-            <span>{fork.linkLabel}</span>
-            <Icon class="hudchat__forkArrow" name="ph:arrow-right" width="16" height="16" aria-hidden="true" />
-          </a>
+          {/* The question is now a BUTTON, so an answer read can be folded away
+              again. `aria-expanded` and `aria-controls` carry the state; the
+              chevron is decoration on top of it. */}
+          <button class="hudchat__question" type="button" aria-expanded="true" aria-controls={`hudchat-b-${fork.id}`}>
+            <span>{fork.q}</span>
+            <Icon class="hudchat__chevron" name="ph:caret-down" width="15" height="15" aria-hidden="true" />
+          </button>
+          <div class="hudchat__answer" id={`hudchat-b-${fork.id}`}>
+            <p class="hudchat__read">{fork.a}</p>
+            <div class="hudchat__meta">
+              <a class="hudchat__source" href={`${base}/${fork.slug}/`}>
+                <span>{fork.linkLabel}</span>
+                <Icon class="hudchat__forkArrow" name="ph:arrow-right" width="16" height="16" aria-hidden="true" />
+              </a>
+              <span class="hudchat__spacer"></span>
+              <time class="hudchat__time"></time>
+              <button class="hudchat__copy" type="button" data-copy={s.copy} data-copied={s.copied} aria-label={s.copy} title={s.copy}>
+                <Icon class="hudchat__copyIcon" name="ph:clipboard" width="15" height="15" aria-hidden="true" />
+                <Icon class="hudchat__copiedIcon" name="ph:check" width="15" height="15" aria-hidden="true" />
+              </button>
+            </div>
+          </div>
         </li>
       ))
     }
     <li class="hudchat__node hudchat__node--none" id="hudchat-a-none" tabindex="-1">
       <p class="hudchat__typed" hidden><span class="hudchat__typedLabel">{s.youAsked}</span> <bdi class="hudchat__typedText"></bdi></p>
-      <p class="hudchat__question">{s.noMatchTitle}</p>
-      <p class="hudchat__read">{s.noMatchBody}</p>
-      <a class="button button--primary button--arrow hudchat__signup" href={`${base}/signup/`}>
-        <span>{strings.actions.signup}</span>
-        <Icon class="button__arrow" name="ph:arrow-right" width="16" height="16" aria-hidden="true" />
-      </a>
+      <button class="hudchat__question" type="button" aria-expanded="true" aria-controls="hudchat-b-none">
+        <span>{s.noMatchTitle}</span>
+        <Icon class="hudchat__chevron" name="ph:caret-down" width="15" height="15" aria-hidden="true" />
+      </button>
+      <div class="hudchat__answer" id="hudchat-b-none">
+        <p class="hudchat__read">{s.noMatchBody}</p>
+        <a class="button button--primary button--arrow hudchat__signup" href={`${base}/signup/`}>
+          <span>{strings.actions.signup}</span>
+          <Icon class="button__arrow" name="ph:arrow-right" width="16" height="16" aria-hidden="true" />
+        </a>
+        <div class="hudchat__meta">
+          <span class="hudchat__spacer"></span>
+          <time class="hudchat__time"></time>
+          <button class="hudchat__copy" type="button" data-copy={s.copy} data-copied={s.copied} aria-label={s.copy} title={s.copy}>
+            <Icon class="hudchat__copyIcon" name="ph:clipboard" width="15" height="15" aria-hidden="true" />
+            <Icon class="hudchat__copiedIcon" name="ph:check" width="15" height="15" aria-hidden="true" />
+          </button>
+        </div>
+      </div>
     </li>
   </ol>
 </div>
@@ -234,6 +263,42 @@ const base = `/${locale}`;
      * returns to the answer already on the spine rather than stacking a
      * duplicate under it.
      */
+    /**
+     * The clock on an answer, in the visitor's own locale.
+     *
+     * `Intl` rather than a hand-built string: this site is bilingual and an
+     * Arabic reader should get an Arabic clock. Set once, when the answer
+     * arrives, and never recomputed — a timestamp that drifts is not a
+     * timestamp.
+     */
+    const stamp = (node: HTMLElement) => {
+      const el = node.querySelector<HTMLTimeElement>('.hudchat__time');
+      if (!el || el.dateTime) return;
+      const now = new Date();
+      el.dateTime = now.toISOString();
+      el.textContent = new Intl.DateTimeFormat(document.documentElement.lang || undefined, {
+        hour: 'numeric',
+        minute: '2-digit',
+      }).format(now);
+    };
+
+    /**
+     * ONCE SOMETHING IS TYPED, THIS IS A CHAT.
+     *
+     * The starter questions are scaffolding for a stranger who does not know
+     * what to ask. A visitor who has typed their own question has answered that
+     * question about themselves, and leaving a "Start here" list under their
+     * conversation makes the panel look like it did not notice. The forks go,
+     * and they do not come back for the rest of the session.
+     */
+    let asked = false;
+    const enterChatMode = () => {
+      if (asked) return;
+      asked = true;
+      forksWrap.hidden = true;
+      root.dataset.chat = 'true';
+    };
+
     const take = (node: HTMLElement, typed?: string) => {
       const already = node.parentElement === spine;
 
@@ -259,9 +324,61 @@ const base = `/${locale}`;
         }
       }
 
+      /* Re-opened if it had been folded away, because arriving at a collapsed
+         answer is arriving at nothing. */
+      setOpenNode(node, true);
+      stamp(node);
+
       node.scrollIntoView({ block: 'nearest', behavior: reduced.matches ? 'auto' : 'smooth' });
       node.focus();
     };
+
+    /* ------------------------------------------------- fold an answer -- */
+
+    /**
+     * Collapsing is `hidden` on the answer, not a height transition.
+     *
+     * The panel is a scrolling column and the answers vary from one line to a
+     * paragraph with a button in it; animating that height would mean measuring
+     * every one of them, and the fold is a routine control a person may use
+     * repeatedly — the motion budget for that is zero, not 200ms.
+     */
+    const setOpenNode = (node: HTMLElement, open: boolean) => {
+      const head = node.querySelector<HTMLButtonElement>('.hudchat__question');
+      const body = node.querySelector<HTMLElement>('.hudchat__answer');
+      if (!head || !body) return;
+      head.setAttribute('aria-expanded', String(open));
+      body.hidden = !open;
+    };
+
+    spine.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+
+      const head = target.closest<HTMLButtonElement>('.hudchat__question');
+      if (head) {
+        const node = head.closest<HTMLElement>('.hudchat__node');
+        if (node) setOpenNode(node, head.getAttribute('aria-expanded') !== 'true');
+        return;
+      }
+
+      /* Copy the ANSWER, which is what a person means by "copy this" — not the
+         question they already have, and not the link label. */
+      const copy = target.closest<HTMLButtonElement>('.hudchat__copy');
+      if (copy) {
+        const text = copy.closest('.hudchat__node')?.querySelector('.hudchat__read')?.textContent?.trim();
+        if (!text) return;
+        void navigator.clipboard.writeText(text).then(() => {
+          copy.dataset.done = 'true';
+          const done = copy.dataset.copied;
+          if (done) { copy.setAttribute('aria-label', done); copy.title = done; }
+          window.setTimeout(() => {
+            delete copy.dataset.done;
+            const label = copy.dataset.copy;
+            if (label) { copy.setAttribute('aria-label', label); copy.title = label; }
+          }, 1600);
+        }).catch(() => { /* a refused clipboard is not worth an error state */ });
+      }
+    });
 
     forkList.addEventListener('click', (e) => {
       const fork = (e.target as HTMLElement).closest<HTMLElement>('.hudchat__fork');
@@ -285,7 +402,11 @@ const base = `/${locale}`;
       value
         .toLowerCase()
         .split(/[^\p{L}\p{N}]+/u)
-        .filter((w) => w.length > 2);
+        .filter((w) => w.length > 2)
+        /* The Arabic definite article, dropped, because الاشتراك and اشتراك are the same
+           word and a matcher that treats them as two answers nothing an Arabic
+           speaker types. Guarded on length so الان does not become ان. */
+        .map((w) => (w.startsWith(String.fromCharCode(1575,1604)) && w.length > 4 ? w.slice(2) : w));
 
     const best = (question: string): HTMLElement | null => {
       const asked = words(question);
@@ -310,6 +431,7 @@ const base = `/${locale}`;
       e.preventDefault();
       const question = input.value.trim();
       if (!question) return;
+      enterChatMode();
       take(best(question) ?? noMatch, question);
       input.value = '';
     });
@@ -575,6 +697,124 @@ const base = `/${locale}`;
     font-size: var(--text-sm);
     font-weight: var(--weight-semibold);
     color: var(--color-text);
+  }
+
+  /* The question is the fold control now. It keeps the look it had as a
+     paragraph — a heading for its answer — and gains only the affordance: a
+     full-width row, a chevron that turns, and a target a thumb can hit. */
+  .hudchat__question {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    inline-size: 100%;
+    min-block-size: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    text-align: start;
+    cursor: pointer;
+    color: var(--color-text);
+  }
+
+  .hudchat__question > span {
+    flex: 1 1 auto;
+  }
+
+  .hudchat__question:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 3px;
+    border-radius: var(--radius-sm);
+  }
+
+  .hudchat__chevron {
+    flex: 0 0 auto;
+    color: var(--color-text-muted);
+    transition: transform var(--duration-fast) var(--ease-out);
+  }
+
+  /* Points UP while the answer is open, down when it is folded away — the same
+     caret and the same rotation the site's own FAQ uses, so the two folds
+     behave identically. `rotate`, not two icons: it is one object turning. */
+  .hudchat__question[aria-expanded='true'] .hudchat__chevron {
+    transform: rotate(180deg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hudchat__chevron { transition: none; }
+  }
+
+  .hudchat__answer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  /* The footer of an answer: where it came from, when it arrived, and the copy
+     control. Muted and small, because none of it is the answer. */
+  .hudchat__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+  }
+
+  .hudchat__spacer {
+    flex: 1 1 auto;
+  }
+
+  .hudchat__time {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .hudchat__copy {
+    display: grid;
+    place-items: center;
+    inline-size: 32px;
+    block-size: 32px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    position: relative;
+    transition: background-color var(--duration-fast) var(--ease-hover),
+                color var(--duration-fast) var(--ease-hover);
+  }
+
+  /* LOOKS 32px, IS TOUCHED AT 44 — the same trick the app uses under its chat
+     answers, and for the same reason: a copy control drawn any larger would
+     out-weigh the line it sits in. */
+  .hudchat__copy::before {
+    content: '';
+    position: absolute;
+    inset: 50% auto auto 50%;
+    inline-size: 44px;
+    block-size: 44px;
+    transform: translate(-50%, -50%);
+  }
+
+  .hudchat__copy:hover {
+    background-color: var(--color-surface-sunken);
+    color: var(--color-text);
+  }
+
+  .hudchat__copy:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  /* One icon at a time. The check confirms the copy landed, which on a control
+     that produces no visible result is the whole of the feedback. */
+  .hudchat__copiedIcon,
+  .hudchat__copy[data-done] .hudchat__copyIcon {
+    display: none;
+  }
+
+  .hudchat__copy[data-done] .hudchat__copiedIcon {
+    display: block;
+    color: var(--color-accent-ink);
   }
 
   .hudchat__typed {
