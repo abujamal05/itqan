@@ -87,7 +87,9 @@
         "slug": "proof",
         "linkLabel": "A worked example"
       }
-    ]
+    ],
+    "thinking": "Let me look that up…",
+    "outOfAsks": "That is all I can answer here. Make a free account and Hud can answer from your own results."
   },
   "footer": {
     "tagline": "Stop guessing your next step.",
