@@ -16,7 +16,7 @@ import {
 } from 'react';
 import type { ReactNode } from 'react';
 import type {
-  ChatMessage, ChatThreadSummary, ChatVerdict, ItqanApi, UpdateScope,
+  ChatMessage, ChatThreadSummary, ChatVerdict, ItqanApi, RerunMode, UpdateScope,
 } from '../api';
 import { HttpError } from '../api/http';
 import { errorText } from '../lib/errorText';
@@ -50,7 +50,7 @@ interface ChatValue {
    * Spends the weekly credit and re-matches. Reaching this already took a
    * deliberate confirm in the view — Hud's proposal alone never calls it.
    */
-  rerun: () => Promise<void>;
+  rerun: (mode?: RerunMode) => Promise<void>;
   /**
    * Run the agents over a SCOPE, and poll it to the end.
    *
@@ -60,7 +60,7 @@ interface ChatValue {
    * scope `full`. Two poll loops racing one results counter is a bug nobody
    * would have found until two screens disagreed.
    */
-  runAgents: (scope: UpdateScope | 'full') => Promise<'done' | 'failed' | 'awaiting'>;
+  runAgents: (scope: UpdateScope | RerunMode) => Promise<'done' | 'failed' | 'awaiting'>;
   /** Called when a full re-run reaches the confirm step, so the view can
    *  navigate. Kept as a callback rather than a router import: this module is
    *  state, and state that navigates is state that cannot be tested. */
@@ -247,14 +247,20 @@ export function ChatProvider({ api, children }: { api: ItqanApi; children: React
   const [rerunProgress, setRerunProgress] = useState(0);
   const [resultsVersion, setResultsVersion] = useState(0);
 
-  const runAgents = useCallback(async (scope: UpdateScope | 'full') => {
+  const runAgents = useCallback(async (scope: UpdateScope | RerunMode) => {
     setRerunStage('matching');
     setRerunProgress(0);
     let jobId: string;
     try {
-      ({ jobId } = scope === 'full'
-        ? await api.rerunMatching()
-        : await api.runUpdate(scope));
+      /* Two doors, and which one depends on where the ask came from. The
+         update prompt speaks in what CHANGED ('documents', 'skills'); Hud
+         speaks in what to RUN ('courses', 'match', 'full'). The server maps
+         the first onto the second, so the only job here is not to confuse
+         them — they cost 2, 5 and 19, and sending the wrong word charges
+         somebody for work they did not ask for. */
+      ({ jobId } = scope === 'documents' || scope === 'skills'
+        ? await api.runUpdate(scope)
+        : await api.rerunMatching(scope));
     } catch (err) {
       setRerunStage(null);
       /* A REFUSAL IS NOT A BROKEN CHAT. `token_limit` is a fact about the
@@ -300,8 +306,8 @@ export function ChatProvider({ api, children }: { api: ItqanApi; children: React
 
   /* The whole pipeline, which is what Hud proposes. Kept as its own name
      because the chat surface and its copy are about exactly that. */
-  const rerun = useCallback(async () => {
-    await runAgents('full').catch(() => { /* reported by the caller */ });
+  const rerun = useCallback(async (mode: RerunMode = 'full') => {
+    await runAgents(mode).catch(() => { /* reported by the caller */ });
   }, [runAgents]);
 
   const open = useCallback(

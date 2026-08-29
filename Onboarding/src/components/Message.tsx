@@ -26,7 +26,7 @@ import { useEffect, useState } from 'react';
 import { Check, Copy, Paperclip, RefreshCw, ThumbsDown, ThumbsUp } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useChat } from '../state/chat';
-import type { ChatMessage, ChatVerdict, Course, JobMatch, Usage } from '../api';
+import type { ChatMessage, ChatVerdict, Course, JobMatch, RerunMode, Usage } from '../api';
 import { Logo } from './Logo';
 import { MatchCard } from './MatchCard';
 import { CourseCard } from './CourseCard';
@@ -48,7 +48,7 @@ export function Message({
   usage?: Usage | null;
   onSuggest: (question: string) => void;
   /** Confirmed re-run. Reaching this already required a second, deliberate tap. */
-  onRerun: () => Promise<void> | void;
+  onRerun: (mode?: RerunMode) => Promise<void> | void;
   onRetry: (messageId: string) => void;
   onRate: (messageId: string, verdict: ChatVerdict) => void;
   verdict?: ChatVerdict;
@@ -300,7 +300,7 @@ function RerunProposal({
   proposal, onRerun, busy, usage,
 }: {
   proposal: NonNullable<ChatMessage['proposedRerun']>;
-  onRerun: () => Promise<void> | void;
+  onRerun: (mode?: RerunMode) => Promise<void> | void;
   busy: boolean;
   usage?: Usage | null;
 }) {
@@ -319,7 +319,12 @@ function RerunProposal({
    * something. Asking Hud to redo the matching now costs and reads exactly what
    * it costs and reads everywhere else.
    */
-  const cost = usage?.prices?.documentReread;
+  /* THE PRICE OF THIS STAGE, from the server, because there are three of them
+     now and they are not the same. `documentReread` was right while every
+     re-run was a re-read; it is nine times the truth for a course refresh.
+     The fallback keeps an older server working rather than showing nothing. */
+  const cost = proposal.needed ?? usage?.prices?.documentReread;
+  const mode: RerunMode = proposal.mode ?? 'full';
   const left = usage?.tokens && usage.tokens.limit !== null
     ? Math.max(0, usage.tokens.limit - usage.tokens.used)
     : null;
@@ -351,7 +356,7 @@ function RerunProposal({
       {!confirming ? (
         <button type="button" className="suggest" disabled={busy}
                 onClick={() => setConfirming(true)}>
-          {t('chat.rerun.offer')}
+          {t(`chat.rerun.offer.${mode}`)}
         </button>
       ) : (
         <div className="rerun__confirm">
@@ -362,7 +367,7 @@ function RerunProposal({
                 cost: formatNumber(cost),
                 remaining: formatNumber(left ?? 0),
               })
-              : t('chat.rerun.offer')}
+              : t(`chat.rerun.offer.${mode}`)}
           </p>
           {/* `btn`, not `button`. These two carried `button button--primary`
               and `button button--ghost` — classes that exist in the MARKETING
@@ -377,7 +382,7 @@ function RerunProposal({
                 that fails on press adds nothing but a wasted tap. */}
             {affordable && (
               <button type="button" className="btn btn--primary" disabled={busy}
-                      onClick={async () => { setSpending(true); await onRerun(); }}>
+                      onClick={async () => { setSpending(true); await onRerun(mode); }}>
                 {t('chat.rerun.confirm')}
               </button>
             )}

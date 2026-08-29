@@ -16,7 +16,7 @@ import type {
   ConfirmedProfile, Course, DashboardData, Feedback, FeedbackState, ItqanApi,
   JobMatch, JobsResult, OnboardingProgress, Session, StoredProfile, UploadedDocument,
   Usage,
-  PendingUpdate,
+  PendingUpdate, RerunMode,
 } from './types';
 import { emptyFeedback } from './types';
 import { takeHandoffToken } from '../lib/site';
@@ -306,7 +306,7 @@ export function createHttpApi(): ItqanApi {
     },
     getUsage(signal) { return req<Usage>('/usage', { signal }); },
 
-    rerunMatching(signal) {
+    rerunMatching(mode = 'full', signal) {
       // `confirm: true` is required by the server and is sent only from the
       // confirm step — it is not a formality: at one re-run a week, a credit
       // spent by accident is the user's entire allowance gone.
@@ -316,11 +316,16 @@ export function createHttpApi(): ItqanApi {
          re-running after uploading a corrected CV. Without this it silently got
          `match`, which re-ranked against the same extraction and looked like
          nothing had happened. */
-      return req<{ jobId: string; awaitingConfirmation?: boolean }>('/assistant/rerun', {
-        method: 'POST',
-        body: JSON.stringify({ confirm: true, mode: 'full' }),
-        signal,
-      });
+      return req<{ jobId: string; awaitingConfirmation?: boolean; mode: RerunMode; spent: number }>(
+        '/assistant/rerun', {
+          method: 'POST',
+          /* The MODE the caller asked for, defaulting to the full re-read this
+             method has always done. The three cost 2, 5 and 19, so sending the
+             wrong one is not a cosmetic mistake — it is charging somebody nine
+             times over for work they did not ask for. */
+          body: JSON.stringify({ confirm: true, mode }),
+          signal,
+        });
     },
     async deleteDocument(id, signal) {
       await req<void>(`/documents/${encodeURIComponent(id)}`, { method: 'DELETE', signal });
