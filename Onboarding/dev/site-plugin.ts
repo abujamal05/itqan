@@ -1425,7 +1425,16 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
              is data on a message, never an action, and only the client's
              confirm calls the endpoint that spends the credit. */
           if (/again|new|جديد|أعد/i.test(question) && rerunCredits > 0) {
+            /* WHICH stage, and what it costs — the two fields the chip reads to
+               name what it is offering. A proposal without them renders the
+               generic wording and the re-read's price, which is what production
+               sent until the stages existed and is nine times the truth for a
+               course refresh. `courses` here because the question that triggers
+               this asks for something NEW, not for documents to be re-read. */
+            const mode = /course|دورة|دورات/i.test(question) ? 'courses' : 'match';
             message.proposedRerun = {
+              mode,
+              needed: RERUN_PRICES[mode],
               reason: locale === 'ar'
                 ? 'ظهرت وظائف جديدة منذ آخر مطابقة.'
                 : 'New postings have appeared since your last match.',
@@ -1452,23 +1461,6 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
            production — and the credit is decremented so the proposal stops
            being offered, which is the behaviour that would otherwise only show
            up on a real account a week later. */
-        /* The update prompt's door. It maps onto the same three stages under
-           the vocabulary of what CHANGED rather than what to run, and its POST
-           is the confirmation — the person already answered a dialog. */
-        if (url === '/api/update' && req.method === 'POST') {
-          const sent = parseBody(await body(req), req.headers['content-type'] ?? '');
-          const mode = { documents: 'full', skills: 'match' }[String(sent.scope ?? '')];
-          if (!mode) return json(res, 400, { error: 'unknown_scope' });
-          const price = RERUN_PRICES[mode];
-          const refused = tokenRefusal(me.id, price);
-          if (refused) return json(res, 429, refused);
-          spend(me.id, price);
-          return json(res, 200, {
-            jobId: `job_update_${Date.now().toString(36)}`,
-            mode, spent: price, awaitingConfirmation: mode === 'full',
-          });
-        }
-
         if (url === '/api/assistant/rerun' && req.method === 'POST') {
           const sent = parseBody(await body(req), req.headers['content-type'] ?? '');
           if (String(sent.confirm) !== 'true') {
@@ -1491,9 +1483,23 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
           if (refused) return json(res, 429, refused);
           rerunCredits = Math.max(0, rerunCredits - 1);
           spend(me.id, price);
+
+          /* REGISTERED, so `/api/analysis/:id` knows it. It was not, and the
+             poll that drives the chat's progress bar 404s on an id it was just
+             handed — meaning the rerun meter could not be developed against
+             this stub at all, whatever the client did.
+             `full` starts at the beginning and pauses to be confirmed, because
+             the extraction changed; the other two are created already past that
+             pause, since nothing was re-read and there is nothing to confirm.
+             Same distinction the update door below draws, for the same reason. */
+          const jobId = `job_rerun_${Date.now().toString(36)}`;
+          jobs_.set(jobId, {
+            started: mode === 'full' ? Date.now() : Date.now() - PHASE_ONE_MS,
+            bad: false,
+            confirmedAt: mode === 'full' ? undefined : Date.now(),
+          });
           return json(res, 200, {
-            jobId: `job_rerun_${Date.now().toString(36)}`,
-            mode, spent: price,
+            jobId, mode, spent: price,
             awaitingConfirmation: mode === 'full',
           });
         }

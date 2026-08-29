@@ -50,7 +50,7 @@ interface ChatValue {
    * Spends the weekly credit and re-matches. Reaching this already took a
    * deliberate confirm in the view — Hud's proposal alone never calls it.
    */
-  rerun: (mode?: RerunMode) => Promise<void>;
+  rerun: (mode?: RerunMode) => Promise<boolean>;
   /**
    * Run the agents over a SCOPE, and poll it to the end.
    *
@@ -306,8 +306,18 @@ export function ChatProvider({ api, children }: { api: ItqanApi; children: React
 
   /* The whole pipeline, which is what Hud proposes. Kept as its own name
      because the chat surface and its copy are about exactly that. */
+  /* Returns whether it STARTED, rather than swallowing the answer.
+     `.catch(() => {})` here meant a refusal — no gap to pick against, or not
+     enough tokens — reached the person as nothing at all: the bar flashed, the
+     offer came back, and the button looked broken. Reported that way on
+     2026-08-29. The caller now has something to say. */
   const rerun = useCallback(async (mode: RerunMode = 'full') => {
-    await runAgents(mode).catch(() => { /* reported by the caller */ });
+    try {
+      await runAgents(mode);
+      return true;
+    } catch {
+      return false;
+    }
   }, [runAgents]);
 
   const open = useCallback(

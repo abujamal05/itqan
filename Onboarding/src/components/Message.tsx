@@ -48,7 +48,7 @@ export function Message({
   usage?: Usage | null;
   onSuggest: (question: string) => void;
   /** Confirmed re-run. Reaching this already required a second, deliberate tap. */
-  onRerun: (mode?: RerunMode) => Promise<void> | void;
+  onRerun: (mode?: RerunMode) => Promise<boolean> | boolean | void;
   onRetry: (messageId: string) => void;
   onRate: (messageId: string, verdict: ChatVerdict) => void;
   verdict?: ChatVerdict;
@@ -300,7 +300,7 @@ function RerunProposal({
   proposal, onRerun, busy, usage,
 }: {
   proposal: NonNullable<ChatMessage['proposedRerun']>;
-  onRerun: (mode?: RerunMode) => Promise<void> | void;
+  onRerun: (mode?: RerunMode) => Promise<boolean> | boolean | void;
   busy: boolean;
   usage?: Usage | null;
 }) {
@@ -308,6 +308,7 @@ function RerunProposal({
   const { rerunStage, rerunProgress } = useChat();
   const [confirming, setConfirming] = useState(false);
   const [spending, setSpending] = useState(false);
+  const [refused, setRefused] = useState(false);
 
   /**
    * PRICED IN TOKENS, from the server, like every other spend.
@@ -336,15 +337,33 @@ function RerunProposal({
 
   /* The meter, not a sentence. "Re-running your matching" with nothing moving
      underneath it is the state this whole change exists to remove: a person
-     cannot tell it apart from a button that did nothing. */
+     cannot tell it apart from a button that did nothing.
+
+     `<i>`, NOT `<span className="meter__fill">`, and this is not a style
+     preference. The stylesheet defines `.meter > i { display: block; ... }` and
+     defines no `.meter__fill` at all, so the span was an INLINE element with a
+     percentage inline-size — which inline elements ignore — and no background.
+     The bar rendered as an empty 6px track at every stage, for every mode, from
+     the day it shipped. Reported 2026-08-29 as "the bar never moves"; it was
+     never drawing anything to move.
+
+     The same class of mistake this component already carries a note about, two
+     hundred lines down: `button button--primary` are classes from the marketing
+     site's stylesheet, which this app does not have either. A class name that
+     does not exist fails silently and looks like a logic bug. */
   if (running) {
+    const note = t(`chat.rerun.started.${mode}`);
     return (
       <div className="rerun__running">
-        <p className="rerun__note">{t('chat.rerun.started')}</p>
+        <p className="rerun__note">{note}</p>
         <div className="meter" role="progressbar" aria-valuemin={0} aria-valuemax={100}
-             aria-valuenow={Math.round(rerunProgress * 100)}
-             aria-label={t('chat.rerun.started')}>
-          <span className="meter__fill" style={{ inlineSize: `${Math.max(4, rerunProgress * 100)}%` }} />
+             aria-valuenow={Math.round(rerunProgress * 100)} aria-label={note}>
+          {/* `is-working` while it is still moving: one node of Agent A can take
+              the better part of a minute, and a bar that is genuinely stopped
+              and one that is mid-step must not look the same. Animate texture,
+              never position — the same rule PipelineProgress follows. */}
+          <i className="is-working"
+             style={{ inlineSize: `${Math.max(4, rerunProgress * 100)}%` }} />
         </div>
       </div>
     );
@@ -353,6 +372,7 @@ function RerunProposal({
   return (
     <div className="rerun">
       {proposal.reason ? <p className="rerun__why">{proposal.reason}</p> : null}
+      {refused ? <p className="rerun__cost">{t('chat.rerun.failed')}</p> : null}
       {!confirming ? (
         <button type="button" className="suggest" disabled={busy}
                 onClick={() => setConfirming(true)}>
@@ -382,7 +402,19 @@ function RerunProposal({
                 that fails on press adds nothing but a wasted tap. */}
             {affordable && (
               <button type="button" className="btn btn--primary" disabled={busy}
-                      onClick={async () => { setSpending(true); await onRerun(mode); }}>
+                      onClick={async () => {
+                        setRefused(false);
+                        setSpending(true);
+                        /* A refusal must SAY so. The server checks everything
+                           that makes a run impossible before it claims any
+                           tokens, so this really is "nothing happened and
+                           nothing was spent" — but silence is indistinguishable
+                           from a broken button, which is how this was reported. */
+                        if (await onRerun(mode) === false) {
+                          setSpending(false);
+                          setRefused(true);
+                        }
+                      }}>
                 {t('chat.rerun.confirm')}
               </button>
             )}
