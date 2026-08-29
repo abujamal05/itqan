@@ -48,7 +48,7 @@ export function Message({
   usage?: Usage | null;
   onSuggest: (question: string) => void;
   /** Confirmed re-run. Reaching this already required a second, deliberate tap. */
-  onRerun: (mode?: RerunMode) => Promise<void> | void;
+  onRerun: (mode?: RerunMode) => Promise<boolean> | boolean | void;
   onRetry: (messageId: string) => void;
   onRate: (messageId: string, verdict: ChatVerdict) => void;
   verdict?: ChatVerdict;
@@ -300,7 +300,7 @@ function RerunProposal({
   proposal, onRerun, busy, usage,
 }: {
   proposal: NonNullable<ChatMessage['proposedRerun']>;
-  onRerun: (mode?: RerunMode) => Promise<void> | void;
+  onRerun: (mode?: RerunMode) => Promise<boolean> | boolean | void;
   busy: boolean;
   usage?: Usage | null;
 }) {
@@ -308,6 +308,7 @@ function RerunProposal({
   const { rerunStage, rerunProgress } = useChat();
   const [confirming, setConfirming] = useState(false);
   const [spending, setSpending] = useState(false);
+  const [refused, setRefused] = useState(false);
 
   /**
    * PRICED IN TOKENS, from the server, like every other spend.
@@ -371,6 +372,7 @@ function RerunProposal({
   return (
     <div className="rerun">
       {proposal.reason ? <p className="rerun__why">{proposal.reason}</p> : null}
+      {refused ? <p className="rerun__cost">{t('chat.rerun.failed')}</p> : null}
       {!confirming ? (
         <button type="button" className="suggest" disabled={busy}
                 onClick={() => setConfirming(true)}>
@@ -400,7 +402,19 @@ function RerunProposal({
                 that fails on press adds nothing but a wasted tap. */}
             {affordable && (
               <button type="button" className="btn btn--primary" disabled={busy}
-                      onClick={async () => { setSpending(true); await onRerun(mode); }}>
+                      onClick={async () => {
+                        setRefused(false);
+                        setSpending(true);
+                        /* A refusal must SAY so. The server checks everything
+                           that makes a run impossible before it claims any
+                           tokens, so this really is "nothing happened and
+                           nothing was spent" — but silence is indistinguishable
+                           from a broken button, which is how this was reported. */
+                        if (await onRerun(mode) === false) {
+                          setSpending(false);
+                          setRefused(true);
+                        }
+                      }}>
                 {t('chat.rerun.confirm')}
               </button>
             )}

@@ -342,6 +342,7 @@
   "chat.rerun.cannotAfford": "This costs {cost} tokens and you have {remaining} left today. Your tokens reset tomorrow.",
   "chat.rerun.confirm": "Yes, re-run it",
   "chat.rerun.cancel": "Not now",
+  "chat.rerun.failed": "That did not start, and nothing was spent. Your results may need a full re-run first.",
   "chat.rerun.started.courses": "Looking for new courses. You can carry on, and the results update themselves.",
   "chat.rerun.started.match": "Matching you against today's jobs. You can carry on, and the results update themselves.",
   "chat.rerun.started.full": "Reading your documents again. You will be asked to confirm what was read before anything is matched.",
