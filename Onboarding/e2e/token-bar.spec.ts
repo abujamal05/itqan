@@ -95,11 +95,27 @@ test.describe('the token bar', () => {
     const afterMessage = await used();
     expect(afterMessage - start, 'a message costs 1').toBe(1);
 
-    // 19, not 1. This is the assertion that would fail against a stub charging
-    // one token for everything, and the only interesting thing the budget does.
-    await page.request.post('/api/assistant/rerun', { multipart: { confirm: 'true' } });
+    /* THE THREE STAGES, EACH AT ITS OWN PRICE. This is the assertion that would
+       fail against a stub charging one number for everything — and it very
+       nearly was that stub, because every re-run was charged the re-read's 19
+       until 2026-08-29 including the one that reads no documents.
+
+       `mode` is explicit now. Asking for nothing gets a match, which costs 5,
+       and a test that then asserts 19 is asserting the overcharge. */
+    await page.request.post('/api/assistant/rerun',
+      { multipart: { confirm: 'true', mode: 'courses' } });
+    const afterCourses = await used();
+    expect(afterCourses - afterMessage, 'a course refresh costs 2').toBe(2);
+
+    await page.request.post('/api/assistant/rerun',
+      { multipart: { confirm: 'true', mode: 'match' } });
+    const afterMatch = await used();
+    expect(afterMatch - afterCourses, 'a re-match costs 5').toBe(5);
+
+    await page.request.post('/api/assistant/rerun',
+      { multipart: { confirm: 'true', mode: 'full' } });
     const afterReread = await used();
-    expect(afterReread - afterMessage, 'a re-read costs 19').toBe(19);
+    expect(afterReread - afterMatch, 'a re-read costs 19').toBe(19);
 
     // And the number the person actually sees is the one the server holds.
     await page.goto('/app/settings');

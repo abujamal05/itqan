@@ -565,6 +565,14 @@ export interface JourneyStage {
  */
 export type UpdateScope = 'documents' | 'skills';
 
+/* What Hud can be asked to run, cheapest first.
+     courses  Agent E alone      — same gap, today's catalogue
+     match    Agent C then E     — today's postings, then courses for the new gap
+     full     Agent A then both  — re-reads the documents, stops to be confirmed
+   The server prices them 2, 5 and 19 from a measurement it keeps; nothing here
+   assumes any of those numbers. */
+export type RerunMode = 'courses' | 'match' | 'full';
+
 /**
  * What is out of date, what bringing it up to date costs, and whether this
  * account can pay for it.
@@ -717,6 +725,12 @@ export interface ChatMessage {
    * chip that runs.
    */
   proposedRerun?: {
+    /* WHICH stage Hud is offering, and what the server will charge for it.
+       `needed` comes from the server rather than being looked up here: the three
+       prices are 2, 5 and 19, and a copy of that table in the client is a copy
+       that drifts the first time one of them is re-measured. */
+    mode?: RerunMode;
+    needed?: number;
     reason: string | null;
     credits: { used: number; limit: number; remaining: number; resetsAt: string };
   };
@@ -983,8 +997,9 @@ export interface ItqanApi {
    * server executes.
    */
   rerunMatching(
+    mode?: RerunMode,
     signal?: AbortSignal,
-  ): Promise<{ jobId: string; awaitingConfirmation?: boolean }>;
+  ): Promise<{ jobId: string; awaitingConfirmation?: boolean; mode: RerunMode; spent: number }>;
   /** Removes one uploaded document, from the list AND from the server's disk. */
   deleteDocument(id: string, signal?: AbortSignal): Promise<void>;
 

@@ -169,6 +169,13 @@ const PLAN_TOKENS = { free: 30, paid: 90 } as const;
    measured. */
 const TOKEN_PRICES = { message: 1, documentReread: 19, alternative: 2 } as const;
 
+/* What each stage of the pipeline costs, matching the server. They are one
+   measured re-read divided by which agents actually run: Agent E alone, Agent C
+   and E, or all three. Kept beside TOKEN_PRICES rather than derived from it,
+   because the server publishes `spent` and the screens read that — this table
+   only has to be right enough to develop the difference against. */
+const RERUN_PRICES: Record<string, number> = { courses: 2, match: 5, full: 19 };
+
 /**
  * How many job matches a free account sees. The rest are paid.
  *
@@ -1445,6 +1452,23 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
            production — and the credit is decremented so the proposal stops
            being offered, which is the behaviour that would otherwise only show
            up on a real account a week later. */
+        /* The update prompt's door. It maps onto the same three stages under
+           the vocabulary of what CHANGED rather than what to run, and its POST
+           is the confirmation — the person already answered a dialog. */
+        if (url === '/api/update' && req.method === 'POST') {
+          const sent = parseBody(await body(req), req.headers['content-type'] ?? '');
+          const mode = { documents: 'full', skills: 'match' }[String(sent.scope ?? '')];
+          if (!mode) return json(res, 400, { error: 'unknown_scope' });
+          const price = RERUN_PRICES[mode];
+          const refused = tokenRefusal(me.id, price);
+          if (refused) return json(res, 429, refused);
+          spend(me.id, price);
+          return json(res, 200, {
+            jobId: `job_update_${Date.now().toString(36)}`,
+            mode, spent: price, awaitingConfirmation: mode === 'full',
+          });
+        }
+
         if (url === '/api/assistant/rerun' && req.method === 'POST') {
           const sent = parseBody(await body(req), req.headers['content-type'] ?? '');
           if (String(sent.confirm) !== 'true') {
@@ -1454,11 +1478,24 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
              returns at BOTH doors, because one budget whichever door should
              mean one reason whichever door. `rerunCredits` stays only to gate
              whether the chat OFFERS the proposal. */
-          const refused = tokenRefusal(me.id, TOKEN_PRICES.documentReread);
+          /* EACH STAGE ITS OWN PRICE, matching production since 2026-08-29.
+             The three are divisions of one measured re-read: Agent E alone, C
+             and E, and all three. A stub that charged 19 for every one of them
+             would make the cheap rung impossible to develop against — the whole
+             visible difference between "look for new courses" and "re-read my
+             CV" is what the meter does afterwards. */
+          const mode = String(sent.mode ?? 'match');
+          const price = RERUN_PRICES[mode];
+          if (price === undefined) return json(res, 400, { error: 'unknown_mode' });
+          const refused = tokenRefusal(me.id, price);
           if (refused) return json(res, 429, refused);
           rerunCredits = Math.max(0, rerunCredits - 1);
-          spend(me.id, TOKEN_PRICES.documentReread);
-          return json(res, 200, { jobId: `job_rerun_${Date.now().toString(36)}` });
+          spend(me.id, price);
+          return json(res, 200, {
+            jobId: `job_rerun_${Date.now().toString(36)}`,
+            mode, spent: price,
+            awaitingConfirmation: mode === 'full',
+          });
         }
 
         if (url === '/api/onboarding/progress') {
