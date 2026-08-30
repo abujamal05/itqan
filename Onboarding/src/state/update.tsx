@@ -29,7 +29,6 @@ import { useNavigate } from 'react-router-dom';
 import { useApi } from './api';
 import { useAuth } from './auth';
 import { useChat } from './chat';
-import { markRunFinished } from '../lib/celebrate';
 import type { PendingUpdate, UpdateScope } from '../api';
 
 const NOTHING: PendingUpdate = {
@@ -100,11 +99,10 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     setRunning(true);
     try {
       const outcome = await runAgents(pending.scope);
-      /* MARKED ONLY WHEN IT ACTUALLY FINISHED. The dashboard celebrates a
-         readiness that moved; a run that failed or stopped for confirmation
-         has not moved anything, and congratulating someone for it would be the
-         product cheering at nothing. */
-      if (outcome === 'done' && user) markRunFinished(user.id);
+      /* The celebration is armed inside `runAgents` itself, not here. It used
+         to be armed on this line, which meant only THIS door celebrated: the
+         same run started from Hud's chip finished silently. One engine, one
+         place that marks it finished. */
 
       /**
        * A DOCUMENTS RUN ENDS AT THE CONFIRMATION SCREEN, and somebody has to
@@ -119,7 +117,7 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     } finally {
       setRunning(false);
     }
-  }, [pending.scope, runAgents, user, navigate]);
+  }, [pending.scope, runAgents, navigate]);
 
   const defer = useCallback(() => {
     setSilenced(true);

@@ -75,6 +75,15 @@ const accounts: Account[] = [
    * spec pass alone and fail in a full run.
    */
   { id: 'u_reader', fullName: 'Huda Al Zadjali', email: 'reader@itqan.test', password: 'itqan1234', onboarded: true, emailVerified: true },
+  /**
+   * The CELEBRATION fixture, and it needs its own account for a second reason
+   * on top of spending: the celebration is a COMPARISON against the readiness
+   * this browser last saw, so the test reads the score, runs, and reads it
+   * again. Another spec resetting this account's gain in between would move
+   * the number under it and the celebration would vanish for a reason that has
+   * nothing to do with the code under test.
+   */
+  { id: 'u_amal', fullName: 'Amal Al Rawahi', email: 'amal@itqan.test', password: 'itqan1234', onboarded: true, emailVerified: true },
 ];
 
 /** Progress and profile per account, so a reload does not restart onboarding. */
@@ -1227,6 +1236,13 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
         if (url === '/api/dev/tokens' && req.method === 'POST') {
           tokensUsed.set(me.id, 0);
           rerunCredits = 1;
+          /* The readiness gain goes back too. It only ever climbs, and it is
+             capped at 100 — so a suite that re-runs the matching a few times
+             against one dev server eventually pins the score at the ceiling,
+             where it stops moving and every celebration silently stops firing.
+             A reset that leaves that behind is the same shared-counter flake
+             this endpoint was added for. */
+          readinessGain.delete(me.id);
           return json(res, 200, { ok: true, used: 0 });
         }
 
@@ -1498,6 +1514,18 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
             bad: false,
             confirmedAt: mode === 'full' ? undefined : Date.now(),
           });
+          /* THE SCORE MOVES HERE TOO, and it did not — only the update door
+             below moved it, so a re-run started from Hud finished with the
+             dashboard reading exactly what it read before and no celebration
+             to be seen. The same one-door gap the client had.
+
+             `courses` is deliberately left out rather than forgotten: a course
+             refresh runs Agent E alone, which rewrites recommendations and
+             computes no gap, so readiness genuinely does not move. A stub that
+             moved it there would invent a celebration production cannot give. */
+          if (mode !== 'courses') {
+            readinessGain.set(me.id, (readinessGain.get(me.id) ?? 0) + 6);
+          }
           return json(res, 200, {
             jobId, mode, spent: price,
             awaitingConfirmation: mode === 'full',

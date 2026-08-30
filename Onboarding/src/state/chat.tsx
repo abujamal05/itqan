@@ -21,6 +21,8 @@ import type {
 import { HttpError } from '../api/http';
 import { errorText } from '../lib/errorText';
 import { useI18n } from '../i18n';
+import { useAuth } from './auth';
+import { markRunFinished } from '../lib/celebrate';
 
 interface ChatValue {
   threadId: string | null;
@@ -246,6 +248,9 @@ export function ChatProvider({ api, children }: { api: ItqanApi; children: React
   const [rerunStage, setRerunStage] = useState<string | null>(null);
   const [rerunProgress, setRerunProgress] = useState(0);
   const [resultsVersion, setResultsVersion] = useState(0);
+  /* Whose readiness moved. The celebration is per account, and this
+     provider sits inside `AuthProvider`, so the id is already here. */
+  const { user } = useAuth();
 
   const runAgents = useCallback(async (scope: UpdateScope | RerunMode) => {
     setRerunStage('matching');
@@ -298,11 +303,21 @@ export function ChatProvider({ api, children }: { api: ItqanApi; children: React
         /* Bumped so the results screens refetch. Their `useAsync` deps key off
            this, which is what makes the dashboard reflect the new run instead
            of showing the old one until someone reloads by hand. */
-        if (job.stage === 'done') setResultsVersion((v) => v + 1);
+        if (job.stage === 'done') {
+          setResultsVersion((v) => v + 1);
+          /* ARM THE CELEBRATION HERE, because this is the one engine BOTH
+             doors run through. It was armed in `state/update.tsx` alone, so a
+             re-run started from Hud's chip — the same work, the same tokens,
+             the other door — moved the readiness and the dashboard said
+             nothing at all. Marked only on `done`: a run that failed or
+             stopped at the confirm screen has moved nothing, and cheering at
+             that would be the product congratulating somebody for a pause. */
+          if (user) markRunFinished(user.id);
+        }
         return job.stage === 'done' ? 'done' : 'failed';
       }
     }
-  }, [api, onAwaitingConfirmation]);
+  }, [api, onAwaitingConfirmation, user]);
 
   /* The whole pipeline, which is what Hud proposes. Kept as its own name
      because the chat surface and its copy are about exactly that. */
