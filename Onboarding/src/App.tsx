@@ -87,6 +87,7 @@ function ToSiteVerify() {
 /** Signed in, and still onboarding. */
 function RequireOnboarding({ children }: { children: ReactNode }) {
   const { user, booting } = useAuth();
+  const { ready, reuploading } = useOnboarding();
   if (booting) return <Booting />;
   if (!user) return <ToSiteLogin />;
   // Before the `onboarded` check, not after: an unverified account cannot have
@@ -95,6 +96,22 @@ function RequireOnboarding({ children }: { children: ReactNode }) {
   // that can actually unblock them.
   if (!user.emailVerified) return <ToSiteVerify />;
   if (user.onboarded) return <Navigate to="/dashboard" replace />;
+  /**
+   * An extraction has finished and is waiting to be confirmed, so THAT is where
+   * the flow is — not back at the start of it.
+   *
+   * Signing in again mid-run landed on /upload at step 1/3, with the bar reading
+   * "Finished reading your documents — 100%", both files listed "Ready", and a
+   * primary button offering to read them again — which starts a SECOND run and
+   * charges for it. The "Pick up where you left off" offer routes correctly but
+   * appeared on two logins out of four, because it depends on the resumable
+   * check racing the poll. Deciding this at the route removes the race instead
+   * of making the offer more reliable.
+   *
+   * `reuploading` is excluded: that flow deliberately re-enters /upload while a
+   * finished result already exists on the profile.
+   */
+  if (ready && !reuploading) return <Navigate to="/confirm" replace />;
   return <>{children}</>;
 }
 
