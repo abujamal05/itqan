@@ -567,5 +567,19 @@
   "dash.step.add_document.body": "More evidence widens what can be matched, especially a transcript.",
   "confirm.titleWaiting": "Reading your documents",
   "confirm.subWaiting": "This takes a minute or two. You will check everything Itqan read before any of it is used.",
-  "profile.incompleteOne": "1 thing still missing"
+  "profile.incompleteOne": "1 thing still missing",
+  "docs.cvRequired": "This is your CV, and the matching cannot run without one. Upload a replacement first, then change this.",
+  "skills.clearTitle": "Delete your skills",
+  "skills.clearLead": "Removes every skill on your profile, and the matches and courses worked out from them. Your documents stay, so reading them again rebuilds what they evidence.",
+  "skills.clearAction": "Delete my skills",
+  "skills.clearConfirmTitle": "Delete every skill?",
+  "skills.clearConfirmLead": "This removes all {n} skills on your profile. It cannot be undone from here.",
+  "skills.clearConfirmLeadPlain": "This removes every skill on your profile. It cannot be undone from here.",
+  "skills.clearItemSkills": "Every skill goes — the ones read from your documents, the ones you typed, and the ones your finished courses taught.",
+  "skills.clearItemResults": "Your readiness score, job matches and course recommendations go too. They were all worked out from those skills.",
+  "skills.clearItemKeepsDocs": "Your documents stay on file, so you can have them read again whenever you like.",
+  "skills.clearItemKeepsCourses": "Courses you marked as finished stay finished.",
+  "skills.clearNote": "Reading your documents again costs tokens, as it always does.",
+  "skills.clearConfirmAction": "Delete my skills",
+  "skills.clearFailed": "Your skills could not be deleted just now. Nothing has changed, and you can try again."
 }

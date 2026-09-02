@@ -327,6 +327,9 @@ export function createHttpApi(): ItqanApi {
           signal,
         });
     },
+    async clearSkills(signal) {
+      await req<void>('/profile/skills', { method: 'DELETE', signal });
+    },
     async deleteDocument(id, signal) {
       await req<void>(`/documents/${encodeURIComponent(id)}`, { method: 'DELETE', signal });
     },

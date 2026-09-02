@@ -39,6 +39,7 @@ import { Card, Chip, ErrorState, LoadingBlock } from '../components/ui';
 import { Section, Row } from '../components/Section';
 import { UsageMeters } from '../components/UsageMeters';
 import { CloseAccount } from '../components/CloseAccount';
+import { ClearSkills } from '../components/ClearSkills';
 import { DocumentManager } from '../components/DocumentManager';
 import type { ConfirmedProfile, Preferences, StoredProfile, Usage } from '../api';
 import { emptyPreferences } from '../api';
@@ -419,6 +420,17 @@ export function Settings() {
           subscription is still renewing. A second request for the same payload
           would also be a second chance for the two copies to disagree about
           whether deletion is allowed. */}
+      {/* Before the account card, and after everything that manages a document.
+          The order is the size of the act: correct a file, then delete what was
+          read out of your files, then close the account. `refreshUpdate` runs
+          with the reload for the same reason the document controls do — the
+          skills are gone, so what Itqan is working from has changed and the
+          server decides whether that leaves anything stale. */}
+      <ClearSkills
+        count={p.skills?.length}
+        onCleared={() => { reload(); refreshUpdate(); }}
+      />
+
       <CloseAccount usage={usage} />
     </div>
   );

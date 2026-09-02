@@ -234,6 +234,12 @@ const deactivated = new Set<string>();
  */
 interface StaleRow { scope: 'documents' | 'skills'; reasons: string[]; deferred: boolean }
 const stale = new Map<string, StaleRow>();
+/* Accounts whose skills were deleted. The dashboard then has nothing to show:
+   readiness, the matches and the recommendations were all worked out FROM the
+   skills, so production drops them with the skills and this has to as well —
+   a stub that kept showing a score would hide exactly the state the feature
+   exists to produce. Cleared by a run, which is what rebuilds them. */
+const cleared = new Set<string>();
 
 /**
  * A skills-only run costs less than a document re-read because it does less
@@ -1025,6 +1031,9 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
         }
 
         if (url === '/api/dashboard') {
+          // Skills deleted and nothing run since: the same 404 production
+          // answers when there is no completed run to read.
+          if (cleared.has(me.id)) return json(res, 404, { error: 'no_results' });
           const base = dashboard(locale);
           /* Capped at 100, because a readiness of 104 is not a number this
              product would ever show and a stub that produced one would send
@@ -1524,7 +1533,8 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
              computes no gap, so readiness genuinely does not move. A stub that
              moved it there would invent a celebration production cannot give. */
           if (mode !== 'courses') {
-            readinessGain.set(me.id, (readinessGain.get(me.id) ?? 0) + 6);
+            cleared.delete(me.id);   // a run rebuilds what the clear removed
+          readinessGain.set(me.id, (readinessGain.get(me.id) ?? 0) + 6);
           }
           return json(res, 200, {
             jobId, mode, spent: price,
@@ -1582,6 +1592,24 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
         /* Edits from the profile screen. Distinct from POST: this one does NOT
            start the pipeline, because correcting a birth date is not a reason to
            re-run the matching. */
+        /* Deleting every skill, and the results worked out from them.
+           Served here because a screen built against a stub that cannot produce
+           production's answer is exactly how the document controls above came
+           to ship broken: `dev` had PUT and PATCH, production had neither, and
+           nothing said so for a week. */
+        if (url === '/api/profile/skills' && req.method === 'DELETE') {
+          const prev = profiles.get(me.id);
+          if (!prev) return json(res, 204, undefined);   // nothing confirmed yet
+          profiles.set(me.id, { ...prev, skills: [], skillsClearedAt: new Date().toISOString() });
+          /* The matches and the readiness went with them, so the dashboard has
+             nothing to show until a run is paid for. `stale` is cleared rather
+             than raised: there is no longer a newer fact waiting to be matched
+             on, there is nothing at all. */
+          stale.delete(me.id);
+          cleared.add(me.id);
+          return json(res, 204, undefined);
+        }
+
         if (url === '/api/profile' && req.method === 'PUT') {
           const edited = parseBody(await body(req), req.headers['content-type'] ?? '');
           const prev = profiles.get(me.id) ?? {};
@@ -1647,6 +1675,7 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
             confirmedAt: row.scope === 'documents' ? undefined : Date.now(),
           });
           /* The score moves, which is the point of having run it. */
+          cleared.delete(me.id);   // a run rebuilds what the clear removed
           readinessGain.set(me.id, (readinessGain.get(me.id) ?? 0) + 6);
           return json(res, 200, { jobId });
         }
