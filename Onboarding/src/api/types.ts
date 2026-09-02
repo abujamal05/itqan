@@ -1041,6 +1041,15 @@ export interface ItqanApi {
   ): Promise<{ jobId: string; awaitingConfirmation?: boolean; mode: RerunMode; spent: number }>;
   /** Removes one uploaded document, from the list AND from the server's disk. */
   deleteDocument(id: string, signal?: AbortSignal): Promise<void>;
+  /**
+   * `DELETE /api/profile/skills` — every skill on the account, gone.
+   *
+   * The stored matches and recommendations go with them: all of it was computed
+   * FROM those skills, and leaving it would show conclusions drawn from data
+   * the person has just deleted. Documents and finished courses survive, so a
+   * re-read rebuilds what the documents evidence.
+   */
+  clearSkills(signal?: AbortSignal): Promise<void>;
 
   /**
    * Closing the account. PENDING BACKEND — see BACKEND.md §9.
