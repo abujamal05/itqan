@@ -87,7 +87,6 @@ function ToSiteVerify() {
 /** Signed in, and still onboarding. */
 function RequireOnboarding({ children }: { children: ReactNode }) {
   const { user, booting } = useAuth();
-  const { ready, reuploading } = useOnboarding();
   if (booting) return <Booting />;
   if (!user) return <ToSiteLogin />;
   // Before the `onboarded` check, not after: an unverified account cannot have
@@ -96,22 +95,38 @@ function RequireOnboarding({ children }: { children: ReactNode }) {
   // that can actually unblock them.
   if (!user.emailVerified) return <ToSiteVerify />;
   if (user.onboarded) return <Navigate to="/dashboard" replace />;
-  /**
-   * An extraction has finished and is waiting to be confirmed, so THAT is where
-   * the flow is — not back at the start of it.
-   *
-   * Signing in again mid-run landed on /upload at step 1/3, with the bar reading
-   * "Finished reading your documents — 100%", both files listed "Ready", and a
-   * primary button offering to read them again — which starts a SECOND run and
-   * charges for it. The "Pick up where you left off" offer routes correctly but
-   * appeared on two logins out of four, because it depends on the resumable
-   * check racing the poll. Deciding this at the route removes the race instead
-   * of making the offer more reliable.
-   *
-   * `reuploading` is excluded: that flow deliberately re-enters /upload while a
-   * finished result already exists on the profile.
-   */
-  if (ready && !reuploading) return <Navigate to="/confirm" replace />;
+  return <>{children}</>;
+}
+
+/**
+ * The upload step, when a run is already under way.
+ *
+ * Signing in again mid-run landed here at step 1/3, with the bar reading
+ * "Finished reading your documents — 100%", both files listed "Ready", and a
+ * primary button offering to read them again — which starts a SECOND run and
+ * charges for it. The "Pick up where you left off" offer routes correctly but
+ * appeared on two logins out of four, because it depends on the resumable check
+ * racing the poll; deciding it at the route removes the race rather than making
+ * the offer more reliable.
+ *
+ * To /questions and NOT /confirm, even when the extraction has finished. The
+ * flow deliberately overlaps answering the questions with Agent A's reading, so
+ * jumping to confirm would silently discard answers the person had not given
+ * yet — and /questions already knows what to do with a finished run: it has its
+ * own `done` state and moves on by itself.
+ *
+ * Scoped to THIS route rather than living in `RequireOnboarding`, which is the
+ * mistake the first version made: that guard also wraps /questions, so a run
+ * finishing while somebody was mid-answer yanked the page out from under them.
+ * The e2e suite caught it as a `.choice` button detaching from the DOM.
+ *
+ * `reuploading` is excluded: that flow deliberately re-enters /upload while a
+ * finished result already exists on the profile.
+ */
+function UploadStep({ children }: { children: ReactNode }) {
+  const { documents, analysis, reuploading } = useOnboarding();
+  const started = !!analysis && documents.length > 0;
+  if (started && !reuploading) return <Navigate to="/questions" replace />;
   return <>{children}</>;
 }
 
@@ -403,7 +418,7 @@ export default function App() {
                   <RouteFocus />
                   <ScreenBoundary>
                     <Routes>
-                      <Route path="/upload" element={<RequireOnboarding><Upload /></RequireOnboarding>} />
+                      <Route path="/upload" element={<RequireOnboarding><UploadStep><Upload /></UploadStep></RequireOnboarding>} />
                       <Route path="/questions" element={<RequireOnboarding><RequireFlow><Questions /></RequireFlow></RequireOnboarding>} />
                       <Route path="/confirm" element={<RequireConfirmable><RequireFlow><Confirm /></RequireFlow></RequireConfirmable>} />
 
