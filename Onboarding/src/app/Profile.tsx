@@ -320,7 +320,15 @@ export function Profile() {
       {missing.length > 0 && (
         <Card className="card--sunken">
           <div className="stack stack--sm">
-            <strong>{t('profile.incomplete', { n: String(missing.length) })}</strong>
+            {/* "1 things still missing" — the count and the noun have to agree.
+                No plural machinery here (Arabic has six forms and this is not
+                the change that adds them); two keys covers the case that
+                actually occurs, which is one. */}
+            <strong>
+              {missing.length === 1
+                ? t('profile.incompleteOne')
+                : t('profile.incomplete', { n: String(missing.length) })}
+            </strong>
             <p className="text-sm">{t('profile.incompleteHelp')}</p>
             {/* The box is unchanged; its ITEMS are now the way to fix them.
                 Real buttons, not chips with click handlers: each one moves

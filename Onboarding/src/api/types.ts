@@ -529,9 +529,18 @@ export interface JobsResult {
 
 export interface SkillStanding {
   name: string;
-  /** 0..1 how well evidenced this is by the documents. */
-  level: number;
   held: boolean;
+  /**
+   * Gone as of 2026-09-02, and worth saying why rather than deleting quietly.
+   *
+   * This was documented as "0..1 how well evidenced this is by the documents",
+   * and the service sent a hard-coded 0.9 to every held skill and 0.1 to every
+   * gap — one constant, drawn as a bar, read as a measurement. Nothing in the
+   * pipeline computes per-skill proficiency: Agent A publishes a categorical
+   * quality with the evidence behind it, not a number. Left optional so a build
+   * that reaches an older service still type-checks; nothing reads it.
+   */
+  level?: number;
 }
 
 /**
@@ -612,12 +621,42 @@ export interface PendingUpdate {
 
 export interface DashboardData {
   readiness: number;          // 0..100, agent-computed
-  readinessNote: string;      // plain-language explanation, authored by the agent
+  /**
+   * English prose from the service, and the LAST of it on this payload.
+   *
+   * Kept only so a client that predates `readinessReason` still renders a
+   * sentence. Compose from `readinessReason`, `readiness` and `gapCount`
+   * instead — this one cannot be translated, and because it never becomes an
+   * i18n key it cannot fail the parity check either.
+   */
+  readinessNote: string;
+  /** Which sentence is true, for the client to write in its own language. */
+  readinessReason?: 'insufficient' | 'no_gaps' | 'with_gaps';
+  /** EVERY gap found, including ones no course can close — `gaps` is only the
+   *  actionable subset, so its length under-reports what the sentence states. */
+  gapCount?: number;
   strengths: string[];        // capability first — always shown before gaps
   standings: SkillStanding[];
+  /** Total skills the profile holds. `standings` is a sample of six of these
+   *  plus six gaps, so its length is not a count of anything a person has. */
+  skillsHeld?: number;
   topMatches: JobMatch[];
   gaps: string[];
-  nextStep: { title: string; body: string; action: 'courses' | 'jobs' | 'documents' };
+  /**
+   * What to do next. `reason` plus its values is the translatable form;
+   * `title`/`body` are the service's English and are the fallback only.
+   */
+  nextStep: {
+    title: string;
+    body: string;
+    action: 'courses' | 'jobs' | 'documents';
+    reason?: 'course' | 'no_course' | 'add_document';
+    /** The course to start, when `reason` is `course`. */
+    subject?: string;
+    /** Skill names the sentence lists — unjoined, so the client can punctuate
+     *  them in its own language rather than receiving English commas. */
+    subjects?: string[];
+  };
   /** Where the user is in the overall process, oldest stage first. */
   journey: JourneyStage[];
 }

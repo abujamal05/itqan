@@ -99,6 +99,38 @@ function RequireOnboarding({ children }: { children: ReactNode }) {
 }
 
 /**
+ * The upload step, when a run is already under way.
+ *
+ * Signing in again mid-run landed here at step 1/3, with the bar reading
+ * "Finished reading your documents — 100%", both files listed "Ready", and a
+ * primary button offering to read them again — which starts a SECOND run and
+ * charges for it. The "Pick up where you left off" offer routes correctly but
+ * appeared on two logins out of four, because it depends on the resumable check
+ * racing the poll; deciding it at the route removes the race rather than making
+ * the offer more reliable.
+ *
+ * To /questions and NOT /confirm, even when the extraction has finished. The
+ * flow deliberately overlaps answering the questions with Agent A's reading, so
+ * jumping to confirm would silently discard answers the person had not given
+ * yet — and /questions already knows what to do with a finished run: it has its
+ * own `done` state and moves on by itself.
+ *
+ * Scoped to THIS route rather than living in `RequireOnboarding`, which is the
+ * mistake the first version made: that guard also wraps /questions, so a run
+ * finishing while somebody was mid-answer yanked the page out from under them.
+ * The e2e suite caught it as a `.choice` button detaching from the DOM.
+ *
+ * `reuploading` is excluded: that flow deliberately re-enters /upload while a
+ * finished result already exists on the profile.
+ */
+function UploadStep({ children }: { children: ReactNode }) {
+  const { documents, analysis, reuploading } = useOnboarding();
+  const started = !!analysis && documents.length > 0;
+  if (started && !reuploading) return <Navigate to="/questions" replace />;
+  return <>{children}</>;
+}
+
+/**
  * The confirm step, which two different users can legitimately reach: someone
  * finishing onboarding, and someone who has already finished and is re-reading
  * replaced documents from /documents.
@@ -386,7 +418,7 @@ export default function App() {
                   <RouteFocus />
                   <ScreenBoundary>
                     <Routes>
-                      <Route path="/upload" element={<RequireOnboarding><Upload /></RequireOnboarding>} />
+                      <Route path="/upload" element={<RequireOnboarding><UploadStep><Upload /></UploadStep></RequireOnboarding>} />
                       <Route path="/questions" element={<RequireOnboarding><RequireFlow><Questions /></RequireFlow></RequireOnboarding>} />
                       <Route path="/confirm" element={<RequireConfirmable><RequireFlow><Confirm /></RequireFlow></RequireConfirmable>} />
 

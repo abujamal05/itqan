@@ -280,6 +280,26 @@ export function Dashboard() {
   const topMatches = (editedMatches ?? data.topMatches).slice(0, CARDS_SHOWN);
 
   /**
+   * The readiness sentence, written here rather than shipped from the service.
+   *
+   * The service still sends `readinessNote` as English prose; a string on the
+   * wire cannot be translated, and because it never becomes an i18n key the
+   * parity check cannot catch it either — which is how the Arabic dashboard came
+   * to read an English sentence. `gapCount` is every gap found, not `gaps.length`
+   * (that is the actionable subset), so the count matches what was measured.
+   */
+  const readinessNote = data.readinessReason
+    ? data.readinessReason === 'insufficient'
+      ? t('dash.noteInsufficient')
+      : data.readinessReason === 'no_gaps'
+        ? t('dash.noteNoGaps', { pct: formatNumber(data.readiness ?? 0) })
+        : t('dash.noteWithGaps', {
+          pct: formatNumber(data.readiness ?? 0),
+          n: formatNumber(data.gapCount ?? data.gaps.length),
+        })
+    : data.readinessNote;
+
+  /**
    * The one named action on the page, and it has to survive being acted on.
    *
    * The service authors this card and its copy names a specific course, so the
@@ -298,8 +318,22 @@ export function Dashboard() {
   const nextStep: { title: React.ReactNode; body: string; action: string; cta: string } =
     !allCourses.some((c) => completed.has(c.id))
       ? {
-        title: data.nextStep.title,
-        body: data.nextStep.body,
+        /* The service's `reason` and values, written here in the reader's
+           language. `title`/`body` are its English fallback, for a client that
+           reaches a service predating `reason`. `listOf` rather than a join,
+           because Arabic punctuates a list its own way. */
+        title: data.nextStep.reason
+          ? (data.nextStep.reason === 'course'
+            ? t('dash.stepCourseTitle', { course: data.nextStep.subject ?? '' })
+            : t(`dash.step.${data.nextStep.reason}.title`))
+          : data.nextStep.title,
+        body: data.nextStep.reason
+          ? (data.nextStep.reason === 'add_document'
+            ? t('dash.step.add_document.body')
+            : t(`dash.step.${data.nextStep.reason}.body`, {
+              skills: listOf((data.nextStep.subjects ?? []).map(skillCase), locale),
+            }))
+          : data.nextStep.body,
         action: data.nextStep.action,
         cta: t('dash.startNextStep'),
       }
@@ -374,7 +408,10 @@ export function Dashboard() {
             <div className="stack stack--sm readiness__where">
               <h2 className="section__title" id="dash-readiness">{t('dash.readiness')}</h2>
               {standing && <p className="standing">{standing}</p>}
-              <p>{data.readinessNote}</p>
+              {/* Composed here, in the reader's language, from the reason and
+                  the two numbers. `readinessNote` is the service's English and
+                  is the fallback only while an older service is still deployed. */}
+              <p>{readinessNote}</p>
 
               {/* A SCORE HAS TO SAY WHAT IT IS A SCORE OF.
                   With no goal set, the ring was reporting a hard figure out of
@@ -439,8 +476,14 @@ export function Dashboard() {
                 aria-controls="dash-skills-list"
               >
                 <span className="skills__title">{t('dash.yourSkills')}</span>
+                {/* The profile's real total, not `standings.length` — that is a
+                    sample of six held skills plus six gaps, so counting it told
+                    someone with 173 skills they had 12, half of which were
+                    things they did not have. */}
                 <span className="skills__count num">
-                  {t('dash.yourSkillsCount', { n: formatNumber(data.standings.length) })}
+                  {t('dash.yourSkillsCount', {
+                    n: formatNumber(data.skillsHeld ?? data.standings.filter((s) => s.held).length),
+                  })}
                 </span>
                 <ChevronDown
                   size={18}
@@ -464,7 +507,6 @@ export function Dashboard() {
                               : <><Plus size={14} aria-hidden="true" />{t('dash.toUnlock')}</>}
                           </span>
                         </div>
-                        <Meter value={s.level} />
                       </li>
                     ))}
                   </ul>
@@ -615,37 +657,6 @@ function DashboardSkeleton({ header }: { header: React.ReactNode }) {
         <Card><LoadingBlock rows={3} /></Card>
         <Card><LoadingBlock rows={3} /></Card>
       </div>
-    </div>
-  );
-}
-
-/**
- * A skill meter.
- *
- * Animates `transform: scaleX`, never `inline-size`: width is a layout property
- * and animating it re-runs layout on every frame, which the motion skill's
- * performance floor rules out. The fill grows from the reading-start edge, so it
- * mirrors correctly in Arabic.
- *
- * `role="meter"` with the ARIA value attributes, because the level was previously
- * visible only as a coloured bar — a screen reader was told a skill existed but
- * never how well it was evidenced.
- */
-function Meter({ value }: { value: number }) {
-  const pct = Math.round(Math.min(1, Math.max(0, value)) * 100);
-  return (
-    <div
-      /* `meter--level` distinguishes this from the pipeline's progress bar,
-         which is the same class. When a run is in flight the identical 6px gold
-         bar appeared in the banner meaning "OCR is 40% done" and here meaning
-         "you are 40% evidenced in SQL" — one shape, two unrelated meanings. */
-      className="meter meter--level"
-      role="meter"
-      aria-valuenow={pct}
-      aria-valuemin={0}
-      aria-valuemax={100}
-    >
-      <i style={{ transform: `scaleX(${pct / 100})` }} />
     </div>
   );
 }

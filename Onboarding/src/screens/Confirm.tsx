@@ -318,11 +318,20 @@ export function Confirm() {
             {/* Nothing was read on the manual and failed paths, so the screen
                 stops claiming it was and simply asks for the details. */}
             <div className="stack stack--sm">
+              {/* The waiting state gets its own words. "Check what Itqan read"
+                  over "Itqan read your documents" was the PAST tense above an
+                  empty skeleton, directly under a bar honestly reading
+                  "Reading your documents — 17%" — the page claiming a thing it
+                  could see was not finished. */}
               <h1 className="headline">
-                {entry === 'manual' || failed ? t('confirm.titleManual') : t('confirm.title')}
+                {entry === 'manual' || failed
+                  ? t('confirm.titleManual')
+                  : waiting ? t('confirm.titleWaiting') : t('confirm.title')}
               </h1>
               <p className="subhead">
-                {entry === 'manual' || failed ? t('confirm.emptySub') : t('confirm.sub')}
+                {entry === 'manual' || failed
+                  ? t('confirm.emptySub')
+                  : waiting ? t('confirm.subWaiting') : t('confirm.sub')}
               </p>
             </div>
 
