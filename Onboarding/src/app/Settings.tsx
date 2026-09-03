@@ -270,6 +270,24 @@ export function Settings() {
         )}
       </Section>
 
+      {/* DIRECTLY UNDER THE SKILLS IT DELETES, which is where it belongs and
+          is not where it started. It went into the danger area beside closing
+          the account, reasoning by how destructive it is — and it was reported
+          as missing, from a screen it was rendering on perfectly well. Five
+          sections separated the skills from the only control that removes
+          them, so somebody looking at their skills had no reason to scroll
+          past documents, usage, preferences and support to find it.
+
+          Destructiveness earns the confirm dialog; it does not earn exile.
+          `refreshUpdate` runs with the reload for the same reason the document
+          controls do — what Itqan is working from has changed, and the server
+          decides whether that leaves anything stale. */}
+      <ClearSkills
+        count={p.skills?.length}
+        onCleared={() => { reload(); refreshUpdate(); }}
+      />
+
+
       {/* ---- Documents ------------------------------------------------------
           MANAGEMENT, NOT A LIST. Every document can have its file swapped and
           its category corrected in place; the CV is the one that cannot be
@@ -420,17 +438,6 @@ export function Settings() {
           subscription is still renewing. A second request for the same payload
           would also be a second chance for the two copies to disagree about
           whether deletion is allowed. */}
-      {/* Before the account card, and after everything that manages a document.
-          The order is the size of the act: correct a file, then delete what was
-          read out of your files, then close the account. `refreshUpdate` runs
-          with the reload for the same reason the document controls do — the
-          skills are gone, so what Itqan is working from has changed and the
-          server decides whether that leaves anything stale. */}
-      <ClearSkills
-        count={p.skills?.length}
-        onCleared={() => { reload(); refreshUpdate(); }}
-      />
-
       <CloseAccount usage={usage} />
     </div>
   );
