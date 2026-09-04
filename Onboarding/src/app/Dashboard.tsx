@@ -74,6 +74,34 @@ const CARDS_SHOWN = 2;
  * profile screen. It is also why there is no third guess: no date, no claim,
  * and the line is simply absent rather than defaulting to either.
  */
+/**
+ * The rung a score was measured against, as a word in the reader's language.
+ *
+ * A lookup rather than `t('dash.level' + level)`: a key built by concatenation
+ * is invisible to the i18n parity check, and an English string on the wire is
+ * exactly the bug that put an English sentence on the Arabic dashboard.
+ */
+const LEVEL_KEY = {
+  entry: 'dash.levelEntry',
+  associate: 'dash.levelAssociate',
+  mid: 'dash.levelMid',
+  senior: 'dash.levelSenior',
+  executive: 'dash.levelExecutive',
+} as const;
+
+/**
+ * Which readiness sentence to use for a pool of `n` roles.
+ *
+ * Split by grammatical number because Arabic has three forms where English has
+ * two, and a single key with `{n}` interpolated produces "أقرب 2 وظائف" — the
+ * plural where the dual is required. `n` is still passed for the three-or-more
+ * case, which does take a numeral.
+ */
+function closestKey(n: number, hasGaps: boolean): string {
+  const size = n === 1 ? 'One' : n === 2 ? 'Two' : '';
+  return `dash.noteClosest${size}${hasGaps ? 'Gaps' : ''}`;
+}
+
 function standingOf(
   graduationDate: string | null | undefined,
   t: (k: string) => string,
@@ -288,15 +316,42 @@ export function Dashboard() {
    * to read an English sentence. `gapCount` is every gap found, not `gaps.length`
    * (that is the actionable subset), so the count matches what was measured.
    */
+  const level = data.comparedAgainst?.level
+    ? t(LEVEL_KEY[data.comparedAgainst.level])
+    : null;
+  /* WHICH roles the headline was measured against, by name.
+     The number is pooled over the roles this person fits best rather than over
+     the whole retrieved set, and that is only honest while the sentence says so
+     and the roles are on screen. If `pooled` is 0 the service is an older one
+     that sends no such set, and the wording falls back to the market phrasing
+     it published then. */
+  const pooled = data.comparedAgainst?.rolesPooled ?? 0;
+  const closestRoles = data.comparedAgainst?.roles ?? [];
+
   const readinessNote = data.readinessReason
     ? data.readinessReason === 'insufficient'
       ? t('dash.noteInsufficient')
-      : data.readinessReason === 'no_gaps'
-        ? t('dash.noteNoGaps', { pct: formatNumber(data.readiness ?? 0) })
-        : t('dash.noteWithGaps', {
-          pct: formatNumber(data.readiness ?? 0),
-          n: formatNumber(data.gapCount ?? data.gaps.length),
-        })
+      : pooled > 0
+        ? t(
+          /* One key per grammatical number, not one key with a digit dropped
+             into it: Arabic takes the dual for two and the plural for three or
+             more, so "أقرب 2 وظائف" is simply wrong. English reads better for
+             the small counts too. */
+          closestKey(pooled, (data.gapCount ?? 0) > 0),
+          {
+            pct: formatNumber(data.readiness ?? 0),
+            n: formatNumber(pooled),
+            g: formatNumber(data.gapCount ?? data.gaps.length),
+          },
+        )
+        : data.readinessReason === 'no_gaps'
+          ? t(level ? 'dash.noteNoGapsLevel' : 'dash.noteNoGaps',
+            { pct: formatNumber(data.readiness ?? 0), level: level ?? '' })
+          : t(level ? 'dash.noteWithGapsLevel' : 'dash.noteWithGaps', {
+            pct: formatNumber(data.readiness ?? 0),
+            n: formatNumber(data.gapCount ?? data.gaps.length),
+            level: level ?? '',
+          })
     : data.readinessNote;
 
   /**
@@ -412,6 +467,44 @@ export function Dashboard() {
                   the two numbers. `readinessNote` is the service's English and
                   is the fallback only while an older service is still deployed. */}
               <p>{readinessNote}</p>
+
+              {/* THE PRECISION THE NUMBER ACTUALLY HAS.
+                  Agent C computes this band from the requirements it could
+                  neither confirm nor rule out, so it is measured uncertainty
+                  rather than decoration. Showing it is what stops an ordinary
+                  two-point movement — the same person, a fresh ingest — reading
+                  as decline, which is the complaint this whole change answers. */}
+              {data.readinessRange && (
+                <p className="text-sm muted readiness__band">
+                  <span className="readiness__label">
+                    {t('dash.readinessRange', {
+                      lo: formatNumber(data.readinessRange[0]),
+                      hi: formatNumber(data.readinessRange[1]),
+                    })}
+                  </span>
+                  {' '}
+                  {t('dash.readinessRangeWhy')}
+                </p>
+              )}
+
+              {/* The roles it was measured against, named. Not decoration: the
+                  headline is pooled over these and nothing else, and a reader
+                  who cannot see them cannot check the claim. */}
+              {closestRoles.length > 0 && (
+                <p className="text-sm muted">
+                  <span className="readiness__label">{t('dash.comparedRoles')}</span>
+                  {' '}
+                  {listOf(closestRoles, locale)}
+                </p>
+              )}
+
+              {/* NOT RENDERED: `data.marketReadiness`, the average across every
+                  matched role. It is on the payload and it is true, but showing
+                  it beside the headline was a third reading on a card that
+                  already carries a figure, a band and a role list — and the
+                  decision taken was the headline alone. The key
+                  `dash.marketReadiness` exists in both languages for whenever
+                  that is revisited. */}
 
               {/* A SCORE HAS TO SAY WHAT IT IS A SCORE OF.
                   With no goal set, the ring was reporting a hard figure out of
