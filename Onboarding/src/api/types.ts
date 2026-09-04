@@ -632,6 +632,42 @@ export interface DashboardData {
   readinessNote: string;
   /** Which sentence is true, for the client to write in its own language. */
   readinessReason?: 'insufficient' | 'no_gaps' | 'with_gaps';
+  /**
+   * WHICH roles the percentage is a percentage of.
+   *
+   * The matching compares a person against roles at their own level rather than
+   * against whatever the corpus holds most of, so the sentence has to say which
+   * set — a score that quietly changed its comparison set and kept its old
+   * wording would be flattery, not a fix.
+   *
+   * `level` is null whenever the selection did not actually happen: too few
+   * roles at that level in the corpus, or documents that do not settle the
+   * person's level. The sentence then says "the roles you were compared
+   * against", which is exactly what is true of it.
+   */
+  comparedAgainst?: {
+    level: 'entry' | 'associate' | 'mid' | 'senior' | 'executive' | null;
+    /** The roles the headline was pooled over, by name, for the reader to check. */
+    roles?: string[];
+    /** How many were pooled. 0 means an older service that sends no such set. */
+    rolesPooled?: number;
+  };
+  /**
+   * The band the readiness number genuinely carries, low end first.
+   *
+   * Agent C computes it from requirements the matching could neither confirm nor
+   * rule out, so it is measured uncertainty, not a decorative fuzz. Showing it
+   * is what stops ordinary movement reading as decline. Null when the run had
+   * nothing unresolved, or when an older service does not send it.
+   */
+  readinessRange?: [number, number] | null;
+  /**
+   * Readiness across EVERY matched role rather than the closest few.
+   *
+   * A different question — breadth, not proximity — and it sits beside the
+   * headline, never in place of it. `readiness` is the closest-roles figure.
+   */
+  marketReadiness?: number | null;
   /** EVERY gap found, including ones no course can close — `gaps` is only the
    *  actionable subset, so its length under-reports what the sentence states. */
   gapCount?: number;
