@@ -468,24 +468,6 @@ export function Dashboard() {
                   is the fallback only while an older service is still deployed. */}
               <p>{readinessNote}</p>
 
-              {/* THE PRECISION THE NUMBER ACTUALLY HAS.
-                  Agent C computes this band from the requirements it could
-                  neither confirm nor rule out, so it is measured uncertainty
-                  rather than decoration. Showing it is what stops an ordinary
-                  two-point movement — the same person, a fresh ingest — reading
-                  as decline, which is the complaint this whole change answers. */}
-              {data.readinessRange && (
-                <p className="text-sm muted readiness__band">
-                  <span className="readiness__label">
-                    {t('dash.readinessRange', {
-                      lo: formatNumber(data.readinessRange[0]),
-                      hi: formatNumber(data.readinessRange[1]),
-                    })}
-                  </span>
-                  {' '}
-                  {t('dash.readinessRangeWhy')}
-                </p>
-              )}
 
               {/* The roles it was measured against, named. Not decoration: the
                   headline is pooled over these and nothing else, and a reader
@@ -531,6 +513,33 @@ export function Dashboard() {
                 <p className="text-sm muted" style={{ marginBlockStart: 'var(--space-2)' }}>
                   {t('dash.readinessHowBody')}
                 </p>
+                {/* THE BAND BELONGS HERE, NOT UNDER THE HEADLINE.
+                    It is real and it is published, but it measures a DIFFERENT
+                    uncertainty from the one people complained about. The drift
+                    they were reading as decline is run-to-run movement of about
+                    two points, and the closest-roles pooling is what reduced it.
+                    This is the possible-match spread — requirements the matching
+                    could settle neither way — which ran 17-29 on a real profile.
+                    Twelve points, with the headline sitting at the optimistic
+                    end of it, because gap_score counts an unresolved requirement
+                    as not-missing.
+                    Beside the score that read as a second, contradictory answer
+                    and put a discouraging number back on the page. Behind the
+                    disclosure it does what it was for: someone interrogating the
+                    figure finds out how much of it is unsettled. */}
+                {data.readinessRange && (
+                  <p className="text-sm muted readiness__band"
+                     style={{ marginBlockStart: 'var(--space-2)' }}>
+                    <span className="readiness__label">
+                      {t('dash.readinessRange', {
+                        lo: formatNumber(data.readinessRange[0]),
+                        hi: formatNumber(data.readinessRange[1]),
+                      })}
+                    </span>
+                    {' '}
+                    {t('dash.readinessRangeWhy')}
+                  </p>
+                )}
               </details>
             </div>
 
