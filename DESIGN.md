@@ -808,7 +808,7 @@ every screen that consumes it.
 | `PRODUCT.md`, root `CLAUDE.md` | Positioning, pricing, the four questions, the not-a-translation-engine rule |
 
 **Audited and deliberately not merged**: `BACKEND.md`, `LEGAL-BRIEF.md`, `itqan-website/PLACEHOLDERS.md`,
-`README.md`, `tools/brand_voice.md`, `.claude/skills/impeccable/**`, `.agents/skills/**`,
+`README.md`, `tools/itqan_voice.md`, `tools/itqan_voice_ar.md`, `.claude/skills/impeccable/**`, `.agents/skills/**`,
 `.github/skills/**` (a duplicate of `.claude/skills/impeccable`). None of these owns a design value.
 
 **Three copies of `tokens.css` remain in lockstep** — the skill's, the site's, and the app's — with one
