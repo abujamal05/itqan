@@ -151,7 +151,23 @@ BANNED_EN = [
     "free forever", "no payment at any point", "nobody pays to get hired",
     "your journey", "navigate your journey", "synergy", "translation engine",
     "data-driven", "designed to help you", "it's not just",
+    # Empty denials. The founder's instruction was "never ever use no fluff";
+    # the rest of the family makes the same move.
+    "no fluff", "no nonsense", "no secrets", "no gimmicks", "no hidden agenda",
+    "no strings attached", "no bs", "no b.s.",
 ]
+
+# An action turned into a thing and made the subject: "The start is free."
+# Nobody says it across a table, and it is the exact phrasing a model copies
+# out of a brief. Sentence-initial only.
+EN_ABSTRACT_SUBJECT = re.compile(
+    r"(?:^|[.!?]\s+|\n)(the\s+(?:start|process|experience|result|outcome|"
+    r"journey|difference|approach|goal|idea|point|setup|flow|rest)\s+"
+    r"(?:is|was|are|comes|stays|remains))\b",
+    re.IGNORECASE,
+)
+EN_SHORT_WORDS = 7            # a sentence of this many words or fewer is "short"
+EN_SHORT_SHARE = 0.25         # founder's posts: 15%. One in four is the ceiling.
 
 # Structural tells in English. These are what survive a clean vocabulary pass
 # and are the reason the first ruleset produced copy that still read as
@@ -181,6 +197,7 @@ BANNED_AR = [
     "نقلة نوعية", "حلول جذرية", "حلول ثورية", "قواعد اللعبة", "لا مثيل له",
     "انطلق الآن", "حقّق أحلامك", "حقق أحلامك", "مستقبلك يبدأ من هنا",
     "بلا حدود", "فريدة من نوعها", "الحل الأمثل", "الرائدة في مجالها",
+    "بلا حشو", "بلا وعود زائفة", "بلا مفاجآت", "بلا تعقيد", "بلا كلام فارغ",
     "نحن نؤمن", "دعنا نساعدك", "كن جزءًا من", "اكتشف الفرق",
     "بضغطة زر", "وداعًا لـ", "على الإطلاق", "خارج الصندوق",
     "في نهاية اليوم", "صمم خصيصا", "صُمم خصيصاً",
@@ -275,6 +292,34 @@ def _lint(copy: str) -> list[str]:
                 f"EN mic-drop closers: {closers} paragraphs end on a line of "
                 f"{EN_CLOSER_MAX_WORDS} words or fewer. Let one end on plain "
                 "information."
+            )
+
+        # Choppiness. The first rhythm rule said "vary sentence length hard"
+        # and the model obeyed it with long-long-short and short-short-short.
+        # The founder's own writing averages 19 words a sentence, six in ten
+        # over 15, fewer than two in ten under 8. Short sentences are rare
+        # there and land because they are rare. So: share of shorts, runs of
+        # shorts, and mechanical alternation are all measured.
+        en_sents = [x for x in _SENTENCE_SPLIT.split(latin.strip()) if x.strip()]
+        en_lens = [len(x.split()) for x in en_sents]
+        if len(en_lens) >= 4:
+            cls = "".join("S" if n <= EN_SHORT_WORDS else "M" if n <= 14 else "L"
+                          for n in en_lens)
+            shorts = cls.count("S")
+            if shorts / len(cls) > EN_SHORT_SHARE:
+                found.append(
+                    f"EN chopped: {shorts} of {len(cls)} sentences are "
+                    f"{EN_SHORT_WORDS} words or fewer (pattern {cls}). The "
+                    "founder's share is about 15 percent. Join them."
+                )
+            elif "SSS" in cls:
+                found.append(f"EN chopped: three short sentences in a row ({cls}).")
+            elif re.search(r"(?:LS){2,}L?|(?:SL){2,}S?", cls) and "M" not in cls:
+                found.append(f"EN long-short alternation ({cls}). That is a template.")
+
+        for m in EN_ABSTRACT_SUBJECT.finditer(latin):
+            found.append(
+                f"EN abstract subject: {m.group(1)!r}. Say who does what."
             )
 
         # The product as a character. Itqan reads, shows, marks, asks; it does

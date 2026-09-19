@@ -101,7 +101,8 @@ carries the same move.
 انطلق الآن · حقّق أحلامك · مستقبلك يبدأ من هنا · بلا حدود · تجربة فريدة من نوعها ·
 الحل الأمثل · الرائدة في مجالها · نحن نؤمن بأن · دعنا نساعدك · كن جزءًا من ·
 اكتشف الفرق · بضغطة زر واحدة · وداعًا لـ · الأفضل على الإطلاق · مدعوم بالذكاء الاصطناعي (as a
-selling point) · وظيفة أحلامك · احصل على الوظيفة · نضمن لك
+selling point) · وظيفة أحلامك · احصل على الوظيفة · نضمن لك · بلا حشو · بلا وعود زائفة · بلا مفاجآت ·
+بلا تعقيد · بلا كلام فارغ
 
 **Never promise a job.** Itqan shows distance and fit. It does not deliver employment.
 
@@ -149,9 +150,14 @@ sentence count is not.
 
 ## 5. Style imperatives — what to do, not just what to avoid
 
-- **Rhythmic variation is the strongest anti-AI signal available.** Vary sentence length hard. A four
-  word sentence next to a twenty-five word one. Read it aloud in your head; if the cadence is even, it
-  is wrong.
+- **Rhythmic variation is the strongest anti-AI signal available, and it does not mean chopping.**
+  Even cadence is wrong, and so is the template that replaces it: long-long-short, or three short
+  sentences in a row. Most sentences run long because the thought does; a short one is rare and lands
+  because of that. Read it aloud in your head.
+- **No abstract subjects.** "البداية مجانية"، "العملية بسيطة"، "التجربة مختلفة": nobody says these.
+  Name who does what: "لا تدفع لتعرف أين تقف".
+- **No empty denials.** "بلا حشو"، "بلا وعود زائفة"، "بلا مفاجآت"، "بلا تعقيد": banned. They claim honesty
+  instead of showing it.
 - **Concrete nouns over abstract ones.** "إعلان يطلب SQL" beats "فرص مناسبة". "ثلاث دورات" beats
   "مجموعة من الموارد التعليمية".
 - **Crisp active verbs, and a named actor.** إتقان يقرأ، يعرض، يوسم، يسأل. The product does not

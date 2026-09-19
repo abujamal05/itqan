@@ -100,6 +100,13 @@ What the LinkedIn posts and drafts actually do, which is the target for anything
 - Sentences run long when the thought is long, chained with commas, sometimes with a comma splice left
   in. That looseness is human. The AI habit of clipping every sentence to twelve words is what reads
   as machine.
+- Measured across the posts: the average sentence is 19 words. About six in ten sentences are 15 words
+  or longer, two in ten are 8 to 14, and fewer than two in ten are under 8. Runs of four or five long
+  sentences in a row are normal. A short sentence is rare, and it is rare on purpose: it's a pivot or
+  a landing, and it works because everything around it is long.
+- So "vary sentence length" does not mean alternate long and short. Long-long-short, long-long-short
+  is a template. Short-short-short is a template. The founder's rhythm is mostly long, with a medium
+  one here and there, and a short one when it counts.
 - Triads by repetition: "We announce... We post... We celebrate..." Used to build a case, not to
   decorate.
 - The last line is short and carries weight, but it earns it by following a long build-up. A closer
@@ -145,6 +152,8 @@ we are on a mission · imagine a world · the future of · at your fingertips ·
 dive in · buckle up · one-stop shop · actionable insights · more than just · we've got you covered ·
 the ultimate guide · join thousands · AI-powered · dream job · get hired · get you hired ·
 land the job / role · free forever · no payment at any point · nobody pays to get hired ·
+no fluff · no nonsense · no secrets · no gimmicks · no hidden agenda · no strings attached · no BS ·
+the start is / the process is / the experience is / the result is (abstract subject) ·
 translation engine (as a description of Itqan)
 
 **Openers and closers**
@@ -169,8 +178,17 @@ what if there was · we're excited to announce · let's dive · let's explore
   Test: delete the "not Y" half. If the sentence still says what you meant, the half was decoration.
 - **The mic-drop closer.** A paragraph that ends on a short punchy sentence is fine. Every paragraph
   ending that way is a pattern. No more than one closer-style sentence per section of marketing copy.
-- **Even cadence.** If three consecutive sentences are within three words of each other in length,
-  rewrite one. Real writing is uneven.
+- **Choppiness.** More than one sentence in four under 8 words, or three short sentences in a row, or
+  long-short-long-short alternation. Any of these and the draft is a template. The target is the
+  founder's own distribution: mostly 15 words and up, a few in the middle, a short one only where it
+  lands.
+- **Abstract subjects.** A sentence whose subject is an action turned into a thing: "The start is
+  free." "The process is simple." "The experience is different." "The result is clarity." Nobody says
+  these across a table. Say who does what: "You don't pay to see where you stand." If the brief
+  itself is phrased that way, rewrite the brief in the copy; do not echo it.
+- **Empty denials.** "No fluff." "No nonsense." "No secrets." "No gimmicks." "No hidden agenda." "No
+  strings attached." "No BS." Banned outright, every one, in every surface. They claim honesty instead
+  of showing it, and the founder has said never.
 - **The product as a character.** Itqan reads, shows, checks, marks, asks. It does not pause, wonder,
   consider, notice, think, or care. Hud can have a personality; the product can't.
 - **Paraphrase to avoid a plain word.** If the word is "source", write "source". Write "how sure it
@@ -386,3 +404,6 @@ Before a draft ships, read it aloud once and check:
 7. Is every number sourced and every claim inside the locked facts?
 8. Would this read clearly to someone whose first language is Arabic?
 9. Delete the last sentence. Is the copy better? Then leave it deleted.
+10. Count sentences under 8 words. More than one in four, or three in a row: it's chopped. Join them.
+11. Find every sentence whose subject is "The <noun> is". Rewrite it with a person or Itqan as the
+    subject.
