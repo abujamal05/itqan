@@ -14,11 +14,15 @@ description: >
 
 # Itqan Motion
 
+> **`DESIGN.md` at the workspace root is the apex and wins on anything visual.** Registers and the
+> evidence fence are §3, the mobile rules §3.5, the anti-slop directives and the 13-question blandness
+> review §6. Read it first; this skill is downstream of it.
+
 This skill owns **how Itqan moves** — the choreography and the implementation. It does **not** redefine
 motion values (durations, easings, spring config live in `itqan-design-system/references/tokens.css`) and
-it does **not** re-argue whether a surface may be expressive at all (the two registers are defined in
-`itqan-design-system/references/depth-and-materials.md`). Pull values from the design system, the register
-from depth-and-materials, and the craft canon from the installed Emil Kowalski skills.
+it does **not** re-argue whether a surface may be expressive at all (the three registers and the evidence
+fence are defined in **`DESIGN.md` §3**). Pull values from the design system, the register from
+`DESIGN.md`, and the craft canon from the installed Emil Kowalski skills.
 
 **Read `references/recipes.md`** for concrete, copy-adaptable patterns (RTL-safe entrance, the pipeline
 wait, staggered result reveal, Hud, component microinteractions, reduced-motion swaps, performance,
@@ -29,19 +33,26 @@ tooling). Go there whenever you're actually writing animation code.
 Itqan's product is trust, and for a long time this skill read that as "animate as little as possible." That
 was an over-correction and it produced flat, lifeless work. The correct rule is **register-dependent**:
 
-- **Product register** — verdicts, matches, confidence, gap analysis, tables, forms, the OCR confirmation
-  screen. Motion is fast, purposeful and invisible. Under 200ms. No overshoot, no bounce, no delight, no
-  Hud. Speed always wins. A confidence badge must read as *fact*, so it does not animate in at all.
-- **Expressive register** — marketing and landing pages, onboarding, empty states, error states, genuine
-  success milestones, the pipeline wait, and the gap moment. Motion is choreographed and has a point of
-  view. Up to `--duration-story`. Overshoot is licensed. Stagger, draw-ons, parallax-lite, and the animated
-  mascot all belong here.
+- **Inside the evidence fence** (`DESIGN.md` §3.4) — verdicts, confidence badges, the evidence chain, gap
+  figures, extracted transcript data, the OCR confirmation screen, any table of parsed values. Motion is
+  fast, purposeful and invisible. No overshoot, no bounce, no delight, no Hud. A figure that springs in
+  reads as a reveal, and a reveal reads as a guess. A confidence badge **never gets an entrance of its
+  own**, though it may fade in as part of its container.
+- **Stage** — marketing. Choreography is the point: staggered reveals, draw-ons, a hero settle at
+  `--ease-out-expo`, up to `--duration-story`.
+- **Passage** — onboarding, upload, confirm, empty, error, success, the pipeline wait, the gap moment.
+  Paced and warm, up to `--duration-slower`. **`--ease-overshoot` is the default for entrances** of
+  non-evidence objects here, not a licence that goes unused.
+- **Workspace** — the app. Dense is not dead. Same vocabulary, under `--duration-base` on anything a user
+  touches dozens of times a day, no overshoot outside chrome.
 
-The trust rules apply in both registers. Expressive never means animating a number so it looks impressive,
-hiding a confidence score behind a flourish, or putting a cartoon bird next to a result.
+The fence overrides the register locally wherever real AI output is displayed, and it follows the data,
+not the route — so an empty state on the dashboard may be as animated as any onboarding step. The trust
+rules apply everywhere: never animate a number so it looks impressive, hide a confidence score behind a
+flourish, or put a cartoon bird next to a result.
 
 **A page where nothing responds to the pointer is a defect**, reported the same way a contrast failure is.
-That is true even in the product register — a button with no `:active` state is broken, not restrained.
+That is true inside the fence too — a button with no `:active` state is broken, not restrained.
 
 ## Animate for a reason — and "it feels dead" is a reason
 
@@ -50,7 +61,7 @@ Before adding any animation, name which job it does:
 2. **Continuity** — preserve spatial/mental context across a state change (modal open, route change).
 3. **Focus** — direct the eye to what changed (a new match arriving).
 4. **Perceived speed** — make an unavoidable wait feel responsive (the pipeline).
-5. **Character** — *expressive register only.* Make the product feel like a considered tool made by people.
+5. **Character** — *outside the evidence fence only.* Make the product feel like a considered tool made by people.
    This is a real job. Hud's entrance, a hero's choreographed reveal and the gap moment's confident settle
    all earn their place on this line alone.
 
@@ -71,8 +82,8 @@ not animate — speed beats smoothness there, and no register overrides it.
 - **Hover / colour** change → `--ease-hover`.
 - **Drawers and sheets** → `--ease-drawer`.
 - **Constant** motion (tickers, determinate progress) → `linear`.
-- **Character moments, expressive register only** → `--ease-overshoot`. Never on a verdict, score, match or
-  table.
+- **Character moments, outside the evidence fence** → `--ease-overshoot`; the default for Passage
+  entrances. Never on a verdict, score, match or table.
 - **Avoid `ease-in`** for UI — it delays the exact moment the user is watching.
 
 Use the token curves, not the CSS keywords. The built-in easings are too weak to read as intentional; that
@@ -112,8 +123,8 @@ instantly.
 
 The A→B→C→D run is 20–60s — far outside normal animation timescales. It needs *choreographed progress*, not
 a spinner: a staged indicator across the four agents, streamed results, skeleton cards for shape, and a
-confident reveal for the gap moment. This is the one place where the expressive register lives inside the
-product, because the alternative is a user leaving. Full pattern in recipes §2. Get it right before
+confident reveal for the gap moment. This is the one place where full choreography runs inside the app,
+because the alternative is a user leaving. Full pattern in recipes §2. Get it right before
 polishing hovers.
 
 ## Accessibility — reduced motion means less movement, not a dead product

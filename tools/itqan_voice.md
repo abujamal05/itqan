@@ -10,6 +10,12 @@ English. The Arabic ruleset stays where it is.
 Spelling is American (organize, center, optimize). The founder writes that way; the site had no
 convention until now.
 
+**This file is the apex for words. [`../DESIGN.md`](../DESIGN.md) is the apex for pixels**, and the two
+meet in three places: §3.5 sets **length caps at phone width** (a paragraph over its cap is a *visual*
+defect, not only a wordy one), §6.3 bans a visual vocabulary the way §4 below bans a verbal one, and
+§1's "warmth is not hype" is the same rule as this file's. Neither document is optional and neither
+overrides the other.
+
 ---
 
 ## 1. Core philosophy
@@ -146,7 +152,7 @@ What the LinkedIn posts and drafts actually do, which is the target for anything
 unleash · elevate · delve · revolutionize / revolutionary · seamless · robust · game-changer ·
 game-changing · tapestry · testament · supercharge · streamline · turbocharge · effortless · magical ·
 cutting-edge · empower · leverage (as a verb) · holistic · harness · bespoke · synergy · ecosystem
-(in product copy) · navigate your journey · your journey · in today's fast-paced / competitive world ·
+(in product copy) · navigate your journey · in today's fast-paced / competitive world ·
 in an era where · take your X to the next level · unlock your potential · transform your career ·
 we are on a mission · imagine a world · the future of · at your fingertips · say goodbye to ·
 dive in · buckle up · one-stop shop · actionable insights · more than just · we've got you covered ·
@@ -170,6 +176,32 @@ what if there was · we're excited to announce · let's dive · let's explore
   reader must not miss (a price, a limit).
 - No bullet lists in marketing prose. Lists are for UI, docs and specs.
 - No headline in Title Case. Sentence case everywhere.
+
+### Scoped, not banned
+
+The earlier version of this file banned these outright and it was wrong. Each is a perfectly ordinary
+word that an interface needs; each is *also* the first thing a generated headline reaches for. **The
+test is the sentence, not the token.** Banned where it replaces a specific claim with a vague one;
+fine where it is the literal name of the thing.
+
+| Word | Fine | Not fine |
+|---|---|---|
+| **your journey** | A feature genuinely called that — the dashboard's stage tracker is "Your journey" and should stay so. Progress copy about it. | A marketing headline or tagline. "Start your journey today." "Navigate your career journey." As a substitute for saying what actually happens. |
+| **register / sign up** | The button. The page title. "Register" on a nav bar. | A headline whose only content is the instruction to register. |
+| **your account** | Settings, billing, the account page, an eyebrow above a log-in form. | Standing in for the specific thing — say "your CV" or "your matches" when that is what you mean. |
+| **journey, path, step, stage** | Describing the real four-stage product. | Stacked into metaphor. One of these per paragraph. |
+| **free** | Said plainly, with what is not free next to it. | An absolute. See §7 for the sanctioned phrasings. |
+
+**Warmth is not hype, and this file has been read as banning it.** Positive, appealing, even slightly
+stirring language is wanted. What is banned is the **unearned claim** — an invented number, an outcome
+Itqan does not control, a superlative with no source behind it. "Start moving", "the shortest way
+there", "worth your time", "the ones worth your time first" are warm, true and entirely allowed. A
+ruleset that strips every pleasant word produces copy with no pulse, which is the failure this document
+was rewritten to fix. Keep the warm word; check the claim underneath it. If the claim holds, ship it.
+
+Mild, earned enthusiasm is also allowed in the right place: a success milestone, a genuine
+congratulation, the moment a gap closes. It is the *ambient* enthusiasm across every surface that reads
+as an ad.
 
 ### Structural bans (these are what make prose read as generated)
 
@@ -244,6 +276,10 @@ what if there was · we're excited to announce · let's dive · let's explore
 - A paid action says it's paid at the point of action, in the label or directly under it:
   "Re-read my documents (19 tokens)".
 - Never: OK, Submit, Continue, Next, Learn more, Get started, Go.
+- **A trailing arrow is a UI affordance, not a copy tic.** Use it where the control really means travel
+  — a link out to a posting, "How it works, step by step", a next-step CTA. Drop it where the control
+  stays put (a toggle, a filter, an in-place expand). It is not part of the label: the words must still
+  work with the arrow removed, and the arrow mirrors under RTL.
 
 ### Onboarding
 - One question per screen, and the screen says why it's asking in one line.
@@ -291,6 +327,15 @@ what if there was · we're excited to announce · let's dive · let's explore
 - Sentence case. Present tense. Second person. No period on labels; period on full sentences.
 - Under 60 characters for buttons and titles, under 140 for helper text, so Arabic (which runs 20 to
   30 percent longer) fits the same layout.
+- **Length is a design constraint on a phone, and this is where over-explanation actually costs.** At
+  375px about 38 characters fit a line in English and fewer in Arabic, so a 200-character paragraph is
+  five lines. The caps, which are `DESIGN.md` §3.5's and are enforced as *visual* defects: **body
+  paragraph 200 characters, card or tile body 120, helper and tooltip 90, empty and error states 160
+  across all lines together. Any single string over 250 characters is a defect on mobile**, whatever it
+  looks like on desktop.
+- When a string cannot meet its cap, **fold it, do not shrink it**: a short line plus a "How this is
+  worked out" disclosure, which is the pattern the dashboard already uses. The long version lives behind
+  the disclosure; the short version is the one that has to work.
 - No idioms. No humor that depends on English wordplay. Plain word over clever word every time.
 - Numbers as numerals: 3 matches, 30 tokens, 2.9 OMR.
 - Placeholders describe the input, and never look like real data: "Role you're aiming for", not
@@ -340,6 +385,18 @@ what if there was · we're excited to announce · let's dive · let's explore
 
 - Free: where you stand, the path, your three strongest job matches kept current, and the advisor.
   30 tokens a day across everything the AI does. A message costs 1; re-reading documents costs 19.
+- **How to say "free" — use one of these and stop inventing new ones.** "Free forever", "no payment at
+  any point" and "nobody pays to get hired" are retired because they are now *false*, but this file
+  never said what replaces them, and four surfaces independently invented four near-identical hedges
+  ("free and stay free", "free and they stay free", "free and stay that way", "costs nothing"). Pick one
+  of these and reuse it:
+  - **"Free."** On its own, next to a list of what is free. Strongest option; use it first.
+  - **"Free, and it stays free."** When the worry being answered is that it will be taken away later.
+  - **"You don't pay to see where you stand."** When the subject should be the reader, not the plan.
+  - **"Premium opens the rest."** The counterpart. Always say what *is not* free in the same breath.
+
+  Do not write a fifth variant. Repeating one phrase across surfaces reads as a policy; four near-misses
+  read as four people avoiding the same word.
 - Premium: every match, 90 tokens a day, 2.9 OMR a month (charged as $7.54). Both figures may
   appear. The conversion isn't explained and the payment processor isn't named.
 - No accuracy figure exists. No testimonials, customer names, benchmarks or press. If a sentence
@@ -383,11 +440,15 @@ this voice.
 > We built this because we watched people send two hundred applications to roles that were never
 > going to fit, and nobody told them what to fix first. That's the whole reason.
 
-> Four steps. No hidden magic in any of them.
+> Four steps, and you can see what each one did before it moves to the next.
 
 Notice what these do: the sentences vary in length without a pattern, the actor is named, a limit is
 stated without softening, there's an honest "actually" and an honest "genuinely", and no paragraph
 ends on a quotable line unless it earned one.
+
+*(That last line used to read "Four steps. No hidden magic in any of them." It was the exemplar for
+years and it broke this file's own empty-denials rule in §4 — claiming honesty instead of showing it.
+Replaced, and noted here because an exemplar that contradicts a rule teaches the contradiction.)*
 
 ---
 
@@ -407,3 +468,9 @@ Before a draft ships, read it aloud once and check:
 10. Count sentences under 8 words. More than one in four, or three in a row: it's chopped. Join them.
 11. Find every sentence whose subject is "The <noun> is". Rewrite it with a person or Itqan as the
     subject.
+12. **Read it at 375px, not in the editor.** Is any string over its cap in §6? A paragraph that is five
+    lines on a phone is a visual defect, and it is the most common one in this product.
+13. **Is there a warm, true word anywhere in this?** If every pleasant word has been filed off, the draft
+    has over-corrected. Put one back and check the claim under it rather than deleting the claim.
+14. **Count the negations.** Sentences opening on "No", "Nothing", "Never", "We don't". More than one per
+    screen and the copy is defending rather than describing. Say what *is* true instead.
