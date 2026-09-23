@@ -3,6 +3,20 @@
 Read this before touching anything here. Where it conflicts with a memory or a guess, this file and the
 installed skills win.
 
+## Read the apex documents first
+
+This file holds the **local** rules: the stack, the commands, the gotchas and the verification for this
+half. It does **not** hold the design system, and for a long time it never mentioned where that lives —
+which is why `DESIGN.md` §3.1's hero rule was agreed and never built.
+
+1. **[`../DESIGN.md`](../DESIGN.md) — wins on anything visual.** §3 registers and the evidence fence,
+   **§3.5 mobile** (spacing table and length caps), §6 what to build and what never to, §7 pre-ship.
+2. **[`../tools/itqan_voice.md`](../tools/itqan_voice.md)** (and `itqan_voice_ar.md`) — **wins on
+   anything written**, in either language. The `itqan-content` MCP injects it verbatim.
+3. **[`../PRODUCT.md`](../PRODUCT.md)** — product truth, when a claim needs checking.
+
+Then this file, then the skill that owns the remaining decision (`itqan-ui-review` routes).
+
 ## What this is
 
 The public site for **Itqan**, a career navigator for job seekers and job switchers in Oman and the Gulf.
@@ -82,8 +96,15 @@ node -e "const f=require('fs'),z=require('zlib');const h=f.readFileSync('dist/en
 - **No dashes in prose.** No em or en dashes, no hyphenated compounds where a rewrite works ("sign up",
   "Arabic native"). Both languages. The one exception is the locked badge label "Suggested — confirm".
   CSS and file identifiers keep their hyphens.
-- **No hype, no AI writing tells.** Lead with capability, never promise a job, never lead with the
-  technology.
+- **Copy follows [`../tools/itqan_voice.md`](../tools/itqan_voice.md).** Lead with capability, never
+  promise a job, never lead with the technology. "No hype, no AI writing tells" used to be the whole rule
+  here and it pointed nowhere — the ban list, the structural tells (contrast reflex, abstract subjects,
+  choppiness, empty denials) and the *positive* voice all live in that file now. Read §4 and §8 before
+  writing a string.
+  **Warmth is not hype.** Positive, appealing, mildly stirring language is wanted; the ban is on the
+  unearned claim. Ordinary interface words — "register", "your account", "log in", "settings" — are just
+  words; they are only a problem when a *headline* leans on one instead of saying something specific.
+  A directional arrow after a CTA is a UI affordance, not slop, where the control really means "travel".
 - **The logo swaps in dark mode.** Full colour on light, reversed on dark, via
   `.brand-mark--light` / `.brand-mark--dark`.
 - **Hud is fenced.** Allowed on marketing pages, onboarding, empty states, errors. **Never beside
@@ -115,7 +136,14 @@ critical or high. Suppress a genuine specimen with a reasoned pragma, never by w
 ```
 
 It is static text analysis and cannot see a rendered page. **Passing it is necessary, never sufficient.**
-Follow with the render check: both themes, both directions, narrowest and widest, keyboard only.
+Every rule in it is a *prohibition*, so a page that does nothing passes perfectly — that is the exact
+failure this project hit. It also checks a **subset** of the voice file's bans, so a clean run does not
+mean the copy is clean.
+
+Follow with the render check: **375px first**, then 768 and 1280; both themes, both directions, keyboard
+only. Phone width is where this site's surfaces actually fail, so checking it last means finding it last.
+Then the 13-question blandness review in `../DESIGN.md` §6.4 — its questions 9 to 11 are the mobile ones,
+and 12 is the one that stops "simple" being reported as a defect when it was a decision.
 
 **Screenshots work. A timeout means you are addressing a background tab.** The pane only composites the
 FRONTED tab. Starting a second preview server creates a new tab and fronts it, orphaning the one you were
@@ -135,7 +163,9 @@ treating them as locked is what produced flat, lifeless output once already. Rea
 
 | Skill | Owns | Load when |
 |---|---|---|
-| **itqan-brand** | Identity, voice, logo programme, Hud, the three users. **Locked.** | Any copy; the logo; the mascot; "is this on brand" |
+| **`../DESIGN.md`** (not a skill) | **Apex on anything visual** — registers, the evidence fence, mobile, depth, anti-slop, pre-ship | **First, always** |
+| **`../tools/itqan_voice.md`** (not a skill) | **Apex on anything written**, both languages | **Before any string** |
+| **itqan-brand** | Identity, logo programme, Hud, the three users, the three locked voice rules. **Locked.** | The logo; the mascot; "is this on brand" |
 | **itqan-design-system** | Every design **value** — tokens, dark mode. **Locked.** | Any colour, size, spacing, radius, shadow, duration |
 | **itqan-ux-craft** | Behaviour — screen states, forms, errors, a11y, RTL engineering | Structuring a screen or flow |
 | **itqan-motion** | Motion choreography, easing, RTL-safe patterns, reduced motion | Animating or reviewing motion |
@@ -150,8 +180,10 @@ the tokens, use the tokens.
 
 ## Open decisions — flag and ask, do not invent
 
-- The brand reference files the brief cites (`voice-writing.md`, `logo-program.md`, `hud-mascot.md`) are
-  **not installed**; only the SKILL.md summaries exist. If a locked detail is missing, ask.
+- **The voice is no longer an open decision.** `voice-writing.md` was never written and is not coming;
+  [`../tools/itqan_voice.md`](../tools/itqan_voice.md) and `itqan_voice_ar.md` replaced it and are the
+  apex for copy. `logo-program.md` and `hud-mascot.md` are still **not installed**; only the SKILL.md
+  summaries exist. If a locked detail is missing there, ask.
 - The skill's own `audit.py` and rulebook are not installed; `scripts/audit.py` is the stand-in.
 - Layout grid, sub-32px icon, three of four Hud poses, and the real reversed marks are TBD.
 - Pending design-system sign-off: `--color-success`, and `--color-accent-ink` for gold emphasis on light.

@@ -1,5 +1,12 @@
 # Depth, Material and Visual Life
 
+> **`DESIGN.md` at the workspace root is the apex and wins on anything in this file.** This payload holds
+> the *recipes* — the nine sources of visual life, the CSS for each material, the gold budget. The
+> **register model and the evidence fence are owned by `DESIGN.md` §3**, and the full blandness review by
+> §6.4. This file once taught a two-register model assigned by route, which `DESIGN.md` Appendix B
+> identifies as the root cause of the app reading sterile; that model is gone and the current one is
+> below. If the two files ever disagree again, `DESIGN.md` is the intent and this file is the bug.
+
 This file exists because the system was over-corrected. In trying to avoid AI slop, the rules were
 tightened until "clarity before decoration" was being read as "remove everything", and the output came
 back flat: white cards, one shadow, one gold, no texture, no scale contrast, nothing that suggests a
@@ -10,23 +17,46 @@ Itqan's users are graduates in their twenties. The product must read as a *sharp
 register of Linear, Raycast, Arc, Vercel — not as a government portal. Trustworthy and lifeless are not
 the same thing, and the aesthetic-usability effect means the flat version is actually trusted *less*.
 
-## The two registers
+## Three registers, and a fence that moves
 
-Every Itqan surface sits in one of two registers. Get this right first; most "it feels wrong" reports are
-a surface built in the wrong register.
+**Full definitions live in `DESIGN.md` §3.** The summary, because you need it before picking a recipe:
 
-| | **Product register** | **Expressive register** |
-|---|---|---|
-| Where | Verdicts, matches, confidence, gap analysis, data tables, the OCR confirmation screen, forms, settings | Marketing and landing pages, onboarding, empty states, error states, success milestones, the gap moment |
-| Feels like | Precise, quiet, fast, dense, factual | Confident, dimensional, warm, paced |
-| Depth | Hairlines, one shadow step, flat fills | Gradients, glows, layered shadows, texture, large type |
-| Motion | Under 200ms, no overshoot, no delight | Up to 700ms, overshoot allowed, staggering, choreography |
-| Hud | Forbidden | Welcome, animated |
-| Gold | Accent and state only, sparing | Can carry a whole surface |
+Registers are assigned **by surface, not by route**, and they describe *density and posture only*.
 
-**The locked trust rules apply in both.** Expressive never means inventing a statistic, dropping a
+| | **Stage** | **Passage** | **Workspace** |
+|---|---|---|---|
+| Where | Marketing, hero, pricing, proof, about | Onboarding, upload, confirm, questions, empty, error, success | Dashboard, jobs, courses, documents, profile, settings, chat |
+| Feels like | Confident, roomy, dimensional | Warm, paced, focused | Precise, dense, structured, *alive* |
+| Depth | Everything below | Gradients, warm grounds, one glow | Same vocabulary, tighter spacing |
+| Motion | Choreography, staggering | Overshoot licensed on entrances | Under `--duration-base` on anything frequent |
+| Hud | Welcome, animated | Welcome, animated | Chat surface only |
+| Gold | May carry a surface | One accent per step | One anchor per view section |
+
+**The old model assigned these by route, and that is what made the app sterile.** A dashboard containing
+a confidence score somewhere on it had its section headers, empty states and page ground all built as
+though they were confidence scores. **Workspace is dense, not flat.** Density and flatness are not the
+same thing; Linear is dense and unmistakably crafted, and that is the target.
+
+**The evidence fence (`DESIGN.md` §3.4) is the only absolute, and it is scoped to components.** Inside it
+— verdicts, confidence badges, the evidence chain, gap figures, extracted transcript data, the OCR
+confirmation screen, any table of parsed values — there is no gradient behind data, no glow, no texture
+under a number, no overshoot, no entrance of its own, and no Hud. **Outside the fence, on the very same
+screen, everything in this file is available.** The card *around* a match may have rim light and a
+gradient. The empty state where a table would be may be as warm as any onboarding step. The fence follows
+the data, not the route.
+
+**The locked trust rules apply everywhere.** Expressive never means inventing a statistic, dropping a
 source link, hiding a confidence score, or putting a cartoon bird next to a result. It means the parts of
 the product that are *not* evidence are allowed to be beautiful.
+
+### Plain is allowed; sterile is not
+
+This file argues for visual life, and it has been misread in both directions. A simple surface is often
+the right answer — a login, a settings row, a confirmation. The defect is not simplicity, it is **absence
+of decision**. A plain surface that is *finished* decided four things: type hierarchy, its one ground
+change, what responds to the pointer, and its spacing rhythm. A sterile one defaulted all four. Before
+reaching for the nine sources below, check which of the four were actually decided — if all four were,
+the surface is done and adding material will make it worse.
 
 ## The nine sources of visual life
 
@@ -88,7 +118,7 @@ dead regardless of how good the static composition is.
 
 ## Composing a surface: the material recipes
 
-**Raised card (product register)**
+**Raised card (Workspace, and anything inside the evidence fence)**
 ```css
 background: var(--color-surface);
 border: 1px solid var(--color-border);
@@ -96,7 +126,7 @@ border-radius: var(--radius-lg);
 box-shadow: var(--shadow-sm);
 ```
 
-**Feature panel (expressive register)**
+**Feature panel (Stage and Passage, and Workspace's leading panel)**
 ```css
 background: var(--gradient-paper);
 border: 1px solid var(--color-border);
@@ -142,7 +172,10 @@ The gentlest way to change ground without introducing a new hue.
 The failure mode in both directions is real. Too little and the brand disappears into navy-and-white
 corporate. Too much and it reads as a discount banner.
 
-- **One gold anchor per viewport.** The primary CTA, or the accent panel, or the marker — not all three.
+- **One gold anchor per view section** (`DESIGN.md` Appendix B #3 loosened this from "per viewport", which
+  is a screen size rather than a design unit). The primary CTA, or the accent panel, or the marker — not
+  all three in the same section. State, chip and hairline gold do not count against the budget. This is a
+  hierarchy rule, not a quota.
 - Gold **fills** (buttons, badges, chips, panels) carry navy text at 8.1:1. Safe and strong.
 - Gold **hairlines and icons** on light must use `--color-border-accent` / `--gold-700`, never `--gold`.
 - Gold **text** on light: only `--color-accent-ink` (`--gold-800`, 5.4:1), only for emphasis and small
@@ -167,16 +200,27 @@ this panel is the page's dark beat is considered. A gradient because gradients l
 
 ## Reviewing for blandness
 
-Add these to any visual review. Each one failing is a defect, reported the same way a contrast failure is.
+**`DESIGN.md` §6.4 holds the authoritative list of 13 questions. Run it from there.** This is the short
+form, kept because the recipes above are indexed to it. Each failure is a defect, reported the same way a
+contrast failure is.
 
 1. Is there more than one ground colour on this page?
-2. Is the type scale contrast at least 3:1 between the headline and body?
+2. Is the type scale contrast at least 3:1 between the headline and body — 4:1 on Stage?
 3. Does any surface have layered elevation, or is every shadow the same single blur?
 4. Is there texture, gradient, or light anywhere, or is everything a flat fill?
 5. Is gold doing one confident job, or is it sprinkled?
 6. Does anything on the page respond to the pointer?
 7. Is the composition centred and evenly divided throughout?
-8. Would this be recognisable as Itqan with the logo removed?
+8. Is the restraint here actually protecting evidence, or did it leak out of the fence onto chrome that
+   could have been alive?
+9. **Run 1–8 again at 375px.** This is where surfaces actually fail. Depth is not a desktop luxury to be
+   dropped in a media query — see `DESIGN.md` §3.5.
+10. **Is every spacing value in the phone layout from `DESIGN.md` §3.5's table**, or did new numbers
+    appear? Is the gutter the same as on the last screen?
+11. **Is any paragraph over its §3.5 length cap?** On a phone, over-explanation is a visual defect.
+12. **If this surface is plain, was that decided or defaulted?** Four decisions, named above. Four decided
+    means finished; four defaulted means unfinished.
+13. Would this be recognisable as Itqan with the logo removed?
 
-If the honest answer to 8 is no, the surface is not finished — regardless of how cleanly it passes the
+If the honest answer to 13 is no, the surface is not finished — regardless of how cleanly it passes the
 audit.

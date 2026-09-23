@@ -21,6 +21,28 @@ rules** (provenance, honest confidence, no invented numbers). Everything else �
 density, depth, scale, boldness, choreography — is open, and this document exists partly to say so out
 loud.
 
+## The document graph
+
+This file is the apex, and for a long time nothing pointed at it: neither front end's `CLAUDE.md`, and
+none of the five `itqan-*` skills, named it once. A rule nobody is routed to is not a rule. That is why
+§3.1's hero size and §3.3's dark-beat sidebar were written, agreed, and never built.
+
+**Every design task starts here.** The order:
+
+1. **`DESIGN.md`** (this file) — what the surface should look like. Registers, tokens, depth, the fences.
+2. **`itqan-ui-review`** — routes to whichever skill owns the rest of the decision, and audits at the end.
+3. **The owning skill** — `itqan-brand` (identity, voice), `itqan-design-system` (values),
+   `itqan-ux-craft` (behaviour), `itqan-motion` (choreography).
+4. **`impeccable` and the craft skills** — direction and taste on anything not LOCKED.
+5. **The front end's `CLAUDE.md`** — local gotchas, commands and verification for that half.
+
+The skill payloads are downstream of this file, not parallel to it. Where
+`itqan-design-system/references/depth-and-materials.md` and this document disagree, **this document is
+the intent and the payload is the bug** — fix the payload, do not split the difference.
+
+**Copy has the same apex.** `tools/itqan_voice.md` is to words what this file is to pixels. It is not
+merged into this document and it is not optional; §5.7 and §4 defer to it.
+
 ---
 
 ## 1. Core visual philosophy and vibe
@@ -36,6 +58,19 @@ gradients look modern.
 things and makes each excellent. It does not spend nothing. A flat, shadowless, single-surface page is
 not restrained; it is unfinished, and by the aesthetic–usability effect it is trusted *less* by the
 sceptic this product is built for, not more.
+
+**Plain is allowed. Sterile is not.** A simple surface is a legitimate design answer and often the right
+one — a login, a settings row, a confirmation. The defect this document attacks is not simplicity, it is
+**absence of decision**. A simple surface that is *finished* has decided four things: its type hierarchy,
+its one ground change, what responds to the pointer, and its spacing rhythm. A sterile one defaulted all
+four and called it restraint. Before calling a plain surface a defect, ask which of the four was decided;
+if all four were, the surface is done, and you should leave it alone.
+
+**Warmth is not hype.** Copy and interface may be positive, appealing, even a little bit stirring. What
+is banned is the *unearned claim* — the invented number, the promise Itqan does not control, the
+vocabulary in §6.3 and `itqan_voice.md` §4. "Start moving", "the shortest way there", "worth your time"
+are warm, true, and entirely allowed. A rule that strips every pleasant word produces copy with no pulse,
+and that has already happened here once. When in doubt, keep the warm word and check the claim under it.
 
 **The register of a sharp modern tool.** Linear, Raycast, Arc, Vercel. Not a government portal, not a
 bank, not a hospital. The users are graduates in their twenties who arrived demoralised after months of
@@ -437,6 +472,48 @@ match may have a rim light and a gradient. The section heading above a table may
 state where a table would be may be as warm and expressive as any onboarding step. The fence follows the
 data, not the route.
 
+### 3.5 Every register on a phone
+
+**This is the weakest surface in the product today, in both apps.** Mobile is where the depth budget gets
+dropped first, where spacing stops coming from the scale, and where copy written for a wide column turns
+into a wall. The register does **not** change at 375px — Stage stays Stage, and a hero is still the
+page's biggest move. Only the density does.
+
+**Depth survives the breakpoint.** Rim light, layered shadow, ground alternation and the one dark beat
+are *not* desktop luxuries to be dropped in a media query. A phone screen with one flat white card on one
+flat ground is the sterile failure at its most complete, because there is nothing else on screen to carry
+the brand. If something must go at small widths, drop the *glow field* and the decorative figure; keep
+the grounds, the elevation and the scale contrast.
+
+**Spacing comes from one step down the register's scale, not from new numbers.** This is the specific
+inconsistency to hunt: a phone layout assembled from ad-hoc values that exist nowhere in §2.3.
+
+| Register | Desktop section rhythm | **Phone section rhythm** | **Phone card padding** | **Phone gutter** |
+|---|---|---|---|---|
+| Stage | `--space-20` → `--space-32` | `--space-12` → `--space-16` | `--space-6` | `--space-5` |
+| Passage | `--space-12` → `--space-16` | `--space-8` → `--space-10` | `--space-5` | `--space-5` |
+| Workspace | `--space-8` → `--space-10` | `--space-6` → `--space-8` | `--space-4` → `--space-5` | `--space-4` |
+
+One gutter value per app, applied everywhere, so no two screens inset differently. Headlines step down
+one tier, never two: a Stage hero goes `--text-7xl` → `--text-6xl`, not to `--text-3xl`.
+
+**Length is a design constraint on a phone, and this is where over-explanation actually costs.** At
+375px roughly 38 characters fit a line in English and fewer in Arabic, so a 200-character paragraph is
+five lines and a 350-character one is nine. Caps, measured at 375px:
+
+- **Body paragraph: 200 characters.** Over that, cut it or fold it behind a disclosure.
+- **Card or tile body: 120 characters.**
+- **Helper and tooltip text: 90 characters**, one sentence.
+- **Empty and error states: 160 characters** across all lines together.
+- **Any single string over 250 characters is a defect on mobile**, whatever it looks like on desktop.
+
+Anything that cannot meet its cap gets *folded*, not shrunk: a short line plus a "How this is worked out"
+disclosure, which is the pattern the dashboard already uses. Never solve length by reducing type size.
+
+**Also true at 375px:** touch targets stay ≥44px and do not shrink with the density step; hover is not
+available, so nothing essential may live behind it; and both directions and both languages get checked
+here first, because Arabic runs 20–30% longer and the phone is where that overflows.
+
 ---
 
 ## 4. Component patterns
@@ -718,7 +795,10 @@ Banned by the same logic:
 
 - Purple-to-blue SaaS gradients, aurora backgrounds, floating 3D blobs, glassmorphism for its own sake.
 - Emoji as iconography. Icon sets that mix two visual languages.
-- A centred hero over a centred glow. Three equal feature cards. A stat row of invented numbers.
+- A centred hero over a centred glow. A stat row of invented numbers.
+- **A row of equal-weight cards standing in for hierarchy** — three equal feature cards, two equal
+  pricing cards, four equal anything. The count is not the rule; the absence of a lead is. If one of them
+  matters more, build it that way. Equal weight is correct only when the things genuinely are equal.
 - Decoration on a surface a user acts on. A gradient behind a number.
 - Motion that delays a task the user performs dozens of times a day.
 - A straight-edged accent bar inside a rounded container.
@@ -741,9 +821,18 @@ failure is.**
 7. Is the composition centred and evenly divided throughout?
 8. Is the restraint on this surface actually protecting evidence, or did it leak out of the fence onto
    chrome that could have been alive?
-9. Would this be recognisable as Itqan with the logo removed?
+9. **Run 1–8 again at 375px.** Most surfaces pass on desktop and fail here. Did the depth survive the
+   breakpoint, or did a media query flatten it?
+10. **Is every spacing value in the phone layout from §3.5's table**, or did new numbers appear? Is the
+    gutter the same on this screen as on the last one?
+11. **Is any paragraph over its §3.5 cap?** Over-explanation is a visual defect on a phone, not only a
+    copy one.
+12. **If this surface is plain, was that decided or defaulted?** Name the four decisions from §1: type
+    hierarchy, ground change, pointer response, spacing rhythm. Four decided means finished. Four
+    defaulted means unfinished. This question exists so "simple" stops being read as a failure.
+13. Would this be recognisable as Itqan with the logo removed?
 
-If the honest answer to 9 is no, the surface is not finished, however cleanly it passes an audit.
+If the honest answer to 13 is no, the surface is not finished, however cleanly it passes an audit.
 
 ### 6.5 The one test
 
@@ -773,6 +862,10 @@ inputs. 44px targets. Reduced motion via the scalars plus a per-component swap.
 
 **Direction.** Logical properties throughout. Verified in both directions × both languages × light and
 dark, at 360 / 768 / 1280. Bidi isolation on every mixed string.
+
+**Mobile (§3.5).** Checked at 375px *before* desktop is called done. Depth survived the breakpoint. Every
+spacing value is from the §3.5 table and the gutter matches the rest of the app. Headline stepped down one
+tier, not two. No paragraph over its cap, and nothing solved by shrinking type. Targets still ≥44px.
 
 **Trust.** Every extracted value carries its confidence. Every recommendation carries its `why` and a
 real source. Nothing invented. The Hud fence and the evidence fence both hold.
@@ -808,7 +901,7 @@ every screen that consumes it.
 | `PRODUCT.md`, root `CLAUDE.md` | Positioning, pricing, the four questions, the not-a-translation-engine rule |
 
 **Audited and deliberately not merged**: `BACKEND.md`, `LEGAL-BRIEF.md`, `itqan-website/PLACEHOLDERS.md`,
-`README.md`, `tools/brand_voice.md`, `.claude/skills/impeccable/**`, `.agents/skills/**`,
+`README.md`, `tools/itqan_voice.md`, `tools/itqan_voice_ar.md`, `.claude/skills/impeccable/**`, `.agents/skills/**`,
 `.github/skills/**` (a duplicate of `.claude/skills/impeccable`). None of these owns a design value.
 
 **Three copies of `tokens.css` remain in lockstep** — the skill's, the site's, and the app's — with one

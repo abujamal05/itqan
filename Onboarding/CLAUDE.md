@@ -32,19 +32,43 @@ Dev accounts are seeded in `dev/site-plugin.ts`, all with the password `itqan123
 
 In this order:
 
-1. **`../.claude/skills/itqan-design-system/references/depth-and-materials.md`** — pick the **register**
-   before writing any CSS. Product (verdicts, matches, confidence, tables, forms) is precise and quiet;
-   expressive (onboarding, empty and error states, milestones) is dimensional and paced. Most "it feels
-   wrong" reports are the wrong register. It also holds the blandness review; treat each failure there as
-   a defect, the same as a contrast failure.
+1. **[`../DESIGN.md`](../DESIGN.md) — the apex, and it wins on anything visual.** Pick the **register**
+   from §3 before writing any CSS. There are **three, assigned by surface**: Stage (marketing), Passage
+   (onboarding, upload, confirm, empty, error, success) and **Workspace** (dashboard, jobs, courses,
+   documents, profile, settings, chat). On top of them sits the **evidence fence** (§3.4), scoped to
+   *components* — verdicts, confidence, the evidence chain, parsed tables — which is the only absolute
+   and travels with the data rather than the route.
+   **This app is Workspace, and Workspace is dense, not flat.** An older model assigned two registers by
+   route, so everything on a page that contained a score anywhere got built like a score; `DESIGN.md`
+   Appendix B names that as the reason this app read sterile. Outside the fence, on the same screen,
+   the full material vocabulary is available.
+   **§3.5 is mobile** — the phone spacing table, the length caps, and what depth must survive the
+   breakpoint. Read it before writing a media query. **§6.4 is the 13-question blandness review**; treat
+   each failure as a defect, the same as a contrast failure.
 2. **`../.claude/skills/itqan-design-system/references/tokens.css`** — the source of truth for values.
-3. **`../.claude/skills/itqan-design-system/references/components.md`** — component specs, the 8 states.
-4. **`../.claude/skills/itqan-ux-craft/SKILL.md`** — screen states, capability before deficit.
-5. **`impeccable`** — direction and strategy, before implementation.
+3. **`../.claude/skills/itqan-design-system/references/depth-and-materials.md`** — the nine sources of
+   visual life and the material recipes. Downstream of `DESIGN.md`; if they disagree, `DESIGN.md` is the
+   intent and the payload is the bug.
+4. **`../.claude/skills/itqan-design-system/references/components.md`** — component specs, the 8 states.
+5. **`../.claude/skills/itqan-ux-craft/SKILL.md`** — screen states, capability before deficit.
+6. **[`../tools/itqan_voice.md`](../tools/itqan_voice.md)** — **the apex for any string you write**, in
+   either language (`itqan_voice_ar.md` for Arabic).
+7. **`impeccable`** — direction and strategy, before implementation.
 
 > **Restraint is a budget, not a prohibition.** "Clarity before decoration" ranks the two; it does not
 > delete the second. A flat, shadowless, single-surface page is not restrained, it is unfinished, and for
 > the skeptical user this product is built for it is trusted *less*, not more.
+>
+> **But plain is allowed; sterile is not.** A simple surface is often the right answer — a settings row,
+> a confirmation, a login. The defect is **absence of decision**, not simplicity. A plain surface that is
+> finished has decided four things: type hierarchy, its one ground change, what responds to the pointer,
+> and its spacing rhythm. A sterile one defaulted all four. Check which before adding material; if all
+> four were decided, leave it alone.
+>
+> **Warmth is not hype, and ordinary words are ordinary.** Positive, appealing copy is wanted — the ban
+> is on the unearned claim. "Register", "your account", "your journey", "settings" are the words the
+> interface needs; they are a problem only when a headline leans on one instead of saying something
+> specific. An arrow after a CTA is a UI affordance where the control really means "travel".
 
 ## Locked
 
@@ -82,7 +106,11 @@ shipped with a progress track 12px off its markers and a fill overshooting by 45
 that passed every automated check.
 
 1. Run it. `npm run dev`, sign in, open the screen.
-2. Both themes, both directions, at 375 / 768 / 1280.
+2. Both themes, both directions, **at 375 first**, then 768 and 1280. Phone width is the weakest surface
+   in this app and checking it last means finding it last. Against `../DESIGN.md` §3.5: did the depth
+   survive the breakpoint, is every spacing value from the §3.5 table, is the gutter the same as on the
+   previous screen, and is any paragraph over its length cap? Over-explanation is a *visual* defect at
+   375px, not only a copy one.
 3. **If you changed a global utility or a token, open every screen that consumes it.** `grep` the class
    first. `.muted`, `.chip*`, `.grid--*`, `.meter`, `.card*` and `.section__*` are shared, and a
    dashboard-motivated change to any of them lands on Jobs, Courses, Documents, Profile, Confirm,

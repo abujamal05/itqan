@@ -13,6 +13,10 @@ description: >
 
 # Itqan Brand
 
+> **Apex documents:** `DESIGN.md` (workspace root) wins on anything visual; `tools/itqan_voice.md` and
+> `tools/itqan_voice_ar.md` win on anything written. This skill owns identity, marks, mascot and the
+> three locked voice rules — it summarises the voice files, it does not replace them.
+
 This skill owns **who Itqan is and how it speaks**. The three sibling skills own the rest:
 
 | Need | Skill |
@@ -36,7 +40,7 @@ produced flat, lifeless work; this skill's job is to keep Itqan *itself*, not to
 |---|---|
 | `references/logo-program.md` | Placing, scaling, recolouring or reviewing the logo; choosing a lockup; checking clear space or misuse |
 | `references/hud-mascot.md` | Adding, drawing, animating or restricting the mascot |
-| `references/voice-writing.md` | Writing any user-facing words at all |
+| **`../../../tools/itqan_voice.md`** (EN) / **`itqan_voice_ar.md`** (AR) | **Writing any user-facing words at all.** The apex for copy, and the only one of these files that is actually installed and current. `references/voice-writing.md` was never written and is not coming. |
 | `references/audience.md` | Any decision that should be checked against a real user; personas and the journey map |
 | `references/trust-architecture.md` | Designing anything that displays AI output — matches, gaps, confidence, pathways |
 | `references/delivery-pitfalls.md` | Planning, scoping or reviewing team delivery |
@@ -228,13 +232,35 @@ Three rules that govern everything:
    hype loses.
 
 **Never write:** revolutionary, magical, seamless, effortless, game-changing; "AI-powered" as a selling
-point; *missing / deficient / unqualified*; vague hedges like "might be a good fit".
+point; *missing / deficient / unqualified*. The full ban list, with the structural tells that survive a
+clean vocabulary pass, is `tools/itqan_voice.md` §4.
+
+**Warmth is not hype.** Positive, appealing, even slightly stirring language is allowed and wanted. What
+is banned is the **unearned claim** — an invented number, an outcome Itqan does not control, a
+superlative with no source. "Start moving", "the shortest way there", "worth your time" are warm, true
+and fine. A rule that strips every pleasant word produces copy with no pulse, and that has happened here
+once already. Keep the warm word; check the claim underneath it.
+
+**Ordinary words stay ordinary.** "Register", "your account", "your journey", "log in", "settings" are
+the words people use and the words an interface needs. They are only a problem when they replace a
+specific claim with a vague one — a *marketing headline* built on "your journey" is the tell, a **button
+that says "Register"** is just a button. Judge the sentence, not the token.
+
+**Instead of a vague hedge, state the confidence.** Never "might be a good fit". Say how sure it is and
+why: **"suggested — confirm this"** below threshold, or the number with its evidence above it. Hedging
+is banned because it hides the confidence, not because certainty is required.
 
 **Always available:** "suggested — confirm this" for anything below threshold; "why this match" as the
 standing name for the evidence chain; "you already have…" for capabilities, "unlock" for gaps.
 
 Sentence case everywhere. Active voice. Buttons name the outcome ("See where I stand", never "Submit").
-Arabic and English are both *authored*, never translated. Full system: `references/voice-writing.md`.
+A directional arrow after a link or CTA is a **UI affordance, not slop** — use it where the control
+genuinely means "travel", and drop it where it is decoration on a control that stays put.
+Arabic and English are both *authored*, never translated.
+
+**Full system: `tools/itqan_voice.md` (English) and `tools/itqan_voice_ar.md` (Arabic).** Those two files
+are the apex for copy and they are written, installed and in use — this section is the summary, not the
+source. (`references/voice-writing.md` was never written and is not coming; the voice files replaced it.)
 
 ## 8. Displaying AI output
 

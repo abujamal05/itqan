@@ -15,6 +15,10 @@ description: >
 
 # Itqan Design System
 
+> **`DESIGN.md` at the workspace root is the apex and wins on anything visual.** Registers and the
+> evidence fence are §3, the mobile rules §3.5, the anti-slop directives and the 13-question blandness
+> review §6. Read it first; this skill is downstream of it.
+
 This skill owns **what Itqan looks like** — the concrete values and components. It does **not** teach
 general UX principles, screen states, or process; that is `itqan-ux-craft`. When you need *how a good
 interface should behave*, read that skill; when you need *a value or a component spec*, read this one.
@@ -36,9 +40,10 @@ excellent. `references/depth-and-materials.md` is the file that governs this, an
 - `references/tokens.css` — the complete token set (primitive → semantic → component), dark mode, depth,
   material, motion, and the reduced-motion mechanism. **This is the source of truth for every value.**
   Read it before writing any styles; use the semantic tokens, never raw hex.
-- `references/depth-and-materials.md` — the two registers, the nine sources of visual life, the material
-  recipes, how much gold, and the blandness review. **Read it on any surface work.** If a design comes
-  back flat, the fix is in here.
+- `references/depth-and-materials.md` — the nine sources of visual life, the material recipes, how much
+  gold, and the short-form blandness review. **Read it on any surface work.** If a design comes back
+  flat, the recipes are in here. The **register model and the evidence fence belong to `DESIGN.md` §3**,
+  and the authoritative blandness review to §6.4.
 - `references/components.md` — specs for every Itqan component with all interaction states, in tokens.
   Read it when building or reviewing any component.
 
@@ -111,11 +116,17 @@ Flat fills everywhere is the single biggest reason competent Itqan work has read
 ships the vocabulary to fix it — layered two-part shadows, `--rim-light`, gradients, off-centre radial
 glows, canvas texture, glass, five surfaces rather than two, and a display type scale.
 
-**Read `references/depth-and-materials.md` before styling any surface.** It defines the two registers
-(product vs expressive), the nine sources of visual life, the composition recipes, and the blandness
-review that a visual check must now include. The short version:
+**Read `DESIGN.md` §3 for the register, then `references/depth-and-materials.md` for the recipe.** There
+are **three registers assigned by surface** — Stage (marketing), Passage (onboarding and flow states) and
+Workspace (the app) — plus an **evidence fence scoped to components**, which is the only absolute and
+travels with the data rather than the route. The older model here assigned two registers by route, and
+`DESIGN.md` Appendix B names that as the reason the app read sterile. **Workspace is dense, not flat.**
 
-- **Product surfaces** (verdicts, matches, confidence, tables, forms, the OCR screen) stay quiet: hairlines,
+Note also that **plain is allowed and sterile is not** (`DESIGN.md` §1): the defect is a surface that
+defaulted its type hierarchy, ground change, pointer response and spacing rhythm — not a surface that
+chose to be simple. The short version of what stays quiet:
+
+- **Inside the evidence fence** (verdicts, matches, confidence, tables, the OCR screen) stay quiet: hairlines,
   one shadow step, flat fills, fast motion, no Hud.
 - **Expressive surfaces** (marketing, onboarding, empty, error, success, the gap moment) get the full
   material vocabulary: gradients, glows, layered shadows, texture, display type, animated Hud.

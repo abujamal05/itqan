@@ -19,8 +19,14 @@ Two jobs, one at each end of the work:
    from memory.
 2. **Verify** — at the end, prove it complies, mechanically and then visually.
 
-This skill holds **no design values of its own**. It points at the four that do. If a value seems to be
-defined here, that is a bug — go to the owning skill.
+This skill holds **no design values of its own**. It points at the files that do. If a value seems to be
+defined here, that is a bug — go to the owning source.
+
+> **The two apex documents sit above every skill below.**
+> • **`DESIGN.md`** (workspace root) wins on anything visual — registers and the evidence fence (§3),
+>   mobile (§3.5), anti-slop and the 13-question blandness review (§6), the pre-ship checklist (§7).
+> • **`tools/itqan_voice.md`** (and `itqan_voice_ar.md`) wins on anything written, in either language.
+> Read the relevant apex **first**. Everything in the router is downstream of them.
 
 ---
 
@@ -30,14 +36,16 @@ Find the task. Read the listed files *before* producing anything.
 
 | The task | Read, in order |
 |---|---|
-| **Starting any new screen** | `impeccable` (direction, mode, composition) → `itqan-ux-craft` (screen states, process) → `itqan-design-system/references/tokens.css` + `depth-and-materials.md` → this skill §3 |
+| **Literally any design work** | **`DESIGN.md` first.** §3 for the register, §6 for what to build and what never to, §7 to ship. Nothing below replaces it. |
+| **Starting any new screen** | `DESIGN.md` §3 (register + fence) → `impeccable` (direction, mode, composition) → `itqan-ux-craft` (screen states, process) → `itqan-design-system/references/tokens.css` + `depth-and-materials.md` → this skill §3 |
+| **Anything at phone width** | **`DESIGN.md` §3.5** — spacing table, length caps, what depth must survive the breakpoint → `itqan-ux-craft` §7 for the responsive strategy. This is the weakest surface in the product; do not treat it as a desktop layout that got narrower. |
 | **Choosing a colour, size, spacing, radius, shadow** | `itqan-design-system/references/tokens.css`. Never invent a value. |
-| **A surface that looks flat, safe or lifeless** | `itqan-design-system/references/depth-and-materials.md` → `impeccable bolder` / `delight` |
+| **A surface that looks flat, safe or lifeless** | `DESIGN.md` §6.2 "Build this" and §6.4 → `itqan-design-system/references/depth-and-materials.md` for the recipes → `impeccable bolder` / `delight`. **First ask whether it is plain-and-finished or sterile** (`DESIGN.md` §1): a surface that decided its type hierarchy, ground change, pointer response and spacing rhythm is done, even if it is simple. |
 | **Depth, material, gradient, texture, elevation** | `itqan-design-system/references/depth-and-materials.md` |
 | **Building a component** (button, card, form, badge, chip) | `itqan-design-system/references/components.md` → `itqan-ux-craft` for its states |
 | **Anything with the logo** | `itqan-brand` §5 (`references/logo-program.md` is not yet written) |
 | **Anything with the mascot** | `itqan-brand` §6 — check the forbidden zones *first*, then `itqan-motion` for the animated-Hud rules |
-| **Writing any user-facing words** | `itqan-brand` §7 (`references/voice-writing.md` is not yet written) |
+| **Writing any user-facing words** | **`tools/itqan_voice.md`** (English) or **`tools/itqan_voice_ar.md`** (Arabic) — the full system, and the apex for copy → `itqan-brand` §7 for the three locked rules. The `itqan-content` MCP injects these files verbatim; its `violations` list is a flagging net over a subset, never the law. |
 | **Animating anything** | `itqan-motion` (register, choreography, RTL) → `emil-design-eng` (craft) → tokens for values |
 | **Reviewing existing animation** | `review-animations` for a diff, `improve-animations` for a codebase, `find-animation-opportunities` when a surface feels dead |
 | **Arabic / RTL / bilingual work** | `itqan-ux-craft/references/rtl-bilingual.md` → `itqan-brand` §7 |
@@ -142,10 +150,14 @@ while five visible defects shipped — including one in the very section that cl
 1. **Route** — §1. Load the owning references *and* `impeccable` before building.
 2. **Build.**
 3. **Audit** — `python3 scripts/audit.py <path>`. Fix every critical and high. Triage the rest.
-4. **Render check** — screenshot or open it. Light and dark. Narrow and wide. Keyboard-only once.
-5. **Blandness check** — the eight questions in
-   `itqan-design-system/references/depth-and-materials.md`. A failure here is a defect, reported like any
-   other. If the surface would be unrecognisable as Itqan with the logo removed, it is not finished.
+4. **Render check** — screenshot or open it. Light and dark. Both directions. **375px first, then 768
+   and 1280** — phone width is where this product's surfaces actually fail, so checking it last means
+   finding it last. Keyboard-only once.
+5. **Blandness check** — the **13 questions in `DESIGN.md` §6.4**. A failure here is a defect, reported
+   like any other. Questions 9–11 re-run the whole list at 375px and check the phone spacing and length
+   caps; question 12 asks whether a plain surface was *decided* or *defaulted*, so "simple" is not
+   reported as a failure on its own. If the surface would be unrecognisable as Itqan with the logo
+   removed, it is not finished.
 6. **Motion check** — `review-animations` over the diff if anything moves.
 7. **User check** — walk it against Maryam, Yusuf and Nasser. Each fails differently.
 8. **Brand check** — the checklist in `itqan-brand` §9.

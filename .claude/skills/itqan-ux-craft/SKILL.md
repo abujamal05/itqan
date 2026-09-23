@@ -14,6 +14,10 @@ description: >
 
 # Itqan UX Craft
 
+> **`DESIGN.md` at the workspace root is the apex and wins on anything visual.** Registers and the
+> evidence fence are §3, the mobile rules §3.5, the anti-slop directives and the 13-question blandness
+> review §6. Read it first; this skill is downstream of it.
+
 This skill makes design decisions like a senior product designer who has shipped real interfaces — and
 adapts that craft to Itqan's specific users and stakes. It owns **how interfaces behave and how to arrive
 at them**. It does **not** own visual values: for a colour, font, spacing, radius, or motion value, read
@@ -40,10 +44,12 @@ Don't jump to layout. Work in this order:
 4. **Hierarchy.** Make the primary action visually dominant; everything else recedes. In RTL, hierarchy
    reads from the top-right.
 5. **Direction before styling.** Decide what this surface should *feel* like and how bold it may be —
-   load `impeccable` for that, and `itqan-design-system/references/depth-and-materials.md` for which of the
-   two registers applies. Skipping this step is how a screen ends up correct and characterless.
+   load `impeccable` for that, and **`DESIGN.md` §3** for which of the three registers applies (Stage,
+   Passage, Workspace) and whether any part of the surface sits inside the evidence fence. Skipping this
+   step is how a screen ends up correct and characterless.
 6. **Then apply the visual system** (tokens/components) and **then critique** against the checklists (§8)
-   *and* the blandness review in `depth-and-materials.md`.
+   *and* the 13-question blandness review in `DESIGN.md` §6.4 — which includes running the whole thing
+   again at 375px, where surfaces actually fail.
 
 ## 2. Usability heuristics (Nielsen/NN-g — apply, don't recite)
 Visibility of system status (always show what's happening — parsing, matching, saved). Match between

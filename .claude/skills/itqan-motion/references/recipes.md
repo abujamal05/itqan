@@ -1,5 +1,9 @@
 # Itqan Motion Recipes
 
+> **`DESIGN.md` at the workspace root is the apex and wins on anything visual.** Registers and the
+> evidence fence are §3, the mobile rules §3.5, the anti-slop directives and the 13-question blandness
+> review §6. Read it first; this skill is downstream of it.
+
 Concrete, copy-adaptable patterns. All durations/easings are tokens from
 `itqan-design-system/references/tokens.css` — never hard-code curve values here.
 Every example is RTL-safe and ships with a reduced-motion behaviour.
@@ -97,7 +101,8 @@ Shimmer, with its required swap:
 ## 3. Result reveal — staggered, restrained
 
 When matches arrive, stagger their entrance so the list assembles rather than snapping in — but keep the
-stagger tight (product register).
+stagger tight. A match card is inside the evidence fence (`DESIGN.md` §3.4): the container may fade, the
+figures inside it get no entrance of their own.
 
 ```jsx
 <motion.ul variants={{ show: { transition: { staggerChildren: 0.04 } } }} initial="hidden" animate="show">
