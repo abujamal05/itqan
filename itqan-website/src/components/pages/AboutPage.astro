@@ -785,6 +785,36 @@ const refusals = [s.about.refuse1, s.about.refuse2, s.about.refuse3, s.about.ref
     }
   }
 
+  /* Phone. The `order: -1` above puts the mascot ahead of the copy, which on a
+     wide screen is a sidebar and on a phone is the entire first screen: at
+     375px he rendered at y=175, above the h1, so the page opened on decoration
+     before it opened on a sentence. Same call as the homepage hero, same
+     breakpoint, and for the same reason. He stays on tablet and up, and stays
+     everywhere else on this page.
+
+     Removed from the flow rather than hidden: `.hud` loads its clip from a
+     `data-src` through an IntersectionObserver, so a figure that never gets a
+     layout box never fetches the video on a phone connection. */
+  @media (max-width: 51.99rem) {
+    .about-why__figure {
+      display: none;
+    }
+
+    .about-why {
+      padding-block: var(--space-12) var(--space-10);
+    }
+
+    /* The navy band is the page dark beat and gets the top of the Stage phone
+       range, not the desktop value. The 63.99rem step above lands it at 96px of
+       padding inside 64px of margin, which on an 812px screen is 160px of empty
+       navy before the two sentences it exists for. DESIGN.md 3.5: phone section
+       rhythm is --space-12 to --space-16. */
+    .mv {
+      margin-block: var(--space-12);
+      padding-block: var(--space-16);
+    }
+  }
+
   @media (max-width: 39.99rem) {
     .about-mv {
       grid-template-columns: minmax(0, 1fr);

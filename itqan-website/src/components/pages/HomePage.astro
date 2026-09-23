@@ -778,6 +778,15 @@ const stepIcons = [
     max-inline-size: 48rem;
   }
 
+  /* Stage card padding steps down one notch on a phone (DESIGN.md §3.5). At
+     375px, --space-8 on both sides of a 335px card left 271px of line, and the
+     worked example inside it is the densest thing on the page. */
+  @media (max-width: 51.99rem) {
+    .tcard {
+      padding: var(--space-6);
+    }
+  }
+
   .tcard__row {
     display: grid;
     grid-template-columns: 1fr auto 1fr;

@@ -171,17 +171,17 @@ main {
 .container {
   max-width: 72rem;
   margin-inline: auto;
-  padding-inline: var(--space-4);
+  padding-inline: var(--space-5);
 }
 
-/* Smallest phones. 16px each side is 10% of a 320px screen spent on nothing,
-   and it was the last thing standing between the header row and a horizontal
-   scrollbar there. Only this step is narrower; 360px and up is unchanged. */
-@media (max-width: 24rem) {
-  .container {
-    padding-inline: var(--space-3);
-  }
-}
+/* One gutter per breakpoint, and the phone value is the app's (DESIGN.md
+   §3.5: "one gutter value per app, applied everywhere, so no two screens inset
+   differently"). This was --space-4, dropping to --space-3 below 24rem — which
+   is 384px, so a 375px iPhone got 12px, a 390px one got 16px, and the signed-in
+   app gave both 20px. Three different insets for the same hand. All of them are
+   --space-5 now. The old narrow-phone step was there to keep the header row off
+   a horizontal scrollbar at 320px; the header wraps on its own now and 320 is
+   checked in the responsive pass. */
 
 @media (min-width: 48rem) {
   .container {
@@ -564,6 +564,13 @@ html.reveal-ready .page-head.reveal:not(.is-visible) .page-head__rule {
 }
 
 @media (max-width: 51.99rem) {
+  /* Every other band steps to --space-16 on a phone (see .section above). This
+     one kept --space-20 and was the only 80px rhythm left on the page, which is
+     the "new numbers appeared" failure in DESIGN.md §6.4 Q10. */
+  .section--closing {
+    padding-block: var(--space-16);
+  }
+
   .closing {
     padding: var(--space-12) var(--space-5);
   }
