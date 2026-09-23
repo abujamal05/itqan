@@ -241,13 +241,42 @@ export const dashboard = (l: Locale) => ({
     ar: 'مستنداتك توثّق معظم ما تطلبه أدوار تحليل البيانات المبتدئة في عُمان. أكبر فجوة واحدة هي أدوات لوحات المعلومات.',
     en: 'Your documents evidence most of what entry level data roles in Oman ask for. The single largest gap is dashboard tooling.',
   }, l),
+  /* The sentence as DATA, which is what production sends and what the app
+     actually renders — `readinessNote` above is the legacy prose and is only
+     reached by a client that predates these fields. Without them here the level
+     wording below could not be developed at all, which is the same shape as the
+     Coursera "18 OMR" price: a stub answering what production cannot. */
+  readinessReason: 'with_gaps',
+  gapCount: 4,
+  /* Whose roles the 72% is 72% OF. `entry` because this seed is a graduate;
+     set `level: null` to see the un-levelled wording an `insufficient` run
+     produces — both branches are reachable from here on purpose. */
+  comparedAgainst: {
+    level: 'entry',
+    /* Named, because the headline is pooled over these and a reader who cannot
+       see them cannot check the claim. */
+    roles: ['Junior Data Analyst', 'Business Intelligence Associate',
+            'Data Operations Assistant'],
+    rolesPooled: 3,
+  },
+  /* The band Agent C computes from what it could not settle either way. Set
+     both this and `marketReadiness` to null to see the older-service fallback,
+     which is the shape production sends for any run recorded before 2026-09-04. */
+  readinessRange: [72, 78],
+  /* Breadth, deliberately lower than the headline: the headline is the three
+     closest roles, this is every role matched. If the stub ever showed these
+     equal, the difference the screen exists to explain would be invisible. */
+  marketReadiness: 61,
   strengths: ['SQL', pick({ ar: 'التحليل الإحصائي', en: 'Statistical analysis' }, l), 'Python'],
+  /* No `level` on a standing. There is no per-skill proficiency anywhere in the
+     pipeline, so production stopped sending one; a stub that kept inventing it
+     is how a bar nobody computed got onto the screen in the first place. */
   standings: [
-    { name: 'SQL', level: 0.9, held: true },
-    { name: pick({ ar: 'التحليل الإحصائي', en: 'Statistical analysis' }, l), level: 0.85, held: true },
-    { name: 'Python', level: 0.7, held: true },
-    { name: 'Power BI', level: 0.15, held: false },
-    { name: pick({ ar: 'التواصل المهني', en: 'Professional communication' }, l), level: 0.3, held: false },
+    { name: 'SQL', held: true },
+    { name: pick({ ar: 'التحليل الإحصائي', en: 'Statistical analysis' }, l), held: true },
+    { name: 'Python', held: true },
+    { name: 'Power BI', held: false },
+    { name: pick({ ar: 'التواصل المهني', en: 'Professional communication' }, l), held: false },
   ],
   topMatches: jobs(l).slice(0, 2),
   gaps: ['Power BI', pick({ ar: 'التواصل المهني', en: 'Professional communication' }, l)],

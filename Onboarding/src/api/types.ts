@@ -529,9 +529,18 @@ export interface JobsResult {
 
 export interface SkillStanding {
   name: string;
-  /** 0..1 how well evidenced this is by the documents. */
-  level: number;
   held: boolean;
+  /**
+   * Gone as of 2026-09-02, and worth saying why rather than deleting quietly.
+   *
+   * This was documented as "0..1 how well evidenced this is by the documents",
+   * and the service sent a hard-coded 0.9 to every held skill and 0.1 to every
+   * gap — one constant, drawn as a bar, read as a measurement. Nothing in the
+   * pipeline computes per-skill proficiency: Agent A publishes a categorical
+   * quality with the evidence behind it, not a number. Left optional so a build
+   * that reaches an older service still type-checks; nothing reads it.
+   */
+  level?: number;
 }
 
 /**
@@ -564,6 +573,14 @@ export interface JourneyStage {
  * back at the confirmation screen for an extraction they never asked to redo.
  */
 export type UpdateScope = 'documents' | 'skills';
+
+/* What Hud can be asked to run, cheapest first.
+     courses  Agent E alone      — same gap, today's catalogue
+     match    Agent C then E     — today's postings, then courses for the new gap
+     full     Agent A then both  — re-reads the documents, stops to be confirmed
+   The server prices them 2, 5 and 19 from a measurement it keeps; nothing here
+   assumes any of those numbers. */
+export type RerunMode = 'courses' | 'match' | 'full';
 
 /**
  * What is out of date, what bringing it up to date costs, and whether this
@@ -604,12 +621,78 @@ export interface PendingUpdate {
 
 export interface DashboardData {
   readiness: number;          // 0..100, agent-computed
-  readinessNote: string;      // plain-language explanation, authored by the agent
+  /**
+   * English prose from the service, and the LAST of it on this payload.
+   *
+   * Kept only so a client that predates `readinessReason` still renders a
+   * sentence. Compose from `readinessReason`, `readiness` and `gapCount`
+   * instead — this one cannot be translated, and because it never becomes an
+   * i18n key it cannot fail the parity check either.
+   */
+  readinessNote: string;
+  /** Which sentence is true, for the client to write in its own language. */
+  readinessReason?: 'insufficient' | 'no_gaps' | 'with_gaps';
+  /**
+   * WHICH roles the percentage is a percentage of.
+   *
+   * The matching compares a person against roles at their own level rather than
+   * against whatever the corpus holds most of, so the sentence has to say which
+   * set — a score that quietly changed its comparison set and kept its old
+   * wording would be flattery, not a fix.
+   *
+   * `level` is null whenever the selection did not actually happen: too few
+   * roles at that level in the corpus, or documents that do not settle the
+   * person's level. The sentence then says "the roles you were compared
+   * against", which is exactly what is true of it.
+   */
+  comparedAgainst?: {
+    level: 'entry' | 'associate' | 'mid' | 'senior' | 'executive' | null;
+    /** The roles the headline was pooled over, by name, for the reader to check. */
+    roles?: string[];
+    /** How many were pooled. 0 means an older service that sends no such set. */
+    rolesPooled?: number;
+  };
+  /**
+   * The band the readiness number genuinely carries, low end first.
+   *
+   * Agent C computes it from requirements the matching could neither confirm nor
+   * rule out, so it is measured uncertainty, not a decorative fuzz. Showing it
+   * is what stops ordinary movement reading as decline. Null when the run had
+   * nothing unresolved, or when an older service does not send it.
+   */
+  readinessRange?: [number, number] | null;
+  /**
+   * Readiness across EVERY matched role rather than the closest few.
+   *
+   * A different question — breadth, not proximity — and it sits beside the
+   * headline, never in place of it. `readiness` is the closest-roles figure.
+   */
+  marketReadiness?: number | null;
+  /** EVERY gap found, including ones no course can close — `gaps` is only the
+   *  actionable subset, so its length under-reports what the sentence states. */
+  gapCount?: number;
   strengths: string[];        // capability first — always shown before gaps
   standings: SkillStanding[];
+  /** Total skills the profile holds. `standings` is a sample of six of these
+   *  plus six gaps, so its length is not a count of anything a person has. */
+  skillsHeld?: number;
   topMatches: JobMatch[];
   gaps: string[];
-  nextStep: { title: string; body: string; action: 'courses' | 'jobs' | 'documents' };
+  /**
+   * What to do next. `reason` plus its values is the translatable form;
+   * `title`/`body` are the service's English and are the fallback only.
+   */
+  nextStep: {
+    title: string;
+    body: string;
+    action: 'courses' | 'jobs' | 'documents';
+    reason?: 'course' | 'no_course' | 'add_document';
+    /** The course to start, when `reason` is `course`. */
+    subject?: string;
+    /** Skill names the sentence lists — unjoined, so the client can punctuate
+     *  them in its own language rather than receiving English commas. */
+    subjects?: string[];
+  };
   /** Where the user is in the overall process, oldest stage first. */
   journey: JourneyStage[];
 }
@@ -717,6 +800,12 @@ export interface ChatMessage {
    * chip that runs.
    */
   proposedRerun?: {
+    /* WHICH stage Hud is offering, and what the server will charge for it.
+       `needed` comes from the server rather than being looked up here: the three
+       prices are 2, 5 and 19, and a copy of that table in the client is a copy
+       that drifts the first time one of them is re-measured. */
+    mode?: RerunMode;
+    needed?: number;
     reason: string | null;
     credits: { used: number; limit: number; remaining: number; resetsAt: string };
   };
@@ -983,10 +1072,20 @@ export interface ItqanApi {
    * server executes.
    */
   rerunMatching(
+    mode?: RerunMode,
     signal?: AbortSignal,
-  ): Promise<{ jobId: string; awaitingConfirmation?: boolean }>;
+  ): Promise<{ jobId: string; awaitingConfirmation?: boolean; mode: RerunMode; spent: number }>;
   /** Removes one uploaded document, from the list AND from the server's disk. */
   deleteDocument(id: string, signal?: AbortSignal): Promise<void>;
+  /**
+   * `DELETE /api/profile/skills` — every skill on the account, gone.
+   *
+   * The stored matches and recommendations go with them: all of it was computed
+   * FROM those skills, and leaving it would show conclusions drawn from data
+   * the person has just deleted. Documents and finished courses survive, so a
+   * re-read rebuilds what the documents evidence.
+   */
+  clearSkills(signal?: AbortSignal): Promise<void>;
 
   /**
    * Closing the account. PENDING BACKEND — see BACKEND.md §9.

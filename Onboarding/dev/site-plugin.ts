@@ -75,6 +75,15 @@ const accounts: Account[] = [
    * spec pass alone and fail in a full run.
    */
   { id: 'u_reader', fullName: 'Huda Al Zadjali', email: 'reader@itqan.test', password: 'itqan1234', onboarded: true, emailVerified: true },
+  /**
+   * The CELEBRATION fixture, and it needs its own account for a second reason
+   * on top of spending: the celebration is a COMPARISON against the readiness
+   * this browser last saw, so the test reads the score, runs, and reads it
+   * again. Another spec resetting this account's gain in between would move
+   * the number under it and the celebration would vanish for a reason that has
+   * nothing to do with the code under test.
+   */
+  { id: 'u_amal', fullName: 'Amal Al Rawahi', email: 'amal@itqan.test', password: 'itqan1234', onboarded: true, emailVerified: true },
 ];
 
 /** Progress and profile per account, so a reload does not restart onboarding. */
@@ -169,6 +178,13 @@ const PLAN_TOKENS = { free: 30, paid: 90 } as const;
    measured. */
 const TOKEN_PRICES = { message: 1, documentReread: 19, alternative: 2 } as const;
 
+/* What each stage of the pipeline costs, matching the server. They are one
+   measured re-read divided by which agents actually run: Agent E alone, Agent C
+   and E, or all three. Kept beside TOKEN_PRICES rather than derived from it,
+   because the server publishes `spent` and the screens read that — this table
+   only has to be right enough to develop the difference against. */
+const RERUN_PRICES: Record<string, number> = { courses: 2, match: 5, full: 19 };
+
 /**
  * How many job matches a free account sees. The rest are paid.
  *
@@ -218,6 +234,12 @@ const deactivated = new Set<string>();
  */
 interface StaleRow { scope: 'documents' | 'skills'; reasons: string[]; deferred: boolean }
 const stale = new Map<string, StaleRow>();
+/* Accounts whose skills were deleted. The dashboard then has nothing to show:
+   readiness, the matches and the recommendations were all worked out FROM the
+   skills, so production drops them with the skills and this has to as well —
+   a stub that kept showing a score would hide exactly the state the feature
+   exists to produce. Cleared by a run, which is what rebuilds them. */
+const cleared = new Set<string>();
 
 /**
  * A skills-only run costs less than a document re-read because it does less
@@ -1009,6 +1031,9 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
         }
 
         if (url === '/api/dashboard') {
+          // Skills deleted and nothing run since: the same 404 production
+          // answers when there is no completed run to read.
+          if (cleared.has(me.id)) return json(res, 404, { error: 'no_results' });
           const base = dashboard(locale);
           /* Capped at 100, because a readiness of 104 is not a number this
              product would ever show and a stub that produced one would send
@@ -1220,6 +1245,13 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
         if (url === '/api/dev/tokens' && req.method === 'POST') {
           tokensUsed.set(me.id, 0);
           rerunCredits = 1;
+          /* The readiness gain goes back too. It only ever climbs, and it is
+             capped at 100 — so a suite that re-runs the matching a few times
+             against one dev server eventually pins the score at the ceiling,
+             where it stops moving and every celebration silently stops firing.
+             A reset that leaves that behind is the same shared-counter flake
+             this endpoint was added for. */
+          readinessGain.delete(me.id);
           return json(res, 200, { ok: true, used: 0 });
         }
 
@@ -1418,7 +1450,16 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
              is data on a message, never an action, and only the client's
              confirm calls the endpoint that spends the credit. */
           if (/again|new|جديد|أعد/i.test(question) && rerunCredits > 0) {
+            /* WHICH stage, and what it costs — the two fields the chip reads to
+               name what it is offering. A proposal without them renders the
+               generic wording and the re-read's price, which is what production
+               sent until the stages existed and is nine times the truth for a
+               course refresh. `courses` here because the question that triggers
+               this asks for something NEW, not for documents to be re-read. */
+            const mode = /course|دورة|دورات/i.test(question) ? 'courses' : 'match';
             message.proposedRerun = {
+              mode,
+              needed: RERUN_PRICES[mode],
               reason: locale === 'ar'
                 ? 'ظهرت وظائف جديدة منذ آخر مطابقة.'
                 : 'New postings have appeared since your last match.',
@@ -1454,11 +1495,51 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
              returns at BOTH doors, because one budget whichever door should
              mean one reason whichever door. `rerunCredits` stays only to gate
              whether the chat OFFERS the proposal. */
-          const refused = tokenRefusal(me.id, TOKEN_PRICES.documentReread);
+          /* EACH STAGE ITS OWN PRICE, matching production since 2026-08-29.
+             The three are divisions of one measured re-read: Agent E alone, C
+             and E, and all three. A stub that charged 19 for every one of them
+             would make the cheap rung impossible to develop against — the whole
+             visible difference between "look for new courses" and "re-read my
+             CV" is what the meter does afterwards. */
+          const mode = String(sent.mode ?? 'match');
+          const price = RERUN_PRICES[mode];
+          if (price === undefined) return json(res, 400, { error: 'unknown_mode' });
+          const refused = tokenRefusal(me.id, price);
           if (refused) return json(res, 429, refused);
           rerunCredits = Math.max(0, rerunCredits - 1);
-          spend(me.id, TOKEN_PRICES.documentReread);
-          return json(res, 200, { jobId: `job_rerun_${Date.now().toString(36)}` });
+          spend(me.id, price);
+
+          /* REGISTERED, so `/api/analysis/:id` knows it. It was not, and the
+             poll that drives the chat's progress bar 404s on an id it was just
+             handed — meaning the rerun meter could not be developed against
+             this stub at all, whatever the client did.
+             `full` starts at the beginning and pauses to be confirmed, because
+             the extraction changed; the other two are created already past that
+             pause, since nothing was re-read and there is nothing to confirm.
+             Same distinction the update door below draws, for the same reason. */
+          const jobId = `job_rerun_${Date.now().toString(36)}`;
+          jobs_.set(jobId, {
+            started: mode === 'full' ? Date.now() : Date.now() - PHASE_ONE_MS,
+            bad: false,
+            confirmedAt: mode === 'full' ? undefined : Date.now(),
+          });
+          /* THE SCORE MOVES HERE TOO, and it did not — only the update door
+             below moved it, so a re-run started from Hud finished with the
+             dashboard reading exactly what it read before and no celebration
+             to be seen. The same one-door gap the client had.
+
+             `courses` is deliberately left out rather than forgotten: a course
+             refresh runs Agent E alone, which rewrites recommendations and
+             computes no gap, so readiness genuinely does not move. A stub that
+             moved it there would invent a celebration production cannot give. */
+          if (mode !== 'courses') {
+            cleared.delete(me.id);   // a run rebuilds what the clear removed
+          readinessGain.set(me.id, (readinessGain.get(me.id) ?? 0) + 6);
+          }
+          return json(res, 200, {
+            jobId, mode, spent: price,
+            awaitingConfirmation: mode === 'full',
+          });
         }
 
         if (url === '/api/onboarding/progress') {
@@ -1511,6 +1592,24 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
         /* Edits from the profile screen. Distinct from POST: this one does NOT
            start the pipeline, because correcting a birth date is not a reason to
            re-run the matching. */
+        /* Deleting every skill, and the results worked out from them.
+           Served here because a screen built against a stub that cannot produce
+           production's answer is exactly how the document controls above came
+           to ship broken: `dev` had PUT and PATCH, production had neither, and
+           nothing said so for a week. */
+        if (url === '/api/profile/skills' && req.method === 'DELETE') {
+          const prev = profiles.get(me.id);
+          if (!prev) return json(res, 204, undefined);   // nothing confirmed yet
+          profiles.set(me.id, { ...prev, skills: [], skillsClearedAt: new Date().toISOString() });
+          /* The matches and the readiness went with them, so the dashboard has
+             nothing to show until a run is paid for. `stale` is cleared rather
+             than raised: there is no longer a newer fact waiting to be matched
+             on, there is nothing at all. */
+          stale.delete(me.id);
+          cleared.add(me.id);
+          return json(res, 204, undefined);
+        }
+
         if (url === '/api/profile' && req.method === 'PUT') {
           const edited = parseBody(await body(req), req.headers['content-type'] ?? '');
           const prev = profiles.get(me.id) ?? {};
@@ -1576,6 +1675,7 @@ export function itqanSite(options: ItqanSiteOptions = {}): Plugin {
             confirmedAt: row.scope === 'documents' ? undefined : Date.now(),
           });
           /* The score moves, which is the point of having run it. */
+          cleared.delete(me.id);   // a run rebuilds what the clear removed
           readinessGain.set(me.id, (readinessGain.get(me.id) ?? 0) + 6);
           return json(res, 200, { jobId });
         }
