@@ -50,6 +50,25 @@ const STAGE_LINKS: Record<string, string> = { jobs: '/jobs' };
 
 const nodeTypes = { milestone: MilestoneNode };
 
+/**
+ * A stage's name, in the reader's language.
+ *
+ * The service sends `label` in English and the contract used to claim it was
+ * "already localised by the service" — it never was, so the Arabic dashboard
+ * read "Documents read · Skills identified · Matching · Applying for jobs".
+ * That kind of string is invisible to the i18n parity check too, because a
+ * string that never becomes a key cannot fail it.
+ *
+ * The id is the translatable thing; `label` remains the fallback so a client
+ * that reaches an older service still shows words rather than a raw key.
+ */
+function stageName(stage: JourneyStage, t: (k: string) => string): string {
+  const key = `journey.stage.${stage.id}`;
+  const translated = t(key);
+  return translated === key ? stage.label : translated;
+}
+
+
 export function JourneyMap({
   stages,
   target,
@@ -95,7 +114,7 @@ export function JourneyMap({
       const isLast = i === stages.length - 1;
 
       const data: MilestoneData = {
-        label: isLast && low ? t('journey.building') : s.label,
+        label: isLast && low ? t('journey.building') : stageName(s, t),
         detail: s.detail,
         state: s.state,
         to: isLast && !low ? STAGE_LINKS[s.id] : undefined,
@@ -190,7 +209,7 @@ export function JourneyMap({
           const isLast = i === stages.length - 1;
           return (
             <li key={s.id}>
-              {isLast && low ? t('journey.building') : s.label}
+              {isLast && low ? t('journey.building') : stageName(s, t)}
               {' — '}
               {t(`journey.state.${s.state}`)}
               {s.detail ? ` — ${s.detail}` : ''}

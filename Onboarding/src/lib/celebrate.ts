@@ -22,11 +22,27 @@
  */
 const KEY = 'itqan.readiness';
 
+/**
+ * WHAT THE REMEMBERED NUMBER MEANS. Bump this whenever readiness changes basis.
+ *
+ * On 2026-09-04 the headline moved from a market average over every retrieved
+ * role to a pooling over the three roles the person fits best, which raised a
+ * real student from 17 to 26. A baseline recorded under the old basis is not a
+ * baseline for the new one: the first run after the deploy would have counted
+ * up nine points and congratulated somebody for a change we made. A mark whose
+ * basis does not match is re-seeded instead of compared, so the worst case is
+ * one missed celebration rather than a false one — the same direction this file
+ * already chooses everywhere else.
+ */
+const BASIS = 'closest-roles-2026-09-04';
+
 interface Mark {
   /** The readiness the dashboard last rendered for this account. */
   seen?: number;
   /** An update run finished and its result has not been shown yet. */
   ran?: boolean;
+  /** Which definition of readiness `seen` was recorded under. */
+  basis?: string;
 }
 
 type Store = Record<string, Mark>;
@@ -80,10 +96,13 @@ export interface Celebration {
 export function takeCelebration(userId: string, readiness: number): Celebration | null {
   const store = read();
   const mark = store[userId] ?? {};
-  const from = typeof mark.seen === 'number' ? mark.seen : readiness;
+  /* A number remembered under a different definition of readiness is not
+     something this one can be compared against — see BASIS. */
+  const comparable = mark.basis === BASIS && typeof mark.seen === 'number';
+  const from = comparable ? (mark.seen as number) : readiness;
 
   const earned = mark.ran === true && readiness > from;
-  store[userId] = { seen: readiness };
+  store[userId] = { seen: readiness, basis: BASIS };
   write(store);
 
   return earned ? { from, to: readiness } : null;

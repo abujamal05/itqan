@@ -1001,6 +1001,21 @@
   color: var(--color-text-muted);
 }
 
+/* ---- The precision the number actually has ---------------------------------
+   Agent C computes this band from requirements it could neither confirm nor
+   rule out, and showing it is what stops an ordinary two-point movement reading
+   to a user as decline. The figure carries a touch more weight than the
+   explanation beside it: the range is the reading, the reason is the footnote.
+   Tabular figures so "26-31" and "9-14" occupy the same width and the line does
+   not shift as the number changes. */
+.readiness__band {
+  font-variant-numeric: tabular-nums;
+}
+.readiness__label {
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+
 /* ---- A score with no goal behind it ---------------------------------------
    Sits under the readiness sentence, states what the figure is actually
    measured against, and offers the fix in the same breath. A sunken well with

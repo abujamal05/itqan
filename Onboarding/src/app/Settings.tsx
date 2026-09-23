@@ -39,6 +39,7 @@ import { Card, Chip, ErrorState, LoadingBlock } from '../components/ui';
 import { Section, Row } from '../components/Section';
 import { UsageMeters } from '../components/UsageMeters';
 import { CloseAccount } from '../components/CloseAccount';
+import { ClearSkills } from '../components/ClearSkills';
 import { DocumentManager } from '../components/DocumentManager';
 import type { ConfirmedProfile, Preferences, StoredProfile, Usage } from '../api';
 import { emptyPreferences } from '../api';
@@ -268,6 +269,24 @@ export function Settings() {
           </div>
         )}
       </Section>
+
+      {/* DIRECTLY UNDER THE SKILLS IT DELETES, which is where it belongs and
+          is not where it started. It went into the danger area beside closing
+          the account, reasoning by how destructive it is — and it was reported
+          as missing, from a screen it was rendering on perfectly well. Five
+          sections separated the skills from the only control that removes
+          them, so somebody looking at their skills had no reason to scroll
+          past documents, usage, preferences and support to find it.
+
+          Destructiveness earns the confirm dialog; it does not earn exile.
+          `refreshUpdate` runs with the reload for the same reason the document
+          controls do — what Itqan is working from has changed, and the server
+          decides whether that leaves anything stale. */}
+      <ClearSkills
+        count={p.skills?.length}
+        onCleared={() => { reload(); refreshUpdate(); }}
+      />
+
 
       {/* ---- Documents ------------------------------------------------------
           MANAGEMENT, NOT A LIST. Every document can have its file swapped and

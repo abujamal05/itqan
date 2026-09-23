@@ -37,6 +37,13 @@ export const ACCOUNTS = {
    * above.
    */
   merger: 'reader@itqan.test',
+  /**
+   * Onboarded, and the ONLY account the celebration spec touches. It spends,
+   * like the two above — and it also reads the readiness score before and
+   * after a run, so a second spec resetting this account between those two
+   * reads would move the number out from under the assertion.
+   */
+  celebrant: 'amal@itqan.test',
 } as const;
 
 export const PASSWORD = 'itqan1234';

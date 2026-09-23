@@ -74,6 +74,34 @@ const CARDS_SHOWN = 2;
  * profile screen. It is also why there is no third guess: no date, no claim,
  * and the line is simply absent rather than defaulting to either.
  */
+/**
+ * The rung a score was measured against, as a word in the reader's language.
+ *
+ * A lookup rather than `t('dash.level' + level)`: a key built by concatenation
+ * is invisible to the i18n parity check, and an English string on the wire is
+ * exactly the bug that put an English sentence on the Arabic dashboard.
+ */
+const LEVEL_KEY = {
+  entry: 'dash.levelEntry',
+  associate: 'dash.levelAssociate',
+  mid: 'dash.levelMid',
+  senior: 'dash.levelSenior',
+  executive: 'dash.levelExecutive',
+} as const;
+
+/**
+ * Which readiness sentence to use for a pool of `n` roles.
+ *
+ * Split by grammatical number because Arabic has three forms where English has
+ * two, and a single key with `{n}` interpolated produces "أقرب 2 وظائف" — the
+ * plural where the dual is required. `n` is still passed for the three-or-more
+ * case, which does take a numeral.
+ */
+function closestKey(n: number, hasGaps: boolean): string {
+  const size = n === 1 ? 'One' : n === 2 ? 'Two' : '';
+  return `dash.noteClosest${size}${hasGaps ? 'Gaps' : ''}`;
+}
+
 function standingOf(
   graduationDate: string | null | undefined,
   t: (k: string) => string,
@@ -280,6 +308,53 @@ export function Dashboard() {
   const topMatches = (editedMatches ?? data.topMatches).slice(0, CARDS_SHOWN);
 
   /**
+   * The readiness sentence, written here rather than shipped from the service.
+   *
+   * The service still sends `readinessNote` as English prose; a string on the
+   * wire cannot be translated, and because it never becomes an i18n key the
+   * parity check cannot catch it either — which is how the Arabic dashboard came
+   * to read an English sentence. `gapCount` is every gap found, not `gaps.length`
+   * (that is the actionable subset), so the count matches what was measured.
+   */
+  const level = data.comparedAgainst?.level
+    ? t(LEVEL_KEY[data.comparedAgainst.level])
+    : null;
+  /* WHICH roles the headline was measured against, by name.
+     The number is pooled over the roles this person fits best rather than over
+     the whole retrieved set, and that is only honest while the sentence says so
+     and the roles are on screen. If `pooled` is 0 the service is an older one
+     that sends no such set, and the wording falls back to the market phrasing
+     it published then. */
+  const pooled = data.comparedAgainst?.rolesPooled ?? 0;
+  const closestRoles = data.comparedAgainst?.roles ?? [];
+
+  const readinessNote = data.readinessReason
+    ? data.readinessReason === 'insufficient'
+      ? t('dash.noteInsufficient')
+      : pooled > 0
+        ? t(
+          /* One key per grammatical number, not one key with a digit dropped
+             into it: Arabic takes the dual for two and the plural for three or
+             more, so "أقرب 2 وظائف" is simply wrong. English reads better for
+             the small counts too. */
+          closestKey(pooled, (data.gapCount ?? 0) > 0),
+          {
+            pct: formatNumber(data.readiness ?? 0),
+            n: formatNumber(pooled),
+            g: formatNumber(data.gapCount ?? data.gaps.length),
+          },
+        )
+        : data.readinessReason === 'no_gaps'
+          ? t(level ? 'dash.noteNoGapsLevel' : 'dash.noteNoGaps',
+            { pct: formatNumber(data.readiness ?? 0), level: level ?? '' })
+          : t(level ? 'dash.noteWithGapsLevel' : 'dash.noteWithGaps', {
+            pct: formatNumber(data.readiness ?? 0),
+            n: formatNumber(data.gapCount ?? data.gaps.length),
+            level: level ?? '',
+          })
+    : data.readinessNote;
+
+  /**
    * The one named action on the page, and it has to survive being acted on.
    *
    * The service authors this card and its copy names a specific course, so the
@@ -298,8 +373,22 @@ export function Dashboard() {
   const nextStep: { title: React.ReactNode; body: string; action: string; cta: string } =
     !allCourses.some((c) => completed.has(c.id))
       ? {
-        title: data.nextStep.title,
-        body: data.nextStep.body,
+        /* The service's `reason` and values, written here in the reader's
+           language. `title`/`body` are its English fallback, for a client that
+           reaches a service predating `reason`. `listOf` rather than a join,
+           because Arabic punctuates a list its own way. */
+        title: data.nextStep.reason
+          ? (data.nextStep.reason === 'course'
+            ? t('dash.stepCourseTitle', { course: data.nextStep.subject ?? '' })
+            : t(`dash.step.${data.nextStep.reason}.title`))
+          : data.nextStep.title,
+        body: data.nextStep.reason
+          ? (data.nextStep.reason === 'add_document'
+            ? t('dash.step.add_document.body')
+            : t(`dash.step.${data.nextStep.reason}.body`, {
+              skills: listOf((data.nextStep.subjects ?? []).map(skillCase), locale),
+            }))
+          : data.nextStep.body,
         action: data.nextStep.action,
         cta: t('dash.startNextStep'),
       }
@@ -374,7 +463,48 @@ export function Dashboard() {
             <div className="stack stack--sm readiness__where">
               <h2 className="section__title" id="dash-readiness">{t('dash.readiness')}</h2>
               {standing && <p className="standing">{standing}</p>}
-              <p>{data.readinessNote}</p>
+              {/* Composed here, in the reader's language, from the reason and
+                  the two numbers. `readinessNote` is the service's English and
+                  is the fallback only while an older service is still deployed. */}
+              <p>{readinessNote}</p>
+
+              {/* THE PRECISION THE NUMBER ACTUALLY HAS.
+                  Agent C computes this band from the requirements it could
+                  neither confirm nor rule out, so it is measured uncertainty
+                  rather than decoration. Showing it is what stops an ordinary
+                  two-point movement — the same person, a fresh ingest — reading
+                  as decline, which is the complaint this whole change answers. */}
+              {data.readinessRange && (
+                <p className="text-sm muted readiness__band">
+                  <span className="readiness__label">
+                    {t('dash.readinessRange', {
+                      lo: formatNumber(data.readinessRange[0]),
+                      hi: formatNumber(data.readinessRange[1]),
+                    })}
+                  </span>
+                  {' '}
+                  {t('dash.readinessRangeWhy')}
+                </p>
+              )}
+
+              {/* The roles it was measured against, named. Not decoration: the
+                  headline is pooled over these and nothing else, and a reader
+                  who cannot see them cannot check the claim. */}
+              {closestRoles.length > 0 && (
+                <p className="text-sm muted">
+                  <span className="readiness__label">{t('dash.comparedRoles')}</span>
+                  {' '}
+                  {listOf(closestRoles, locale)}
+                </p>
+              )}
+
+              {/* NOT RENDERED: `data.marketReadiness`, the average across every
+                  matched role. It is on the payload and it is true, but showing
+                  it beside the headline was a third reading on a card that
+                  already carries a figure, a band and a role list — and the
+                  decision taken was the headline alone. The key
+                  `dash.marketReadiness` exists in both languages for whenever
+                  that is revisited. */}
 
               {/* A SCORE HAS TO SAY WHAT IT IS A SCORE OF.
                   With no goal set, the ring was reporting a hard figure out of
@@ -439,8 +569,14 @@ export function Dashboard() {
                 aria-controls="dash-skills-list"
               >
                 <span className="skills__title">{t('dash.yourSkills')}</span>
+                {/* The profile's real total, not `standings.length` — that is a
+                    sample of six held skills plus six gaps, so counting it told
+                    someone with 173 skills they had 12, half of which were
+                    things they did not have. */}
                 <span className="skills__count num">
-                  {t('dash.yourSkillsCount', { n: formatNumber(data.standings.length) })}
+                  {t('dash.yourSkillsCount', {
+                    n: formatNumber(data.skillsHeld ?? data.standings.filter((s) => s.held).length),
+                  })}
                 </span>
                 <ChevronDown
                   size={18}
@@ -464,7 +600,6 @@ export function Dashboard() {
                               : <><Plus size={14} aria-hidden="true" />{t('dash.toUnlock')}</>}
                           </span>
                         </div>
-                        <Meter value={s.level} />
                       </li>
                     ))}
                   </ul>
@@ -615,37 +750,6 @@ function DashboardSkeleton({ header }: { header: React.ReactNode }) {
         <Card><LoadingBlock rows={3} /></Card>
         <Card><LoadingBlock rows={3} /></Card>
       </div>
-    </div>
-  );
-}
-
-/**
- * A skill meter.
- *
- * Animates `transform: scaleX`, never `inline-size`: width is a layout property
- * and animating it re-runs layout on every frame, which the motion skill's
- * performance floor rules out. The fill grows from the reading-start edge, so it
- * mirrors correctly in Arabic.
- *
- * `role="meter"` with the ARIA value attributes, because the level was previously
- * visible only as a coloured bar — a screen reader was told a skill existed but
- * never how well it was evidenced.
- */
-function Meter({ value }: { value: number }) {
-  const pct = Math.round(Math.min(1, Math.max(0, value)) * 100);
-  return (
-    <div
-      /* `meter--level` distinguishes this from the pipeline's progress bar,
-         which is the same class. When a run is in flight the identical 6px gold
-         bar appeared in the banner meaning "OCR is 40% done" and here meaning
-         "you are 40% evidenced in SQL" — one shape, two unrelated meanings. */
-      className="meter meter--level"
-      role="meter"
-      aria-valuenow={pct}
-      aria-valuemin={0}
-      aria-valuemax={100}
-    >
-      <i style={{ transform: `scaleX(${pct / 100})` }} />
     </div>
   );
 }

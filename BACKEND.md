@@ -1142,7 +1142,21 @@ window can be walked locally, since that window is the only reason the delete
 guard exists. `POST /api/dev/plan` accepts `status=cancelled` to reach it
 directly. Neither is a specification.
 
-### 11. Keeping the journey in step — `GET/POST /api/update`, `POST /api/update/defer`  **(NOT BUILT)**
+### 11. Keeping the journey in step — `GET/POST /api/update`, `POST /api/update/defer`  **(PARTLY BUILT — the `course_completed` trigger only)**
+
+> Built 2026-08-30: finishing a course adds what it taught to the skill set (deduped
+> casefolded, weighted `course`/medium/`course_completed` rather than at the full weight a
+> typed skill gets), raises a pending `skills` update, and `GET /api/update` /
+> `POST /api/update/defer` answer. Staleness is DERIVED from the completions against the
+> last finished run, so it clears itself; only the deferral is stored, and sign-in clears
+> that. `cost` is 5 — the measured price this section asked for, divided from the same
+> token measurement that set the re-read's 19.
+>
+> **Still not built:** the `documents` trigger (a replaced document), the `skills_edited`
+> trigger (a profile edit), `documents` subsuming `skills` when both are pending, the same
+> 429 shape on `POST /api/chat`, and the dashboard reporting a previous readiness for the
+> celebration. `GET /api/update` answers `scope: null` for those rather than implying a
+> completeness it has not got.
 
 ```
 GET  /api/update         -> { scope, reasons[], cost, remaining, affordable, deferred }

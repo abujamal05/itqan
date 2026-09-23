@@ -24,6 +24,7 @@ import {
   AlertCircle, Check, FileText, Image as ImageIcon, Paperclip, RotateCw, Upload as UploadIcon, X,
 } from 'lucide-react';
 import { useI18n } from '../i18n';
+import { DeleteDocument } from './DeleteDocument';
 import { fileSize } from '../lib/fileSize';
 import { DOCUMENT_KINDS, REQUIRED_KIND, normaliseKind } from '../api';
 import { HttpError } from '../api/http';
@@ -178,8 +179,43 @@ export function DocumentUpload({
     return cur.filter((i) => i.localId !== localId);
   });
 
-  const changeKind = (localId: string, kind: DocumentKind) =>
+  /**
+   * Correct a document's category, and make it STICK.
+   *
+   * The kind is guessed from the filename and the file is uploaded with that
+   * guess immediately, so this dropdown is how a wrong guess gets corrected —
+   * and it only ever changed local state. The row on the server kept the guess,
+   * so a transcript filed as a CV stayed one: it came back wrong on the next
+   * reload, and the pipeline read it as the wrong kind of document.
+   *
+   * That matters more now that uploading a CV REPLACES the held one: a
+   * transcript mis-guessed as a CV would take the real CV's place, and putting
+   * the dropdown right has to be able to undo that.
+   *
+   * Optimistic, then reverted if the server refuses — `cv_exists` when another
+   * document already holds the slot, `last_cv` when this IS the CV. Both are
+   * states the interface tries to prevent, so arriving here means a stale view,
+   * and the revert is what stops the screen showing a category the account does
+   * not have.
+   */
+  const changeKind = async (localId: string, kind: DocumentKind) => {
+    const hit = items.find((i) => i.localId === localId);
+    const was = hit?.kind;
     setItems((cur) => cur.map((i) => (i.localId === localId ? { ...i, kind } : i)));
+
+    const id = hit?.uploaded?.id;
+    if (!id) return;                    // not on the server yet; it uploads with this kind
+    try {
+      setRejected([]);
+      await api.updateDocumentKind(id, kind);
+    } catch (err: unknown) {
+      setItems((cur) => cur.map((i) => (i.localId === localId ? { ...i, kind: was ?? i.kind } : i)));
+      const code = err instanceof HttpError ? err.code : undefined;
+      setRejected([code === 'cv_exists' ? t('docs.cvTaken')
+                   : code === 'last_cv' ? t('docs.cvRequired')
+                   : t('docs.kindFailed')]);
+    }
+  };
 
   const retry = (localId: string) => {
     const hit = items.find((i) => i.localId === localId);
@@ -261,13 +297,35 @@ export function DocumentUpload({
                       <RotateCw size={16} aria-hidden="true" />
                     </button>
                   )}
-                  <button
-                    type="button" className="btn btn--secondary btn--icon"
-                    onClick={() => remove(i.localId)}
-                    aria-label={`${t('action.remove')}: ${i.name}`}
-                  >
-                    <X size={16} aria-hidden="true" />
-                  </button>
+                  {/* A stored document is deleted on the SERVER, through the
+                      control Settings already uses. This × used to filter the
+                      row out of local state and send nothing, so the file and
+                      its row survived and the document was back on the next
+                      reload — a remove that removed nothing.
+
+                      `DeleteDocument` rather than a second implementation: it
+                      confirms in place, and it is the one that already knows
+                      what to do when the server answers `last_cv`. Its own
+                      docstring asks not to be copied, having been copied once
+                      already.
+
+                      A row with no id has nothing on the server yet — a failed
+                      or in-flight upload — so for those the local drop IS the
+                      whole of it. */}
+                  {i.uploaded?.id ? (
+                    <DeleteDocument
+                      id={i.uploaded.id}
+                      onDeleted={() => remove(i.localId)}
+                    />
+                  ) : (
+                    <button
+                      type="button" className="btn btn--secondary btn--icon"
+                      onClick={() => remove(i.localId)}
+                      aria-label={`${t('action.remove')}: ${i.name}`}
+                    >
+                      <X size={16} aria-hidden="true" />
+                    </button>
+                  )}
                 </div>
               </div>
 

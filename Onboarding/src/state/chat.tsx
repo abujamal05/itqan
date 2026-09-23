@@ -16,11 +16,13 @@ import {
 } from 'react';
 import type { ReactNode } from 'react';
 import type {
-  ChatMessage, ChatThreadSummary, ChatVerdict, ItqanApi, UpdateScope,
+  ChatMessage, ChatThreadSummary, ChatVerdict, ItqanApi, RerunMode, UpdateScope,
 } from '../api';
 import { HttpError } from '../api/http';
 import { errorText } from '../lib/errorText';
 import { useI18n } from '../i18n';
+import { useAuth } from './auth';
+import { markRunFinished } from '../lib/celebrate';
 
 interface ChatValue {
   threadId: string | null;
@@ -50,7 +52,7 @@ interface ChatValue {
    * Spends the weekly credit and re-matches. Reaching this already took a
    * deliberate confirm in the view — Hud's proposal alone never calls it.
    */
-  rerun: () => Promise<void>;
+  rerun: (mode?: RerunMode) => Promise<boolean>;
   /**
    * Run the agents over a SCOPE, and poll it to the end.
    *
@@ -60,7 +62,7 @@ interface ChatValue {
    * scope `full`. Two poll loops racing one results counter is a bug nobody
    * would have found until two screens disagreed.
    */
-  runAgents: (scope: UpdateScope | 'full') => Promise<'done' | 'failed' | 'awaiting'>;
+  runAgents: (scope: UpdateScope | RerunMode) => Promise<'done' | 'failed' | 'awaiting'>;
   /** Called when a full re-run reaches the confirm step, so the view can
    *  navigate. Kept as a callback rather than a router import: this module is
    *  state, and state that navigates is state that cannot be tested. */
@@ -246,15 +248,24 @@ export function ChatProvider({ api, children }: { api: ItqanApi; children: React
   const [rerunStage, setRerunStage] = useState<string | null>(null);
   const [rerunProgress, setRerunProgress] = useState(0);
   const [resultsVersion, setResultsVersion] = useState(0);
+  /* Whose readiness moved. The celebration is per account, and this
+     provider sits inside `AuthProvider`, so the id is already here. */
+  const { user } = useAuth();
 
-  const runAgents = useCallback(async (scope: UpdateScope | 'full') => {
+  const runAgents = useCallback(async (scope: UpdateScope | RerunMode) => {
     setRerunStage('matching');
     setRerunProgress(0);
     let jobId: string;
     try {
-      ({ jobId } = scope === 'full'
-        ? await api.rerunMatching()
-        : await api.runUpdate(scope));
+      /* Two doors, and which one depends on where the ask came from. The
+         update prompt speaks in what CHANGED ('documents', 'skills'); Hud
+         speaks in what to RUN ('courses', 'match', 'full'). The server maps
+         the first onto the second, so the only job here is not to confuse
+         them — they cost 2, 5 and 19, and sending the wrong word charges
+         somebody for work they did not ask for. */
+      ({ jobId } = scope === 'documents' || scope === 'skills'
+        ? await api.runUpdate(scope)
+        : await api.rerunMatching(scope));
     } catch (err) {
       setRerunStage(null);
       /* A REFUSAL IS NOT A BROKEN CHAT. `token_limit` is a fact about the
@@ -292,16 +303,36 @@ export function ChatProvider({ api, children }: { api: ItqanApi; children: React
         /* Bumped so the results screens refetch. Their `useAsync` deps key off
            this, which is what makes the dashboard reflect the new run instead
            of showing the old one until someone reloads by hand. */
-        if (job.stage === 'done') setResultsVersion((v) => v + 1);
+        if (job.stage === 'done') {
+          setResultsVersion((v) => v + 1);
+          /* ARM THE CELEBRATION HERE, because this is the one engine BOTH
+             doors run through. It was armed in `state/update.tsx` alone, so a
+             re-run started from Hud's chip — the same work, the same tokens,
+             the other door — moved the readiness and the dashboard said
+             nothing at all. Marked only on `done`: a run that failed or
+             stopped at the confirm screen has moved nothing, and cheering at
+             that would be the product congratulating somebody for a pause. */
+          if (user) markRunFinished(user.id);
+        }
         return job.stage === 'done' ? 'done' : 'failed';
       }
     }
-  }, [api, onAwaitingConfirmation]);
+  }, [api, onAwaitingConfirmation, user]);
 
   /* The whole pipeline, which is what Hud proposes. Kept as its own name
      because the chat surface and its copy are about exactly that. */
-  const rerun = useCallback(async () => {
-    await runAgents('full').catch(() => { /* reported by the caller */ });
+  /* Returns whether it STARTED, rather than swallowing the answer.
+     `.catch(() => {})` here meant a refusal — no gap to pick against, or not
+     enough tokens — reached the person as nothing at all: the bar flashed, the
+     offer came back, and the button looked broken. Reported that way on
+     2026-08-29. The caller now has something to say. */
+  const rerun = useCallback(async (mode: RerunMode = 'full') => {
+    try {
+      await runAgents(mode);
+      return true;
+    } catch {
+      return false;
+    }
   }, [runAgents]);
 
   const open = useCallback(
