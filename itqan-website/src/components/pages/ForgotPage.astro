@@ -522,9 +522,15 @@ const base = `/${locale}`;
       gap: var(--space-8);
     }
 
+    /* Not re-centred: removed. `.auth__figure` is the panel's first child, so
+       `order: 0` on a phone left Hud at the very top of the page (y=77),
+       ahead of the heading and the code field — the whole first screen spent
+       on decoration before the one thing the page is for. Desktop keeps him
+       in the sidebar beside the form. Dropping him from the flow also means
+       the clip is never fetched on a phone, since `.hud` only loads its
+       `data-src` once the element has a box in the viewport. */
     .auth__figure {
-      order: 0;
-      align-self: center;
+      display: none;
     }
 
     .page-head {
